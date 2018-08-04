@@ -1,0 +1,14 @@
+#IntelliJ
+.idea/*
+**.iml
+
+#Maven
+target/*
+JavaExample/target/*
+ScalaExample/target/*
+ScalaLoader/target/*
+
+#Eclipse
+.settings/*
+.project
+.classpath

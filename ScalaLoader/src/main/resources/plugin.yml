@@ -1,0 +1,7 @@
+name: ScalaLoader
+version: ${project.version}
+main: xyz.janboerman.scalaloader.ScalaLoader
+load: STARTUP
+author: Jannyboy11
+description: Provides scala runtime classes
+api-version: 1.13
