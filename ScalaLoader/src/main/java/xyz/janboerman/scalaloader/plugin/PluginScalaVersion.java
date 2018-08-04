@@ -2,7 +2,7 @@ package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
-import xyz.janboerman.scalaloader.version.ScalaVersion;
+import xyz.janboerman.scalaloader.scala.ScalaVersion;
 
 import java.util.HashMap;
 import java.util.Map;

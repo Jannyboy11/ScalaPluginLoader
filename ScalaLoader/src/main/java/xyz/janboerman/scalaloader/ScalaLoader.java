@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
-import xyz.janboerman.scalaloader.version.ScalaVersion;
+import xyz.janboerman.scalaloader.scala.ScalaVersion;
 
 public final class ScalaLoader extends JavaPlugin {
 
@@ -52,12 +52,13 @@ public final class ScalaLoader extends JavaPlugin {
         }
     }
 
-    public void saveScalaVersionToConfig(PluginScalaVersion scalaVersion) {
+    public boolean saveScalaVersionToConfig(PluginScalaVersion scalaVersion) {
         FileConfiguration config = getConfig();
-        List<PluginScalaVersion> scalaVersions = new ArrayList<>((List<PluginScalaVersion>) config.getList("scala-versions", Collections.emptyList()));
-        scalaVersions.add(scalaVersion);
-        config.set("scala-versions", scalaVersions);
+        Set<PluginScalaVersion> scalaVersions = new LinkedHashSet<>((List<PluginScalaVersion>) config.getList("scala-versions", Collections.emptyList()));
+        boolean wasAdded = scalaVersions.add(scalaVersion);
+        config.set("scala-versions", new ArrayList<>(scalaVersions));
         saveConfig();
+        return wasAdded;
     }
 
 }

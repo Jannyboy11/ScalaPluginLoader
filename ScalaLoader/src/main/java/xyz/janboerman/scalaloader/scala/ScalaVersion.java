@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.version;
+package xyz.janboerman.scalaloader.scala;
 
 public enum ScalaVersion {
     v2_12_6("2.12.6", true,

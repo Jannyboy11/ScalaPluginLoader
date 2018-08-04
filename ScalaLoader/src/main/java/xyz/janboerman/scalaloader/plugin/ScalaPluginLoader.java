@@ -111,4 +111,9 @@ public class ScalaPluginLoader implements PluginLoader {
     public void disablePlugin(Plugin plugin) {
 
     }
+
+    public PluginScalaVersion readScalaPlugin(byte[] classBytes) {
+        //TODO return compound object - the PluginScalaVersion * Plugin Main Class *
+        return null;
+    }
 }

@@ -3,8 +3,8 @@ package xyz.janboerman.scalaloader;
 import org.bukkit.plugin.java.JavaPlugin;
 import scala.Option;
 import scala.Some;
-import xyz.janboerman.scalaloader.version.Scala;
-import xyz.janboerman.scalaloader.version.ScalaVersion;
+import xyz.janboerman.scalaloader.scala.Scala;
+import xyz.janboerman.scalaloader.scala.ScalaVersion;
 
 @Scala(version = ScalaVersion.v2_12_6)
 public class ExamplePlugin extends JavaPlugin {
