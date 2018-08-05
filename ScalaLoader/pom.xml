@@ -44,7 +44,7 @@
                         <configuration>
                             <relocations>
                                 <relocation>
-                                    <pattern>org.ow2.asm</pattern>
+                                    <pattern>org.objectweb.asm</pattern>
                                     <shadedPattern>xyz.janboerman.scalaloader.asm</shadedPattern>
                                 </relocation>
                             </relocations>

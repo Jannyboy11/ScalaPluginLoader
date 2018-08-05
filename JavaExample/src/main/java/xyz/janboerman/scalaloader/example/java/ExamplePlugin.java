@@ -4,7 +4,7 @@ import scala.Option;
 import scala.Some;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
-import xyz.janboerman.scalaloader.plugin.description.ScalaPluginDescription;
+import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.description.Version;
 
 @CustomScala(@Version(value = "2.12.6",

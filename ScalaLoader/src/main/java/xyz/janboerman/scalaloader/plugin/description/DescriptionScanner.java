@@ -9,7 +9,6 @@ import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -64,9 +63,19 @@ public class DescriptionScanner extends ClassVisitor {
     //visit constructor
     @Override
     public MethodVisitor visitMethod(int access, java.lang.String name, java.lang.String descriptor, java.lang.String signature, java.lang.String[] exceptions) {
-        if ("<init>".equals(name) &&"()V".equals(descriptor) && (access & Opcodes.ACC_PUBLIC) == Opcodes.ACC_PUBLIC) {
+        boolean isConstructor = "<init>".equals(name);
+        boolean isNoArgs = "()V".equals(descriptor);
+        boolean isPublic = (Opcodes.ACC_PUBLIC & access) == Opcodes.ACC_PUBLIC;
+        if (isNoArgs && (isPublic || isConstructor)) { //scala objects have private constructors.
             hasNoArgsConstructor = true;
         }
+
+        Logger hack = JavaPlugin.getPlugin(ScalaLoader.class).getLogger();
+        hack.info("VISITING METHOD " + name);
+        hack.info("is constructor? " + isConstructor);
+        hack.info("is NoArgs? " + isNoArgs);
+        hack.info("is public? " + isPublic);
+        hack.info("\n");
 
         return null;
     }

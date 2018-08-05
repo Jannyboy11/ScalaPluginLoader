@@ -1,7 +1,7 @@
 package xyz.janboerman.scalaloader.example.scala
 
-import xyz.janboerman.scalaloader.plugin.ScalaPlugin
-import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaPluginDescription, ScalaVersion}
+import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
+import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
 
 @Scala(version = ScalaVersion.v2_12_6)
 object ExamplePlugin

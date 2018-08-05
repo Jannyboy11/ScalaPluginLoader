@@ -30,11 +30,11 @@ import java.util.regex.Pattern;
 public class ScalaPluginLoader implements PluginLoader {
 
     private final Server server;
-    private final ScalaLoader scalaLoader;
-    private final PluginLoader javaPluginLoader;
+    private ScalaLoader lazyScalaLoader;
+    private PluginLoader lazyJavaPluginLoader;
 
     private final Set<PluginScalaVersion> scalaVersions = new HashSet<>();
-    private final Pattern[] fileFilters = new Pattern[] { Pattern.compile("\\.jar$"), };
+    private final Pattern[] pluginFileFilters = new Pattern[] { Pattern.compile("\\.jar$"), };
 
     private final Map<String, ScalaLibraryClassLoader> scalaVersionParentLoaders = new HashMap<>();
 
@@ -50,8 +50,14 @@ public class ScalaPluginLoader implements PluginLoader {
 
     public ScalaPluginLoader(Server server) {
         this.server = Objects.requireNonNull(server, "Server cannot be null!");
-        this.scalaLoader = JavaPlugin.getPlugin(ScalaLoader.class);
-        this.javaPluginLoader = scalaLoader.getPluginLoader(); //might not actually be a JavaPluginLoader
+    }
+
+    private ScalaLoader getScalaLoader() {
+        return lazyScalaLoader == null ? lazyScalaLoader = JavaPlugin.getPlugin(ScalaLoader.class) : lazyScalaLoader;
+    }
+
+    private PluginLoader getJavaPluginLoader() {
+        return lazyJavaPluginLoader == null ? lazyJavaPluginLoader = getScalaLoader().getPluginLoader() : lazyJavaPluginLoader;
     }
 
     /**
@@ -111,6 +117,7 @@ public class ScalaPluginLoader implements PluginLoader {
             Enumeration<JarEntry> entryEnumeration = jarFile.entries();
             while (entryEnumeration.hasMoreElements()) {
                 JarEntry jarEntry = entryEnumeration.nextElement();
+                getScalaLoader().getLogger().info("DEBUG scanning jar entry: " + jarEntry.getName());
                 if (jarEntry.getName().endsWith(".class")) {
                     InputStream classBytesInputStream = jarFile.getInputStream(jarEntry);
 
@@ -118,11 +125,11 @@ public class ScalaPluginLoader implements PluginLoader {
                     ClassReader classReader = new ClassReader(classBytesInputStream);
                     classReader.accept(descriptionScanner, 0);
 
-                    scalaLoader.getLogger().info("DEBUG Description Scanner = " + descriptionScanner);
+                    getScalaLoader().getLogger().info("DEBUG Description Scanner = " + descriptionScanner);
 
                     //Emit a warning when the class does extend ScalaPlugin, but does not have de @Scala or @CustomScala annotation
                     if (descriptionScanner.extendsScalaPlugin() && !descriptionScanner.getScalaVersion().isPresent()) {
-                        scalaLoader.getLogger().warning("Class " + jarEntry.getName() + " extends ScalaPlugin but does not have the @Scala or @CustomScala annotation.");
+                        getScalaLoader().getLogger().warning("Class " + jarEntry.getName() + " extends ScalaPlugin but does not have the @Scala or @CustomScala annotation.");
                     }
 
 
@@ -133,47 +140,53 @@ public class ScalaPluginLoader implements PluginLoader {
 
 
                 } else if (jarEntry.getName().equals("plugin.yml")) {
-                    scalaLoader.getLogger().warning("Found plugin.yml in scala plugin. Ignoring.");
+                    getScalaLoader().getLogger().warning("Found plugin.yml in scala plugin. Ignoring..");
+                    //TODO should probably not ignore - just add the fields to the ScalaPluginDescription
                 }
 
             }
 
-            if (mainClassCandidate == null) {
-                throw new InvalidDescriptionException("Could not find main class in file " + file.getName() + ". Did you annotate your main class with @Scala?");
+            if (mainClassCandidate == null || !mainClassCandidate.getMainClass().isPresent()) {
+                getScalaLoader().getLogger().warning("Could not find main class in file " + file.getName() + ". Did you annotate your main class with @Scala?");
+                getScalaLoader().getLogger().warning("Delegating to JavaPluginLoader...");
+                return getJavaPluginLoader().getPluginDescription(file);
             }
 
             //null for unknown api version
             ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElse(null);
 
-            //TODO transform bytes if necessary
+            //TODO transform bytes if necessary based on apiVersion
 
             PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();
-
 
             try {
                 //load scala version if not already present
                 ScalaLibraryClassLoader scalaLibraryClassLoader = loadOrGetScalaVersion(scalaVersion);
                 ScalaPluginClassLoader scalaPluginClassLoader = new ScalaPluginClassLoader(new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader);
 
-                //create our plugin
-                Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClassCandidate.getMainClass().get(), true, scalaPluginClassLoader);
-                ScalaPlugin plugin = createPluginInstance(pluginMainClass);
-                plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
-                plugin.init(this, server, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
-                if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
-                    throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
-                }
-                scalaPluginsByFile.put(file, plugin);
-                return plugin.getDescription();
+                try {
 
+                    //create our plugin
+                    Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClassCandidate.getMainClass().get(), true, scalaPluginClassLoader);
+                    ScalaPlugin plugin = createPluginInstance(pluginMainClass);
+                    plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
+                    plugin.init(this, server, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
+                    if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
+                        throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
+                    }
+                    scalaPluginsByFile.put(file, plugin);
+                    return plugin.getDescription();
+
+                } catch (ClassNotFoundException e) {
+                    throw new InvalidDescriptionException(e, "Could find the class that was found the main class");
+                } catch (NoClassDefFoundError e) {
+                    throw new InvalidDescriptionException(e,
+                            "Your plugin's constructor and/or initializer blocks tried to access classes that were not yet loaded." +
+                                    "Try to move stuff over to onLoad().");
+                }
             } catch (ScalaPluginLoaderException e) {
+                //TODO this is probably the wrong exception message NEEDS FIXING
                 throw new InvalidDescriptionException(e, "Failed to create scala library classloader");
-            } catch (ClassNotFoundException e) {
-                throw new InvalidDescriptionException(e, "Could find the class that was found the main class");
-            } catch (NoClassDefFoundError e) {
-                throw new InvalidDescriptionException(e,
-                        "Your plugin's constructor and/or initializer blocks tried to access classes that were not yet loaded." +
-                        "Try to move stuff over to onLoad().");
             }
 
         } catch (IOException e) {
@@ -187,13 +200,14 @@ public class ScalaPluginLoader implements PluginLoader {
         ScalaLibraryClassLoader scalaLibraryLoader = scalaVersionParentLoaders.get(scalaVersion);
         if (scalaLibraryLoader != null) return scalaLibraryLoader;
 
-        if (!scalaLoader.downloadScalaJarFiles()) {
+        if (!getScalaLoader().downloadScalaJarFiles()) {
             //load classes over the network
+            getScalaLoader().getLogger().info("Loading scala libraries from over the network");
             try {
                 scalaLibraryLoader = new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), new URL[]{
                         new URL(scalaVersion.getScalaLibraryUrl()),
                         new URL(scalaVersion.getScalaReflectUrl())
-                }, scalaLoader.getClass().getClassLoader());
+                }, lazyScalaLoader.getClass().getClassLoader());
             } catch (MalformedURLException e) {
                 throw new ScalaPluginLoaderException("Could not load scala libraries for version " + scalaVersion + " due to a malformed URL", e);
             }
@@ -201,7 +215,7 @@ public class ScalaPluginLoader implements PluginLoader {
             //check if downloaded already (if not, do download)
             //then load classes from the downloaded jar
 
-            File scalaLibsFolder = new File(scalaLoader.getDataFolder(), "scalalibraries");
+            File scalaLibsFolder = new File(getScalaLoader().getDataFolder(), "scalalibraries");
             File versionFolder = new File(scalaLibsFolder, scalaVersion.getScalaVersion());
             versionFolder.mkdirs();
 
@@ -209,6 +223,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
             if (jarFiles.length == 0) {
                 //no jar files found - download dem files
+                getScalaLoader().getLogger().info("Tried to load scala libraries from disk, but they were not present. Downloading...");
                 File scalaLibraryFile = new File(versionFolder, "scala-library-" + scalaVersion + ".jar");
                 File scalaReflectFile = new File(versionFolder, "scala-reflect-" + scalaVersion + ".jar");
 
@@ -272,6 +287,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 jarFiles = new File[] {scalaLibraryFile, scalaReflectFile};
             }
 
+            getScalaLoader().getLogger().info("Loading scala libraries from disk");
             //load jar files.
             URL[] urls = new URL[jarFiles.length];
             for (int i = 0; i < jarFiles.length; i++) {
@@ -282,7 +298,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 }
             }
 
-            scalaLibraryLoader = new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), urls, scalaLoader.getClass().getClassLoader());
+            scalaLibraryLoader = new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), urls, lazyScalaLoader.getClass().getClassLoader());
         }
 
         //cache the resolved scala library classloader
@@ -297,7 +313,7 @@ public class ScalaPluginLoader implements PluginLoader {
      */
     @Override
     public Pattern[] getPluginFileFilters() {
-        return getPluginFileFilters().clone();
+        return pluginFileFilters.clone();
     }
 
     /**
@@ -310,7 +326,7 @@ public class ScalaPluginLoader implements PluginLoader {
      */
     @Override
     public Map<Class<? extends Event>, Set<RegisteredListener>> createRegisteredListeners(Listener listener, Plugin plugin) {
-        return javaPluginLoader.createRegisteredListeners(listener, plugin);
+        return getJavaPluginLoader().createRegisteredListeners(listener, plugin);
     }
 
     /**
@@ -327,7 +343,7 @@ public class ScalaPluginLoader implements PluginLoader {
             ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
             if (scalaPlugin.isEnabled()) return;
 
-            scalaLoader.getLogger().info("Enabling ScalaPlugin " + plugin.getDescription().getFullName());
+            getScalaLoader().getLogger().info("Enabling ScalaPlugin " + plugin.getDescription().getFullName());
 
             ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(scalaPlugin);
             server.getPluginManager().callEvent(event);
@@ -353,7 +369,7 @@ public class ScalaPluginLoader implements PluginLoader {
             ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
             if (!scalaPlugin.isEnabled()) return;
 
-            scalaLoader.getLogger().info("Disabling ScalaPlugin " + plugin.getDescription().getFullName());
+            getScalaLoader().getLogger().info("Disabling ScalaPlugin " + plugin.getDescription().getFullName());
 
             ScalaPluginDisableEvent event = new ScalaPluginDisableEvent(scalaPlugin);
             server.getPluginManager().callEvent(event);
@@ -406,7 +422,7 @@ public class ScalaPluginLoader implements PluginLoader {
             } catch (InvocationTargetException e) {
                 throw new ScalaPluginLoaderException("Error instantiating class " + clazz.getName() + ", its constructor threw something at us", e);
             } catch (NoSuchMethodException e) {
-                throw new ScalaPluginLoaderException("Could not find NoArgsContstructor in class " + clazz.getName(), e);
+                throw new ScalaPluginLoaderException("Could not find NoArgsConstructor in class " + clazz.getName(), e);
             } catch (InstantiationException e) {
                 throw new ScalaPluginLoaderException("Could not instantiate class " + clazz.getName(), e);
             }
