@@ -15,6 +15,25 @@
         <scala.version>2.12.6</scala.version>
     </properties>
 
+    <build>
+        <plugins>
+            <plugin>
+                <!-- TODO setup incremental compilation -->
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.4.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>testCompile</goal>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <repositories>
         <repository>
             <id>spigotmc-repo</id>
@@ -47,25 +66,5 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <!-- TODO setup incremental compilation -->
-
-        <plugins>
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>3.4.2</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>testCompile</goal>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>

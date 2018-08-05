@@ -1,6 +1,7 @@
+package xyz.janboerman.scalaloader.example.scala
+
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
-import xyz.janboerman.scalaloader.scala.Scala
-import xyz.janboerman.scalaloader.scala.ScalaVersion
+import xyz.janboerman.scalaloader.scala.{Scala, ScalaVersion}
 
 @Scala(version = ScalaVersion.v2_12_6)
 object ExamplePlugin
@@ -12,4 +13,6 @@ object ExamplePlugin
     override def onEnable(): Unit = {
         getLogger.info("Hello, World!");
     }
+
 }
+

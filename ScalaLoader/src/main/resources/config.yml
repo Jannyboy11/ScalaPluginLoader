@@ -1,0 +1,5 @@
+# When true, ScalaLoader loads scala library classes from files in its data folder.
+# If a required version of the library jar is not present ScalaLoader will attempt to download it.
+#
+# When false, ScalaLoader loads scala library classes from over the network.
+load-libraries-from-disk: true

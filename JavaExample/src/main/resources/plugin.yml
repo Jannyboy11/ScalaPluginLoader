@@ -1,4 +1,4 @@
 name: JavaExample
-main: xyz.janboerman.scalaloader.ExamplePlugin
+main: xyz.janboerman.scalaloader.example.java.ExamplePlugin
 version: {$project.version}
 depend: [ScalaLoader]
