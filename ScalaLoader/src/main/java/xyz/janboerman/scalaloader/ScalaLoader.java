@@ -31,19 +31,19 @@ public final class ScalaLoader extends JavaPlugin {
         }
 
         //load scala plugins
-        //getServer().getPluginManager().registerInterface(ScalaPluginLoader.class);
-        //getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
+        getServer().getPluginManager().registerInterface(ScalaPluginLoader.class);
+        getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
 
-        //TODO temporary! used for testing!
-        ScalaPluginLoader pluginLoader = new ScalaPluginLoader(getServer());
-        try {
-            File scalaExampleFile = new File(scalaPluginsFolder, "ScalaExample-0.1-SNAPSHOT.jar");
-            File javaExampleFile = new File(scalaPluginsFolder, "JavaExample-0.1-SNAPSHOT.jar");
-            pluginLoader.getPluginDescription(scalaExampleFile);
-            pluginLoader.getPluginDescription(javaExampleFile);
-        } catch (InvalidDescriptionException e) {
-            e.printStackTrace();
-        }
+        //TODO used for testing!
+//        ScalaPluginLoader pluginLoader = new ScalaPluginLoader(getServer());
+//        try {
+//            File scalaExampleFile = new File(scalaPluginsFolder, "ScalaExample-0.1-SNAPSHOT.jar");
+//            File javaExampleFile = new File(scalaPluginsFolder, "JavaExample-0.1-SNAPSHOT.jar");
+//            //pluginLoader.getPluginDescription(scalaExampleFile);
+//            pluginLoader.getPluginDescription(javaExampleFile);
+//        } catch (InvalidDescriptionException e) {
+//            e.printStackTrace();
+//        }
 
         //re-register the previous PluginLoader for .jar files to the pluginmanager (which is likely a JavaPluginLoader)
         //this should avoid the ScalaPluginLoader trying to load JavaPlugins

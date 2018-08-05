@@ -30,7 +30,7 @@ public class DescriptionScanner extends ClassVisitor {
     private ApiVersion bukkitApiVersion;
     private boolean extendsScalaPlugin;
     private boolean isAbstract;
-    private boolean hasNoArgsConstructor; //TODO implement the visitMethod method
+    private boolean hasNoArgsConstructor;
 
     public DescriptionScanner() {
         super(ASM_API_VERSION);
@@ -55,21 +55,18 @@ public class DescriptionScanner extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         mainClassCandidate = name.replace('/', '.');
-        isAbstract = (access ^ Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
+        isAbstract = (access & Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
         if (SCALAPLUGIN_CLASS_NAME.equals(superName)) {
             extendsScalaPlugin = true;
         }
     }
 
+    //visit constructor
     @Override
     public MethodVisitor visitMethod(int access, java.lang.String name, java.lang.String descriptor, java.lang.String signature, java.lang.String[] exceptions) {
-        Logger logger = JavaPlugin.getPlugin(ScalaLoader.class).getLogger(); //hacks!
-        logger.info("method name = " + name);
-        logger.info("method descriptor = " + descriptor);
-        logger.info("method signature = " + signature);
-        logger.info("method throws = " + Arrays.toString(exceptions));
-
-        //TODO set the hasNoArgsConstructor only if the consturctor is public (and has no arguments of course)
+        if ("<init>".equals(name) &&"()V".equals(descriptor) && (access & Opcodes.ACC_PUBLIC) == Opcodes.ACC_PUBLIC) {
+            hasNoArgsConstructor = true;
+        }
 
         return null;
     }

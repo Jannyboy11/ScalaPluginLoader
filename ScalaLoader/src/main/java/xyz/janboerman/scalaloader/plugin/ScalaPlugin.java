@@ -9,7 +9,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLogger;
 import org.bukkit.plugin.java.JavaPlugin;
-import xyz.janboerman.scalaloader.plugin.description.ScalaPluginDescription;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +22,8 @@ import java.util.logging.Logger;
 
 public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
-    private ScalaPluginDescription description;
+    private final ScalaPluginDescription description;
+    private PluginDescriptionFile lazyDescription;
 
     private Server server;
     private ScalaPluginLoader pluginLoader;
@@ -33,6 +33,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     private boolean naggable;
     private PluginLogger logger;
 
+    //TODO lazily assign config stuff. do I want to inject the config file similarly to the plugin.yml?
     private File configFile;
     private FileConfiguration config;
 
@@ -44,6 +45,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     //intentionally package protected
     final void init(ScalaPluginLoader pluginLoader, Server server, File dataFolder, File file, ScalaPluginClassLoader classLoader) {
+        //at this point, the description is set already :)
         this.server = server;
         this.pluginLoader = pluginLoader;
         this.file = file;
@@ -53,6 +55,10 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         this.logger = new PluginLogger(this);
     }
 
+    void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     //TODO protected PluginCommand getCommand(String name) ??
 
     protected ScalaPluginClassLoader getClassLoader() {
@@ -60,11 +66,11 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     }
 
     public final String getScalaVersion() {
-        return classLoader.getScalaVersion();
+        return getClassLoader().getScalaVersion();
     }
 
     public String getName() {
-        return description.getPluginName();
+        return description.getName();
     }
 
     @Override
@@ -72,9 +78,13 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         return dataFolder;
     }
 
+    ScalaPluginDescription getScalaDescription() {
+        return description;
+    }
+
     @Override
     public PluginDescriptionFile getDescription() {
-        return description.toPluginDescriptionFile();
+        return lazyDescription == null ? lazyDescription = description.toPluginDescriptionFile() : lazyDescription;
     }
 
     @Override
