@@ -1,14 +1,14 @@
-package xyz.janboerman.scalaloader.plugin;
+package xyz.janboerman.scalaloader.plugin.description;
 
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
+import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoadOrder;
 
 import java.util.*;
 
 public final class ScalaPluginDescription {
 
-    private final String scalaVersion;
     private String pluginName;
     private String pluginVersion;
     private PluginLoadOrder loadOrder;
@@ -18,19 +18,10 @@ public final class ScalaPluginDescription {
     private PermissionDefault permissionDefault = Permission.DEFAULT_PERMISSION;
 
     //TODO commands, permissions
-
-    public ScalaPluginDescription(String scalaVersion) {
-        this.scalaVersion = scalaVersion;
-    }
-
-    public ScalaPluginDescription(String scalaVersion, String pluginName, String pluginVersion) {
-        this.scalaVersion = Objects.requireNonNull(scalaVersion, "Scala scalaVersion cannot be null!");
+    
+    public ScalaPluginDescription(String pluginName, String pluginVersion) {
         this.pluginName = Objects.requireNonNull(pluginName, "Plugin name cannot be null!");
         this.pluginVersion = Objects.requireNonNull(pluginVersion, "Plugin scalaVersion cannot be null!");
-    }
-
-    public String getScalaVersion() {
-        return scalaVersion;
     }
 
     public String getPluginName() {
@@ -111,4 +102,8 @@ public final class ScalaPluginDescription {
         return permissionDefault;
     }
 
+    public PluginDescriptionFile toPluginDescriptionFile() {
+        //TODO
+        return null;
+    }
 }

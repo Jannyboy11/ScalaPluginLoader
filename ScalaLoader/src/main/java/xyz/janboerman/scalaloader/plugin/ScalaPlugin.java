@@ -9,6 +9,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLogger;
 import org.bukkit.plugin.java.JavaPlugin;
+import xyz.janboerman.scalaloader.plugin.description.ScalaPluginDescription;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,20 +40,6 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     protected ScalaPlugin(ScalaPluginDescription pluginDescription) {
         this.description = pluginDescription;
-
-        //still read the plugin yaml
-    }
-
-    protected ScalaPlugin() {
-        readPluginYmlDescription();
-    }
-
-    private void readPluginYmlDescription() {
-
-    }
-
-    public String getScalaVersion() {
-        return description.getScalaVersion();
     }
 
     //intentionally package protected
@@ -72,6 +59,10 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         return classLoader;
     }
 
+    public final String getScalaVersion() {
+        return classLoader.getScalaVersion();
+    }
+
     public String getName() {
         return description.getPluginName();
     }
@@ -83,7 +74,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     @Override
     public PluginDescriptionFile getDescription() {
-        return null; //TODO
+        return description.toPluginDescriptionFile();
     }
 
     @Override
@@ -199,4 +190,22 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         return getName().compareTo(other.getName());
     }
 
+    @Override
+    public boolean equals(Object other) {
+        if (other == this) return true;
+        if (other == null) return false;
+        if (!(other instanceof Plugin)) return false;
+        Plugin that = (Plugin) other;
+        return Objects.equals(this.getName(), that.getName());
+    }
+
+    @Override
+    public int hashCode() {
+        return getName().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
 }

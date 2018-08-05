@@ -6,14 +6,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
-import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
 import xyz.janboerman.scalaloader.ScalaLoader;
-import xyz.janboerman.scalaloader.scala.CustomScala;
-import xyz.janboerman.scalaloader.scala.Scala;
-import xyz.janboerman.scalaloader.scala.ScalaVersion;
+import xyz.janboerman.scalaloader.plugin.description.DescriptionScanner;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,13 +16,16 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class ScalaPluginLoader implements PluginLoader {
     //TODO the pluginloader should only have one instance.
     //TODO the pluginclassloader has per-plugin instances.
@@ -41,13 +39,16 @@ public class ScalaPluginLoader implements PluginLoader {
 
     private final Map<String, ScalaLibraryClassLoader> scalaVersionParentLoaders = new HashMap<>();
 
-    private final Map<String, Class<?>> classes = new HashMap<>();
-    private final List<ScalaPluginClassLoader> loaders = new CopyOnWriteArrayList<>();
+    private final Map<String, Class<?>> sharedScalaPluginClasses = new HashMap<>();
+    private final Map<String, ScalaPlugin> scalaPlugins = new HashMap<>();
+
+    //TODO do I need to keep track of the loaders?
+    //private final List<ScalaPluginClassLoader> loaders = new CopyOnWriteArrayList<>();
 
     public ScalaPluginLoader(Server server) {
         this.server = Objects.requireNonNull(server, "Server cannot be null!");
         this.scalaLoader = JavaPlugin.getPlugin(ScalaLoader.class);
-        this.javaPluginLoader = (JavaPluginLoader) scalaLoader.getPluginLoader();
+        this.javaPluginLoader = (JavaPluginLoader) scalaLoader.getPluginLoader(); //TODO might fail if the
     }
 
     /**
@@ -80,12 +81,21 @@ public class ScalaPluginLoader implements PluginLoader {
      */
     @Override
     public PluginDescriptionFile getPluginDescription(File file) throws InvalidDescriptionException {
+        //filled optionals are smaller then empty optionals.
+        Comparator<Optional<?>> optionalComparator = Comparator.comparing(optional -> !optional.isPresent());
+        //smaller package hierarchy = smaller string
+        Comparator<String> packageComparator = Comparator.comparing(className -> className.split("\\."), Comparator.comparing(array -> array.length));
 
-
-        //TODO read plugin information from bytecode. can we just call getDescription? we would need to instantiate the plugin for that.
-        //TODO is it okay to do that? probably.
+        //smaller element = better main class candidate!
+        Comparator<DescriptionScanner> descriptionComparator = Comparator.nullsLast(Comparator /* get rid of null descriptors */
+                .<DescriptionScanner, Optional<?>>comparing(DescriptionScanner::getMainClass, optionalComparator /* get rid of descriptions without a main class */)
+                .thenComparing(DescriptionScanner::extendsScalaPlugin /* classes that extend ScalaPlugin directly are less likely to be the best candidate. */)
+                .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* never fails because empty optionals are larger anyway :) */, packageComparator)
+                .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* fallback - just compare the class strings */));
 
         try {
+            DescriptionScanner mainClassCandidate = null;
+
             JarFile jarFile = new JarFile(file);
             Enumeration<JarEntry> entryEnumeration = jarFile.entries();
             while (entryEnumeration.hasMoreElements()) {
@@ -93,32 +103,87 @@ public class ScalaPluginLoader implements PluginLoader {
                 if (jarEntry.getName().endsWith(".class")) {
                     InputStream classBytesInputStream = jarFile.getInputStream(jarEntry);
 
-                    ScalaVersionScanner scalaVersionScanner = new ScalaVersionScanner();
+                    DescriptionScanner descriptionScanner = new DescriptionScanner();
                     ClassReader classReader = new ClassReader(classBytesInputStream);
-                    classReader.accept(scalaVersionScanner, 0);
+                    classReader.accept(descriptionScanner, 0);
 
-                    scalaLoader.getLogger().info("Scanned scala version for plugin class "
-                            + scalaVersionScanner.getMainClassCandidates() + " = "
-                            + scalaVersionScanner.getScalaVersion());
+                    scalaLoader.getLogger().info("DEBUG Description Scanner = " + descriptionScanner);
+
+                    //Emit a warning when the class does extend ScalaPlugin, but does not have de @Scala or @CustomScala annotation
+                    if (descriptionScanner.extendsScalaPlugin() && !descriptionScanner.getScalaVersion().isPresent()) {
+                        scalaLoader.getLogger().warning("Class " + jarEntry.getName() + " extends ScalaPlugin but does not have the @Scala or @CustomScala annotation.");
+                    }
+
+                    //TODO in the future I could transform the class to use the the relocated scala library?
+
+                    //The smallest element is the best candidate!
+                    mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
+
 
                 } else if (jarEntry.getName().equals("plugin.yml")) {
-                    //TODO unsupported! use annotations instead!
-                } else {
-                    //scalaLoader.getLogger().info("not a class, nor plugin.yml entry: " + jarEntry.getName());
+                    scalaLoader.getLogger().warning("Found plugin.yml in scala plugin. Ignoring.");
                 }
 
-                jarFile.getInputStream(jarEntry);
             }
 
+            if (mainClassCandidate == null) {
+                throw new InvalidDescriptionException("Could not find main class in file " + file.getName() + ". Did you annotate your main class with @Scala?");
+            }
+
+            PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();
+
+            try {
+                //load scala version if not already present
+                ScalaLibraryClassLoader scalaLibraryClassLoader = loadOrGetScalaVersion(scalaVersion);
+                ScalaPluginClassLoader scalaPluginClassLoader = new ScalaPluginClassLoader(new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader);
+
+                //create our plugin
+                Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClassCandidate.getMainClass().get(), true, scalaPluginClassLoader);
+                ScalaPlugin plugin = createPluginInstance(pluginMainClass);
+                plugin.init(this, server, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
+                if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
+                    throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
+                }
+                return plugin.getDescription();
+
+            } catch (ScalaPluginLoaderException e) {
+                throw new InvalidDescriptionException(e, "Failed to create scala library classloader");
+            } catch (ClassNotFoundException e) {
+                throw new InvalidDescriptionException(e, "Could find the class that was found the main class");
+            } catch (NoClassDefFoundError e) {
+                throw new InvalidDescriptionException(e,
+                        "Your plugin's constructor and/or initializer blocks tried to access classes that were not yet loaded." +
+                        "Try to move stuff over to onLoad().");
+            }
 
         } catch (IOException e) {
             throw new InvalidDescriptionException(e, "Could not read jar file " + file.getName());
         }
+    }
 
-        //TODO scala plugins are loaded differently from java plugins
-        //TODO namely, scala plugins can provide their plugin description in regular code.
-        //TODO we load our plugin
-        return null;
+
+    private ScalaLibraryClassLoader loadOrGetScalaVersion(PluginScalaVersion scalaVersion) throws ScalaPluginLoaderException {
+        ScalaLibraryClassLoader scalaLibraryLoader = scalaVersionParentLoaders.get(scalaVersion);
+        if (scalaLibraryLoader != null) return scalaLibraryLoader;
+
+        if (!scalaLoader.downloadScalaJarFiles()) {
+            //load classes over the network
+            try {
+                new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), new URL[]{
+                        new URL(scalaVersion.getScalaLibraryUrl()),
+                        new URL(scalaVersion.getScalaReflectUrl())
+                }, scalaLoader.getClass().getClassLoader());
+            } catch (MalformedURLException e) {
+                throw new ScalaPluginLoaderException("Could not load scala libraries for version " + scalaVersion, e);
+            }
+        } else {
+            //check if downloaded already (if not, do download)
+            //then load classes from the downloaded jar
+
+            //TODO!!!!!!
+        }
+
+        throw new ScalaPluginLoaderException("Could not load scala libraries for version " + scalaVersion);
     }
 
     /**
@@ -176,14 +241,14 @@ public class ScalaPluginLoader implements PluginLoader {
      * @return the plugin's instance.
      * @throws ScalaPluginLoaderException
      */
-    private <P extends ScalaPlugin> P getPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
+    private <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
         boolean weFoundAScalaSingletonObject = false;
 
         if (clazz.getName().endsWith("$")) {
             weFoundAScalaSingletonObject = true;
 
             //we found a scala singleton object.
-            //there must be a class with the same name, that holds our instance.
+            //the instance is already present in the MODULE$ field when this class is loaded.
 
             try {
                 Field field = clazz.getField("MODULE$");
@@ -197,7 +262,7 @@ public class ScalaPluginLoader implements PluginLoader {
             }
         }
 
-        if (!weFoundAScalaSingletonObject) /*IntelliJ your code inspection is lying.*/ {
+        if (!weFoundAScalaSingletonObject) /*IntelliJ your code inspection is lying. this is not an else-if.*/ {
             //we found are a regular class.
             //it should have a NoArgsConstructor.
 
@@ -219,117 +284,6 @@ public class ScalaPluginLoader implements PluginLoader {
         }
 
         else return null;
-    }
-
-    public PluginScalaVersion readScalaPlugin(byte[] classBytes) {
-        //TODO return compound object - the PluginScalaVersion * Plugin Main Class *
-        return null;
-    }
-
-}
-
-/**
- * Annotation scanner dat reads the scala version from the plugin's main class.
- */
-class ScalaVersionScanner extends ClassVisitor {
-
-    private static final String SCALAPLUGIN_CLASS_NAME = ScalaPlugin.class.getName().replace('.', '/');
-    private static final String SCALA_ANNOTATION_DESCRIPTOR = "L" + Scala.class.getName().replace('.', '/') + ";";
-    private static final String CUSTOMSCALA_ANNOTATION_DESCRIPTOR = "L" + CustomScala.class.getName().replace('.', '/') + ";";
-
-    private final LinkedHashSet<String> mainClassCandidates = new LinkedHashSet<>();
-
-    private PluginScalaVersion scalaVersion;
-
-    ScalaVersionScanner() {
-        super(Opcodes.ASM6);
-    }
-
-    //TODO emit a warning when the class does extend ScalaPlugin, but does not have de @Scala or @CustomScala annotation.
-
-    @Override
-    public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-
-        if (SCALA_ANNOTATION_DESCRIPTOR.equals(descriptor)) {
-            return new ScalaAnnotationVisitor(this);
-        } else if (CUSTOMSCALA_ANNOTATION_DESCRIPTOR.equals(descriptor)) {
-            return new CustomScalaAnnotationVisitor(this);
-        }
-
-        return null;
-    }
-
-    @Override
-    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        if (SCALAPLUGIN_CLASS_NAME.equals(superName)) {
-            mainClassCandidates.add(name.replace('/', '.'));
-        }
-    }
-
-    public Set<String> getMainClassCandidates() {
-        return Collections.unmodifiableSet(mainClassCandidates);
-    }
-
-    void setScalaVersion(PluginScalaVersion scalaVersion) {
-        this.scalaVersion = scalaVersion;
-    }
-
-    public PluginScalaVersion getScalaVersion() {
-        return scalaVersion;
-    }
-}
-
-class ScalaAnnotationVisitor extends AnnotationVisitor {
-
-    private final ScalaVersionScanner scalaVersionScanner;
-
-    private ScalaVersion scalaVersion;
-
-    ScalaAnnotationVisitor(ScalaVersionScanner scanner) {
-        super(Opcodes.ASM6);
-        this.scalaVersionScanner = scanner;
-    }
-
-    @Override
-    public void visitEnum(String name, String descriptor, String value) {
-        //should always be ScalaVersion!
-        this.scalaVersion = ScalaVersion.valueOf(value);
-    }
-
-    @Override
-    public void visitEnd() {
-        scalaVersionScanner.setScalaVersion(PluginScalaVersion.fromScalaVersion(scalaVersion));
-    }
-}
-
-class CustomScalaAnnotationVisitor extends AnnotationVisitor {
-    private final ScalaVersionScanner scalaVersionScanner;
-
-    private String version, scalaLibrary, scalaReflect;
-
-    CustomScalaAnnotationVisitor(ScalaVersionScanner scanner) {
-        super(Opcodes.ASM6);
-        this.scalaVersionScanner = scanner;
-    }
-
-    @Override
-    public AnnotationVisitor visitAnnotation(String name, String descriptor) {
-        //visits the Version value() field
-        return new AnnotationVisitor(Opcodes.ASM6) {
-            @Override
-            public void visit(String name, Object value) {
-                switch(name) {
-                    case "value":               version         = value.toString();     break;
-                    case "scalaLibraryUrl":     scalaLibrary    = value.toString();     break;
-                    case "scalaReflectUrl":     scalaReflect    = value.toString();     break;
-                }
-            }
-        };
-    }
-
-    @Override
-    public void visitEnd() {
-        scalaVersionScanner.setScalaVersion(new PluginScalaVersion(version, scalaLibrary, scalaReflect));
     }
 
 }

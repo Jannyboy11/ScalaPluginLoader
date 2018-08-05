@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.scala;
+package xyz.janboerman.scalaloader.plugin.description;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

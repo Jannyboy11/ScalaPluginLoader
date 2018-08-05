@@ -8,4 +8,7 @@ public class ScalaPluginLoaderException extends InvalidPluginException {
         super(message, cause);
     }
 
+    public ScalaPluginLoaderException(String message) {
+        super(message);
+    }
 }

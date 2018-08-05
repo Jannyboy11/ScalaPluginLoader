@@ -2,7 +2,7 @@ package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
-import xyz.janboerman.scalaloader.scala.ScalaVersion;
+import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,19 +11,32 @@ import java.util.Objects;
 @SerializableAs("ScalaVersion")
 public final class PluginScalaVersion implements ConfigurationSerializable {
 
-    final String scalaVersion;
-    final String scalaLibraryUrl;
-    final String scalaReflectUrl;
+    private final String scalaVersion;
+    private final String scalaLibraryUrl;
+    private final String scalaReflectUrl;
 
-    PluginScalaVersion(String scalaVersion, String libraryUrl, String reflectUrl) {
+    public PluginScalaVersion(String scalaVersion, String libraryUrl, String reflectUrl) {
         this.scalaVersion = Objects.requireNonNull(scalaVersion, "scala scalaVersion cannot be null!");
         this.scalaLibraryUrl = Objects.requireNonNull(libraryUrl, "scala standard library url cannot be null!");
         this.scalaReflectUrl = Objects.requireNonNull(reflectUrl, "scala reflection library url cannot be null!");
     }
 
-    //TODO move this method to the plugin loader?
-    static String packagePrefix(String scalaVersion) {
-        return scalaVersion.replaceAll("\\W", "_");
+      // not needed (yet?) as we don't relocate scala classes to per-version packages
+      // instead, we are using a classloader hierarchy
+//    static String packagePrefix(String scalaVersion) {
+//        return scalaVersion.replaceAll("\\W", "_");
+//    }
+
+    public String getScalaVersion() {
+        return scalaVersion;
+    }
+
+    public String getScalaLibraryUrl() {
+        return scalaLibraryUrl;
+    }
+
+    public String getScalaReflectUrl() {
+        return scalaReflectUrl;
     }
 
     @Override
@@ -48,9 +61,9 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
     @Override
     public Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
-        map.put("scala-version", scalaVersion);
-        map.put("scala-library-url", scalaLibraryUrl);
-        map.put("scala-reflect-url", scalaReflectUrl);
+        map.put("scala-version", getScalaVersion());
+        map.put("scala-library-url", getScalaLibraryUrl());
+        map.put("scala-reflect-url", getScalaReflectUrl());
         return map;
     }
 
@@ -63,7 +76,7 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
 
     public static PluginScalaVersion fromScalaVersion(ScalaVersion scalaVersion) {
         return new PluginScalaVersion(
-                scalaVersion.getName(),
+                scalaVersion.getVersion(),
                 scalaVersion.getScalaLibraryUrl(),
                 scalaVersion.getScalaReflectUrl());
     }

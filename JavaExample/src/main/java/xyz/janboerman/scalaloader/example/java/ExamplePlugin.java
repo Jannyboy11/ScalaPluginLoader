@@ -3,15 +3,18 @@ package xyz.janboerman.scalaloader.example.java;
 import scala.Option;
 import scala.Some;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
-import xyz.janboerman.scalaloader.scala.CustomScala;
-import xyz.janboerman.scalaloader.scala.Scala;
-import xyz.janboerman.scalaloader.scala.ScalaVersion;
-import xyz.janboerman.scalaloader.scala.Version;
+import xyz.janboerman.scalaloader.plugin.description.CustomScala;
+import xyz.janboerman.scalaloader.plugin.description.ScalaPluginDescription;
+import xyz.janboerman.scalaloader.plugin.description.Version;
 
 @CustomScala(@Version(value = "2.12.6",
         scalaLibraryUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.6%2Fscala-reflect-2.12.6.jar",
         scalaReflectUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.6%2Fscala-library-2.12.6.jar"))
 public class ExamplePlugin extends ScalaPlugin {
+
+    protected ExamplePlugin() {
+        super(new ScalaPluginDescription("JavaExample", "0.1-SNAPSHOT"));
+    }
 
     @Override
     public void onEnable() {
