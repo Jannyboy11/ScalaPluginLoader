@@ -11,8 +11,6 @@ object ExamplePlugin extends ScalaPlugin(new ScalaPluginDescription(
         "ScalaExample",
         "0.1-SNAPSHOT")) with Listener {
 
-    getLogger().info("ScalaExample - I am constructed!")
-
     override def onLoad(): Unit = {
         getLogger.info("ScalaExample - I am loaded!")
     }
