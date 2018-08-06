@@ -31,7 +31,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     private File dataFolder;
     private File file;
     private ScalaPluginClassLoader classLoader;
-    private boolean naggable;
+    private boolean naggable = true;
 
     //TODO lazily assign config stuff. do I want to inject the config file similarly to the plugin.yml?
     private File configFile;

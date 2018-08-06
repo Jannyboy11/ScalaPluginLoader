@@ -108,10 +108,10 @@ public class ScalaPluginLoader implements PluginLoader {
                     //The smallest element is the best candidate!
                     mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
 
-
                 } else if (jarEntry.getName().equals("plugin.yml")) {
-                    getScalaLoader().getLogger().warning("Found plugin.yml in scala plugin. Ignoring..");
-                    //TODO should probably not ignore - just add the fields to the ScalaPluginDescription
+                    getScalaLoader().getLogger().warning("Found plugin.yml in scala plugin " + file.getName() + ". Ignoring..");
+                    //TODO should probably inspect the plugin yaml. if it contains a main class we should delegate to the JavaPluginLoader
+                    //TODO if it doesn't contain a main class then we add the 'fields' of the plugin yaml to the ScalaPluginDescription.
                 }
             } //end while - no more JarEntries
 
@@ -134,36 +134,32 @@ public class ScalaPluginLoader implements PluginLoader {
                 //create plugin classloader using the resolved scala classloader
                 ScalaPluginClassLoader scalaPluginClassLoader = new ScalaPluginClassLoader(new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader);
 
-                try {
+                //create our plugin
+                final String mainClass = mainClassCandidate.getMainClass().get();
+                Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClass, true, scalaPluginClassLoader);
+                ScalaPlugin plugin = createPluginInstance(pluginMainClass);
 
-                    //create our plugin
-                    final String mainClass = mainClassCandidate.getMainClass().get();
-                    Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClass, true, scalaPluginClassLoader);
-                    ScalaPlugin plugin = createPluginInstance(pluginMainClass);
+                //api version and main class are detected from the annotation
+                plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
+                plugin.getScalaDescription().setMain(mainClass); //required per PluginDescriptionFile constructor - not actually used.
 
-                    //api version and main class are detected from the annotation
-                    plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
-                    plugin.getScalaDescription().setMain(mainClass); //required per PluginDescriptionFile constructor - not actually used.
-
-                    //just init, don't load yet.
-                    plugin.init(this, server, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
-                    if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
-                        throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
-                    }
-
-                    //be sure to cache the plugin - later in loadPlugin we just return the cached instance!
-                    scalaPluginsByFile.put(file, plugin);
-                    return plugin.getDescription();
-
-                } catch (ClassNotFoundException e) {
-                    throw new InvalidDescriptionException(e, "Could find the class that was found the main class");
-                } catch (NoClassDefFoundError e) {
-                    throw new InvalidDescriptionException(e,
-                            "Your plugin's constructor and/or initializer blocks tried to access classes that were not yet loaded." +
-                                    "Try to move stuff over to onLoad() and onEnable().");
+                //just init, don't load yet.
+                plugin.init(this, server, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
+                if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
+                    throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
                 }
+
+                //be sure to cache the plugin - later in loadPlugin we just return the cached instance!
+                scalaPluginsByFile.put(file, plugin);
+                return plugin.getDescription();
+
+            } catch (ClassNotFoundException e) {
+                throw new InvalidDescriptionException(e, "Could find the class that was found the main class");
+            } catch (NoClassDefFoundError e) {
+                throw new InvalidDescriptionException(e,
+                        "Your plugin's constructor and/or initializers tried to access classes that were not yet loaded. " +
+                                "Try to move stuff over to onLoad() and onEnable().");
             } catch (ScalaPluginLoaderException e) {
-                //TODO this is probably the wrong exception message NEEDS FIXING
                 throw new InvalidDescriptionException(e, "Failed to create scala library classloader");
             }
 
@@ -198,6 +194,141 @@ public class ScalaPluginLoader implements PluginLoader {
         plugin.getLogger().info("Loading " + plugin.getDescription().getFullName());
         plugin.onLoad();
         return plugin;
+    }
+
+    /**
+     * Enables the specified plugin
+     * <p>
+     * Attempting to enable a plugin that is already enabled will have no
+     * effect
+     *
+     * @param plugin Plugin to enable
+     */
+    @Override
+    public void enablePlugin(Plugin plugin) {
+        if (plugin instanceof JavaPlugin) {
+          getJavaPluginLoader().enablePlugin(plugin);
+        } else if (plugin instanceof ScalaPlugin) {
+            ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
+            if (scalaPlugin.isEnabled()) return;
+
+            ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(scalaPlugin);
+            server.getPluginManager().callEvent(event);
+            if (event.isCancelled()) return;
+
+            plugin.getLogger().info("Enabling " + plugin.getDescription().getFullName());
+            scalaPlugin.setEnabled(true);
+            scalaPlugin.onEnable();
+        } else {
+            throw new IllegalArgumentException("ScalaPluginLoader can only enable " + ScalaPlugin.class.getSimpleName() + "s");
+        }
+    }
+
+    /**
+     * Disables the specified plugin
+     * <p>
+     * Attempting to disable a plugin that is not enabled will have no effect
+     *
+     * @param plugin Plugin to disable
+     */
+    @Override
+    public void disablePlugin(Plugin plugin) {
+        if (plugin instanceof JavaPlugin) {
+            getJavaPluginLoader().disablePlugin(plugin);
+        } else if (plugin instanceof ScalaPlugin) {
+            ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
+            if (!scalaPlugin.isEnabled()) return;
+
+            ScalaPluginDisableEvent event = new ScalaPluginDisableEvent(scalaPlugin);
+            server.getPluginManager().callEvent(event);
+            if (event.isCancelled()) return;
+
+            plugin.getLogger().info("Disabling " + plugin.getDescription().getFullName());
+            scalaPlugin.onDisable();
+            scalaPlugin.setEnabled(false);
+        }
+    }
+
+    /**
+     * Returns a list of all filename filters expected by this PluginLoader
+     *
+     * @return The filters
+     */
+    @Override
+    public Pattern[] getPluginFileFilters() {
+        Pattern[] patterns = getScalaLoader().getJavaPluginLoaderPattners();
+        if (patterns != null) return patterns;
+        return pluginFileFilters.clone();
+    }
+
+    /**
+     * Creates and returns registered listeners for the event classes used in
+     * this listener
+     *
+     * @param listener The object that will handle the eventual call back
+     * @param plugin   The plugin to use when creating registered listeners
+     * @return The registered listeners.
+     */
+    @Override
+    public Map<Class<? extends Event>, Set<RegisteredListener>> createRegisteredListeners(Listener listener, Plugin plugin) {
+        return getJavaPluginLoader().createRegisteredListeners(listener, plugin);
+    }
+
+    /**
+     * Tries to get the plugin instance from the scala plugin class.
+     * This method is able to get the static instances from scala `object`s,
+     * as well as it is able to create plugins using their public NoArgsConstructors.
+     * @param clazz the plugin class
+     * @param <P> the plugin type
+     * @return the plugin's instance.
+     * @throws ScalaPluginLoaderException
+     */
+    private <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
+        boolean weFoundAScalaSingletonObject = false;
+
+        if (clazz.getName().endsWith("$")) {
+            weFoundAScalaSingletonObject = true;
+
+            //we found a scala singleton object.
+            //the instance is already present in the MODULE$ field when this class is loaded.
+
+            try {
+                Field field = clazz.getField("MODULE$");
+                Object pluginInstance = field.get(null);
+
+                getScalaLoader().getLogger().info("DEBUG got plugin instance for class " + clazz.getName() + " from the static MODULE$ field.");
+
+                return clazz.cast(pluginInstance);
+            } catch (NoSuchFieldException e) {
+                weFoundAScalaSingletonObject = false; //back paddle!
+            } catch (IllegalAccessException e) {
+                throw new ScalaPluginLoaderException("Couldn't access MODULE$ field in class " + clazz.getName(), e);
+            }
+        }
+
+        if (!weFoundAScalaSingletonObject) /*IntelliJ your code inspection is lying. this is not an else-if.*/ {
+            //we found are a regular class.
+            //it should have a NoArgsConstructor.
+
+            try {
+                Constructor ctr = clazz.getConstructor();
+                Object pluginInstance = ctr.newInstance();
+
+                getScalaLoader().getLogger().info("DEBUG got plugin instance for class " + clazz.getName() + " form the NoArgsConstructor.");
+
+                return clazz.cast(pluginInstance);
+            } catch (IllegalAccessException e) {
+                throw new ScalaPluginLoaderException("Could not access the NoArgsConstructor of " + clazz.getName() + ", please make it public", e);
+            } catch (InvocationTargetException e) {
+                throw new ScalaPluginLoaderException("Error instantiating class " + clazz.getName() + ", its constructor threw something at us", e);
+            } catch (NoSuchMethodException e) {
+                throw new ScalaPluginLoaderException("Could not find NoArgsConstructor in class " + clazz.getName(), e);
+            } catch (InstantiationException e) {
+                throw new ScalaPluginLoaderException("Could not instantiate class " + clazz.getName(), e);
+            }
+        }
+
+        else return null;
     }
 
 
@@ -310,140 +441,6 @@ public class ScalaPluginLoader implements PluginLoader {
         //cache the resolved scala library classloader
         scalaVersionParentLoaders.put(scalaVersion.getScalaVersion(), scalaLibraryLoader);
         return scalaLibraryLoader;
-    }
-
-    /**
-     * Returns a list of all filename filters expected by this PluginLoader
-     *
-     * @return The filters
-     */
-    @Override
-    public Pattern[] getPluginFileFilters() {
-        return pluginFileFilters.clone();
-    }
-
-    /**
-     * Creates and returns registered listeners for the event classes used in
-     * this listener
-     *
-     * @param listener The object that will handle the eventual call back
-     * @param plugin   The plugin to use when creating registered listeners
-     * @return The registered listeners.
-     */
-    @Override
-    public Map<Class<? extends Event>, Set<RegisteredListener>> createRegisteredListeners(Listener listener, Plugin plugin) {
-        return getJavaPluginLoader().createRegisteredListeners(listener, plugin);
-    }
-
-    /**
-     * Enables the specified plugin
-     * <p>
-     * Attempting to enable a plugin that is already enabled will have no
-     * effect
-     *
-     * @param plugin Plugin to enable
-     */
-    @Override
-    public void enablePlugin(Plugin plugin) {
-        if (plugin instanceof ScalaPlugin) {
-            ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
-            if (scalaPlugin.isEnabled()) return;
-
-            getScalaLoader().getLogger().info("Enabling ScalaPlugin " + plugin.getDescription().getFullName());
-
-            ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(scalaPlugin);
-            server.getPluginManager().callEvent(event);
-            if (event.isCancelled()) return;
-
-            scalaPlugin.setEnabled(true);
-            plugin.getLogger().info("Enabling " + plugin.getDescription().getFullName());
-            scalaPlugin.onEnable();
-        } else {
-            throw new IllegalArgumentException("ScalaPluginLoader can only enable " + ScalaPlugin.class.getSimpleName() + "s");
-        }
-    }
-
-    /**
-     * Disables the specified plugin
-     * <p>
-     * Attempting to disable a plugin that is not enabled will have no effect
-     *
-     * @param plugin Plugin to disable
-     */
-    @Override
-    public void disablePlugin(Plugin plugin) {
-        if (plugin instanceof ScalaPlugin) {
-            ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
-            if (!scalaPlugin.isEnabled()) return;
-
-            getScalaLoader().getLogger().info("Disabling ScalaPlugin " + plugin.getDescription().getFullName());
-
-            ScalaPluginDisableEvent event = new ScalaPluginDisableEvent(scalaPlugin);
-            server.getPluginManager().callEvent(event);
-            if (event.isCancelled()) return;
-
-            plugin.getLogger().info("Disabling " + plugin.getDescription().getFullName());
-            scalaPlugin.onDisable();
-            scalaPlugin.setEnabled(false);
-        }
-    }
-
-    /**
-     * Tries to get the plugin instance from the scala plugin class.
-     * @param clazz the plugin class
-     * @param <P> the plugin type
-     * @return the plugin's instance.
-     * @throws ScalaPluginLoaderException
-     */
-    private <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
-        getScalaLoader().getLogger().info("DEBUG Attempting to instantiate (or get) plugin instance for class " + clazz);
-
-        boolean weFoundAScalaSingletonObject = false;
-
-        if (clazz.getName().endsWith("$")) {
-            weFoundAScalaSingletonObject = true;
-
-            //we found a scala singleton object.
-            //the instance is already present in the MODULE$ field when this class is loaded.
-
-            try {
-                Field field = clazz.getField("MODULE$");
-                Object pluginInstance = field.get(null);
-
-                getScalaLoader().getLogger().info("DEBUG got plugin instance for class " + clazz.getName() + " from the static MODULE$ field.");
-
-                return clazz.cast(pluginInstance);
-            } catch (NoSuchFieldException e) {
-                weFoundAScalaSingletonObject = false; //back paddle!
-            } catch (IllegalAccessException e) {
-                throw new ScalaPluginLoaderException("Couldn't access MODULE$ field in class " + clazz.getName(), e);
-            }
-        }
-
-        if (!weFoundAScalaSingletonObject) /*IntelliJ your code inspection is lying. this is not an else-if.*/ {
-            //we found are a regular class.
-            //it should have a NoArgsConstructor.
-
-            try {
-                Constructor ctr = clazz.getConstructor();
-                Object pluginInstance = ctr.newInstance();
-
-                getScalaLoader().getLogger().info("DEBUG got plugin instance for class " + clazz.getName() + " form the NoArgsConstructor.");
-
-                return clazz.cast(pluginInstance);
-            } catch (IllegalAccessException e) {
-                throw new ScalaPluginLoaderException("Could not access the NoArgsConstructor of " + clazz.getName() + ", please make it public", e);
-            } catch (InvocationTargetException e) {
-                throw new ScalaPluginLoaderException("Error instantiating class " + clazz.getName() + ", its constructor threw something at us", e);
-            } catch (NoSuchMethodException e) {
-                throw new ScalaPluginLoaderException("Could not find NoArgsConstructor in class " + clazz.getName(), e);
-            } catch (InstantiationException e) {
-                throw new ScalaPluginLoaderException("Could not instantiate class " + clazz.getName(), e);
-            }
-
-        }
-
-        else return null;
     }
 
 }

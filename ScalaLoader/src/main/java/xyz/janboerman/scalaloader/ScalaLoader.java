@@ -29,6 +29,7 @@ public final class ScalaLoader extends JavaPlugin {
     private File scalaPluginsFolder;
     private JavaPluginLoader weFoundTheJavaPluginLoader;
     private Map<Pattern, PluginLoader> pluginLoaderMap;
+    private Pattern[] javaPluginLoaderPattners;
 
     public ScalaLoader() {
         //dirty hack to override the previous pattern.
@@ -49,6 +50,7 @@ public final class ScalaLoader extends JavaPlugin {
                 Map.Entry<Pattern, PluginLoader> entry = iterator.next();
                 if (entry.getValue() instanceof JavaPluginLoader) {
                     weFoundTheJavaPluginLoader = (JavaPluginLoader) entry.getValue();
+                    javaPluginLoaderPattners = weFoundTheJavaPluginLoader.getPluginFileFilters();
                     entry.setValue(scalaPluginLoader);
                 }
             }
@@ -60,6 +62,10 @@ public final class ScalaLoader extends JavaPlugin {
 
         iActuallyManagedToOverrideTheDefaultJavaPluginLoader = myHackWorked;
 
+    }
+
+    public Pattern[] getJavaPluginLoaderPattners() {
+        return javaPluginLoaderPattners;
     }
 
     @Override
