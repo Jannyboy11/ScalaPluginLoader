@@ -159,10 +159,10 @@ public final class ScalaPluginDescription {
         //TODO commands, permissions
 
         PipedOutputStream pipedOutputStream = new PipedOutputStream();
-        Yaml yaml = new Yaml();
-        yaml.dump(pluginData, new OutputStreamWriter(pipedOutputStream));
         try {
             PipedInputStream yamlImputStream = new PipedInputStream(pipedOutputStream);
+            Yaml yaml = new Yaml();
+            yaml.dump(pluginData, new OutputStreamWriter(pipedOutputStream));
             return new PluginDescriptionFile(yamlImputStream);
         } catch (IOException | InvalidDescriptionException e) {
             e.printStackTrace();

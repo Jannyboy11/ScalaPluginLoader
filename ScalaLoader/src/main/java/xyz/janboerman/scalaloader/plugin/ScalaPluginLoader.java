@@ -388,6 +388,8 @@ public class ScalaPluginLoader implements PluginLoader {
      * @throws ScalaPluginLoaderException
      */
     private <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
+        getScalaLoader().getLogger().info("DEBUG Attempting to instantiate (or get) plugin instance for class " + clazz);
+
         boolean weFoundAScalaSingletonObject = false;
 
         if (clazz.getName().endsWith("$")) {
@@ -399,6 +401,8 @@ public class ScalaPluginLoader implements PluginLoader {
             try {
                 Field field = clazz.getField("MODULE$");
                 Object pluginInstance = field.get(null);
+
+                getScalaLoader().getLogger().info("DEBUG got plugin instance for class " + clazz.getName() + " from the static MODULE$ field.");
 
                 return clazz.cast(pluginInstance);
             } catch (NoSuchFieldException e) {
@@ -415,6 +419,8 @@ public class ScalaPluginLoader implements PluginLoader {
             try {
                 Constructor ctr = clazz.getConstructor();
                 Object pluginInstance = ctr.newInstance();
+
+                getScalaLoader().getLogger().info("DEBUG got plugin instance for class " + clazz.getName() + " form the NoArgsConstructor.");
 
                 return clazz.cast(pluginInstance);
             } catch (IllegalAccessException e) {

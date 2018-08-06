@@ -20,6 +20,8 @@ public class DescriptionScanner extends ClassVisitor {
     private static final int ASM_API_VERSION = Opcodes.ASM6;
 
     private static final String SCALAPLUGIN_CLASS_NAME = ScalaPlugin.class.getName().replace('.', '/');
+    private static final String JAVA_LANG_OBJECT_CLASS_NAME = Object.class.getName().replace('.', '/');
+
     private static final String SCALA_ANNOTATION_DESCRIPTOR = "L" + Scala.class.getName().replace('.', '/') + ";";
     private static final String CUSTOMSCALA_ANNOTATION_DESCRIPTOR = "L" + CustomScala.class.getName().replace('.', '/') + ";";
     private static final String API_ANNOTATION_DESCRIPTOR = "L" + Api.class.getName().replace('.', '/') + ";";
@@ -30,6 +32,7 @@ public class DescriptionScanner extends ClassVisitor {
     private boolean extendsScalaPlugin;
     private boolean isAbstract;
     private boolean hasNoArgsConstructor;
+    private boolean extendsJavaLangObject;
 
     public DescriptionScanner() {
         super(ASM_API_VERSION);
@@ -57,6 +60,8 @@ public class DescriptionScanner extends ClassVisitor {
         isAbstract = (access & Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
         if (SCALAPLUGIN_CLASS_NAME.equals(superName)) {
             extendsScalaPlugin = true;
+        } else if (JAVA_LANG_OBJECT_CLASS_NAME.endsWith(superName)) {
+            extendsJavaLangObject = true;
         }
     }
 
@@ -85,7 +90,8 @@ public class DescriptionScanner extends ClassVisitor {
         return Optional.ofNullable(mainClassCandidate)
                 .filter(x -> getScalaVersion().isPresent())
                 .filter(x -> hasNoArgsContructor())
-                .filter(x -> !isAbstract);
+                .filter(x -> !isAbstract)
+                .filter(x -> !extendsJavaLangObject);
     }
 
     public Optional<PluginScalaVersion> getScalaVersion() {
