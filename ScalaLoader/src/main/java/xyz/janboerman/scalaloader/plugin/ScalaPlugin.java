@@ -24,6 +24,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     private final ScalaPluginDescription description;
     private PluginDescriptionFile lazyDescription;
+    private ScalaPluginLogger lazyLogger; //regular PluginLogger forces evaluation of our PluginDescriptionFile
 
     private Server server;
     private ScalaPluginLoader pluginLoader;
@@ -31,7 +32,6 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     private File file;
     private ScalaPluginClassLoader classLoader;
     private boolean naggable;
-    private PluginLogger logger;
 
     //TODO lazily assign config stuff. do I want to inject the config file similarly to the plugin.yml?
     private File configFile;
@@ -41,6 +41,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     protected ScalaPlugin(ScalaPluginDescription pluginDescription) {
         this.description = pluginDescription;
+        this.description.setMain(getClass().getName());
     }
 
     //intentionally package protected
@@ -52,7 +53,6 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         this.dataFolder = dataFolder;
         this.classLoader = classLoader;
         this.naggable = true;
-        this.logger = new PluginLogger(this);
     }
 
     void setEnabled(boolean enabled) {
@@ -179,9 +179,8 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     @Override
     public Logger getLogger() {
-        return logger;
+        return lazyLogger == null ? lazyLogger = new ScalaPluginLogger(this) : lazyLogger;
     }
-
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

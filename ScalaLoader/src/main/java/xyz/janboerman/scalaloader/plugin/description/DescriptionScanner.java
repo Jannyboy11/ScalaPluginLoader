@@ -1,16 +1,13 @@
 package xyz.janboerman.scalaloader.plugin.description;
 
-import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 
 import java.util.Optional;
-import java.util.logging.Logger;
 
 /**
  * Annotation scanner dat reads the scala version from the plugin's main class.
@@ -63,6 +60,12 @@ public class DescriptionScanner extends ClassVisitor {
         } else if (JAVA_LANG_OBJECT_CLASS_NAME.endsWith(superName)) {
             extendsJavaLangObject = true;
         }
+
+//        Logger hack = JavaPlugin.getPlugin(ScalaLoader.class).getLogger();
+//        hack.info("VISITING CLASS " + name);
+//        hack.info("extends ScalaPlugin? " + extendsScalaPlugin());
+//        hack.info("extends java.lang.Object?" + extendsJavaLangObject);
+//        hack.info("\n");
     }
 
     //visit constructor
@@ -71,16 +74,16 @@ public class DescriptionScanner extends ClassVisitor {
         boolean isConstructor = "<init>".equals(name);
         boolean isNoArgs = "()V".equals(descriptor);
         boolean isPublic = (Opcodes.ACC_PUBLIC & access) == Opcodes.ACC_PUBLIC;
-        if (isNoArgs && (isPublic || isConstructor)) { //scala objects have private constructors.
+        if (isNoArgs && (isPublic || isConstructor)) { //scala singleton objects have private constructors.
             hasNoArgsConstructor = true;
         }
 
-        Logger hack = JavaPlugin.getPlugin(ScalaLoader.class).getLogger();
-        hack.info("VISITING METHOD " + name);
-        hack.info("is constructor? " + isConstructor);
-        hack.info("is NoArgs? " + isNoArgs);
-        hack.info("is public? " + isPublic);
-        hack.info("\n");
+//        Logger hack = JavaPlugin.getPlugin(ScalaLoader.class).getLogger();
+//        hack.info("VISITING METHOD " + name);
+//        hack.info("is constructor? " + isConstructor);
+//        hack.info("is NoArgs? " + isNoArgs);
+//        hack.info("is public? " + isPublic);
+//        hack.info("\n");
 
         return null;
     }

@@ -5,24 +5,27 @@ import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoadOrder;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
+import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.*;
 import java.util.*;
+import java.util.logging.Logger;
 
 public final class ScalaPluginDescription {
 
     private final String pluginName;
     private final String pluginVersion;
 
+    private String apiVersion;
+    private String main;
+
     private String pluginDescription;
     private List<String> authors = new LinkedList<>();
+    private String prefix;
     private String website;
-    private String apiVersion;
     private PluginLoadOrder loadOrder;
     private LinkedHashSet<String> hardDependencies = new LinkedHashSet<>();
     private LinkedHashSet<String> softDependencies = new LinkedHashSet<>();
@@ -36,6 +39,15 @@ public final class ScalaPluginDescription {
     public ScalaPluginDescription(String pluginName, String pluginVersion) {
         this.pluginName = Objects.requireNonNull(pluginName, "Plugin name cannot be null!");
         this.pluginVersion = Objects.requireNonNull(pluginVersion, "Plugin scalaVersion cannot be null!");
+    }
+
+
+    void setApiVersion(String bukkitApiVersion) {
+        this.apiVersion = bukkitApiVersion;
+    }
+
+    void setMain(String mainClass) {
+        this.main = mainClass;
     }
 
     public String getName() {
@@ -82,8 +94,13 @@ public final class ScalaPluginDescription {
         return website;
     }
 
-    void setApiVersion(String bukkitApiVersion) {
-        this.apiVersion = bukkitApiVersion;
+    public ScalaPluginDescription prefix(String prefix) {
+        this.prefix = prefix;
+        return this;
+    }
+
+    public String getPrefix() {
+        return prefix == null ? getName() : prefix;
     }
 
     public String getApiVersion() {
@@ -146,26 +163,32 @@ public final class ScalaPluginDescription {
 
         pluginData.put("name", pluginName);
         pluginData.put("version", pluginVersion);
+        pluginData.put("main", main);
         if (pluginDescription != null) pluginData.put("description", pluginDescription);
         if (authors != null && !authors.isEmpty()) pluginData.put("authors", authors);
         if (website != null) pluginData.put("website", getWebsite());
+        if (prefix != null) pluginData.put("prefix", prefix);
         if (apiVersion != null) pluginData.put("api-version", apiVersion);
-        if (loadOrder != null) pluginData.put("load", loadOrder);
+        if (loadOrder != null) pluginData.put("load", loadOrder.name());
         if (hardDependencies != null && !hardDependencies.isEmpty()) pluginData.put("depend", new ArrayList<>(hardDependencies));
         if (softDependencies != null && !softDependencies.isEmpty()) pluginData.put("softdepend", new ArrayList<>(softDependencies));
         if (inverseDependencies != null && !inverseDependencies.isEmpty()) pluginData.put("loadbefore", new ArrayList<>(inverseDependencies));
-        if (permissionDefault != null) pluginData.put("default-permission", permissionDefault);
+        if (permissionDefault != null) pluginData.put("default-permission", permissionDefault.name());
 
         //TODO commands, permissions
 
-        PipedOutputStream pipedOutputStream = new PipedOutputStream();
+        Yaml yaml = new Yaml();
+        String pluginYaml = yaml.dump(pluginData); //this can be quite a large string though. but whatever.
+
+        //LETS DEBUG THE FUCKING STRING.
+        Logger hack = JavaPlugin.getPlugin(ScalaLoader.class).getLogger();
+        hack.info("GENERATED PLUGIN YAML STRING: ");
+        hack.info(pluginYaml);
+
         try {
-            PipedInputStream yamlImputStream = new PipedInputStream(pipedOutputStream);
-            Yaml yaml = new Yaml();
-            yaml.dump(pluginData, new OutputStreamWriter(pipedOutputStream));
-            return new PluginDescriptionFile(yamlImputStream);
-        } catch (IOException | InvalidDescriptionException e) {
-            e.printStackTrace();
+            return new PluginDescriptionFile(new StringReader(pluginYaml));
+        } catch (InvalidDescriptionException impossibru) {
+            impossibru.printStackTrace();
             return null;
         }
     }

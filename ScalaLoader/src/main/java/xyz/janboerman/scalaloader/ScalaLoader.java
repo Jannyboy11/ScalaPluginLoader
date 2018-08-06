@@ -1,6 +1,8 @@
 package xyz.janboerman.scalaloader;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -24,26 +26,31 @@ import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 public final class ScalaLoader extends JavaPlugin {
 
     private final boolean iActuallyManagedToOverrideTheDefaultJavaPluginLoader;
-    private List<Pattern> getPluginLoaderPatterns = new ArrayList<>();
     private File scalaPluginsFolder;
+    private JavaPluginLoader weFoundTheJavaPluginLoader;
+    private Map<Pattern, PluginLoader> pluginLoaderMap;
 
     public ScalaLoader() {
         //dirty hack to override the previous pattern.
 
         boolean myHackWorked; //try to get hold of the pattern. k thnx
+
+        Server server = Bukkit.getServer();
         try {
-            SimplePluginManager pluginManager = (SimplePluginManager) getServer().getPluginManager();
-            Field fileAssicationsField = pluginManager.getClass().getDeclaredField("fileAssociations");
-            fileAssicationsField.setAccessible(true);
-            Map<Pattern, PluginLoader> pluginLoaderMap = (Map) fileAssicationsField.get(pluginManager);
+            SimplePluginManager pluginManager = (SimplePluginManager) server.getPluginManager();
+            Field fileAssociationsField = pluginManager.getClass().getDeclaredField("fileAssociations");
+            fileAssociationsField.setAccessible(true);
+            pluginLoaderMap = (Map) fileAssociationsField.get(pluginManager);
             Iterator<Map.Entry<Pattern, PluginLoader>> iterator = pluginLoaderMap.entrySet().iterator();
+
+            ScalaPluginLoader scalaPluginLoader = new ScalaPluginLoader(server);
+
             while (iterator.hasNext()) {
                 Map.Entry<Pattern, PluginLoader> entry = iterator.next();
                 if (entry.getValue() instanceof JavaPluginLoader) {
-                    iterator.remove();
+                    weFoundTheJavaPluginLoader = (JavaPluginLoader) entry.getValue();
+                    entry.setValue(scalaPluginLoader);
                 }
-
-                getPluginLoaderPatterns.add(entry.getKey());
             }
 
             myHackWorked = true;
@@ -53,14 +60,7 @@ public final class ScalaLoader extends JavaPlugin {
 
         iActuallyManagedToOverrideTheDefaultJavaPluginLoader = myHackWorked;
 
-
-        getServer().getPluginManager().registerInterface(ScalaPluginLoader.class);
     }
-
-    public List<Pattern> getPluginLoaderPatterns() {
-        return getPluginLoaderPatterns;
-    }
-
 
     @Override
     @SuppressWarnings("unchecked")
@@ -78,18 +78,22 @@ public final class ScalaLoader extends JavaPlugin {
         if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
             getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
 
-            //re-register the previous PluginLoader for .jar files to the pluginmanager (which is likely a JavaPluginLoader)
+            //re-register the JavaPluginLoader again.
             //this should avoid the ScalaPluginLoader trying to load JavaPlugins
-            getServer().getPluginManager().registerInterface(getPluginLoader().getClass());
+            for (Pattern pattern : weFoundTheJavaPluginLoader.getPluginFileFilters()) {
+                pluginLoaderMap.put(pattern, weFoundTheJavaPluginLoader);
+            }
+        } else {
+            //couldn't replace the JavaPluginLoader - just register it here.
+            getServer().getPluginManager().registerInterface(ScalaPluginLoader.class);
         }
-
     }
 
     @Override
     public void onEnable() {
         if (!iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
             //if the injection didn't work, load scala plugins in onEnable.
-            //this violates the javadocs of Plugin#onLoad, but we have no other option sadly.
+            //this violates the JavaDocs of Plugin#onLoad, but we have no other option sadly.
             //Plugin#onLoad states that onLoad of all plugins is called before onEnable is called of any other plugin.
 
             Plugin[] plugins = getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
