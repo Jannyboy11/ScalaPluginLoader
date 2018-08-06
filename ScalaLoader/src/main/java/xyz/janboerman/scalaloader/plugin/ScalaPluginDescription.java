@@ -180,11 +180,6 @@ public final class ScalaPluginDescription {
         Yaml yaml = new Yaml();
         String pluginYaml = yaml.dump(pluginData); //this can be quite a large string though. but whatever.
 
-        //LETS DEBUG THE FUCKING STRING.
-        Logger hack = JavaPlugin.getPlugin(ScalaLoader.class).getLogger();
-        hack.info("GENERATED PLUGIN YAML STRING: ");
-        hack.info(pluginYaml);
-
         try {
             return new PluginDescriptionFile(new StringReader(pluginYaml));
         } catch (InvalidDescriptionException impossibru) {

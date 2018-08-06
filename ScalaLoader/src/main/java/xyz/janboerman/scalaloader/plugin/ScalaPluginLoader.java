@@ -203,7 +203,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
     private ScalaLibraryClassLoader loadOrGetScalaVersion(PluginScalaVersion scalaVersion) throws ScalaPluginLoaderException {
         //try to get from cache
-        ScalaLibraryClassLoader scalaLibraryLoader = scalaVersionParentLoaders.get(scalaVersion);
+        ScalaLibraryClassLoader scalaLibraryLoader = scalaVersionParentLoaders.get(scalaVersion.getScalaVersion());
         if (scalaLibraryLoader != null) return scalaLibraryLoader;
 
         if (!getScalaLoader().downloadScalaJarFiles()) {
