@@ -18,10 +18,13 @@
     <build>
         <plugins>
             <plugin>
-                <!-- TODO setup incremental compilation -->
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
                 <version>3.4.2</version>
+                <configuration>
+                    <recompileMode>incremental</recompileMode>
+                    <useZincServer>true</useZincServer>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

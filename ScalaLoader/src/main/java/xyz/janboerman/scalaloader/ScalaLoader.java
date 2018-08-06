@@ -13,7 +13,13 @@ import org.bukkit.plugin.SimplePluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -21,9 +27,12 @@ import java.util.stream.Collectors;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
+import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 
 public final class ScalaLoader extends JavaPlugin {
+
+    private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
 
     private final boolean iActuallyManagedToOverrideTheDefaultJavaPluginLoader;
     private File scalaPluginsFolder;
@@ -125,8 +134,125 @@ public final class ScalaLoader extends JavaPlugin {
         }
     }
 
-    public boolean downloadScalaJarFiles() {
+    //TODO how will I inject scala library classes into the javaplugin's PluginClassLoaders?
+    //TODO maybe I should relocate them after all ;o
+    //TODO can I use Thread.setContextClassLoader? not easily as it will spoil the namespaces for other plugins
+    //TODO what about creating a dummy JavaPluginClassLoader? that is saved in the CopyOnWriteArrayList<PluginClassLoader> in the JavaPluginLoader?
+
+
+    private boolean downloadScalaJarFiles() {
         return getConfig().getBoolean("load-libraries-from-disk", false);
+    }
+
+    public ScalaLibraryClassLoader loadOrGetScalaVersion(PluginScalaVersion scalaVersion) throws ScalaPluginLoaderException {
+        //try to get from cache
+        ScalaLibraryClassLoader scalaLibraryLoader = scalaLibraryClassLoaders.get(scalaVersion.getScalaVersion());
+        if (scalaLibraryLoader != null) return scalaLibraryLoader;
+
+        if (!downloadScalaJarFiles()) {
+            //load classes over the network
+            getLogger().info("Loading scala libraries from over the network");
+            try {
+                scalaLibraryLoader = new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), new URL[]{
+                        new URL(scalaVersion.getScalaLibraryUrl()),
+                        new URL(scalaVersion.getScalaReflectUrl())
+                }, getClass().getClassLoader());
+            } catch (MalformedURLException e) {
+                throw new ScalaPluginLoaderException("Could not load scala libraries for version " + scalaVersion + " due to a malformed URL", e);
+            }
+        } else {
+            //check if downloaded already (if not, do download)
+            //then load classes from the downloaded jar
+
+            File scalaLibsFolder = new File(getDataFolder(), "scalalibraries");
+            File versionFolder = new File(scalaLibsFolder, scalaVersion.getScalaVersion());
+            versionFolder.mkdirs();
+
+            File[] jarFiles = versionFolder.listFiles((dir, name) -> name.endsWith(".jar"));
+
+            if (jarFiles.length == 0) {
+                //no jar files found - download dem files
+                getLogger().info("Tried to load scala libraries from disk, but they were not present. Downloading...");
+                File scalaLibraryFile = new File(versionFolder, "scala-library-" + scalaVersion + ".jar");
+                File scalaReflectFile = new File(versionFolder, "scala-reflect-" + scalaVersion + ".jar");
+
+                try {
+                    scalaLibraryFile.createNewFile();
+                    scalaReflectFile.createNewFile();
+                } catch (IOException e) {
+                    throw new ScalaPluginLoaderException("Could not create new jar files", e);
+                }
+
+                ReadableByteChannel rbc = null;
+                FileOutputStream fos = null;
+
+                try {
+                    URL scalaLibraryUrl = new URL(scalaVersion.getScalaLibraryUrl());
+                    rbc = Channels.newChannel(scalaLibraryUrl.openStream());
+                    fos = new FileOutputStream(scalaLibraryFile);
+                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+
+                } catch (MalformedURLException e) {
+                    throw new ScalaPluginLoaderException("Invalid scala library url: " + scalaVersion.getScalaLibraryUrl(), e);
+                } catch (IOException e) {
+                    throw new ScalaPluginLoaderException("Could not open or close channel", e);
+                } finally {
+                    if (fos != null) {
+                        try {
+                            fos.flush();
+                            fos.close();
+                        } catch (IOException ignored) {}
+                    }
+                    if (rbc != null) {
+                        try {
+                            rbc.close();
+                        } catch (IOException ignored) {}
+                    }
+                }
+
+                try {
+                    URL scalaReflectUrl = new URL(scalaVersion.getScalaReflectUrl());
+                    rbc = Channels.newChannel(scalaReflectUrl.openStream());
+                    fos = new FileOutputStream(scalaReflectFile);
+                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                } catch (MalformedURLException e) {
+                    throw new ScalaPluginLoaderException("Invalid scala reflect url: " + scalaVersion.getScalaReflectUrl(), e);
+                } catch (IOException e) {
+                    throw new ScalaPluginLoaderException("Could not open or close channel", e);
+                } finally {
+                    if (fos != null) {
+                        try {
+                            fos.flush();
+                            fos.close();
+                        } catch (IOException ignored) {}
+                    }
+                    if (rbc != null) {
+                        try {
+                            rbc.close();
+                        } catch (IOException ignored) {}
+                    }
+                }
+
+                jarFiles = new File[] {scalaLibraryFile, scalaReflectFile};
+            }
+
+            getLogger().info("Loading scala libraries from disk");
+            //load jar files.
+            URL[] urls = new URL[jarFiles.length];
+            for (int i = 0; i < jarFiles.length; i++) {
+                try {
+                    urls[i] = jarFiles[i].toURI().toURL();
+                } catch (MalformedURLException e) {
+                    throw new ScalaPluginLoaderException("Could not load scala libraries for version " + scalaVersion + " due to a malformed URL", e);
+                }
+            }
+
+            scalaLibraryLoader = new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), urls, getClass().getClassLoader());
+        }
+
+        //cache the resolved scala library classloader
+        scalaLibraryClassLoaders.put(scalaVersion.getScalaVersion(), scalaLibraryLoader);
+        return scalaLibraryLoader;
     }
 
     public boolean saveScalaVersionsToConfig(PluginScalaVersion... versions) {

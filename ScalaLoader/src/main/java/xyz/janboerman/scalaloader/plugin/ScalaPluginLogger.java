@@ -1,7 +1,5 @@
 package xyz.janboerman.scalaloader.plugin;
 
-import org.bukkit.plugin.PluginLogger;
-
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;

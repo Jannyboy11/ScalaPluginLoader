@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.plugin.description;
 
+import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -17,6 +18,7 @@ public class DescriptionScanner extends ClassVisitor {
     private static final int ASM_API_VERSION = Opcodes.ASM6;
 
     private static final String SCALAPLUGIN_CLASS_NAME = ScalaPlugin.class.getName().replace('.', '/');
+    private static final String JAVAPLUGIN_CLASS_NAME = JavaPlugin.class.getName().replace('.', '/');
     private static final String JAVA_LANG_OBJECT_CLASS_NAME = Object.class.getName().replace('.', '/');
 
     private static final String SCALA_ANNOTATION_DESCRIPTOR = "L" + Scala.class.getName().replace('.', '/') + ";";
@@ -27,9 +29,10 @@ public class DescriptionScanner extends ClassVisitor {
     private PluginScalaVersion scalaVersion;
     private ApiVersion bukkitApiVersion;
     private boolean extendsScalaPlugin;
-    private boolean isAbstract;
-    private boolean hasNoArgsConstructor;
+    private boolean extendsJavaPlugin;
     private boolean extendsJavaLangObject;
+    private boolean isAbstract;
+    private boolean hasSuitableConstructor;
 
     public DescriptionScanner() {
         super(ASM_API_VERSION);
@@ -57,15 +60,11 @@ public class DescriptionScanner extends ClassVisitor {
         isAbstract = (access & Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
         if (SCALAPLUGIN_CLASS_NAME.equals(superName)) {
             extendsScalaPlugin = true;
+        } else if (JAVAPLUGIN_CLASS_NAME.equals(superName)) {
+            extendsJavaPlugin = true;
         } else if (JAVA_LANG_OBJECT_CLASS_NAME.endsWith(superName)) {
             extendsJavaLangObject = true;
         }
-
-//        Logger hack = JavaPlugin.getPlugin(ScalaLoader.class).getLogger();
-//        hack.info("VISITING CLASS " + name);
-//        hack.info("extends ScalaPlugin? " + extendsScalaPlugin());
-//        hack.info("extends java.lang.Object?" + extendsJavaLangObject);
-//        hack.info("\n");
     }
 
     //visit constructor
@@ -75,15 +74,8 @@ public class DescriptionScanner extends ClassVisitor {
         boolean isNoArgs = "()V".equals(descriptor);
         boolean isPublic = (Opcodes.ACC_PUBLIC & access) == Opcodes.ACC_PUBLIC;
         if (isNoArgs && (isPublic || isConstructor)) { //scala singleton objects have private constructors.
-            hasNoArgsConstructor = true;
+            hasSuitableConstructor = true;
         }
-
-//        Logger hack = JavaPlugin.getPlugin(ScalaLoader.class).getLogger();
-//        hack.info("VISITING METHOD " + name);
-//        hack.info("is constructor? " + isConstructor);
-//        hack.info("is NoArgs? " + isNoArgs);
-//        hack.info("is public? " + isPublic);
-//        hack.info("\n");
 
         return null;
     }
@@ -92,7 +84,7 @@ public class DescriptionScanner extends ClassVisitor {
     public Optional<String> getMainClass() {
         return Optional.ofNullable(mainClassCandidate)
                 .filter(x -> getScalaVersion().isPresent())
-                .filter(x -> hasNoArgsContructor())
+                .filter(x -> hasSuitableConstructor)
                 .filter(x -> !isAbstract)
                 .filter(x -> !extendsJavaLangObject);
     }
@@ -109,8 +101,8 @@ public class DescriptionScanner extends ClassVisitor {
         return extendsScalaPlugin;
     }
 
-    public boolean hasNoArgsContructor() {
-        return hasNoArgsConstructor;
+    public boolean extendsJavaPlugin() {
+        return extendsJavaPlugin;
     }
 
     public String toString() {
@@ -118,6 +110,7 @@ public class DescriptionScanner extends ClassVisitor {
                 ",scala version = " + getScalaVersion() +
                 ",bukkit api version = " + getBukkitApiVersion() +
                 ",extends scala plugin = " + extendsScalaPlugin() +
+                ",extends java plugin = " + extendsJavaPlugin() +
                 "}";
     }
 

@@ -5,17 +5,16 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginLogger;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -34,7 +33,6 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     private ScalaPluginClassLoader classLoader;
     private boolean naggable = true;
 
-    //TODO lazily assign config stuff. do I want to inject the config file similarly to the plugin.yml?
     private File configFile;
     private FileConfiguration config;
 
@@ -43,6 +41,8 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     protected ScalaPlugin(ScalaPluginDescription pluginDescription) {
         this.description = pluginDescription;
         this.description.setMain(getClass().getName());
+        //TODO ideally - we want to initialize our stuff here.
+        //TODO I could probably use ScalaPluginClassLoader to do that :)
     }
 
     //intentionally package protected
@@ -53,14 +53,12 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         this.file = file;
         this.dataFolder = dataFolder;
         this.classLoader = classLoader;
-        this.naggable = true;
+        this.configFile = new File(dataFolder, "config.yml");
     }
 
     void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-
-    //TODO protected PluginCommand getCommand(String name) ??
 
     protected ScalaPluginClassLoader getClassLoader() {
         return classLoader;
@@ -90,6 +88,9 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     @Override
     public FileConfiguration getConfig() {
+        if (config == null) {
+            reloadConfig();
+        }
         return config;
     }
 
@@ -128,11 +129,55 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     @Override
     public void saveResource(String resourcePath, boolean replace) {
         //copy from the jar into this plugin's directory
+        //blatantly copied from org.bukkit.plugin.java.JavaPlugin.java
+        if (resourcePath == null || resourcePath.equals("")) {
+            throw new IllegalArgumentException("ResourcePath cannot be null or empty");
+        }
+
+        resourcePath = resourcePath.replace('\\', '/');
+        InputStream in = getResource(resourcePath);
+        if (in == null) {
+            throw new IllegalArgumentException("The embedded resource '" + resourcePath + "' cannot be found in " + file);
+        }
+
+        File outFile = new File(getDataFolder(), resourcePath);
+        int lastIndex = resourcePath.lastIndexOf('/');
+        File outDir = new File(getDataFolder(), resourcePath.substring(0, lastIndex >= 0 ? lastIndex : 0));
+
+        if (!outDir.exists()) {
+            outDir.mkdirs();
+        }
+
+        try {
+            if (!outFile.exists() || replace) {
+                OutputStream out = new FileOutputStream(outFile);
+                byte[] buf = new byte[1024];
+                int len;
+                while ((len = in.read(buf)) > 0) {
+                    out.write(buf, 0, len);
+                }
+                out.close();
+                in.close();
+            } else {
+                getLogger().log(Level.WARNING, "Could not save " + outFile.getName() + " to " + outFile + " because " + outFile.getName() + " already exists.");
+            }
+        } catch (IOException ex) {
+            getLogger().log(Level.SEVERE, "Could not save " + outFile.getName() + " to " + outFile, ex);
+        }
+
     }
 
     @Override
     public void reloadConfig() {
+        //TODO load from config file in plugin directory if present - otherwise load values from the default config (included in the jar)
+        config = YamlConfiguration.loadConfiguration(configFile);
 
+        final InputStream defConfigStream = getResource("config.yml");
+        if (defConfigStream == null) {
+            return;
+        }
+
+        config.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defConfigStream, StandardCharsets.UTF_8)));
     }
 
     @Override

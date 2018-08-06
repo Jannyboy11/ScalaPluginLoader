@@ -13,7 +13,7 @@ import xyz.janboerman.scalaloader.plugin.description.Version;
 public class ExamplePlugin extends ScalaPlugin {
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.1-SNAPSHOT"));
+        super(new ScalaPluginDescription("JavaExample", "0.1-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     @Override
