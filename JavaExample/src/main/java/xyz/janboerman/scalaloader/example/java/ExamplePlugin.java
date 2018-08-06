@@ -12,7 +12,7 @@ import xyz.janboerman.scalaloader.plugin.description.Version;
         scalaReflectUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.6%2Fscala-library-2.12.6.jar"))
 public class ExamplePlugin extends ScalaPlugin {
 
-    protected ExamplePlugin() {
+    public ExamplePlugin() {
         super(new ScalaPluginDescription("JavaExample", "0.1-SNAPSHOT"));
     }
 

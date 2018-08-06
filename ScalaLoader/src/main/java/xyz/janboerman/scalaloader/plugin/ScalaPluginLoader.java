@@ -115,10 +115,6 @@ public class ScalaPluginLoader implements PluginLoader {
                 }
             } //end while - no more JarEntries
 
-            getScalaLoader().getLogger().info("\n\n\n");
-            getScalaLoader().getLogger().info("DEBUG Best Main Class Candidate = " + mainClassCandidate);
-            getScalaLoader().getLogger().info("\n\n\n");
-
             if (mainClassCandidate == null || !mainClassCandidate.getMainClass().isPresent()) {
                 getScalaLoader().getLogger().warning("Could not find main class in file " + file.getName() + ". Did you annotate your main class with @Scala?");
                 getScalaLoader().getLogger().warning("Delegating to JavaPluginLoader...");
@@ -143,10 +139,7 @@ public class ScalaPluginLoader implements PluginLoader {
                     //create our plugin
                     final String mainClass = mainClassCandidate.getMainClass().get();
                     Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClass, true, scalaPluginClassLoader);
-                    getScalaLoader().getLogger().info("\n\nDEBUG loaded ScalaPlugin main class: " + pluginMainClass + "! Hooray!");
-
                     ScalaPlugin plugin = createPluginInstance(pluginMainClass);
-                    getScalaLoader().getLogger().info("\n\nDEBUG created ScalaPlugin instance for " + pluginMainClass + "! Hooray!\n\n");
 
                     //api version and main class are detected from the annotation
                     plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
@@ -167,7 +160,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 } catch (NoClassDefFoundError e) {
                     throw new InvalidDescriptionException(e,
                             "Your plugin's constructor and/or initializer blocks tried to access classes that were not yet loaded." +
-                                    "Try to move stuff over to onLoad().");
+                                    "Try to move stuff over to onLoad() and onEnable().");
                 }
             } catch (ScalaPluginLoaderException e) {
                 //TODO this is probably the wrong exception message NEEDS FIXING
@@ -202,6 +195,7 @@ public class ScalaPluginLoader implements PluginLoader {
             }
         }
 
+        plugin.getLogger().info("Loading " + plugin.getDescription().getFullName());
         plugin.onLoad();
         return plugin;
     }
@@ -362,9 +356,10 @@ public class ScalaPluginLoader implements PluginLoader {
             if (event.isCancelled()) return;
 
             scalaPlugin.setEnabled(true);
+            plugin.getLogger().info("Enabling " + plugin.getDescription().getFullName());
             scalaPlugin.onEnable();
         } else {
-            throw new IllegalArgumentException("ScalaPluginLoaders can only enable " + ScalaPlugin.class.getSimpleName() + "s");
+            throw new IllegalArgumentException("ScalaPluginLoader can only enable " + ScalaPlugin.class.getSimpleName() + "s");
         }
     }
 
@@ -387,6 +382,7 @@ public class ScalaPluginLoader implements PluginLoader {
             server.getPluginManager().callEvent(event);
             if (event.isCancelled()) return;
 
+            plugin.getLogger().info("Disabling " + plugin.getDescription().getFullName());
             scalaPlugin.onDisable();
             scalaPlugin.setEnabled(false);
         }
