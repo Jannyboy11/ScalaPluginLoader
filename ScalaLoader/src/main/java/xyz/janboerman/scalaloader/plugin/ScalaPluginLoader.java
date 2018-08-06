@@ -36,6 +36,7 @@ public class ScalaPluginLoader implements PluginLoader {
     private final Set<PluginScalaVersion> scalaVersions = new HashSet<>();
     private final Pattern[] pluginFileFilters = new Pattern[] { Pattern.compile("\\.jar$"), };
 
+    //TODO move these over to ScalaLoader.java? I want them to be accessible for other plugins.
     private final Map<String, ScalaLibraryClassLoader> scalaVersionParentLoaders = new HashMap<>();
 
     //TODO make it so that scala plugin's can access eachother's classes :)
@@ -168,17 +169,6 @@ public class ScalaPluginLoader implements PluginLoader {
         }
     }
 
-    /**
-     * Loads the plugin contained in the specified file
-     *
-     * @param file File to attempt to load
-     * @return Plugin that was contained in the specified file, or null if
-     * unsuccessful
-     * @throws InvalidPluginException     Thrown when the specified file is not a
-     *                                    plugin
-     * @throws UnknownDependencyException If a required dependency could not
-     *                                    be found
-     */
     @Override
     public Plugin loadPlugin(File file) throws InvalidPluginException, UnknownDependencyException {
         ScalaPlugin plugin = scalaPluginsByFile.get(file);
@@ -196,18 +186,10 @@ public class ScalaPluginLoader implements PluginLoader {
         return plugin;
     }
 
-    /**
-     * Enables the specified plugin
-     * <p>
-     * Attempting to enable a plugin that is already enabled will have no
-     * effect
-     *
-     * @param plugin Plugin to enable
-     */
     @Override
     public void enablePlugin(Plugin plugin) {
         if (plugin instanceof JavaPlugin) {
-          getJavaPluginLoader().enablePlugin(plugin);
+            getJavaPluginLoader().enablePlugin(plugin);
         } else if (plugin instanceof ScalaPlugin) {
             ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
             if (scalaPlugin.isEnabled()) return;
@@ -224,13 +206,6 @@ public class ScalaPluginLoader implements PluginLoader {
         }
     }
 
-    /**
-     * Disables the specified plugin
-     * <p>
-     * Attempting to disable a plugin that is not enabled will have no effect
-     *
-     * @param plugin Plugin to disable
-     */
     @Override
     public void disablePlugin(Plugin plugin) {
         if (plugin instanceof JavaPlugin) {
@@ -246,14 +221,11 @@ public class ScalaPluginLoader implements PluginLoader {
             plugin.getLogger().info("Disabling " + plugin.getDescription().getFullName());
             scalaPlugin.onDisable();
             scalaPlugin.setEnabled(false);
+
+            //TODO unload classes and remove from Map
         }
     }
 
-    /**
-     * Returns a list of all filename filters expected by this PluginLoader
-     *
-     * @return The filters
-     */
     @Override
     public Pattern[] getPluginFileFilters() {
         Pattern[] patterns = getScalaLoader().getJavaPluginLoaderPattners();
@@ -261,14 +233,6 @@ public class ScalaPluginLoader implements PluginLoader {
         return pluginFileFilters.clone();
     }
 
-    /**
-     * Creates and returns registered listeners for the event classes used in
-     * this listener
-     *
-     * @param listener The object that will handle the eventual call back
-     * @param plugin   The plugin to use when creating registered listeners
-     * @return The registered listeners.
-     */
     @Override
     public Map<Class<? extends Event>, Set<RegisteredListener>> createRegisteredListeners(Listener listener, Plugin plugin) {
         return getJavaPluginLoader().createRegisteredListeners(listener, plugin);

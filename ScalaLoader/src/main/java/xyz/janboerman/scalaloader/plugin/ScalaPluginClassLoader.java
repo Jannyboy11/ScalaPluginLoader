@@ -22,6 +22,9 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 //        //TODO override this so that scala plugins can access classes from other scala plugins.
 //        //TODO where do I store the shared set of classes? in the ScalaPluginLoader probably.
 //        //TODO while doing this, I might try to put them into the JavaPluginLoader's global classes cache.
+//        //TODO make sure not to inject the classes from the scala libraries into the JavaPluginLoader's caches so that javaplugins cannot find them (avoids conflicts).
+//        //TODO JavaPlugins that which to use them need to register themselves with ScalaPluginLoader and provide the scala version so that ScalaPluginLoader
+//        //TODO can try to inject them into the plugin-specific classloader (but not into JavaPluginLoader's global cache!).
 //        return super.findClass(name)
 //    }
 

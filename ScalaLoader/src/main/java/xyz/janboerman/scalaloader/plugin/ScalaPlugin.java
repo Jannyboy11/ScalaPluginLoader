@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader.plugin;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
@@ -180,6 +181,10 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     @Override
     public Logger getLogger() {
         return lazyLogger == null ? lazyLogger = new ScalaPluginLogger(this) : lazyLogger;
+    }
+
+    protected final PluginCommand getCommand(String name) {
+        return getServer().getPluginCommand(name);
     }
 
     @Override
