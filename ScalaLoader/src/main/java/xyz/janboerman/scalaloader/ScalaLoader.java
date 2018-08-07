@@ -70,7 +70,6 @@ public final class ScalaLoader extends JavaPlugin {
         }
 
         iActuallyManagedToOverrideTheDefaultJavaPluginLoader = myHackWorked;
-
     }
 
     public Pattern[] getJavaPluginLoaderPattners() {
@@ -136,12 +135,12 @@ public final class ScalaLoader extends JavaPlugin {
 
     //TODO how will I inject scala library classes into the javaplugin's PluginClassLoaders?
     //TODO maybe I should relocate them after all ;o
-    //TODO can I use Thread.setContextClassLoader? not easily as it will spoil the namespaces for other plugins
-    //TODO what about creating a dummy JavaPluginClassLoader? that is saved in the CopyOnWriteArrayList<PluginClassLoader> in the JavaPluginLoader?
-
+    //TODO I think I will relocate them - but just for the javaplugins (I don't actually have to rewrite the scala library class bytes)
+    //TODO I just need to change the 'name' of the class as the key in the map
+    //TODO JavaPlugins that get loaded by the ScalaPluginLoader will need actual class bytes transformations though.
 
     private boolean downloadScalaJarFiles() {
-        return getConfig().getBoolean("load-libraries-from-disk", false);
+        return getConfig().getBoolean("load-libraries-from-disk", true);
     }
 
     public ScalaLibraryClassLoader loadOrGetScalaVersion(PluginScalaVersion scalaVersion) throws ScalaPluginLoaderException {

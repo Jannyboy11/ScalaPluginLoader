@@ -140,14 +140,17 @@ public class ScalaPluginLoader implements PluginLoader {
             PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();
 
             try {
+                final String mainClass = mainClassCandidate.getMainClass().get();
+
                 //load scala version if not already present
                 ScalaLibraryClassLoader scalaLibraryClassLoader = getScalaLoader().loadOrGetScalaVersion(scalaVersion);
                 //create plugin classloader using the resolved scala classloader
-                ScalaPluginClassLoader scalaPluginClassLoader = new ScalaPluginClassLoader(this, new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader);
+                ScalaPluginClassLoader scalaPluginClassLoader =
+                        new ScalaPluginClassLoader(this, new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader,
+                                server, pluginYmlFileYaml, file, apiVersion == null ? null : apiVersion.getVersionString());
                 sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getScalaVersion(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 
                 //create our plugin
-                final String mainClass = mainClassCandidate.getMainClass().get();
                 Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClass, true, scalaPluginClassLoader);
                 ScalaPlugin plugin;
                 try {
@@ -156,14 +159,11 @@ public class ScalaPluginLoader implements PluginLoader {
                     throw new InvalidDescriptionException(e, "Couldn't create/get plugin instance for main class " + mainClass);
                 }
 
-                //api version and main class are detected from the annotation
-                plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
-                plugin.getScalaDescription().setMain(mainClass); //required per PluginDescriptionFile constructor - not actually used.
+                //moved to ScalaPlugin constructor
+                //plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
+                //plugin.getScalaDescription().setMain(mainClass); //required per PluginDescriptionFile constructor - not actually used.
+                //plugin.init(this, server, pluginYmlFileYaml, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
 
-                //just init, don't load yet.
-                //TODO the fact that we are calling this stuff here means that this stuff is unavailable in the constructor.
-                //TODO can we actually initialize/load this stuff in the ScalaPlugin (I mean the abstract class here) constructor?
-                plugin.init(this, server, pluginYmlFileYaml, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
                 if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
                     throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
                 }

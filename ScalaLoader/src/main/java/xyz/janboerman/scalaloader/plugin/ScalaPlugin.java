@@ -10,7 +10,6 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.net.URL;
@@ -26,15 +25,15 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     private final ScalaPluginDescription description;
     private PluginDescriptionFile lazyDescription;
     private ScalaPluginLogger lazyLogger; //regular PluginLogger forces evaluation of our PluginDescriptionFile
+    private File lazyDataFolder;
+    private File lazyConfigFile;
 
     private Server server;
     private ScalaPluginLoader pluginLoader;
-    private File dataFolder;
     private File file;
     private ScalaPluginClassLoader classLoader;
     private boolean naggable = true;
 
-    private File configFile;
     private FileConfiguration config;
 
     private boolean enabled;
@@ -42,20 +41,23 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     protected ScalaPlugin(ScalaPluginDescription pluginDescription) {
         this.description = pluginDescription;
         this.description.setMain(getClass().getName());
-        //TODO ideally - we want to initialize our stuff here (instead of in the init method).
-        //TODO I could probably use ScalaPluginClassLoader to do that :)
+
+        //will this actually work? that would be great! :)
+        this.classLoader = (ScalaPluginClassLoader) getClass().getClassLoader();
+        this.server = classLoader.getServer();
+        this.description.addYaml(classLoader.getExtraPluginYaml());
+        this.description.setApiVersion(classLoader.getApiVersion());
+        this.pluginLoader = classLoader.getPluginLoader();
+        this.file = classLoader.getPluginJarFile();
     }
 
-    //intentionally package protected
-    final void init(ScalaPluginLoader pluginLoader, Server server, Yaml addYaml, File dataFolder, File file, ScalaPluginClassLoader classLoader) {
-        this.server = server;
-        this.description.addYaml(addYaml);
-        this.pluginLoader = pluginLoader;
-        this.file = file;
-        this.dataFolder = dataFolder;
-        this.classLoader = classLoader;
-        this.configFile = new File(dataFolder, "config.yml");
-    }
+//    void init(ScalaPluginLoader pluginLoader, Server server, Yaml addYaml, File dataFolder, File file, ScalaPluginClassLoader classLoader) {
+//        this.server = server;
+//        this.description.addYaml(addYaml);
+//        this.pluginLoader = pluginLoader;
+//        this.file = file;
+//        this.classLoader = classLoader;
+//    }
 
     void setEnabled(boolean enabled) {
         this.enabled = enabled;
@@ -75,7 +77,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     @Override
     public File getDataFolder() {
-        return dataFolder;
+        return lazyDataFolder == null ? lazyDataFolder = new File(file.getParent(), getName()) : lazyDataFolder;
     }
 
     ScalaPluginDescription getScalaDescription() {
@@ -111,18 +113,22 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         }
     }
 
+    public File getConfigFile() {
+        return lazyConfigFile == null ? lazyConfigFile = new File(getDataFolder(), "config.yml") : lazyConfigFile;
+    }
+
     @Override
     public void saveConfig() {
         try {
-            getConfig().save(configFile);
+            getConfig().save(getConfigFile());
         } catch (IOException e) {
-            getLogger().log(Level.SEVERE, "Could not save config to " + configFile, e);
+            getLogger().log(Level.SEVERE, "Could not save config to " + getConfigFile(), e);
         }
     }
 
     @Override
     public void saveDefaultConfig() {
-        if (!configFile.exists()) {
+        if (!getConfigFile().exists()) {
             saveResource("config.yml", false);
         }
     }
@@ -171,7 +177,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     @Override
     public void reloadConfig() {
         //load from config file in plugin directory if present - otherwise load values from the default config (included in the jar)
-        config = YamlConfiguration.loadConfiguration(configFile);
+        config = YamlConfiguration.loadConfiguration(getConfigFile());
 
         final InputStream defConfigStream = getResource("config.yml");
         if (defConfigStream == null) {

@@ -1,9 +1,12 @@
 package xyz.janboerman.scalaloader.plugin;
 
+import org.bukkit.Server;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
+import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -22,17 +25,53 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
     private final String scalaVersion;
     private final ScalaPluginLoader pluginLoader;
+    private final Server server;
+    private final Yaml extraPluginYaml;
+    private final File pluginJarFile;
+    private final String apiVersion;
 
     private final Map<String, Class<?>> classes = new HashMap<>();
 
-    protected ScalaPluginClassLoader(ScalaPluginLoader pluginLoader, URL[] urls, ScalaLibraryClassLoader parent) {
+    protected ScalaPluginClassLoader(ScalaPluginLoader pluginLoader,
+                                     URL[] urls,
+                                     ScalaLibraryClassLoader parent,
+                                     Server server,
+                                     Yaml extraPluginYaml,
+                                     File pluginJarFile,
+                                     String apiVersion) {
         super(urls, parent);
+
         this.pluginLoader = pluginLoader;
         this.scalaVersion = parent.getScalaVersion();
+
+        this.server = server;
+        this.extraPluginYaml = extraPluginYaml;
+        this.pluginJarFile = pluginJarFile;
+        this.apiVersion = apiVersion;
     }
 
     public String getScalaVersion() {
         return scalaVersion;
+    }
+
+    public ScalaPluginLoader getPluginLoader() {
+        return pluginLoader;
+    }
+
+    public Server getServer() {
+        return server;
+    }
+
+    public Yaml getExtraPluginYaml() {
+        return extraPluginYaml;
+    }
+
+    public File getPluginJarFile() {
+        return pluginJarFile;
+    }
+
+    public String getApiVersion() {
+        return apiVersion;
     }
 
     @Override
