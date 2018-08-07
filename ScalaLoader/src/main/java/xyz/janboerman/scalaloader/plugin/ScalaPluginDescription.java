@@ -18,6 +18,7 @@ public final class ScalaPluginDescription {
 
     private String apiVersion;
     private String main;
+    private Yaml addYaml;
 
     private String pluginDescription;
     private List<String> authors = new LinkedList<>();
@@ -46,6 +47,10 @@ public final class ScalaPluginDescription {
 
     void setMain(String mainClass) {
         this.main = mainClass;
+    }
+
+    void addYaml(Yaml yaml) {
+        this.addYaml = yaml;
     }
 
     public String getName() {
@@ -225,7 +230,7 @@ public final class ScalaPluginDescription {
             pluginData.put("permissions", permissionsMap);
         }
 
-        Yaml yaml = new Yaml();
+        Yaml yaml = addYaml == null ? new Yaml() : addYaml;
         String pluginYaml = yaml.dump(pluginData); //this can be quite a large string though. but whatever.
 
         try {

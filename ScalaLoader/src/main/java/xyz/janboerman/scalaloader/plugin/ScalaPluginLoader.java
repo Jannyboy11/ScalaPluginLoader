@@ -6,6 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
+import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.event.ScalaPluginDisableEvent;
@@ -72,6 +73,8 @@ public class ScalaPluginLoader implements PluginLoader {
                 .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* never fails because empty optionals are larger anyway :) */, packageComparator)
                 .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* fallback - just compare the class strings */));
 
+        Yaml pluginYmlFileYaml = null;
+
         try {
             DescriptionScanner mainClassCandidate = null;
 
@@ -98,10 +101,28 @@ public class ScalaPluginLoader implements PluginLoader {
                     mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
 
                 } else if (jarEntry.getName().equals("plugin.yml")) {
-                    getScalaLoader().getLogger().warning("Found plugin.yml in scala plugin " + file.getName() + ". Ignoring..");
-                    //TODO should probably inspect the plugin yaml.
-                    //TODO if it contains a main class and it doesn't extend ScalaPlugin directly we should try to delegate to the JavaPluginLoader
-                    //TODO if it doesn't contain a main class then we add the 'fields' of the plugin yaml to the ScalaPluginDescription.
+                    //If it contains a main class and it doesn't extend ScalaPlugin directly we should try to delegate to the JavaPluginLoader
+                    //If it doesn't contain a main class then we add the 'fields' of the plugin yaml to the ScalaPluginDescription.
+
+                    InputStream pluginYamlInputStream  = jarFile.getInputStream(jarEntry);
+                    String yamlDefinedMainClassName = new PluginDescriptionFile(pluginYamlInputStream).getMain();
+                    String mainClassEntry = yamlDefinedMainClassName + ".class";
+                    JarEntry pluginYamlDefinedMainJarEntry = jarFile.getJarEntry(mainClassEntry);
+
+                    if (pluginYamlDefinedMainJarEntry != null) {
+                        InputStream classBytesInputStream = jarFile.getInputStream(pluginYamlDefinedMainJarEntry);
+                        DescriptionScanner yamlMainScanner = new DescriptionScanner();
+                        ClassReader classReader = new ClassReader(classBytesInputStream);
+                        classReader.accept(yamlMainScanner, 0);
+
+                        if (yamlMainScanner.extendsJavaPlugin()) {
+                            return getJavaPluginLoader().getPluginDescription(file);
+                        }
+                    } else {
+                        //add fields to ScalaPluginDescription
+                        pluginYmlFileYaml = new Yaml();
+                        pluginYmlFileYaml.load(pluginYamlInputStream);
+                    }
                 }
             } //end while - no more JarEntries
 
@@ -128,7 +149,12 @@ public class ScalaPluginLoader implements PluginLoader {
                 //create our plugin
                 final String mainClass = mainClassCandidate.getMainClass().get();
                 Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClass, true, scalaPluginClassLoader);
-                ScalaPlugin plugin = createPluginInstance(pluginMainClass);
+                ScalaPlugin plugin;
+                try {
+                     plugin = createPluginInstance(pluginMainClass);
+                } catch (ScalaPluginLoaderException e) {
+                    throw new InvalidDescriptionException(e, "Couldn't create/get plugin instance for main class " + mainClass);
+                }
 
                 //api version and main class are detected from the annotation
                 plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
@@ -137,7 +163,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 //just init, don't load yet.
                 //TODO the fact that we are calling this stuff here means that this stuff is unavailable in the constructor.
                 //TODO can we actually initialize/load this stuff in the ScalaPlugin (I mean the abstract class here) constructor?
-                plugin.init(this, server, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
+                plugin.init(this, server, pluginYmlFileYaml, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
                 if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
                     throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
                 }
@@ -164,12 +190,11 @@ public class ScalaPluginLoader implements PluginLoader {
     @Override
     public Plugin loadPlugin(File file) throws InvalidPluginException, UnknownDependencyException {
         ScalaPlugin plugin = scalaPluginsByFile.get(file);
-        if (plugin == null) {
-            //could be a javaplugin
+        if (plugin == null) { //could be a javaplugin
             try {
                 return getJavaPluginLoader().loadPlugin(file);
-            } catch (InvalidPluginException thrownByJavaPluginLoader) {
-                throw new InvalidPluginException("File " + file.getName() + " does not contain a ScalaPlugin");
+            } catch (InvalidPluginException e) {
+                throw new InvalidPluginException("File " + file.getName() + " does not contain a ScalaPlugin", e);
             }
         }
 

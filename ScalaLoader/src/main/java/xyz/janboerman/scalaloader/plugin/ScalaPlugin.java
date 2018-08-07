@@ -10,6 +10,7 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.net.URL;
@@ -46,9 +47,9 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     }
 
     //intentionally package protected
-    final void init(ScalaPluginLoader pluginLoader, Server server, File dataFolder, File file, ScalaPluginClassLoader classLoader) {
-        //at this point, the description is set already :)
+    final void init(ScalaPluginLoader pluginLoader, Server server, Yaml addYaml, File dataFolder, File file, ScalaPluginClassLoader classLoader) {
         this.server = server;
+        this.description.addYaml(addYaml);
         this.pluginLoader = pluginLoader;
         this.file = file;
         this.dataFolder = dataFolder;

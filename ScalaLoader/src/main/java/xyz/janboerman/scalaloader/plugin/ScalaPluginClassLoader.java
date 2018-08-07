@@ -25,8 +25,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
     private final Map<String, Class<?>> classes = new HashMap<>();
 
-    //package protected consturctor by design
-    ScalaPluginClassLoader(ScalaPluginLoader pluginLoader, URL[] urls, ScalaLibraryClassLoader parent) {
+    protected ScalaPluginClassLoader(ScalaPluginLoader pluginLoader, URL[] urls, ScalaLibraryClassLoader parent) {
         super(urls, parent);
         this.pluginLoader = pluginLoader;
         this.scalaVersion = parent.getScalaVersion();

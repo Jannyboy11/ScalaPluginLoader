@@ -14,8 +14,7 @@ public class ScalaLibraryClassLoader extends URLClassLoader {
 
     private final String scalaVersion;
 
-    //package protected constructor by design
-    ScalaLibraryClassLoader(String scalaVersion, URL[] urls, ClassLoader parent) {
+    protected ScalaLibraryClassLoader(String scalaVersion, URL[] urls, ClassLoader parent) {
         super(urls, parent);
         this.scalaVersion = Objects.requireNonNull(scalaVersion, "Scala version cannot be null!");
     }
