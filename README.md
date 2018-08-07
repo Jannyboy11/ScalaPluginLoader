@@ -6,7 +6,7 @@ servers run in managed environments by minecraft-specialized server hosts. The s
 include the classes in your own plugin and relocate them using a shading plugin in your build process.
 While this *does* work, it is not ideal because your plugin will increase in size by a lot. As of Scala 2.12.6, the
 standard library has a size of 3.5 MB. The reflection library is another 5 MB. Using both libraries in multiple plugins
-results unnessesarily large plugins sizes, while really those Scala classes should only be loaded once. Introducing...
+results unnecessarily large plugins sizes, while really those Scala classes should only be loaded once. Introducing...
 
 # ScalaLoader
 
