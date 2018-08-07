@@ -25,4 +25,8 @@ public class ExamplePlugin extends ScalaPlugin {
         getServer().broadcastMessage("None = " + none);
     }
 
+    public int getInt() {
+        return 42;
+    }
+
 }

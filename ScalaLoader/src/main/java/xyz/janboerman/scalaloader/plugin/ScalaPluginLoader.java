@@ -164,7 +164,14 @@ public class ScalaPluginLoader implements PluginLoader {
     @Override
     public Plugin loadPlugin(File file) throws InvalidPluginException, UnknownDependencyException {
         ScalaPlugin plugin = scalaPluginsByFile.get(file);
-        if (plugin == null) throw new InvalidPluginException("File " + file.getName() + " does not contain a ScalaPlugin");
+        if (plugin == null) {
+            //could be a javaplugin
+            try {
+                return getJavaPluginLoader().loadPlugin(file);
+            } catch (InvalidPluginException thrownByJavaPluginLoader) {
+                throw new InvalidPluginException("File " + file.getName() + " does not contain a ScalaPlugin");
+            }
+        }
 
         for (String dependency : plugin.getDescription().getDepend()) {
             boolean dependencyFound = server.getPluginManager().getPlugin(dependency) != null;

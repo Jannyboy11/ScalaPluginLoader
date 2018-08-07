@@ -13,7 +13,7 @@ import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
 object ExamplePlugin extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.1-SNAPSHOT")
         .commands(new SPCommand("foo").permission("scalaexample.foo"))
         .permissions(new SPPermission("scalaexample.foo").permissionDefault(PermissionDefault.TRUE)))
-        with Listener {
+    with Listener {
 
     override def onLoad(): Unit = {
         getLogger.info("ScalaExample - I am loaded!")
@@ -37,6 +37,8 @@ object ExamplePlugin extends ScalaPlugin(new ScalaPluginDescription("ScalaExampl
         sender.sendMessage("Executed foo command!")
         true
     }
+
+    override def getInt() = 42
 
 }
 
