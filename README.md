@@ -2,7 +2,7 @@
 
 So you want to write plugins in Scala? Great! Or not so great? Scala runtime classes are not on the class/module path
 by default. Server administrators *could* add them using the -classpath commandline option, but in reality most bukkit
-servers run in managed environments by minecraft-specialized server hosts. The standard remedy for this problem is to
+servers run in managed environments by minecraft-specialized server hosts. The standard workaround for this problem is to
 include the classes in your own plugin and relocate them using a shading plugin in your build process.
 While this *does* work, it is not ideal because your plugin will increase in size by a lot. As of Scala 2.12.6, the
 standard library has a size of 3.5 MB. The reflection library is another 5 MB. Using both libraries in multiple plugins
@@ -15,8 +15,8 @@ ScalaLoader uses a custom PluginLoader that loads the Scala runtime classes for 
 #### Pros
 - Write idiomatic Scala!
 - No need to shade anymore!
-- Support multiple Scala versions at the same time!
-- Supports custom scala versions
+- Support multiple Scala versions at the same time! ScalaLoader uses classloader magic to make that work.
+- Supports custom scala versions by adding/changing URLs in the config file.
 - Annotation-based detection of the plugin's main class - no need to write a plugin.yml.
 If you wish to use a plugin.yml still, you can, however I always found it a pain.
 
@@ -56,16 +56,14 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCo
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
 
-object Description {
-    val value = new ScalaPluginDescription("ScalaExample", "0.1-SNAPSHOT")
+@Scala(version = ScalaVersion.v2_12_6)
+object ExamplePlugin
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.1-SNAPSHOT")
         .commands(new SPCommand("foo")
             .permission("scalaexample.foo"))
         .permissions(new SPPermission("scalaexample.foo")
-            .permissionDefault(PermissionDefault.TRUE))
-}
-
-@Scala(version = ScalaVersion.v2_12_6)
-object ExamplePlugin extends ScalaPlugin(Description.value) with Listener {
+            .permissionDefault(PermissionDefault.TRUE)))
+    with Listener {
 
     getLogger().info("ScalaExample - I am constructed!")
 
@@ -125,3 +123,9 @@ public final class DummyPlugin extends JavaPlugin {
 
 }
 ```
+
+## License
+LGPL, because I want forks of this thing to be open for auditing.
+If you however which to *include* parts this code base in your own open source project but not adopt the (L)GPL license,
+please contact me and I will likely permit you to use this under a different license.
+Sending me a private message on the SpigotMC forums or an issue on this repository will do.
