@@ -8,6 +8,7 @@ import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -26,7 +27,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     private final String scalaVersion;
     private final ScalaPluginLoader pluginLoader;
     private final Server server;
-    private final Yaml extraPluginYaml;
+    private final Map<String, Object> extraPluginYaml;
     private final File pluginJarFile;
     private final String apiVersion;
 
@@ -36,7 +37,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                                      URL[] urls,
                                      ScalaLibraryClassLoader parent,
                                      Server server,
-                                     Yaml extraPluginYaml,
+                                     Map<String, Object> extraPluginYaml,
                                      File pluginJarFile,
                                      String apiVersion) {
         super(urls, parent);
@@ -62,7 +63,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         return server;
     }
 
-    public Yaml getExtraPluginYaml() {
+    public Map<String, Object> getExtraPluginYaml() {
         return extraPluginYaml;
     }
 

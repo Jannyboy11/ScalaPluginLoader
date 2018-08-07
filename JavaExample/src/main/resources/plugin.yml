@@ -1,0 +1,13 @@
+name: JavaExample                                             #Ignored!
+main: xyz.janboerman.scalaloader.example.java.ExamplePlugin   #Ignored!
+version: 0.1-SNAPSHOT                                         #Ignored!
+
+commands:
+  bar:
+    description: "Command that verifies that the plugin.yml file stuff is actually loaded too"
+    permission: javaexample.bar
+
+permissions:
+  javaexample.bar:
+    description: Allows access to /bar
+    default: true

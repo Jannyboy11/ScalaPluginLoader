@@ -1,11 +1,17 @@
 package xyz.janboerman.scalaloader.example.java;
 
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.permissions.Permission;
+import org.bukkit.plugin.PluginDescriptionFile;
 import scala.Option;
 import scala.Some;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.description.Version;
+
+import java.util.List;
 
 @CustomScala(@Version(value = "2.12.6",
         scalaLibraryUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.6%2Fscala-reflect-2.12.6.jar",
@@ -23,10 +29,21 @@ public class ExamplePlugin extends ScalaPlugin {
 
         getServer().broadcastMessage("Some = " + some);
         getServer().broadcastMessage("None = " + none);
+
+        PluginDescriptionFile pluginDescriptionFile = getDescription();
+        getLogger().info("commands from PluginDescriptionFile = " + pluginDescriptionFile.getCommands());
+        getLogger().info("permissions from PluginDescriptionFile = " + pluginDescriptionFile.getPermissions());
     }
 
-    public int getInt() {
-        return 42;
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        sender.sendMessage("Executed bar command!");
+
+        //verify that permissions actually worked
+        List<Permission> permissions = getDescription().getPermissions();
+        sender.sendMessage("Permissions = " + permissions);
+
+        return true;
     }
 
 }

@@ -42,7 +42,6 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         this.description = pluginDescription;
         this.description.setMain(getClass().getName());
 
-        //will this actually work? that would be great! :)
         this.classLoader = (ScalaPluginClassLoader) getClass().getClassLoader();
         this.server = classLoader.getServer();
         this.description.addYaml(classLoader.getExtraPluginYaml());
@@ -50,14 +49,6 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         this.pluginLoader = classLoader.getPluginLoader();
         this.file = classLoader.getPluginJarFile();
     }
-
-//    void init(ScalaPluginLoader pluginLoader, Server server, Yaml addYaml, File dataFolder, File file, ScalaPluginClassLoader classLoader) {
-//        this.server = server;
-//        this.description.addYaml(addYaml);
-//        this.pluginLoader = pluginLoader;
-//        this.file = file;
-//        this.classLoader = classLoader;
-//    }
 
     void setEnabled(boolean enabled) {
         this.enabled = enabled;

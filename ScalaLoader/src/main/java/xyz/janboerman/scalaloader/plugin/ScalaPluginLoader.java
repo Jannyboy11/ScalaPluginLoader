@@ -56,6 +56,7 @@ public class ScalaPluginLoader implements PluginLoader {
         return lazyJavaPluginLoader == null ? lazyJavaPluginLoader = getScalaLoader().getPluginLoader() : lazyJavaPluginLoader;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public PluginDescriptionFile getPluginDescription(File file) throws InvalidDescriptionException {
         final ScalaPlugin alreadyPresent = scalaPluginsByFile.get(file);
@@ -73,7 +74,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* never fails because empty optionals are larger anyway :) */, packageComparator)
                 .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* fallback - just compare the class strings */));
 
-        Yaml pluginYmlFileYaml = null;
+        Map<String, Object> pluginYamlData = null;
 
         try {
             DescriptionScanner mainClassCandidate = null;
@@ -104,26 +105,28 @@ public class ScalaPluginLoader implements PluginLoader {
                     //If it contains a main class and it doesn't extend ScalaPlugin directly we should try to delegate to the JavaPluginLoader
                     //If it doesn't contain a main class then we add the 'fields' of the plugin yaml to the ScalaPluginDescription.
 
+                    Yaml yaml = new Yaml();
                     InputStream pluginYamlInputStream  = jarFile.getInputStream(jarEntry);
-                    String yamlDefinedMainClassName = new PluginDescriptionFile(pluginYamlInputStream).getMain();
-                    String mainClassEntry = yamlDefinedMainClassName + ".class";
-                    JarEntry pluginYamlDefinedMainJarEntry = jarFile.getJarEntry(mainClassEntry);
+                    pluginYamlData = (Map<String, Object>) yaml.loadAs(pluginYamlInputStream, Map.class);
 
-                    if (pluginYamlDefinedMainJarEntry != null) {
-                        InputStream classBytesInputStream = jarFile.getInputStream(pluginYamlDefinedMainJarEntry);
-                        DescriptionScanner yamlMainScanner = new DescriptionScanner();
-                        ClassReader classReader = new ClassReader(classBytesInputStream);
-                        classReader.accept(yamlMainScanner, 0);
+                    if (pluginYamlData.containsKey("main")) {
+                        String yamlDefinedMainClassName = pluginYamlData.get("main").toString();
+                        String mainClassEntry = yamlDefinedMainClassName + ".class";
+                        JarEntry pluginYamlDefinedMainJarEntry = jarFile.getJarEntry(mainClassEntry);
 
-                        if (yamlMainScanner.extendsJavaPlugin()) {
-                            return getJavaPluginLoader().getPluginDescription(file);
-                        }
-                    } else {
-                        //add fields to ScalaPluginDescription
-                        pluginYmlFileYaml = new Yaml();
-                        pluginYmlFileYaml.load(pluginYamlInputStream);
-                    }
-                }
+                        if (pluginYamlDefinedMainJarEntry != null) {
+                            InputStream classBytesInputStream = jarFile.getInputStream(pluginYamlDefinedMainJarEntry);
+                            DescriptionScanner yamlMainScanner = new DescriptionScanner();
+                            ClassReader classReader = new ClassReader(classBytesInputStream);
+                            classReader.accept(yamlMainScanner, 0);
+
+                            if (yamlMainScanner.extendsJavaPlugin()) {
+                                return getJavaPluginLoader().getPluginDescription(file);
+                            }
+                        } //else: main does exist and is not a javaplugin. just continue
+                    } //else: plugin yaml doesn't contain main
+                } //else: jarentry is not the plugin.yml
+
             } //end while - no more JarEntries
 
             if (mainClassCandidate == null || !mainClassCandidate.getMainClass().isPresent()) {
@@ -147,7 +150,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 //create plugin classloader using the resolved scala classloader
                 ScalaPluginClassLoader scalaPluginClassLoader =
                         new ScalaPluginClassLoader(this, new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader,
-                                server, pluginYmlFileYaml, file, apiVersion == null ? null : apiVersion.getVersionString());
+                                server, pluginYamlData, file, apiVersion == null ? null : apiVersion.getVersionString());
                 sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getScalaVersion(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 
                 //create our plugin
@@ -341,8 +344,6 @@ public class ScalaPluginLoader implements PluginLoader {
                 Field field = clazz.getField("MODULE$");
                 Object pluginInstance = field.get(null);
 
-                getScalaLoader().getLogger().info("DEBUG got plugin instance for class " + clazz.getName() + " from the static MODULE$ field.");
-
                 return clazz.cast(pluginInstance);
             } catch (NoSuchFieldException e) {
                 weFoundAScalaSingletonObject = false; //back paddle!
@@ -358,8 +359,6 @@ public class ScalaPluginLoader implements PluginLoader {
             try {
                 Constructor ctr = clazz.getConstructor();
                 Object pluginInstance = ctr.newInstance();
-
-                getScalaLoader().getLogger().info("DEBUG got plugin instance for class " + clazz.getName() + " form the NoArgsConstructor.");
 
                 return clazz.cast(pluginInstance);
             } catch (IllegalAccessException e) {

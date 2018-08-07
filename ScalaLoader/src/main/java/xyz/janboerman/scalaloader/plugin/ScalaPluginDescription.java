@@ -18,7 +18,7 @@ public final class ScalaPluginDescription {
 
     private String apiVersion;
     private String main;
-    private Yaml addYaml;
+    private Map<String, Object> addYaml;
 
     private String pluginDescription;
     private List<String> authors = new LinkedList<>();
@@ -33,7 +33,7 @@ public final class ScalaPluginDescription {
     private LinkedHashSet<Command> commands = new LinkedHashSet<>();
     private LinkedHashSet<Permission> permissions = new LinkedHashSet<>();
 
-    //TODO awareness?? use a list of string?
+    //TODO awareness?? use a list of string? list of object is probably better
     
     public ScalaPluginDescription(String pluginName, String pluginVersion) {
         this.pluginName = Objects.requireNonNull(pluginName, "Plugin name cannot be null!");
@@ -49,7 +49,7 @@ public final class ScalaPluginDescription {
         this.main = mainClass;
     }
 
-    void addYaml(Yaml yaml) {
+    void addYaml(Map<String, Object> yaml) {
         this.addYaml = yaml;
     }
 
@@ -192,9 +192,12 @@ public final class ScalaPluginDescription {
     public PluginDescriptionFile toPluginDescriptionFile() {
         Map<String, Object> pluginData = new HashMap<>();
 
+        if (addYaml != null) pluginData.putAll(addYaml);
+
         pluginData.put("name", pluginName);
         pluginData.put("version", pluginVersion);
         pluginData.put("main", main);
+
         if (pluginDescription != null) pluginData.put("description", pluginDescription);
         if (authors != null && !authors.isEmpty()) pluginData.put("authors", authors);
         if (website != null) pluginData.put("website", getWebsite());
@@ -230,7 +233,7 @@ public final class ScalaPluginDescription {
             pluginData.put("permissions", permissionsMap);
         }
 
-        Yaml yaml = addYaml == null ? new Yaml() : addYaml;
+        Yaml yaml = new Yaml();
         String pluginYaml = yaml.dump(pluginData); //this can be quite a large string though. but whatever.
 
         try {
