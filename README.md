@@ -17,23 +17,29 @@ ScalaLoader uses a custom PluginLoader that loads the Scala runtime classes for 
 - No need to shade anymore!
 - Support multiple Scala versions at the same time!
 - Supports custom scala versions
-- Annotation-based detection of the plugin's main class - no need to write a plugin.yml
+- Annotation-based detection of the plugin's main class - no need to write a plugin.yml.
+If you wish to use a plugin.yml still, you can, however I always found it a pain.
 
 #### Cons
 - Scala library classes are only accessible to ScalaPlugins (You can still write them in Java though).
-- By default ScalaLoader downloads the scala libraries from over the network the first time.
-If you're a security-focused person you might want to provide your own jars by changing the URLs to "file://some/location".
-The scala classes aren't actually loaded until there's a plugin that needs them, so you can run ScalaLoader once without
-ScalaPlugins to generate the config.
 - ScalaLoaders uses a lot of reflection/injection hacks to make ScalaPlugins accessible to JavaPlugins.
 - Existing libraries *might* rely on the fact that your Plugin is a JavaPlugin.
 
+#### Caveats
+- ScalaPlugin jars go in the <server_root>/plugins/ScalaLoader/scalaplugins/ directory. I made this choice so that ScalaLoader
+doesn't try to load JavaPlugins that are loaded already.
+- By default ScalaLoader downloads the scala libraries from over the network the first time. I made this choice to provide
+the best possible user experience for server admins. If you're very security-focused you might want to provide your own
+jars by changing the URLs to "file://some/location". The scala classes aren't actually loaded until there's a plugin
+that needs them, so you can run ScalaLoader once without ScalaPlugins to generate the config.
+
 ### Roadmap
-There's only three features that are missing in my opinion:
+There's only four features that are missing in my opinion:
 - The first con. I want JavaPlugins te be able to access the Scala library classes, however they will need to tell
 ScalaLoader somehow which version they want to use.
 - An idiomatic Scala 'wrapper' for the bukkit api. This will likely be provided in a separate plugin writtin in Scala.
 Things that come to mind: Use of Options instead of null, using the type-class pattern for ConfigurationSerializable things.
+- Make the ScalaPluginLoader parallel capable. Right now ScalaPlugins are loaded one after another.
 - Use bukkit's api-version to transform classes so that plugins will be compatible once they are loaded.
 
 ### Example Plugin
