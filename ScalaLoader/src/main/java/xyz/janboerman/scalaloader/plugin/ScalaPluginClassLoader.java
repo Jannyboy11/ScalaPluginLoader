@@ -9,9 +9,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * ClassLoader that loads {@link ScalaPlugin}s.
@@ -31,29 +32,41 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         this.scalaVersion = parent.getScalaVersion();
     }
 
+    public String getScalaVersion() {
+        return scalaVersion;
+    }
+
     @Override
     public Class<?> findClass(final String name) throws ClassNotFoundException {
+        return findClass(name, true);
+    }
+
+    public Class<?> findClass(final String name, boolean searchInScalaPluginLoader) throws ClassNotFoundException {
         Class<?> found = classes.get(name);
         if (found != null) return found;
 
-        Optional<Class<?>> fromScalaPluginLoader = pluginLoader.getScalaPluginClass(getScalaVersion(), name);
-        if (fromScalaPluginLoader.isPresent()) return fromScalaPluginLoader.get();
+        if (searchInScalaPluginLoader) {
+            try {
+                found = pluginLoader.getScalaPluginClass(getScalaVersion(), name);
+                classes.put(name, found);
+                return found;
+            } catch (ClassNotFoundException e) { /*ignored - continue onwards*/ }
+            if (found != null) return found;
+        }
 
         found = super.findClass(name);
         if (found == null) throw new ClassNotFoundException("Could not find class " + name);
+        classes.put(name, found);
 
-        if (!(found.getClassLoader() instanceof ScalaLibraryClassLoader)) {
-            //is this logic sound? I think at this point we will cache all classes that we find, except for the scala library ones, in our map.
-            //that means that event the bukkit/craftbukkit/nms classes will be stored in our map.
-            //the standard PluginClassLoader that loads JavaPlugins does this too though. y though.
-            classes.put(name, found);
-            pluginLoader.addClassGlobally(getScalaVersion(), name, found);
-
-            //try to inject into the JavaPluginLoader cache so that JavaPlugins can find our ScalaPlugin classes.
+        if (pluginLoader.addClassGlobally(getScalaVersion(), name, found)) {
             injectIntoJavaPluginLoaderScope(found);
         }
 
         return found;
+    }
+
+    protected Collection<Class<?>> getClasses() {
+        return Collections.unmodifiableCollection(classes.values());
     }
 
     @Override
@@ -61,10 +74,6 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         classes.values().forEach(this::removeFromJavaPluginLoaderScope);
         classes.clear();
         super.close();
-    }
-
-    public String getScalaVersion() {
-        return scalaVersion;
     }
 
 

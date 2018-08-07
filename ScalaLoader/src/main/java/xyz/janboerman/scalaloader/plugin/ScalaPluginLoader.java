@@ -19,6 +19,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -33,8 +36,9 @@ public class ScalaPluginLoader implements PluginLoader {
 
     private final Pattern[] pluginFileFilters = new Pattern[] { Pattern.compile("\\.jar$"), };
 
-    //Map<ScalaVersion, Map<PluginName, Class<?>>>
-    private final Map<String, Map<String, Class<?>>> sharedScalaPluginClasses = new HashMap<>();
+    //Map<ScalaVersion, Map<ClassName, Class<?>>>
+    private final Map<String, Map<String, Class<?>>> sharedScalaPluginClasses = Collections.synchronizedMap(new HashMap<>());
+    private final ConcurrentMap<String, CopyOnWriteArrayList<ScalaPluginClassLoader>> sharedScalaPluginClassLoaders = new ConcurrentHashMap<>();
 
     private final Map<String, ScalaPlugin> scalaPlugins = new HashMap<>();
     private final Map<File, ScalaPlugin> scalaPluginsByFile = new HashMap<>();
@@ -51,17 +55,11 @@ public class ScalaPluginLoader implements PluginLoader {
         return lazyJavaPluginLoader == null ? lazyJavaPluginLoader = getScalaLoader().getPluginLoader() : lazyJavaPluginLoader;
     }
 
-    /**
-     * Loads a PluginDescriptionFile from the specified file
-     *
-     * @param file File to attempt to load from
-     * @return A new PluginDescriptionFile loaded from the plugin.yml in the
-     * specified file
-     * @throws InvalidDescriptionException If the plugin description file
-     *                                     could not be created
-     */
     @Override
     public PluginDescriptionFile getPluginDescription(File file) throws InvalidDescriptionException {
+        final ScalaPlugin alreadyPresent = scalaPluginsByFile.get(file);
+        if (alreadyPresent != null) return alreadyPresent.getDescription();
+
         //filled optionals are smaller then empty optionals.
         Comparator<Optional<?>> optionalComparator = Comparator.comparing(optional -> !optional.isPresent());
         //smaller package hierarchy = smaller string
@@ -101,7 +99,8 @@ public class ScalaPluginLoader implements PluginLoader {
 
                 } else if (jarEntry.getName().equals("plugin.yml")) {
                     getScalaLoader().getLogger().warning("Found plugin.yml in scala plugin " + file.getName() + ". Ignoring..");
-                    //TODO should probably inspect the plugin yaml. if it contains a main class we should delegate to the JavaPluginLoader
+                    //TODO should probably inspect the plugin yaml.
+                    //TODO if it contains a main class and it doesn't extend ScalaPlugin directly we should try to delegate to the JavaPluginLoader
                     //TODO if it doesn't contain a main class then we add the 'fields' of the plugin yaml to the ScalaPluginDescription.
                 }
             } //end while - no more JarEntries
@@ -124,6 +123,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 ScalaLibraryClassLoader scalaLibraryClassLoader = getScalaLoader().loadOrGetScalaVersion(scalaVersion);
                 //create plugin classloader using the resolved scala classloader
                 ScalaPluginClassLoader scalaPluginClassLoader = new ScalaPluginClassLoader(this, new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader);
+                sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getScalaVersion(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 
                 //create our plugin
                 final String mainClass = mainClassCandidate.getMainClass().get();
@@ -214,7 +214,30 @@ public class ScalaPluginLoader implements PluginLoader {
             scalaPlugin.onDisable();
             scalaPlugin.setEnabled(false);
 
-            //TODO unload classes (clear them from the classloader) and remove from Map
+            //unload shared classes
+            ScalaPluginClassLoader scalaPluginClassLoader = scalaPlugin.getClassLoader();
+            String scalaVersion = scalaPluginClassLoader.getScalaVersion();
+            Map<String, Class<?>> classes = sharedScalaPluginClasses.get(scalaVersion);
+            if (classes != null) {
+                scalaPluginClassLoader.getClasses().forEach(clazz -> classes.remove(clazz.getName(), clazz));
+                if (classes.isEmpty()) {
+                    sharedScalaPluginClasses.remove(scalaVersion);
+                }
+            }
+
+            CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaVersion);
+            if (classLoaders != null) {
+                classLoaders.remove(scalaPluginClassLoader);
+                //noinspection SuspiciousMethodCalls
+                sharedScalaPluginClassLoaders.remove(scalaVersion, Collections.singletonList(scalaPluginClassLoader));
+                //Atomic remove - CopyOnWriteArrayList will equal any List if the size and the elements are equal.
+            }
+
+            try {
+                scalaPluginClassLoader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -231,14 +254,36 @@ public class ScalaPluginLoader implements PluginLoader {
     }
 
     public boolean addClassGlobally(String scalaVersion, String className, Class<?> clazz) {
+        if (clazz.getClassLoader() instanceof ScalaLibraryClassLoader) return false;
+
         return sharedScalaPluginClasses
                 .computeIfAbsent(scalaVersion, version -> new HashMap<>())
                 .putIfAbsent(className, clazz) == null;
     }
 
-    public Optional<Class<?>> getScalaPluginClass(String scalaVersion, String className) {
-        return Optional.ofNullable(sharedScalaPluginClasses.get(scalaVersion))
-                .flatMap(map -> Optional.ofNullable(map.get(className)));
+    public Class<?> getScalaPluginClass(final String scalaVersion, final String className) throws ClassNotFoundException {
+        //try load from 'global' cache
+        Map<String, Class<?>> scalaPluginClasses = sharedScalaPluginClasses.get(scalaVersion);
+        Class<?> found = scalaPluginClasses == null ? null : scalaPluginClasses.get(className);
+        if (found != null) return found;
+
+        //try load from classloaders
+        CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaVersion);
+        if (classLoaders != null) {
+            for (ScalaPluginClassLoader scalaPluginClassLoader : classLoaders) {
+                try {
+                    found = scalaPluginClassLoader.findClass(className, false);
+                    break; //no need to call addClassGlobally here - the ScalaPluginClassLoader will do that for us.
+                } catch (ClassNotFoundException justContinueOn) {
+                }
+            }
+        }
+
+        if (found == null) {
+            throw new ClassNotFoundException("Couldn't find class " + className + " in any of the loaded ScalaPlugins.");
+        }
+
+        return found;
     }
 
 

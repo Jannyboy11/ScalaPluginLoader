@@ -41,7 +41,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     protected ScalaPlugin(ScalaPluginDescription pluginDescription) {
         this.description = pluginDescription;
         this.description.setMain(getClass().getName());
-        //TODO ideally - we want to initialize our stuff here.
+        //TODO ideally - we want to initialize our stuff here (instead of in the init method).
         //TODO I could probably use ScalaPluginClassLoader to do that :)
     }
 
@@ -169,7 +169,7 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     @Override
     public void reloadConfig() {
-        //TODO load from config file in plugin directory if present - otherwise load values from the default config (included in the jar)
+        //load from config file in plugin directory if present - otherwise load values from the default config (included in the jar)
         config = YamlConfiguration.loadConfiguration(configFile);
 
         final InputStream defConfigStream = getResource("config.yml");
