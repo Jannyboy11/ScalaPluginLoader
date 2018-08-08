@@ -62,7 +62,7 @@ public class DescriptionScanner extends ClassVisitor {
             extendsScalaPlugin = true;
         } else if (JAVAPLUGIN_CLASS_NAME.equals(superName)) {
             extendsJavaPlugin = true;
-        } else if (JAVA_LANG_OBJECT_CLASS_NAME.endsWith(superName)) {
+        } else if (JAVA_LANG_OBJECT_CLASS_NAME.equals(superName)) {
             extendsJavaLangObject = true;
         }
     }
@@ -80,6 +80,9 @@ public class DescriptionScanner extends ClassVisitor {
         return null;
     }
 
+    public String getClassName() {
+        return mainClassCandidate;
+    }
 
     public Optional<String> getMainClass() {
         return Optional.ofNullable(mainClassCandidate)

@@ -75,6 +75,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* fallback - just compare the class strings */));
 
         Map<String, Object> pluginYamlData = null;
+        Set<String> classNamesIncludedInTheScalaPluginJar = new HashSet<>();
 
         try {
             DescriptionScanner mainClassCandidate = null;
@@ -97,6 +98,9 @@ public class ScalaPluginLoader implements PluginLoader {
                     }
 
                     //TODO in the future I could transform the class to use the the relocated scala library?
+
+                    //add to class names so we can instantiate the classes later.
+                    classNamesIncludedInTheScalaPluginJar.add(descriptionScanner.getClassName());
 
                     //The smallest element is the best candidate!
                     mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
@@ -121,6 +125,7 @@ public class ScalaPluginLoader implements PluginLoader {
                             classReader.accept(yamlMainScanner, 0);
 
                             if (yamlMainScanner.extendsJavaPlugin()) {
+                                //TODO check whether this main class depends on a scala version - if yes transform the classes from the java plugin
                                 return getJavaPluginLoader().getPluginDescription(file);
                             }
                         } //else: main does exist and is not a javaplugin. just continue
@@ -160,6 +165,12 @@ public class ScalaPluginLoader implements PluginLoader {
                      plugin = createPluginInstance(pluginMainClass);
                 } catch (ScalaPluginLoaderException e) {
                     throw new InvalidDescriptionException(e, "Couldn't create/get plugin instance for main class " + mainClass);
+                }
+
+                //We were successful in creating the plugin instance - now force load all the other classes in the plugin so that they can be found by JavaPlugins.
+                //The scalaPluginClassLoader will inject them into the JavaPluginLoader classes cache.
+                for (String classNameInScalaPlugin : classNamesIncludedInTheScalaPluginJar) {
+                    Class.forName(classNameInScalaPlugin, true, scalaPluginClassLoader);
                 }
 
                 //moved to ScalaPlugin constructor

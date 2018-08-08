@@ -3,12 +3,10 @@ package xyz.janboerman.scalaloader.plugin;
 import org.bukkit.Server;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
-import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -118,6 +116,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
     private void injectIntoJavaPluginLoaderScope(Class<?> clazz) {
         PluginLoader likelyJavaPluginLoader = pluginLoader.getJavaPluginLoader();
+
         if (likelyJavaPluginLoader instanceof JavaPluginLoader) {
             JavaPluginLoader javaPluginLoader = (JavaPluginLoader) likelyJavaPluginLoader;
             try {

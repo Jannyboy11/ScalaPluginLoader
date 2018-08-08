@@ -15,7 +15,7 @@ ScalaLoader uses a custom PluginLoader that loads the Scala runtime classes for 
 #### Pros
 - Write idiomatic Scala!
 - No need to shade anymore!
-- Support multiple Scala versions at the same time! ScalaLoader uses classloader magic to make that work.
+- Supports multiple Scala versions at the same time! ScalaLoader uses classloader magic to make that work.
 - Supports custom scala versions by adding/changing URLs in the config file.
 - Annotation-based detection of the plugin's main class - no need to write a plugin.yml.
 If you wish to use a plugin.yml still, you can, however I always found it a pain.
