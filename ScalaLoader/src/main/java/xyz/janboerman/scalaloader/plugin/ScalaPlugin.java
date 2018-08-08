@@ -42,12 +42,16 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
         this.description = pluginDescription;
         this.description.setMain(getClass().getName());
 
-        this.classLoader = (ScalaPluginClassLoader) getClass().getClassLoader();
-        this.server = classLoader.getServer();
-        this.description.addYaml(classLoader.getExtraPluginYaml());
-        this.description.setApiVersion(classLoader.getApiVersion());
-        this.pluginLoader = classLoader.getPluginLoader();
-        this.file = classLoader.getPluginJarFile();
+        if (getClass().getClassLoader() instanceof ScalaPluginClassLoader) {
+            this.classLoader = (ScalaPluginClassLoader) getClass().getClassLoader();
+            this.server = classLoader.getServer();
+            this.description.addYaml(classLoader.getExtraPluginYaml());
+            this.description.setApiVersion(classLoader.getApiVersion());
+            this.pluginLoader = classLoader.getPluginLoader();
+            this.file = classLoader.getPluginJarFile();
+        } else {
+            getLogger().warning("ScalaPlugin got instantiated but was not loaded by a ScalaPluginClassLoader!");
+        }
     }
 
     void setEnabled(boolean enabled) {
