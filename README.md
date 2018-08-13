@@ -124,6 +124,11 @@ public final class DummyPlugin extends JavaPlugin {
 }
 ```
 
+## Compiling
+It's a [maven](https://maven.apache.org/) project, so just `cd ScalaLoader` and `mvn package` and you're good to go.
+Be sure to use the shaded jar and not the original one.
+Note that while ScalaLoader can run on Java 8, it requires JDK9+ to compile.
+
 ## License
 LGPL, because I want forks of this thing to be open for auditing.
 If you however which to *include* parts this code base in your own open source project but not adopt the (L)GPL license,
