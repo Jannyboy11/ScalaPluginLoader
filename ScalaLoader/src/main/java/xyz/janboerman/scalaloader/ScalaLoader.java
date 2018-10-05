@@ -38,7 +38,7 @@ public final class ScalaLoader extends JavaPlugin {
     private File scalaPluginsFolder;
     private JavaPluginLoader weFoundTheJavaPluginLoader;
     private Map<Pattern, PluginLoader> pluginLoaderMap;
-    private Pattern[] javaPluginLoaderPattners;
+    private Pattern[] javaPluginLoaderPatterns;
 
     public ScalaLoader() {
         //dirty hack to override the previous pattern.
@@ -59,7 +59,7 @@ public final class ScalaLoader extends JavaPlugin {
                 Map.Entry<Pattern, PluginLoader> entry = iterator.next();
                 if (entry.getValue() instanceof JavaPluginLoader) {
                     weFoundTheJavaPluginLoader = (JavaPluginLoader) entry.getValue();
-                    javaPluginLoaderPattners = weFoundTheJavaPluginLoader.getPluginFileFilters();
+                    javaPluginLoaderPatterns = weFoundTheJavaPluginLoader.getPluginFileFilters();
                     entry.setValue(scalaPluginLoader);
                 }
             }
@@ -73,7 +73,7 @@ public final class ScalaLoader extends JavaPlugin {
     }
 
     public Pattern[] getJavaPluginLoaderPattners() {
-        return javaPluginLoaderPattners;
+        return javaPluginLoaderPatterns;
     }
 
     @Override
@@ -150,7 +150,7 @@ public final class ScalaLoader extends JavaPlugin {
 
         if (!downloadScalaJarFiles()) {
             //load classes over the network
-            getLogger().info("Loading scala libraries from over the network");
+            getLogger().info("Loading scala " + scalaVersion + " libraries from over the network");
             try {
                 scalaLibraryLoader = new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), new URL[]{
                         new URL(scalaVersion.getScalaLibraryUrl()),
@@ -171,7 +171,7 @@ public final class ScalaLoader extends JavaPlugin {
 
             if (jarFiles.length == 0) {
                 //no jar files found - download dem files
-                getLogger().info("Tried to load scala libraries from disk, but they were not present. Downloading...");
+                getLogger().info("Tried to load scala " + scalaVersion + " libraries from disk, but they were not present. Downloading...");
                 File scalaLibraryFile = new File(versionFolder, "scala-library-" + scalaVersion + ".jar");
                 File scalaReflectFile = new File(versionFolder, "scala-reflect-" + scalaVersion + ".jar");
 
@@ -235,7 +235,7 @@ public final class ScalaLoader extends JavaPlugin {
                 jarFiles = new File[] {scalaLibraryFile, scalaReflectFile};
             }
 
-            getLogger().info("Loading scala libraries from disk");
+            getLogger().info("Loading scala " + scalaVersion + " libraries from disk");
             //load jar files.
             URL[] urls = new URL[jarFiles.length];
             for (int i = 0; i < jarFiles.length; i++) {

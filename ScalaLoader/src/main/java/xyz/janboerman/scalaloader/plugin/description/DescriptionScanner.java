@@ -15,7 +15,7 @@ import java.util.Optional;
  */
 public class DescriptionScanner extends ClassVisitor {
 
-    private static final int ASM_API_VERSION = Opcodes.ASM6;
+    private static final int ASM_API_VERSION = Opcodes.ASM7;
 
     private static final String SCALAPLUGIN_CLASS_NAME = ScalaPlugin.class.getName().replace('.', '/');
     private static final String JAVAPLUGIN_CLASS_NAME = JavaPlugin.class.getName().replace('.', '/');
