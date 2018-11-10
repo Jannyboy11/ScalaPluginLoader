@@ -6,6 +6,7 @@ import org.bukkit.permissions.Permission;
 import org.bukkit.plugin.PluginDescriptionFile;
 import scala.Option;
 import scala.Some;
+import xyz.janboerman.scalaloader.example.scala.ExamplePlugin$;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
@@ -33,6 +34,8 @@ public class ExamplePlugin extends ScalaPlugin {
         PluginDescriptionFile pluginDescriptionFile = getDescription();
         getLogger().info("commands from PluginDescriptionFile = " + pluginDescriptionFile.getCommands());
         getLogger().info("permissions from PluginDescriptionFile = " + pluginDescriptionFile.getPermissions());
+
+        getLogger().info("Got " + ExamplePlugin$.MODULE$.getInt() + " from the Scala example plugin :)");
     }
 
     @Override

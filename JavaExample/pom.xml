@@ -60,8 +60,14 @@
         <dependency>
             <groupId>xyz.janboerman</groupId>
             <artifactId>ScalaLoader</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.3-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>xyz.janboerman</groupId>
+            <artifactId>ScalaExample</artifactId>
+            <version>0.3-SNAPSHOT</version>
         </dependency>
 
         <dependency>

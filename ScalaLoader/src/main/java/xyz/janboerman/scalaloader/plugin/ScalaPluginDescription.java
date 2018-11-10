@@ -355,7 +355,7 @@ public final class ScalaPluginDescription {
         private LinkedHashSet<Permission> children;
 
         public Permission(String name) {
-            this.name = Objects.requireNonNull(name, "Permissoin name cannot be null");
+            this.name = Objects.requireNonNull(name, "Permission name cannot be null");
         }
 
         public Permission description(String description) {

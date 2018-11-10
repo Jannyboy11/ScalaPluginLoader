@@ -31,11 +31,13 @@ import java.util.regex.Pattern;
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class ScalaPluginLoader implements PluginLoader {
 
+    private static ScalaPluginLoader INSTANCE;
+
     private final Server server;
     private ScalaLoader lazyScalaLoader;
     private PluginLoader lazyJavaPluginLoader;
 
-    private final Pattern[] pluginFileFilters = new Pattern[] { Pattern.compile("\\.jar$"), };
+    private static final Pattern[] pluginFileFilters = new Pattern[] { Pattern.compile("\\.jar$"), };
 
     //Map<ScalaVersion, Map<ClassName, Class<?>>>
     private final Map<String, Map<String, Class<?>>> sharedScalaPluginClasses = Collections.synchronizedMap(new HashMap<>());
@@ -46,6 +48,13 @@ public class ScalaPluginLoader implements PluginLoader {
 
     public ScalaPluginLoader(Server server) {
         this.server = Objects.requireNonNull(server, "Server cannot be null!");
+
+        //Static abuse but I cannot find a more elegant way to do this.
+        INSTANCE = this;
+    }
+
+    public static ScalaPluginLoader getInstance() {
+        return INSTANCE;
     }
 
     ScalaLoader getScalaLoader() {
@@ -169,6 +178,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
                 //We were successful in creating the plugin instance - now force load all the other classes in the plugin so that they can be found by JavaPlugins.
                 //The scalaPluginClassLoader will inject them into the JavaPluginLoader classes cache.
+                //TODO only do this when a java plugin (soft) depends on the scala plugin.
                 for (String classNameInScalaPlugin : classNamesIncludedInTheScalaPluginJar) {
                     Class.forName(classNameInScalaPlugin, true, scalaPluginClassLoader);
                 }

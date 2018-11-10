@@ -23,6 +23,7 @@ public class DescriptionScanner extends ClassVisitor {
 
     private static final String SCALA_ANNOTATION_DESCRIPTOR = "L" + Scala.class.getName().replace('.', '/') + ";";
     private static final String CUSTOMSCALA_ANNOTATION_DESCRIPTOR = "L" + CustomScala.class.getName().replace('.', '/') + ";";
+    private static final String VERSION_ANNOTATION_DESCRIPTOR = "L" + Version.class.getName().replace('.', '/');
     private static final String API_ANNOTATION_DESCRIPTOR = "L" + Api.class.getName().replace('.', '/') + ";";
 
     private String mainClassCandidate;
@@ -130,17 +131,17 @@ public class DescriptionScanner extends ClassVisitor {
 
         @Override
         public AnnotationVisitor visitAnnotation(String name, String descriptor) {
-            //visits the Version value() field
-            return new AnnotationVisitor(ASM_API_VERSION) {
-                @Override
-                public void visit(String name, Object value) {
-                    switch(name) {
-                        case "value":               version         = value.toString();     break;
-                        case "scalaLibraryUrl":     scalaLibrary    = value.toString();     break;
-                        case "scalaReflectUrl":     scalaReflect    = value.toString();     break;
+            return VERSION_ANNOTATION_DESCRIPTOR.equals(descriptor) ?
+                new AnnotationVisitor(ASM_API_VERSION) {
+                    @Override
+                    public void visit(String name, Object value) {
+                        switch(name) {
+                            case "value":               version         = value.toString();     break;
+                            case "scalaLibraryUrl":     scalaLibrary    = value.toString();     break;
+                            case "scalaReflectUrl":     scalaReflect    = value.toString();     break;
+                        }
                     }
-                }
-            };
+                } : null;
         }
 
         @Override

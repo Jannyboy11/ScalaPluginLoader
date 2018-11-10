@@ -116,6 +116,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
     private void injectIntoJavaPluginLoaderScope(Class<?> clazz) {
         PluginLoader likelyJavaPluginLoader = pluginLoader.getJavaPluginLoader();
+        //TODO loop the plugin(class)loader hierarchy until we find a JavaPluginLoader?
 
         if (likelyJavaPluginLoader instanceof JavaPluginLoader) {
             JavaPluginLoader javaPluginLoader = (JavaPluginLoader) likelyJavaPluginLoader;
