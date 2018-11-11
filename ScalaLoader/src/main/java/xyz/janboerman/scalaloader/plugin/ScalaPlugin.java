@@ -246,6 +246,9 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
 
     @Override
     public int compareTo(Plugin other) {
+        //TODO this seems kind of arbitrary. It's nice for plugins to be Comparable though,
+        //TODO so that they can be used in sorted collections without an explicit comparator.
+        //TODO I should probably remove this as long as Plugin doesn't extends Comparable<Plugin>
         if (other instanceof JavaPlugin) return 1; //java plugins are smaller.
 
         return getName().compareTo(other.getName());

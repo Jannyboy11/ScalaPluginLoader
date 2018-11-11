@@ -325,6 +325,8 @@ public class ScalaPluginLoader implements PluginLoader {
 
         //try load from classloaders
         CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaVersion);
+        //TODO don't check for equal scala versions - check for binary compatible scala verions instead
+
         if (classLoaders != null) {
             for (ScalaPluginClassLoader scalaPluginClassLoader : classLoaders) {
                 try {
