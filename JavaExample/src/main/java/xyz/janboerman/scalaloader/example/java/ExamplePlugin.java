@@ -7,12 +7,14 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import scala.Option;
 import scala.Some;
 import xyz.janboerman.scalaloader.example.scala.ExamplePlugin$;
+import xyz.janboerman.scalaloader.example.scala.Home;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.description.Version;
 
 import java.util.List;
+import java.util.UUID;
 
 @CustomScala(@Version(value = "2.12.6",
         scalaLibraryUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.6%2Fscala-reflect-2.12.6.jar",
@@ -36,6 +38,8 @@ public class ExamplePlugin extends ScalaPlugin {
         getLogger().info("permissions from PluginDescriptionFile = " + pluginDescriptionFile.getPermissions());
 
         getLogger().info("Got " + ExamplePlugin$.MODULE$.getInt() + " from the Scala example plugin :)");
+
+        Home home = Home.apply(UUID.randomUUID(), "home", getServer().getWorlds().get(0).getSpawnLocation());
     }
 
     @Override

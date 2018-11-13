@@ -27,6 +27,7 @@ import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class ScalaPluginLoader implements PluginLoader {
@@ -84,7 +85,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* fallback - just compare the class strings */));
 
         Map<String, Object> pluginYamlData = null;
-        Set<String> classNamesIncludedInTheScalaPluginJar = new HashSet<>();
+        Set<String> classNamesIncludedInTheScalaPluginJar = new HashSet<>(); //TODO ugly hack to make scala plugin class files accessible to java plugins
 
         try {
             DescriptionScanner mainClassCandidate = null;
@@ -107,12 +108,15 @@ public class ScalaPluginLoader implements PluginLoader {
                     }
 
                     //TODO in the future I could transform the class to use the the relocated scala library?
+                    //TODO if I find the 'perfect' main class candidate - break the loop early. That would break access from JavaPlugins though.
+                    //TODO What if I create a 'fake' PluginClassLoader and add it to the JavaPluginLoader that uses the ScalaPluginClassLoader as a parent? :)
 
                     //add to class names so we can instantiate the classes later.
                     classNamesIncludedInTheScalaPluginJar.add(descriptionScanner.getClassName());
 
                     //The smallest element is the best candidate!
                     mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
+
 
                 } else if (jarEntry.getName().equals("plugin.yml")) {
                     //If it contains a main class and it doesn't extend ScalaPlugin directly we should try to delegate to the JavaPluginLoader
@@ -323,9 +327,11 @@ public class ScalaPluginLoader implements PluginLoader {
         Class<?> found = scalaPluginClasses == null ? null : scalaPluginClasses.get(className);
         if (found != null) return found;
 
-        //try load from classloaders
-        CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaVersion);
-        //TODO don't check for equal scala versions - check for binary compatible scala verions instead
+        //try load from classloaders - check all scala plugins that use compatible versions of scala.
+        CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.entrySet().stream()
+                .filter(e -> checkCompat(scalaVersion, e.getKey()))
+                .flatMap(e -> e.getValue().stream())
+                .collect(Collectors.toCollection(CopyOnWriteArrayList::new));
 
         if (classLoaders != null) {
             for (ScalaPluginClassLoader scalaPluginClassLoader : classLoaders) {
@@ -342,6 +348,20 @@ public class ScalaPluginLoader implements PluginLoader {
         }
 
         return found;
+    }
+
+    private static boolean checkCompat(final String ownVersion, final String otherVersion) {
+        int indexOfDot = ownVersion.lastIndexOf('.');
+        if (indexOfDot == -1) return ownVersion.equals(otherVersion);
+
+        int otherIndexOfDot = otherVersion.lastIndexOf('.');
+        if (otherIndexOfDot != indexOfDot) return false;
+
+        String beforeLastDot1 = ownVersion.substring(0, indexOfDot);
+        String beforeLastDot2 = otherVersion.substring(0, indexOfDot);
+        return beforeLastDot1.equals(beforeLastDot2);
+
+        //we don't care what comes after the last dot because those versions are compatible
     }
 
 

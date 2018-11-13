@@ -16,7 +16,7 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
     private final String scalaReflectUrl;
 
     public PluginScalaVersion(String scalaVersion, String libraryUrl, String reflectUrl) {
-        this.scalaVersion = Objects.requireNonNull(scalaVersion, "scala scalaVersion cannot be null!");
+        this.scalaVersion = Objects.requireNonNull(scalaVersion, "scalaVersion cannot be null!");
         this.scalaLibraryUrl = Objects.requireNonNull(libraryUrl, "scala standard library url cannot be null!");
         this.scalaReflectUrl = Objects.requireNonNull(reflectUrl, "scala reflection library url cannot be null!");
     }
@@ -38,6 +38,7 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
     public String getScalaReflectUrl() {
         return scalaReflectUrl;
     }
+
 
     @Override
     public boolean equals(Object other) {
@@ -64,6 +65,7 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
         map.put("scala-version", getScalaVersion());
         map.put("scala-library-url", getScalaLibraryUrl());
         map.put("scala-reflect-url", getScalaReflectUrl());
+
         return map;
     }
 
@@ -71,6 +73,7 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
         String scalaVersion = map.get("scala-version").toString();
         String scalaLibraryUrl = map.get("scala-library-url").toString();
         String scalaReflectUrl = map.get("scala-reflect-url").toString();
+
         return new PluginScalaVersion(scalaVersion, scalaLibraryUrl, scalaReflectUrl);
     }
 

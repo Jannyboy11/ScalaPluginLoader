@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
+public abstract class ScalaPlugin implements Plugin {
 
     private final ScalaPluginDescription description;
     private PluginDescriptionFile lazyDescription;
@@ -51,13 +51,26 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
             this.file = classLoader.getPluginJarFile();
         } else {
             getLogger().warning("ScalaPlugin got instantiated but was not loaded by a ScalaPluginClassLoader!");
+            getLogger().warning("Many of ScalaPlugin's fields will remain uninitialised!");
         }
+    }
+
+    protected ScalaPlugin(ScalaPluginDescription pluginDescription, Server server, File file) {
+        this.description = pluginDescription;
+        this.description.setMain(getClass().getName());
+        this.server = server;
+        this.file = file;
     }
 
     void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
+    /**
+     * Can only be used when the ScalaPlugin is loaded by the ScalaPluginLoader.
+     * Otherwise use {@code scalaPlugin.getClass().getClassLoader()}.
+     * @return the ScalaPluginClassLoader that loaded classes from this plugin
+     */
     protected ScalaPluginClassLoader getClassLoader() {
         return classLoader;
     }
@@ -242,16 +255,6 @@ public abstract class ScalaPlugin implements Plugin, Comparable<Plugin> {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         return null;
-    }
-
-    @Override
-    public int compareTo(Plugin other) {
-        //TODO this seems kind of arbitrary. It's nice for plugins to be Comparable though,
-        //TODO so that they can be used in sorted collections without an explicit comparator.
-        //TODO I should probably remove this as long as Plugin doesn't extends Comparable<Plugin>
-        if (other instanceof JavaPlugin) return 1; //java plugins are smaller.
-
-        return getName().compareTo(other.getName());
     }
 
     @Override

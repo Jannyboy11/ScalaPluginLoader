@@ -23,7 +23,7 @@ public class DescriptionScanner extends ClassVisitor {
 
     private static final String SCALA_ANNOTATION_DESCRIPTOR = "L" + Scala.class.getName().replace('.', '/') + ";";
     private static final String CUSTOMSCALA_ANNOTATION_DESCRIPTOR = "L" + CustomScala.class.getName().replace('.', '/') + ";";
-    private static final String VERSION_ANNOTATION_DESCRIPTOR = "L" + Version.class.getName().replace('.', '/');
+    private static final String VERSION_ANNOTATION_DESCRIPTOR = "L" + Version.class.getName().replace('.', '/') + ";";
     private static final String API_ANNOTATION_DESCRIPTOR = "L" + Api.class.getName().replace('.', '/') + ";";
 
     private String mainClassCandidate;
@@ -131,7 +131,7 @@ public class DescriptionScanner extends ClassVisitor {
 
         @Override
         public AnnotationVisitor visitAnnotation(String name, String descriptor) {
-            return VERSION_ANNOTATION_DESCRIPTOR.equals(descriptor) ?
+            return "value".equals(name) && VERSION_ANNOTATION_DESCRIPTOR.equals(descriptor) ?
                 new AnnotationVisitor(ASM_API_VERSION) {
                     @Override
                     public void visit(String name, Object value) {

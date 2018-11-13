@@ -143,6 +143,8 @@ public final class ScalaLoader extends JavaPlugin {
     //TODO JavaPlugins that get loaded by the ScalaPluginLoader will need actual class bytes transformations though.
     //TODO Or - I just use a custom JavaPluginLoader which has access to the ScalaLibraryClassLoaders, and can use those as parent classloaders
     //TODO Just calling addURLs using reflection won't work, I think
+    //TODO What if I create a 'fake' PluginClassLoader and add it to the JavaPluginLoader that uses the ScalaPluginClassLoader as a parent? :)
+    //TODO I can make use of JavaPlugin's initializing constructor that takes a non-PluginClassLoader class loader.
 
     private boolean downloadScalaJarFiles() {
         return getConfig().getBoolean("load-libraries-from-disk", true);
