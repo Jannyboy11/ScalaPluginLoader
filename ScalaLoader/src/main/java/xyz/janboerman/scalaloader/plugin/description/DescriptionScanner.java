@@ -50,7 +50,7 @@ public class DescriptionScanner extends ClassVisitor {
         classReader.accept(this, ClassReader.EXPAND_FRAMES);
     }
 
-    public DescriptionScanner(byte[] classBytes) throws IOException {
+    public DescriptionScanner(byte[] classBytes) {
         this();
         ClassReader classReader = new ClassReader(classBytes);
         classReader.accept(this, ClassReader.EXPAND_FRAMES);
