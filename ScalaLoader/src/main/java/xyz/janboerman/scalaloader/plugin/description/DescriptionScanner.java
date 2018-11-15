@@ -12,7 +12,6 @@ import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 /**
  * Annotation scanner dat reads the scala version from the plugin's main class.
