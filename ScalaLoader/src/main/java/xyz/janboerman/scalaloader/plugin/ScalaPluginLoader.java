@@ -72,6 +72,8 @@ public class ScalaPluginLoader implements PluginLoader {
         final ScalaPlugin alreadyPresent = scalaPluginsByFile.get(file);
         if (alreadyPresent != null) return alreadyPresent.getDescription();
 
+        getScalaLoader().getLogger().info("Reading ScalaPlugin jar: " + file.getName() + "..");
+
         //filled optionals are smaller then empty optionals.
         Comparator<Optional<?>> optionalComparator = Comparator.comparing(optional -> !optional.isPresent());
         //smaller package hierarchy = smaller string
@@ -81,8 +83,8 @@ public class ScalaPluginLoader implements PluginLoader {
         Comparator<DescriptionScanner> descriptionComparator = Comparator.nullsLast(Comparator /* get rid of null descriptors */
                 .<DescriptionScanner, Optional<?>>comparing(DescriptionScanner::getMainClass, optionalComparator /* get rid of descriptions without a main class */)
                 .thenComparing(DescriptionScanner::extendsScalaPlugin /* classes that extend ScalaPlugin directly are less likely to be the best candidate. */)
-                .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* never fails because empty optionals are larger anyway :) */, packageComparator)
-                .thenComparing(descriptionScanner -> descriptionScanner.getMainClass().get() /* fallback - just compare the class strings */));
+                .thenComparing(DescriptionScanner::getClassName, packageComparator /* less deeply nested class = better candidate*/)
+                .thenComparing(DescriptionScanner::getClassName /* fallback - just compare the class name strings */));
 
         Map<String, Object> pluginYamlData = null;
         Set<String> classNamesIncludedInTheScalaPluginJar = new HashSet<>(); //TODO ugly hack to make scala plugin class files accessible to java plugins
@@ -98,9 +100,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
                     InputStream classBytesInputStream = jarFile.getInputStream(jarEntry);
 
-                    DescriptionScanner descriptionScanner = new DescriptionScanner();
-                    ClassReader classReader = new ClassReader(classBytesInputStream);
-                    classReader.accept(descriptionScanner, 0);
+                    DescriptionScanner descriptionScanner = new DescriptionScanner(classBytesInputStream);
 
                     //Emit a warning when the class does extend ScalaPlugin, but does not have de @Scala or @CustomScala annotation
                     if (descriptionScanner.extendsScalaPlugin() && !descriptionScanner.getScalaVersion().isPresent()) {
@@ -112,7 +112,9 @@ public class ScalaPluginLoader implements PluginLoader {
                     //TODO What if I create a 'fake' PluginClassLoader and add it to the JavaPluginLoader that uses the ScalaPluginClassLoader as a parent? :)
 
                     //add to class names so we can instantiate the classes later.
-                    classNamesIncludedInTheScalaPluginJar.add(descriptionScanner.getClassName());
+                    if (descriptionScanner.hasClass()) {
+                        classNamesIncludedInTheScalaPluginJar.add(descriptionScanner.getClassName());
+                    }
 
                     //The smallest element is the best candidate!
                     mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);

@@ -2,13 +2,17 @@ package xyz.janboerman.scalaloader.plugin.description;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 /**
  * Annotation scanner dat reads the scala version from the plugin's main class.
@@ -33,10 +37,38 @@ public class DescriptionScanner extends ClassVisitor {
     private boolean extendsJavaPlugin;
     private boolean extendsJavaLangObject;
     private boolean isAbstract;
+    private boolean isModule;
     private boolean hasSuitableConstructor;
 
     public DescriptionScanner() {
         super(ASM_API_VERSION);
+    }
+
+    public DescriptionScanner(InputStream classBytes) throws IOException {
+        this();
+        ClassReader classReader = new ClassReader(classBytes);
+        classReader.accept(this, ClassReader.EXPAND_FRAMES);
+    }
+
+    public DescriptionScanner(byte[] classBytes) throws IOException {
+        this();
+        ClassReader classReader = new ClassReader(classBytes);
+        classReader.accept(this, ClassReader.EXPAND_FRAMES);
+    }
+
+    @Override
+    public String toString() {
+        return "Description"
+                + "{mainClassCandiate=" + mainClassCandidate
+                + ",scalaVersion=" + scalaVersion
+                + ",bukkitApiVersion=" + bukkitApiVersion
+                + ",extendsScalaPluginDirectly=" + extendsScalaPlugin
+                + ",extendsJavaPluginDirectly=" + extendsJavaPlugin
+                + ",extendsJavaLangObject=" + extendsJavaLangObject
+                + ",isAbstract=" + isAbstract
+                + ",isModule=" + isModule
+                + ",hasSuitableConstructor" + hasSuitableConstructor
+                + "}";
     }
 
     //visit declaration annotations
@@ -59,6 +91,7 @@ public class DescriptionScanner extends ClassVisitor {
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         mainClassCandidate = name.replace('/', '.');
         isAbstract = (access & Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
+        isModule = (access & Opcodes.ACC_MODULE) == Opcodes.ACC_MODULE;
         if (SCALAPLUGIN_CLASS_NAME.equals(superName)) {
             extendsScalaPlugin = true;
         } else if (JAVAPLUGIN_CLASS_NAME.equals(superName)) {
@@ -81,12 +114,17 @@ public class DescriptionScanner extends ClassVisitor {
         return null;
     }
 
+    public boolean hasClass() {
+        return !isModule;
+    }
+
     public String getClassName() {
         return mainClassCandidate;
     }
 
     public Optional<String> getMainClass() {
         return Optional.ofNullable(mainClassCandidate)
+                .filter(x -> !isModule)
                 .filter(x -> getScalaVersion().isPresent())
                 .filter(x -> hasSuitableConstructor)
                 .filter(x -> !isAbstract)
@@ -107,15 +145,6 @@ public class DescriptionScanner extends ClassVisitor {
 
     public boolean extendsJavaPlugin() {
         return extendsJavaPlugin;
-    }
-
-    public String toString() {
-        return "{main class = " + getMainClass() +
-                ",scala version = " + getScalaVersion() +
-                ",bukkit api version = " + getBukkitApiVersion() +
-                ",extends scala plugin = " + extendsScalaPlugin() +
-                ",extends java plugin = " + extendsJavaPlugin() +
-                "}";
     }
 
     // ======================= class annotation visitors =======================
