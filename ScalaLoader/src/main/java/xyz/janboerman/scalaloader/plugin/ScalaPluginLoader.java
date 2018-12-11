@@ -46,6 +46,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
     private final Map<String, ScalaPlugin> scalaPlugins = new HashMap<>();
     private final Map<File, ScalaPlugin> scalaPluginsByFile = new HashMap<>();
+    private final Map<ScalaPlugin, File> filesByScalaPlugin = new HashMap<>();
 
     public ScalaPluginLoader(Server server) {
         this.server = Objects.requireNonNull(server, "Server cannot be null!");
@@ -88,8 +89,6 @@ public class ScalaPluginLoader implements PluginLoader {
 
         Map<String, Object> pluginYamlData = null;
 
-        //Set<String> classNamesIncludedInTheScalaPluginJar = new HashSet<>(); //TODO ugly hack to make scala plugin class files accessible to java plugins
-
         try {
             DescriptionScanner mainClassCandidate = null;
 
@@ -111,11 +110,6 @@ public class ScalaPluginLoader implements PluginLoader {
                     //TODO in the future I could transform the class to use the the relocated scala library?
                     //TODO if I find the 'perfect' main class candidate - break the loop early. That would break access from JavaPlugins though.
                     //TODO What if I create a 'fake' PluginClassLoader and add it to the JavaPluginLoader that uses the ScalaPluginClassLoader as a parent? :)
-
-//                    //add to class names so we can instantiate the classes later.
-//                    if (descriptionScanner.hasClass()) {
-//                        classNamesIncludedInTheScalaPluginJar.add(descriptionScanner.getClassName());
-//                    }
 
                     //The smallest element is the best candidate!
                     mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
@@ -183,19 +177,6 @@ public class ScalaPluginLoader implements PluginLoader {
                     throw new InvalidDescriptionException(e, "Couldn't create/get plugin instance for main class " + mainClass);
                 }
 
-//                //We were successful in creating the plugin instance - now force load all the other classes in the plugin so that they can be found by JavaPlugins.
-//                //The scalaPluginClassLoader will inject them into the JavaPluginLoader classes cache.
-//                //TODO only do this when a java plugin (soft)depends on the scala plugin.
-//                for (String classNameInScalaPlugin : classNamesIncludedInTheScalaPluginJar) {
-//                    //more ugly hacks... :(
-//                    try {
-//                        Class.forName(classNameInScalaPlugin, true, scalaPluginClassLoader);
-//                    } catch (NoClassDefFoundError e) {
-//                        plugin.getLogger().log(Level.WARNING, "Tried to load a class that tries to load a class that doesn't exist: " + classNameInScalaPlugin + ".", e);
-//                        //can happen when a plugin depends on multiple nms versions.
-//                    }
-//                }
-
                 //moved to ScalaPlugin constructor
                 //plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
                 //plugin.getScalaDescription().setMain(mainClass); //required per PluginDescriptionFile constructor - not actually used.
@@ -207,6 +188,9 @@ public class ScalaPluginLoader implements PluginLoader {
 
                 //be sure to cache the plugin - later in loadPlugin we just return the cached instance!
                 scalaPluginsByFile.put(file, plugin);
+
+                //used by forceLoadAllClasses
+                filesByScalaPlugin.put(plugin, file);
                 return plugin.getDescription();
 
             } catch (ClassNotFoundException e) {
@@ -221,6 +205,47 @@ public class ScalaPluginLoader implements PluginLoader {
 
         } catch (IOException e) {
             throw new InvalidDescriptionException(e, "Could not read jar file " + file.getName());
+        }
+    }
+
+    public JarFile getJarFile(ScalaPlugin scalaPlugin) throws IOException {
+        return new JarFile(filesByScalaPlugin.get(scalaPlugin));
+    }
+
+    public void forceLoadAllClasses(ScalaPlugin scalaPlugin) {
+        try {
+            JarFile jarFile = getJarFile(scalaPlugin);
+            jarFile.stream()
+                    .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                    .map(jarEntry -> {
+                        try {
+                            return jarFile.getInputStream(jarEntry);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .map(inputStream -> {
+                        try {
+                            return new DescriptionScanner(inputStream);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .filter(DescriptionScanner::hasClass)
+                    .map(DescriptionScanner::getClassName)
+                    .forEach(className -> {
+                        try {
+                            Class.forName(className, true, scalaPlugin.getClassLoader());
+                        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+                            e.printStackTrace();
+                        }
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
