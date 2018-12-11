@@ -11,8 +11,9 @@ import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
 
 @Scala(version = ScalaVersion.v2_12_7)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.3-SNAPSHOT")
-        .commands(new SPCommand("foo").permission("scalaexample.foo"))
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.6-SNAPSHOT")
+        .addCommand(new SPCommand("foo").permission("scalaexample.foo"))
+        .addCommand(new SPCommand("home").permission("scalaexample.home").usage("/home set|tp"))
         .permissions(new SPPermission("scalaexample.foo").permissionDefault(PermissionDefault.TRUE)))
     with Listener {
 
@@ -25,6 +26,7 @@ object ExamplePlugin
     override def onEnable(): Unit = {
         getLogger.info("ScalaExample - I am enabled!")
         getServer.getPluginManager.registerEvents(this, this)
+        getCommand("home").setExecutor(HomeExecutor)
     }
 
     override def onDisable(): Unit = {

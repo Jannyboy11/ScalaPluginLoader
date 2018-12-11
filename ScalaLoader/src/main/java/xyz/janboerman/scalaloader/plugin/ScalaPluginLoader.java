@@ -87,7 +87,8 @@ public class ScalaPluginLoader implements PluginLoader {
                 .thenComparing(DescriptionScanner::getClassName /* fallback - just compare the class name strings */));
 
         Map<String, Object> pluginYamlData = null;
-        Set<String> classNamesIncludedInTheScalaPluginJar = new HashSet<>(); //TODO ugly hack to make scala plugin class files accessible to java plugins
+
+        //Set<String> classNamesIncludedInTheScalaPluginJar = new HashSet<>(); //TODO ugly hack to make scala plugin class files accessible to java plugins
 
         try {
             DescriptionScanner mainClassCandidate = null;
@@ -111,10 +112,10 @@ public class ScalaPluginLoader implements PluginLoader {
                     //TODO if I find the 'perfect' main class candidate - break the loop early. That would break access from JavaPlugins though.
                     //TODO What if I create a 'fake' PluginClassLoader and add it to the JavaPluginLoader that uses the ScalaPluginClassLoader as a parent? :)
 
-                    //add to class names so we can instantiate the classes later.
-                    if (descriptionScanner.hasClass()) {
-                        classNamesIncludedInTheScalaPluginJar.add(descriptionScanner.getClassName());
-                    }
+//                    //add to class names so we can instantiate the classes later.
+//                    if (descriptionScanner.hasClass()) {
+//                        classNamesIncludedInTheScalaPluginJar.add(descriptionScanner.getClassName());
+//                    }
 
                     //The smallest element is the best candidate!
                     mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
@@ -182,12 +183,18 @@ public class ScalaPluginLoader implements PluginLoader {
                     throw new InvalidDescriptionException(e, "Couldn't create/get plugin instance for main class " + mainClass);
                 }
 
-                //We were successful in creating the plugin instance - now force load all the other classes in the plugin so that they can be found by JavaPlugins.
-                //The scalaPluginClassLoader will inject them into the JavaPluginLoader classes cache.
-                //TODO only do this when a java plugin (soft) depends on the scala plugin.
-                for (String classNameInScalaPlugin : classNamesIncludedInTheScalaPluginJar) {
-                    Class.forName(classNameInScalaPlugin, true, scalaPluginClassLoader);
-                }
+//                //We were successful in creating the plugin instance - now force load all the other classes in the plugin so that they can be found by JavaPlugins.
+//                //The scalaPluginClassLoader will inject them into the JavaPluginLoader classes cache.
+//                //TODO only do this when a java plugin (soft)depends on the scala plugin.
+//                for (String classNameInScalaPlugin : classNamesIncludedInTheScalaPluginJar) {
+//                    //more ugly hacks... :(
+//                    try {
+//                        Class.forName(classNameInScalaPlugin, true, scalaPluginClassLoader);
+//                    } catch (NoClassDefFoundError e) {
+//                        plugin.getLogger().log(Level.WARNING, "Tried to load a class that tries to load a class that doesn't exist: " + classNameInScalaPlugin + ".", e);
+//                        //can happen when a plugin depends on multiple nms versions.
+//                    }
+//                }
 
                 //moved to ScalaPlugin constructor
                 //plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());

@@ -11,10 +11,12 @@ import xyz.janboerman.scalaloader.example.scala.Home;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
+import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.description.Version;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 
 @CustomScala(@Version(value = "2.12.6",
         scalaLibraryUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.6%2Fscala-reflect-2.12.6.jar",
@@ -22,7 +24,7 @@ import java.util.UUID;
 public class ExamplePlugin extends ScalaPlugin {
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.1-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.6-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     @Override
@@ -39,6 +41,7 @@ public class ExamplePlugin extends ScalaPlugin {
 
         getLogger().info("Got " + ExamplePlugin$.MODULE$.getInt() + " from the Scala example plugin :)");
 
+        //this works because 2.12.6 is binary compatible with 2.12.7
         Home home = Home.apply(UUID.randomUUID(), "home", getServer().getWorlds().get(0).getSpawnLocation());
     }
 
