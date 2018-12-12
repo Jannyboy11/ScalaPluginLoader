@@ -408,6 +408,13 @@ public class ScalaPluginLoader implements PluginLoader {
         return getJavaPluginLoader().createRegisteredListeners(listener, plugin);
     }
 
+    /**
+     * Make a class visible for all Scala plugins with a certain (or binary compatible) Scala version.
+     * @param scalaVersion the scala version
+     * @param className the name of the class
+     * @param clazz the class
+     * @return whether the class was added to the cache of this plugin loader
+     */
     public boolean addClassGlobally(String scalaVersion, String className, Class<?> clazz) {
         if (clazz.getClassLoader() instanceof ScalaLibraryClassLoader) return false;
 

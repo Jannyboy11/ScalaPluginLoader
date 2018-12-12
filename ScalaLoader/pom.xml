@@ -67,6 +67,47 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <!-- bukkit library javadoc -->
+                    <links>
+                        <link>https://hub.spigotmc.org/javadocs/bukkit/</link>
+                    </links>
+
+                    <!-- make the javadoc tool stop complain about unrecognised tags -->
+                    <tags>
+                        <tag>
+                            <name>apiNote</name>
+                            <placement>a</placement>
+                            <head>API Note:</head>
+                        </tag>
+                    </tags>
+
+                    <!-- only show protected and public stuff -->
+                    <show>protected</show>
+
+                    <!-- who needs help, anyway? -->
+                    <nohelp>true</nohelp>
+
+                    <!-- the javadoc tool is too picky for me -->
+                    <failOnError>false</failOnError>
+                </configuration>
+
+                <!-- I don't even get why this workaround is required.
+                    Why is the javadoc plugin reading bytecode anyway?
+                    link to the bugtracker: https://issues.apache.org/jira/projects/MJAVADOC/issues/MJAVADOC-542 -->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm</artifactId>
+                        <version>7.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
 
     </build>
