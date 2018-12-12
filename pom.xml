@@ -7,7 +7,7 @@
     <groupId>xyz.janboerman</groupId>
     <artifactId>ScalaPluginLoader</artifactId>
     <packaging>pom</packaging>
-    <version>0.6-SNAPSHOT</version>
+    <version>0.7-SNAPSHOT</version>
 
     <modules>
         <module>JavaExample</module>

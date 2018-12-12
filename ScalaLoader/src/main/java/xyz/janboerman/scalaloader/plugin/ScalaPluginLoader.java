@@ -5,7 +5,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
@@ -28,6 +27,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class ScalaPluginLoader implements PluginLoader {
@@ -224,42 +224,87 @@ public class ScalaPluginLoader implements PluginLoader {
         return new JarFile(filesByScalaPlugin.get(scalaPlugin));
     }
 
+    private static void injectClassesIntoJavaPlugin(Stream<? extends Class<?>> classes, JavaPlugin javaPlugin) {
+        ClassLoader javaPluginClassLoader = javaPlugin.getClass().getClassLoader();
+        try {
+            Field field = javaPluginClassLoader.getClass().getField("classes");
+            field.setAccessible(true);
+            Map<String, Class<?>> classesMap = (Map<String, Class<?>>) field.get(javaPluginClassLoader);
+            classes.forEach(clazz -> classesMap.put(clazz.getName(), clazz));
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //TODO make an equivalent version for the scala standard library.
+    //TODO it should inspect the javaplugin's bytecode to see which scala library classes
+    //TODO are needed - so we don't load them all (that would be A LOT of RAM xD).
+    /**
+     * Makes classes from a ScalaPlugin visible to the JavaPlugin's classloader so that the ScalaPlugin
+     * can be used by the JavaPlugin.
+     * @param scalaPlugin the scala plugin
+     * @param javaPlugin the java plugin
+     */
+    public void openUpToJavaPlugin(ScalaPlugin scalaPlugin, JavaPlugin javaPlugin) {
+        try {
+            injectClassesIntoJavaPlugin(getAllClasses(scalaPlugin), javaPlugin);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Get all classes from a scala plugin.
+     * @param scalaPlugin the scala plugin
+     * @return an open stream that provides all classes
+     * @throws IOException if the stream could not be opened for whatever reason
+     */
+    public Stream<? extends Class<?>> getAllClasses(ScalaPlugin scalaPlugin) throws IOException {
+        JarFile jarFile = getJarFile(scalaPlugin);
+        return jarFile.stream()
+                .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                .map(jarEntry -> {
+                    try {
+                        return jarFile.getInputStream(jarEntry);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .map(inputStream -> {
+                    try {
+                        return new DescriptionScanner(inputStream);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .filter(DescriptionScanner::hasClass)
+                .map(DescriptionScanner::getClassName)
+                .map(className -> {
+                    try {
+                        return Class.forName(className, true, scalaPlugin.getClassLoader());
+                    } catch (ClassNotFoundException | NoClassDefFoundError e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull);
+    }
+
     /**
      * Loads all classes in the ScalaPlugin's jar file.
      * @param scalaPlugin the ScalaPlugin
+     *
+     * @deprecated pollutes the JavaPluginLoader with scala-version-specific classes.
+     *             use {@link #openUpToJavaPlugin(ScalaPlugin, JavaPlugin)} instead.
      */
+    @Deprecated
     public void forceLoadAllClasses(ScalaPlugin scalaPlugin) {
         try {
-            JarFile jarFile = getJarFile(scalaPlugin);
-            jarFile.stream()
-                    .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                    .map(jarEntry -> {
-                        try {
-                            return jarFile.getInputStream(jarEntry);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .map(inputStream -> {
-                        try {
-                            return new DescriptionScanner(inputStream);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .filter(DescriptionScanner::hasClass)
-                    .map(DescriptionScanner::getClassName)
-                    .forEach(className -> {
-                        try {
-                            Class.forName(className, true, scalaPlugin.getClassLoader());
-                        } catch (ClassNotFoundException | NoClassDefFoundError e) {
-                            e.printStackTrace();
-                        }
-                    });
+            getAllClasses(scalaPlugin).forEach(noop -> {});
         } catch (IOException e) {
             e.printStackTrace();
         }

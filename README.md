@@ -34,9 +34,9 @@ jars by changing the URLs to "file://some/location". The scala classes aren't ac
 that needs them, so you can run ScalaLoader once without ScalaPlugins to generate the config.
 
 ### Roadmap
-There's only four features that are missing in my opinion:
-- The first con. I want JavaPlugins te be able to access the Scala library classes, however they will need to tell
-ScalaLoader somehow which version they want to use.
+There's only ~~four~~ three features that are missing in my opinion:
+- ~~The first con. I want JavaPlugins te be able to access the Scala library classes, however they will need to tell
+ScalaLoader somehow which version they want to use.~~ Now implemented in ScalaPluginLoader#openUpToJavaPlugin(ScalaPlugin,JavaPlugin).
 - An idiomatic Scala 'wrapper' for the bukkit api. This will likely be provided in a separate plugin writtin in Scala.
 Things that come to mind: Use of Options instead of null, using the type-class pattern for ConfigurationSerializable things.
 - Make the ScalaPluginLoader parallel capable. Right now ScalaPlugins are loaded one after another.
@@ -111,13 +111,20 @@ Java code:
 package xyz.janboerman.dummy.dummyplugin;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.example.scala.ExamplePlugin$;
 
 public final class DummyPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        //get the plugin instance
         ExamplePlugin$ plugin = (ExamplePlugin$) getServer().getPluginManager().getPlugin("ScalaExample");
+        
+        //make sure all classes from the scala plugin can be accessed
+        ScalaPluginLoader.getInstance().openUpToJavaPlugin(plugin, this);
+        
+        //do whatever you want afterwards!
         getLogger().info("We got " + plugin.getInt() + " from Scala!");
     }
 
@@ -133,7 +140,7 @@ Note that while ScalaLoader can run on Java 8, it requires JDK9+ to compile.
 ##### SBT
 ```
 resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.6" % "provided"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.7" % "provided"
 ```
 
 ##### Maven
@@ -146,7 +153,7 @@ libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader"
 <dependency>
     <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.6</version>
+    <version>v0.7</version>
     <scope>provided</scope>
 </dependency>
 ```
