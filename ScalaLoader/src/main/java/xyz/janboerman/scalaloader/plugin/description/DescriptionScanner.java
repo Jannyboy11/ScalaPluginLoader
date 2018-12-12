@@ -39,16 +39,28 @@ public class DescriptionScanner extends ClassVisitor {
     private boolean isModule;
     private boolean hasSuitableConstructor;
 
-    public DescriptionScanner() {
+    /**
+     * Initialises the {@link DescriptionScanner} without reading a class file.
+     */
+    private DescriptionScanner() {
         super(ASM_API_VERSION);
     }
 
+    /**
+     * Create a {@link DescriptionScanner} and read a class file.
+     * @param classBytes the inputstream that provides the class's bytecode
+     * @throws IOException if something goes wrong with the InputStream
+     */
     public DescriptionScanner(InputStream classBytes) throws IOException {
         this();
         ClassReader classReader = new ClassReader(classBytes);
         classReader.accept(this, ClassReader.EXPAND_FRAMES);
     }
 
+    /**
+     * Create a {@link DescriptionScanner} and read a class file.
+     * @param classBytes the class's bytecode
+     */
     public DescriptionScanner(byte[] classBytes) {
         this();
         ClassReader classReader = new ClassReader(classBytes);

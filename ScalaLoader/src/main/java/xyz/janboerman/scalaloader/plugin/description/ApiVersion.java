@@ -1,5 +1,8 @@
 package xyz.janboerman.scalaloader.plugin.description;
 
+/**
+ * Representions for different versions of bukkit's API.
+ */
 public enum ApiVersion {
 
     //i probably don't want to create a 1.7 compatability layer xd

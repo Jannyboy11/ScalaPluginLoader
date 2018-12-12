@@ -52,9 +52,17 @@ public class ScalaPluginLoader implements PluginLoader {
         this.server = Objects.requireNonNull(server, "Server cannot be null!");
 
         //Static abuse but I cannot find a more elegant way to do this.
-        INSTANCE = this;
+        if (INSTANCE == null) {
+            INSTANCE = this;
+        }
     }
 
+    /**
+     * Get the instance that was created when this ScalaPluginLoader was constructed.
+     * Note that, if you call this method from your own plugin, your plugin must have a dependency on {@link ScalaLoader}.
+     * @return the instance that was created either by bukkit's {@link PluginManager} or by the {@link ScalaLoader},
+     *         or null if no ScalaPluginLoader was constructed yet.
+     */
     public static ScalaPluginLoader getInstance() {
         return INSTANCE;
     }
@@ -130,9 +138,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
                         if (pluginYamlDefinedMainJarEntry != null) {
                             InputStream classBytesInputStream = jarFile.getInputStream(pluginYamlDefinedMainJarEntry);
-                            DescriptionScanner yamlMainScanner = new DescriptionScanner();
-                            ClassReader classReader = new ClassReader(classBytesInputStream);
-                            classReader.accept(yamlMainScanner, 0);
+                            DescriptionScanner yamlMainScanner = new DescriptionScanner(classBytesInputStream);
 
                             if (yamlMainScanner.extendsJavaPlugin()) {
                                 //TODO check whether this main class depends on a scala version - if yes transform the classes from the java plugin
@@ -208,10 +214,20 @@ public class ScalaPluginLoader implements PluginLoader {
         }
     }
 
+    /**
+     * Get the jar file of a ScalaPlugin.
+     * @param scalaPlugin the plugin
+     * @return the jar file
+     * @throws IOException if a jarfile could not be created
+     */
     public JarFile getJarFile(ScalaPlugin scalaPlugin) throws IOException {
         return new JarFile(filesByScalaPlugin.get(scalaPlugin));
     }
 
+    /**
+     * Loads all classes in the ScalaPlugin's jar file.
+     * @param scalaPlugin the ScalaPlugin
+     */
     public void forceLoadAllClasses(ScalaPlugin scalaPlugin) {
         try {
             JarFile jarFile = getJarFile(scalaPlugin);

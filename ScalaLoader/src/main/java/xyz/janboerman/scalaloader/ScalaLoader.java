@@ -150,6 +150,13 @@ public final class ScalaLoader extends JavaPlugin {
         return getConfig().getBoolean("load-libraries-from-disk", true);
     }
 
+    /**
+     * Get a (fresh or cached) {@link ScalaLibraryClassLoader} that loads standard library classes from a specific Scala version.
+     * The classloader can either load classes from over the network directly, or use downloaded library archives (jar files).
+     * @param scalaVersion the scala version
+     * @return the class loader
+     * @throws ScalaPluginLoaderException if a url is malformed.
+     */
     public ScalaLibraryClassLoader loadOrGetScalaVersion(PluginScalaVersion scalaVersion) throws ScalaPluginLoaderException {
         //try to get from cache
         ScalaLibraryClassLoader scalaLibraryLoader = scalaLibraryClassLoaders.get(scalaVersion.getScalaVersion());
@@ -261,6 +268,11 @@ public final class ScalaLoader extends JavaPlugin {
         return scalaLibraryLoader;
     }
 
+    /**
+     * Add new versions of Scala to ScalaLoader's config.
+     * @param versions the scala versions
+     * @return whether a new version was added to the config
+     */
     public boolean saveScalaVersionsToConfig(PluginScalaVersion... versions) {
         FileConfiguration config = getConfig();
         Set<PluginScalaVersion> scalaVersions = new LinkedHashSet<>(Arrays.asList(versions));

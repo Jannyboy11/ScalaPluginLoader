@@ -129,6 +129,28 @@ It's a [maven](https://maven.apache.org/) project, so just `cd ScalaLoader` and 
 Be sure to use the shaded jar and not the original one.
 Note that while ScalaLoader can run on Java 8, it requires JDK9+ to compile.
 
+## Dependency Information
+##### SBT
+```
+resolvers += "jitpack" at "https://jitpack.io"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.6" % "provided"
+```
+
+##### Maven
+```
+<repository>
+    <id>jitpack.io</id>
+    <url>https://jitpack.io</url>
+</repository>
+
+<dependency>
+    <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
+    <artifactId>ScalaLoader</artifactId>
+    <version>v0.6</version>
+    <scope>provided</scope>
+</dependency>
+```
+
 ## License
 LGPL, because I want forks of this thing to be open for auditing.
 If you however which to *include* parts this code base in your own open source project but not adopt the (L)GPL license,

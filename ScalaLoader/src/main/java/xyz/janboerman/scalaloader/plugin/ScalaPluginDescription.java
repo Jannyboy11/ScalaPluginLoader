@@ -9,6 +9,10 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.*;
 import java.util.*;
 
+/**
+ * The Java API for configuring a {@link ScalaPlugin}. This API is meant as a compile-time type-safe alternative to the error-prone plugin.yml files.
+ * An instance of this class is used by {@link ScalaPlugin#ScalaPlugin(ScalaPluginDescription)}.
+ */
 public final class ScalaPluginDescription {
 
     private static final PermissionDefault PERMISSION_DEFAULT = org.bukkit.permissions.Permission.DEFAULT_PERMISSION;
