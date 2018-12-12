@@ -342,7 +342,7 @@ public abstract class ScalaPlugin implements Plugin {
      * @return the logger
      */
     @Override
-    public ScalaPluginLogger getLogger() {
+    public Logger getLogger() {
         return lazyLogger == null ? lazyLogger = new ScalaPluginLogger(this) : lazyLogger;
     }
 
