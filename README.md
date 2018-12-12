@@ -15,7 +15,7 @@ ScalaLoader uses a custom PluginLoader that loads the Scala runtime classes for 
 #### Pros
 - Write idiomatic Scala!
 - No need to shade anymore!
-- Supports multiple Scala versions at the same time! ScalaLoader uses classloader magic to make that work.
+- Supports different (binary incompatible) Scala versions at the same time! ScalaLoader uses classloader magic to make that work.
 - Supports custom scala versions by adding/changing URLs in the config file.
 - Annotation-based detection of the plugin's main class - no need to write a plugin.yml.
 If you wish to use a plugin.yml still, you can, however I always found it a pain.
@@ -23,23 +23,24 @@ If you wish to use a plugin.yml still, you can, however I always found it a pain
 #### Cons
 - Scala library classes are only accessible to ScalaPlugins (You can still write them in Java though).
 - ScalaLoaders uses a lot of reflection/injection hacks to make ScalaPlugins accessible to JavaPlugins.
-- Existing libraries *might* rely on the fact that your Plugin is a JavaPlugin.
 
 #### Caveats
 - ScalaPlugin jars go in the <server_root>/plugins/ScalaLoader/scalaplugins/ directory. I made this choice so that ScalaLoader
 doesn't try to load JavaPlugins that are loaded already.
 - By default ScalaLoader downloads the scala libraries from over the network the first time. I made this choice to provide
-the best possible user experience for server admins. If you're very security-focused you might want to provide your own
-jars by changing the URLs to "file://some/location". The scala classes aren't actually loaded until there's a plugin
+the best possible user experience for server admins. The ScalaLoader jar remains small in size, and there's no manual downloading
+involved. If you're very security-focused you might want to provide your own
+jars by changing the URLs to "file://some/location.jar". The scala classes aren't actually loaded until there's a plugin
 that needs them, so you can run ScalaLoader once without ScalaPlugins to generate the config.
 
 ### Roadmap
-There's only ~~four~~ three features that are missing in my opinion:
+There's only four features that are missing in my opinion:
 - ~~The first con. I want JavaPlugins te be able to access the Scala library classes, however they will need to tell
 ScalaLoader somehow which version they want to use.~~ Now implemented in ScalaPluginLoader#openUpToJavaPlugin(ScalaPlugin,JavaPlugin).
-- An idiomatic Scala 'wrapper' for the bukkit api. This will likely be provided in a separate plugin writtin in Scala.
+Currently this does not inject the Scala library classes into the JavaPlugin's classloader, but it's a start.
+- An idiomatic Scala 'wrapper' for the bukkit api. This will likely be provided in a separate plugin written in in Scala.
 Things that come to mind: Use of Options instead of null, using the type-class pattern for ConfigurationSerializable things.
-- Make the ScalaPluginLoader parallel capable. Right now ScalaPlugins are loaded one after another.
+- Make the ScalaPluginLoader parallel capable. Right now ScalaPlugins are loaded sequentially.
 - Use bukkit's api-version to transform classes so that plugins will be compatible once they are loaded.
 
 ### Example Plugin
@@ -47,7 +48,7 @@ Things that come to mind: Use of Options instead of null, using the type-class p
 ```
 package xyz.janboerman.scalaloader.example.scala
 
-import org.bukkit.{ChatColor}
+import org.bukkit.ChatColor
 import org.bukkit.command.{CommandSender, Command}
 import org.bukkit.event.{EventHandler, Listener}
 import org.bukkit.event.player.PlayerJoinEvent
@@ -134,7 +135,7 @@ public final class DummyPlugin extends JavaPlugin {
 ## Compiling
 It's a [maven](https://maven.apache.org/) project, so just `cd ScalaLoader` and `mvn package` and you're good to go.
 Be sure to use the shaded jar and not the original one.
-Note that while ScalaLoader can run on Java 8, it requires JDK9+ to compile.
+Note that while ScalaLoader can run on Java 8, it requires JDK11+ to compile.
 
 ## Dependency Information
 ##### SBT
