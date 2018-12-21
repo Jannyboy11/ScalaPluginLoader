@@ -23,7 +23,7 @@ import java.util.UUID;
 public class ExamplePlugin extends ScalaPlugin {
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.7-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.8-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     @Override
