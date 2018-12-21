@@ -18,7 +18,14 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -29,7 +36,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class ScalaPluginLoader implements PluginLoader {
 
     private static ScalaPluginLoader INSTANCE;
@@ -41,13 +47,17 @@ public class ScalaPluginLoader implements PluginLoader {
     private static final Pattern[] pluginFileFilters = new Pattern[] { Pattern.compile("\\.jar$"), };
 
     //Map<ScalaVersion, Map<ClassName, Class<?>>>
-    private final Map<String, Map<String, Class<?>>> sharedScalaPluginClasses = Collections.synchronizedMap(new HashMap<>());
+    private final ConcurrentMap<String, ConcurrentMap<String, Class<?>>> sharedScalaPluginClasses = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, CopyOnWriteArrayList<ScalaPluginClassLoader>> sharedScalaPluginClassLoaders = new ConcurrentHashMap<>();
 
     private final Map<String, ScalaPlugin> scalaPlugins = new HashMap<>();
     private final Map<File, ScalaPlugin> scalaPluginsByFile = new HashMap<>();
     private final Map<ScalaPlugin, File> filesByScalaPlugin = new HashMap<>();
 
+    /**
+     * Per PluginLoader API, the constructor has only one parameter: the Server.
+     * @param server the server.
+     */
     public ScalaPluginLoader(Server server) {
         this.server = Objects.requireNonNull(server, "Server cannot be null!");
 
@@ -59,7 +69,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
     /**
      * Get the instance that was created when this ScalaPluginLoader was constructed.
-     * Note that, if you call this method from your own plugin, your plugin must have a dependency on {@link ScalaLoader}.
+     * @apiNote if you call this method from your own plugin, your plugin must have a dependency on {@link ScalaLoader}.
      * @return the instance that was created either by bukkit's {@link PluginManager} or by the {@link ScalaLoader},
      *         or null if no ScalaPluginLoader was constructed yet.
      */
@@ -224,6 +234,7 @@ public class ScalaPluginLoader implements PluginLoader {
         return new JarFile(filesByScalaPlugin.get(scalaPlugin));
     }
 
+    @SuppressWarnings("unchecked")
     private static void injectClassesIntoJavaPlugin(Stream<? extends Class<?>> classes, JavaPlugin javaPlugin) {
         ClassLoader javaPluginClassLoader = javaPlugin.getClass().getClassLoader();
         try {
@@ -374,7 +385,10 @@ public class ScalaPluginLoader implements PluginLoader {
             String scalaVersion = scalaPluginClassLoader.getScalaVersion();
             Map<String, Class<?>> classes = sharedScalaPluginClasses.get(scalaVersion);
             if (classes != null) {
-                scalaPluginClassLoader.getClasses().forEach(clazz -> classes.remove(clazz.getName(), clazz));
+                scalaPluginClassLoader.getClasses().forEach((className, clazz) -> {
+                    classes.remove(className, clazz);
+                    scalaPluginClassLoader.removeFromJavaPluginLoaderScope(className);
+                });
                 if (classes.isEmpty()) {
                     sharedScalaPluginClasses.remove(scalaVersion);
                 }
@@ -383,9 +397,8 @@ public class ScalaPluginLoader implements PluginLoader {
             CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaVersion);
             if (classLoaders != null) {
                 classLoaders.remove(scalaPluginClassLoader);
-                //noinspection SuspiciousMethodCalls
-                sharedScalaPluginClassLoaders.remove(scalaVersion, Collections.singletonList(scalaPluginClassLoader));
-                //Atomic remove - CopyOnWriteArrayList will equal any List if the size and the elements are equal.
+                //noinspection SuspiciousMethodCalls - Thank IntelliJ but this is how you do an atomic removeIfEmpty.
+                sharedScalaPluginClassLoaders.remove(scalaVersion, Collections.emptyList());
             }
 
             try {
@@ -409,7 +422,9 @@ public class ScalaPluginLoader implements PluginLoader {
     }
 
     /**
-     * Make a class visible for all Scala plugins with a certain (or binary compatible) Scala version.
+     * Make a class visible for all {@link ScalaPlugin}s with a certain (or binary compatible) Scala version.
+     * @implNote Classes loaded by a {@link ScalaLibraryClassLoader} directly are rejected.
+     *
      * @param scalaVersion the scala version
      * @param className the name of the class
      * @param clazz the class
@@ -418,11 +433,31 @@ public class ScalaPluginLoader implements PluginLoader {
     public boolean addClassGlobally(String scalaVersion, String className, Class<?> clazz) {
         if (clazz.getClassLoader() instanceof ScalaLibraryClassLoader) return false;
 
-        return sharedScalaPluginClasses
-                .computeIfAbsent(scalaVersion, version -> new HashMap<>())
-                .putIfAbsent(className, clazz) == null;
+        return cacheClass(scalaVersion, className, clazz) == null;
     }
 
+    /**
+     * Caches a class, making it accessible to {@link ScalaPlugin}s using a certain version of Scala.
+     * @param scalaVersion the Scala version
+     * @param className the name of the class
+     * @param clazz the class
+     * @return a the class that was cached before, using the same scala version and the same class name - null if no such class was cached
+     */
+    private Class cacheClass(String scalaVersion, String className, Class<?> clazz) {
+        return sharedScalaPluginClasses
+                .computeIfAbsent(scalaVersion, version -> new ConcurrentHashMap<>())
+                .putIfAbsent(className, clazz);
+    }
+
+    /**
+     * Finds classes from {@link ScalaPlugin}s. This method can possibly be called by multiple threads concurrently
+     * since {@link ScalaPluginClassLoader}s are parallel capable.
+     *
+     * @param scalaVersion the Scala version the plugin uses
+     * @param className the name of the class
+     * @return the class object, if a class with the given name exists, and is binary compatible with the given Scala version
+     * @throws ClassNotFoundException if no scala plugin has a class with the given name, or the Scala version is incompatible
+     */
     public Class<?> getScalaPluginClass(final String scalaVersion, final String className) throws ClassNotFoundException {
         //try load from 'global' cache
         Map<String, Class<?>> scalaPluginClasses = sharedScalaPluginClasses.get(scalaVersion);
@@ -435,13 +470,14 @@ public class ScalaPluginLoader implements PluginLoader {
                 .flatMap(e -> e.getValue().stream())
                 .collect(Collectors.toCollection(CopyOnWriteArrayList::new));
 
-        if (classLoaders != null) {
-            for (ScalaPluginClassLoader scalaPluginClassLoader : classLoaders) {
-                try {
-                    found = scalaPluginClassLoader.findClass(className, false);
-                    break; //no need to call addClassGlobally here - the ScalaPluginClassLoader will do that for us.
-                } catch (ClassNotFoundException justContinueOn) {
-                }
+        for (ScalaPluginClassLoader scalaPluginClassLoader : classLoaders) {
+            try {
+                //ScalaPluginLoader#findClass calls ScalaPluginLoader#addClassGlobally, but we might be a race against other threads.
+                found = scalaPluginClassLoader.findClass(className, false);
+                Class<?> classLoadedByOtherThread = cacheClass(scalaVersion, className, found);
+                if (classLoadedByOtherThread != null) found = classLoadedByOtherThread;
+                return found;
+            } catch (ClassNotFoundException justContinueOn) {
             }
         }
 
@@ -497,7 +533,8 @@ public class ScalaPluginLoader implements PluginLoader {
             }
         }
 
-        if (!weFoundAScalaSingletonObject) /*IntelliJ your code inspection is lying. this is not an else-if.*/ {
+        //Yes IntelliJ I know, but I want this code to be refactor-friendly.
+        if (!weFoundAScalaSingletonObject) {
             //we found are a regular class.
             //it should have a NoArgsConstructor.
 

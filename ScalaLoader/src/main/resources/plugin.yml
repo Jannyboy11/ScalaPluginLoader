@@ -1,18 +1,20 @@
 name: ScalaLoader
 version: ${project.version}
 main: xyz.janboerman.scalaloader.ScalaLoader
+api-version: 1.13
 load: STARTUP
 author: Jannyboy11
+website: https://github.com/Jannyboy11/ScalaPluginLoader
 description: Provides scala runtime classes
-api-version: 1.13
 
 commands:
   resetScalaUrl:
     usage: "/<command> all|[<scala version>]"
     description:
-      - Resets the config URL of the built-in scala version.
-      - Useful if you overwrote some of the urls.
-      - If 'all' is provided as a scala version, this command resets the URLs of all the built-in scala versions.
+      >
+        Resets the config URL of the built-in scala version.
+        Useful if you overwrote some of the urls.
+        If 'all' is provided as a scala version, this command resets the URLs of all the built-in scala versions.
     permission: scalaloader.resetscalaurls
 
 permissions:

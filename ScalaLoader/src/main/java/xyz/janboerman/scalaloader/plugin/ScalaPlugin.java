@@ -22,7 +22,7 @@ import java.util.logging.Logger;
 /**
  * A ScalaPlugin!
  * <br>
- * This is what your main class (or object!) usually extends in your scala plugin project.
+ * This is what your main class (or object!) usually extends in your Scala plugin project.
  */
 public abstract class ScalaPlugin implements Plugin {
 

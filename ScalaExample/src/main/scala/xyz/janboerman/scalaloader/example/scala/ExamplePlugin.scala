@@ -11,10 +11,10 @@ import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
 
 @Scala(version = ScalaVersion.v2_12_7)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.6-SNAPSHOT")
-        .addCommand(new SPCommand("foo").permission("scalaexample.foo"))
-        .addCommand(new SPCommand("home").permission("scalaexample.home").usage("/home set|tp"))
-        .permissions(new SPPermission("scalaexample.foo").permissionDefault(PermissionDefault.TRUE)))
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.7-SNAPSHOT")
+        .addCommand(new SPCommand("foo") permission "scalaexample.foo")
+        .addCommand(new SPCommand("home") permission "scalaexample.home" usage "/home set|tp")
+        .permissions(new SPPermission("scalaexample.foo") permissionDefault PermissionDefault.TRUE))
     with Listener {
 
     getLogger.info("ScalaExample - I am constructed!")

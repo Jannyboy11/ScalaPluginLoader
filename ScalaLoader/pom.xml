@@ -85,6 +85,16 @@
                             <placement>a</placement>
                             <head>API Note:</head>
                         </tag>
+                        <tag>
+                            <name>implNote</name>
+                            <placement>a</placement>
+                            <head>Implementation Note:</head>
+                        </tag>
+                        <tag>
+                            <name>note</name>
+                            <placement>a</placement>
+                            <head>Note:</head>
+                        </tag>
                     </tags>
 
                     <!-- only show protected and public stuff -->

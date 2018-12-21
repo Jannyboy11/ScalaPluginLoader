@@ -30,6 +30,12 @@ import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 
+/**
+ * The ScalaLoader plugin's main class! ScalaLoader enables you to write plugins in Scala. Just depend on ScalaLoader,
+ * extend {@link xyz.janboerman.scalaloader.plugin.ScalaPlugin}, and ScalaLoader will provide the Scala runtime classes!
+ *
+ * @note undocumented methods are unintended for use outside of this plugin.
+ */
 public final class ScalaLoader extends JavaPlugin {
 
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
@@ -124,6 +130,16 @@ public final class ScalaLoader extends JavaPlugin {
     @Override
     public void onDisable() {
         //Do we want to disable the scala plugins? I don't think so
+    }
+
+    public void runInMainThread(Runnable runnable) {
+        Server server = getServer();
+
+        if (server.isPrimaryThread()) {
+            runnable.run();
+        } else {
+            server.getScheduler().runTask(this, runnable);
+        }
     }
 
     private void configure() {
@@ -223,6 +239,7 @@ public final class ScalaLoader extends JavaPlugin {
                     }
                 }
 
+                //Duplicate code but Java doesn't allow nested methods. So I'm not going to bother.
                 try {
                     URL scalaReflectUrl = new URL(scalaVersion.getScalaReflectUrl());
                     rbc = Channels.newChannel(scalaReflectUrl.openStream());

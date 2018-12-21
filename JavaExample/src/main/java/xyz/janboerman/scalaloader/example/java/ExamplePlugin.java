@@ -16,7 +16,6 @@ import xyz.janboerman.scalaloader.plugin.description.Version;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
 
 @CustomScala(@Version(value = "2.12.6",
         scalaLibraryUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.6%2Fscala-reflect-2.12.6.jar",
@@ -24,7 +23,7 @@ import java.util.logging.Level;
 public class ExamplePlugin extends ScalaPlugin {
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.6-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.7-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     @Override
