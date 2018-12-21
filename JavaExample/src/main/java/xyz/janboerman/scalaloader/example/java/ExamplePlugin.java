@@ -41,7 +41,7 @@ public class ExamplePlugin extends ScalaPlugin {
 
         getLogger().info("Got " + ExamplePlugin$.MODULE$.getInt() + " from the Scala example plugin :)");
 
-        //this works because 2.12.6 is binary compatible with 2.12.7
+        //this works because 2.12.6 is binary compatible with 2.12.8
         Home home = Home.apply(UUID.randomUUID(), "home", getServer().getWorlds().get(0).getSpawnLocation());
     }
 

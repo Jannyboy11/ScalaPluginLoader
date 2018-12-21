@@ -10,6 +10,7 @@ import scala.collection.mutable
 //simple home command that manages one home per player.
 object HomeExecutor extends CommandExecutor {
 
+    //normally you wouldn't store the homes in the command class, and you would implement saving/loading from a database/config
     private val homes = new mutable.HashMap[UUID, Home]()
 
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean = {
