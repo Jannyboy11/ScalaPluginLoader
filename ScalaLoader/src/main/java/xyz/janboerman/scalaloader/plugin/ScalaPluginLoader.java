@@ -481,11 +481,7 @@ public class ScalaPluginLoader implements PluginLoader {
             }
         }
 
-        if (found == null) {
-            throw new ClassNotFoundException("Couldn't find class " + className + " in any of the loaded ScalaPlugins.");
-        }
-
-        return found;
+        throw new ClassNotFoundException("Couldn't find class " + className + " in any of the loaded ScalaPlugins.");
     }
 
     private static boolean checkCompat(final String ownVersion, final String otherVersion) {
