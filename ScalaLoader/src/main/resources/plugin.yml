@@ -5,7 +5,13 @@ api-version: 1.13
 load: STARTUP
 author: Jannyboy11
 website: https://github.com/Jannyboy11/ScalaPluginLoader
-description: Provides scala runtime classes
+description:
+  >
+    API to create plugins in Scala more easily.
+    Supports multiple versions of Scala concurrently.
+    No need for a plugin.yml file.
+    Can load plugins from Scala singleton 'object's.
+    Loads only the necessary Scala classes at runtime.
 
 commands:
   resetScalaUrl:
@@ -20,4 +26,4 @@ commands:
 permissions:
   scalaloaders.resetscalaurls:
     description: Allows users to reset the scala url configs.
-    default: OP
+    default: op

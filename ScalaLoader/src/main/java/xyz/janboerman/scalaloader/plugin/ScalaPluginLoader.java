@@ -207,8 +207,10 @@ public class ScalaPluginLoader implements PluginLoader {
 
                 //used by forceLoadAllClasses
                 filesByScalaPlugin.put(plugin, file);
-                return plugin.getDescription();
+
                 //it is so stupid bukkit doesn't let me extend PluginDescriptionFile.
+                return plugin.getDescription();
+
             } catch (ClassNotFoundException e) {
                 throw new InvalidDescriptionException(e, "Could find the class that was found the main class");
             } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
@@ -463,17 +465,18 @@ public class ScalaPluginLoader implements PluginLoader {
         if (found != null) return found;
 
         //try load from classloaders - check all scala plugins that use compatible versions of scala.
-        CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.entrySet().stream()
+        CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.entrySet().parallelStream()
                 .filter(e -> checkCompat(scalaVersion, e.getKey()))
-                .flatMap(e -> e.getValue().stream())
+                .flatMap(e -> e.getValue().parallelStream())
                 .collect(Collectors.toCollection(CopyOnWriteArrayList::new));
 
         for (ScalaPluginClassLoader scalaPluginClassLoader : classLoaders) {
             try {
-                //ScalaPluginLoader#findClass calls ScalaPluginLoader#addClassGlobally, but we might be a race against other threads.
                 found = scalaPluginClassLoader.findClass(className, false);
+                //ScalaPluginLoader#findClass calls ScalaPluginLoader#addClassGlobally, but we might race against other threads.
                 Class<?> classLoadedByOtherThread = cacheClass(scalaVersion, className, found);
                 if (classLoadedByOtherThread != null) found = classLoadedByOtherThread;
+
                 return found;
             } catch (ClassNotFoundException justContinueOn) {
             }
