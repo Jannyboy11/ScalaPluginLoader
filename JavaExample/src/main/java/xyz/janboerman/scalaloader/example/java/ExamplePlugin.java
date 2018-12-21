@@ -16,6 +16,7 @@ import xyz.janboerman.scalaloader.plugin.description.Version;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @CustomScala(@Version(value = "2.12.6",
         scalaLibraryUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.6%2Fscala-reflect-2.12.6.jar",
@@ -23,7 +24,7 @@ import java.util.UUID;
 public class ExamplePlugin extends ScalaPlugin {
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.8-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.9-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     @Override
@@ -36,7 +37,7 @@ public class ExamplePlugin extends ScalaPlugin {
 
         PluginDescriptionFile pluginDescriptionFile = getDescription();
         getLogger().info("commands from PluginDescriptionFile = " + pluginDescriptionFile.getCommands());
-        getLogger().info("permissions from PluginDescriptionFile = " + pluginDescriptionFile.getPermissions());
+        getLogger().info("permissions from PluginDescriptionFile = " + pluginDescriptionFile.getPermissions().stream().map(Permission::getName).collect(Collectors.toList()));
 
         getLogger().info("Got " + ExamplePlugin$.MODULE$.getInt() + " from the Scala example plugin :)");
 

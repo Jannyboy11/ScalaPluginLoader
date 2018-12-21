@@ -65,6 +65,10 @@ public final class ScalaPluginDescription {
         return pluginVersion;
     }
 
+    public String getFullName() {
+        return getName() + " v" + getVersion();
+    }
+
     public ScalaPluginDescription description(String pluginDescription) {
         this.pluginDescription = pluginDescription;
         return this;

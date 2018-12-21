@@ -208,7 +208,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 //used by forceLoadAllClasses
                 filesByScalaPlugin.put(plugin, file);
                 return plugin.getDescription();
-
+                //it is so stupid bukkit doesn't let me extend PluginDescriptionFile.
             } catch (ClassNotFoundException e) {
                 throw new InvalidDescriptionException(e, "Could find the class that was found the main class");
             } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
@@ -324,24 +324,22 @@ public class ScalaPluginLoader implements PluginLoader {
     @Override
     public Plugin loadPlugin(File file) throws InvalidPluginException, UnknownDependencyException {
         ScalaPlugin plugin = scalaPluginsByFile.get(file);
-        if (plugin == null) { //could be a javaplugin
-            try {
-                return getJavaPluginLoader().loadPlugin(file);
-            } catch (InvalidPluginException e) {
-                throw new InvalidPluginException("File " + file.getName() + " does not contain a ScalaPlugin", e);
+        if (plugin != null) {
+            // assume a ScalaPlugin was loaded by getPluginDescription
+            for (String dependency : plugin.getScalaDescription().getHardDependencies()) {
+                boolean dependencyFound = server.getPluginManager().getPlugin(dependency) != null;
+                if (!dependencyFound) {
+                    throw new UnknownDependencyException("Dependency " + dependency + " not found while loading plugin " + plugin.getName());
+                }
             }
-        }
 
-        for (String dependency : plugin.getDescription().getDepend()) {
-            boolean dependencyFound = server.getPluginManager().getPlugin(dependency) != null;
-            if (!dependencyFound) {
-                throw new UnknownDependencyException("Dependency " + dependency + " not found while loading plugin " + plugin.getName());
-            }
+            plugin.getLogger().info("Loading " + plugin.getScalaDescription().getFullName());
+            plugin.onLoad();
+            return plugin;
+        } else {
+            // A ScalaPlugin was not loaded by getPluginDescription - try to load a JavaPlugin
+            return getJavaPluginLoader().loadPlugin(file);
         }
-
-        plugin.getLogger().info("Loading " + plugin.getDescription().getFullName());
-        plugin.onLoad();
-        return plugin;
     }
 
     @Override
@@ -356,7 +354,7 @@ public class ScalaPluginLoader implements PluginLoader {
             server.getPluginManager().callEvent(event);
             if (event.isCancelled()) return;
 
-            plugin.getLogger().info("Enabling " + plugin.getDescription().getFullName());
+            plugin.getLogger().info("Enabling " + scalaPlugin.getScalaDescription().getFullName());
             scalaPlugin.setEnabled(true);
             scalaPlugin.onEnable();
         } else {
@@ -376,7 +374,7 @@ public class ScalaPluginLoader implements PluginLoader {
             server.getPluginManager().callEvent(event);
             if (event.isCancelled()) return;
 
-            plugin.getLogger().info("Disabling " + plugin.getDescription().getFullName());
+            plugin.getLogger().info("Disabling " + scalaPlugin.getScalaDescription().getFullName());
             scalaPlugin.onDisable();
             scalaPlugin.setEnabled(false);
 
