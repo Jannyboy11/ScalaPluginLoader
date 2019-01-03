@@ -8,7 +8,7 @@ import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
 
 @Scala(version = ScalaVersion.v2_12_8)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.9-SNAPSHOT")
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.10-SNAPSHOT")
         .addCommand(new SPCommand("foo") permission "scalaexample.foo")
         .addCommand(new SPCommand("home") permission "scalaexample.home".toLowerCase() usage "/home set|tp")
         .permissions(new SPPermission("scalaexample.home") permissionDefault PermissionDefault.TRUE)) {

@@ -510,11 +510,10 @@ public class ScalaPluginLoader implements PluginLoader {
      * @throws ScalaPluginLoaderException
      */
     private <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
-        boolean weFoundAScalaSingletonObject = false;
+        //TODO this seems very scala-compiler-implementation-detail dependent. I hope this will still work in Scala 3.
+        //TODO how to make this more robust?
 
         if (clazz.getName().endsWith("$")) {
-            weFoundAScalaSingletonObject = true;
-
             //we found a scala singleton object.
             //the instance is already present in the MODULE$ field when this class is loaded.
 
@@ -524,16 +523,16 @@ public class ScalaPluginLoader implements PluginLoader {
 
                 return clazz.cast(pluginInstance);
             } catch (NoSuchFieldException e) {
-                weFoundAScalaSingletonObject = false; //back paddle!
+                throw new ScalaPluginLoaderException("Static field MODULE$ not found in class " + clazz.getName(), e);
             } catch (IllegalAccessException e) {
-                throw new ScalaPluginLoaderException("Couldn't access MODULE$ field in class " + clazz.getName(), e);
+                throw new ScalaPluginLoaderException("Couldn't access static field MODULE$ in class " + clazz.getName(), e);
             }
-        }
 
-        //Yes IntelliJ I know, but I want this code to be refactor-friendly.
-        if (!weFoundAScalaSingletonObject) {
+        } else {
             //we found are a regular class.
-            //it should have a NoArgsConstructor.
+            //it should have a public zero-argument constructor
+
+            ScalaPluginLoaderException exception;
 
             try {
                 Constructor ctr = clazz.getConstructor();
@@ -551,7 +550,6 @@ public class ScalaPluginLoader implements PluginLoader {
             }
         }
 
-        else return null;
     }
 
 }
