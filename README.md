@@ -142,7 +142,7 @@ Note that while ScalaLoader can run on Java 8, it requires JDK11+ to compile.
 ##### SBT
 ```
 resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.9" % "provided"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.11" % "provided"
 ```
 
 ##### Maven
@@ -155,7 +155,7 @@ libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader"
 <dependency>
     <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.9</version>
+    <version>v0.11</version>
     <scope>provided</scope>
 </dependency>
 ```

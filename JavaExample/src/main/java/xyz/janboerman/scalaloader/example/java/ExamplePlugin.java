@@ -15,6 +15,7 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.description.Version;
 
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,8 +24,10 @@ import java.util.stream.Collectors;
         scalaReflectUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.6%2Fscala-library-2.12.6.jar"))
 public class ExamplePlugin extends ScalaPlugin {
 
+    private final Random random = new Random();
+
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.9-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.10-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     @Override
@@ -49,8 +52,19 @@ public class ExamplePlugin extends ScalaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         sender.sendMessage("Executed bar command!");
 
+        //flip a coin
+        int randomInt = random.nextInt(2);
+        var message = switch(randomInt) {
+            case 0 -> "You got heads!";
+            case 1 -> "You got tails!";
+            default -> throw new RuntimeException("java.util.Random is broken if this occurs");
+        };
+        sender.sendMessage(message);
+
         //verify that permissions actually worked
-        List<Permission> permissions = getDescription().getPermissions();
+        var permissions = getDescription().getPermissions().stream()
+                .map(Permission::getName)
+                .collect(Collectors.toList())
         sender.sendMessage("Permissions = " + permissions);
 
         return true;

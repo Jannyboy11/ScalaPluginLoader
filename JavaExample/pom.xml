@@ -5,11 +5,15 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.10-SNAPSHOT</version>
+        <version>0.11-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>JavaExample</artifactId>
+
+    <properties>
+        <scala.version>2.12.6</scala.version>
+    </properties>
 
     <build>
         <defaultGoal>clean package</defaultGoal>
@@ -19,7 +23,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
                 <configuration>
-                    <release>11</release>
+                    <release>12</release>
+                    <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
         </plugins>
@@ -60,7 +65,7 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.12.7</version>
+            <version>${scala.version}</version>
             <scope>provided</scope>
         </dependency>
 

@@ -441,9 +441,9 @@ public class ScalaPluginLoader implements PluginLoader {
      * @param scalaVersion the Scala version
      * @param className the name of the class
      * @param clazz the class
-     * @return a the class that was cached before, using the same scala version and the same class name - null if no such class was cached
+     * @return a the class that was cached before, using the same scala version and the same class name, or null if no such class was cached
      */
-    private Class cacheClass(String scalaVersion, String className, Class<?> clazz) {
+    private Class<?> cacheClass(String scalaVersion, String className, Class<?> clazz) {
         return sharedScalaPluginClasses
                 .computeIfAbsent(scalaVersion, version -> new ConcurrentHashMap<>())
                 .putIfAbsent(className, clazz);
@@ -507,7 +507,7 @@ public class ScalaPluginLoader implements PluginLoader {
      * @param clazz the plugin class
      * @param <P> the plugin type
      * @return the plugin's instance.
-     * @throws ScalaPluginLoaderException
+     * @throws ScalaPluginLoaderException when a plugin instance could not be created for the given class
      */
     private <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
         //TODO this seems very scala-compiler-implementation-detail dependent. I hope this will still work in Scala 3.

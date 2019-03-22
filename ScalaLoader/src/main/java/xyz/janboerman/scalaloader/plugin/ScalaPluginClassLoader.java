@@ -202,7 +202,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             //that the regular PluginClassLoaders are NOT parallel capable. so... yeah. Bukkit is weird/stupid sometimes.
 
             //To make sure we don't confuse JavaPlugins we use the main thread to call the JavaPluginLoader#setClass(String, Class) method.
-            //I which bukkit provided me with a lock to do this safely asynchronously.
+            //I wish bukkit provided me with a lock to do this safely asynchronously.
             getPluginLoader().getScalaLoader().runInMainThread(() -> {
                 try {
                     Method method = javaPluginLoader.getClass().getDeclaredMethod("setClass", String.class, Class.class);
