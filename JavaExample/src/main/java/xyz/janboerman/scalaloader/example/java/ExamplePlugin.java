@@ -64,7 +64,7 @@ public class ExamplePlugin extends ScalaPlugin {
         //verify that permissions actually worked
         var permissions = getDescription().getPermissions().stream()
                 .map(Permission::getName)
-                .collect(Collectors.toList())
+                .collect(Collectors.toList());
         sender.sendMessage("Permissions = " + permissions);
 
         return true;
