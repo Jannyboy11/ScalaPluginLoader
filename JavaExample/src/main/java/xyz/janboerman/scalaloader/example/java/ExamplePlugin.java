@@ -27,7 +27,7 @@ public class ExamplePlugin extends ScalaPlugin {
     private final Random random = new Random();
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.10-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.12.1-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     @Override
@@ -44,7 +44,7 @@ public class ExamplePlugin extends ScalaPlugin {
 
         getLogger().info("Got " + ExamplePlugin$.MODULE$.getInt() + " from the Scala example plugin :)");
 
-        //this works because 2.12.6 is binary compatible with 2.12.8
+        //this works because 2.12.6 is binary compatible with 2.12.9
         Home home = Home.apply(UUID.randomUUID(), "home", getServer().getWorlds().get(0).getSpawnLocation());
     }
 

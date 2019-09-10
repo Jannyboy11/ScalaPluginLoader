@@ -7,11 +7,13 @@ import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -168,6 +170,31 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
         //we don't search in the parent classloader explicitly - this is done by the loadClass method.
         return found;
+    }
+
+    /**
+     * Finds a resource that is in the ScalaPlugin's jar file.
+     *
+     * @param resourcePath the name of the resource
+     * @return the {@code URL} of the resource, or {@code null} if a resource with the given name did not exist
+     */
+    @Override
+    public URL getResource(String resourcePath) {
+        //override to avoid searching in the parent classloader
+        return findResource(resourcePath);
+    }
+
+    /**
+     * Finds resources that are in the ScalaPlugin's jar file.
+     *
+     * @param resourcePath the name of the resource
+     * @return An {@code Enumeration} of {@code URL}s. If the loader is closed, the Enumeration contains no elements.
+     * @throws IOException if an I/O exception occurs
+     */
+    @Override
+    public Enumeration<URL> getResources(String resourcePath) throws IOException {
+        //override to avoid searching in the parent classloader
+        return findResources(resourcePath);
     }
 
     /**

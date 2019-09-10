@@ -8,7 +8,7 @@ import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
 
 @Scala(version = ScalaVersion.v2_12_8)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.10-SNAPSHOT")
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.12.1-SNAPSHOT")
         .addCommand(new SPCommand("foo") permission "scalaexample.foo")
         .addCommand(new SPCommand("home") permission "scalaexample.home" usage "/home set|tp")
         .permissions(new SPPermission("scalaexample.home") permissionDefault PermissionDefault.TRUE)) {
@@ -23,6 +23,12 @@ object ExamplePlugin
         getLogger.info("ScalaExample - I am enabled!")
         getServer.getPluginManager.registerEvents(PlayerJoinListener, this)
         getCommand("home").setExecutor(HomeExecutor)
+
+        val urls = getClassLoader.findResources("config.yml")
+        while (urls.hasMoreElements) {
+            val url = urls.nextElement()
+            getLogger.info(s"Found resource: ${url.toString}")
+        }
     }
 
     override def onDisable(): Unit = {
