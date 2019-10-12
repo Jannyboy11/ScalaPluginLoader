@@ -3,7 +3,7 @@ jdk:
 before_install:
   - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh
   - source ./install-jdk.sh --feature 13 --license GPL
-  - wget https://www-eu.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.tar.gz
-  - tar -xzvf apache-maven-3.6.0-bin.tar.gz
+  - wget http://ftp.tudelft.nl/apache/maven/maven-3/3.6.2/binaries/apache-maven-3.6.2-bin.tar.gz
+  - tar -xzvf apache-maven-3.6.2-bin.tar.gz
 install:
-  - apache-maven-3.6.0/bin/mvn install
+  - apache-maven-3.6.2/bin/mvn install
