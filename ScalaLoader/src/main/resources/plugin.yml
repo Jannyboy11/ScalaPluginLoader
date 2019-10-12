@@ -1,7 +1,7 @@
 name: ScalaLoader
 version: ${project.version}
 main: xyz.janboerman.scalaloader.ScalaLoader
-api-version: 1.14
+api-version: 1.13
 load: STARTUP
 author: Jannyboy11
 website: https://github.com/Jannyboy11/ScalaPluginLoader
