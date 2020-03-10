@@ -23,12 +23,16 @@ public enum ScalaVersion {
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.9%2Fscala-reflect-2.12.9.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.9%2Fscala-library-2.12.9.jar"
     ),
-    @Deprecated
+    v2_12_10("2.12.10", true,
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.10%2Fscala-reflect-2.12.10.jar",
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.10%2Fscala-library-2.12.10.jar"
+    ),
+    @Deprecated(forRemoval = true)
     v2_13_0_M4("2.13.0-M4", false,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.0-M4%2Fscala-reflect-2.13.0-M4.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.0-M4%2Fscala-library-2.13.0-M4.jar"
     ),
-    @Deprecated
+    @Deprecated(forRemoval = true)
     v2_13_0_M5("2.13.0-M5", false,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.0-M5%2Fscala-reflect-2.13.0-M5.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.0-M5%2Fscala-library-2.13.0-M5.jar"

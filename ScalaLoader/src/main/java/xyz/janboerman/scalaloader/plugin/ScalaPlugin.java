@@ -54,7 +54,7 @@ public abstract class ScalaPlugin implements Plugin {
             this.classLoader = (ScalaPluginClassLoader) getClass().getClassLoader();
             this.server = classLoader.getServer();
             this.description.addYaml(classLoader.getExtraPluginYaml());
-            this.description.setApiVersion(classLoader.getApiVersion());
+            this.description.setApiVersion(classLoader.getApiVersion().getVersionString());
             this.pluginLoader = classLoader.getPluginLoader();
             this.file = classLoader.getPluginJarFile();
         } else {

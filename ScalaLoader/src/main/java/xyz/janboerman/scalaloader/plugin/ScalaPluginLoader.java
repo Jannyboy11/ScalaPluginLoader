@@ -8,8 +8,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
-import xyz.janboerman.scalaloader.event.ScalaPluginDisableEvent;
-import xyz.janboerman.scalaloader.event.ScalaPluginEnableEvent;
+import xyz.janboerman.scalaloader.event.plugin.ScalaPluginDisableEvent;
+import xyz.janboerman.scalaloader.event.plugin.ScalaPluginEnableEvent;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 import xyz.janboerman.scalaloader.plugin.description.DescriptionScanner;
 
@@ -167,7 +167,7 @@ public class ScalaPluginLoader implements PluginLoader {
             }
 
             //null for unknown api version
-            ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElse(null);
+            ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElse(ApiVersion.LEGACY);
 
             //TODO transform bytes if necessary based on apiVersion
 
@@ -181,7 +181,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 //create plugin classloader using the resolved scala classloader
                 ScalaPluginClassLoader scalaPluginClassLoader =
                         new ScalaPluginClassLoader(this, new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader,
-                                server, pluginYamlData, file, apiVersion == null ? null : apiVersion.getVersionString());
+                                server, pluginYamlData, file, apiVersion);
                 sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getScalaVersion(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 
                 //create our plugin
@@ -269,7 +269,7 @@ public class ScalaPluginLoader implements PluginLoader {
     /**
      * Get all classes from a scala plugin.
      * @param scalaPlugin the scala plugin
-     * @return an open stream that provides all classes
+     * @return an open stream that provides all classes that are in the ScalaPlugin's jar file
      * @throws IOException if the stream could not be opened for whatever reason
      */
     public Stream<? extends Class<?>> getAllClasses(ScalaPlugin scalaPlugin) throws IOException {
@@ -287,7 +287,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 .filter(Objects::nonNull)
                 .map(inputStream -> {
                     try {
-                        return new DescriptionScanner(inputStream);
+                        return new DescriptionScanner(inputStream); //TODO create a smaller Scanner class?
                     } catch (IOException e) {
                         e.printStackTrace();
                         return null;
@@ -458,7 +458,7 @@ public class ScalaPluginLoader implements PluginLoader {
      * @return the class object, if a class with the given name exists, and is binary compatible with the given Scala version
      * @throws ClassNotFoundException if no scala plugin has a class with the given name, or the Scala version is incompatible
      */
-    public Class<?> getScalaPluginClass(final String scalaVersion, final String className) throws ClassNotFoundException {
+    Class<?> getScalaPluginClass(final String scalaVersion, final String className) throws ClassNotFoundException {
         //try load from 'global' cache
         Map<String, Class<?>> scalaPluginClasses = sharedScalaPluginClasses.get(scalaVersion);
         Class<?> found = scalaPluginClasses == null ? null : scalaPluginClasses.get(className);
@@ -531,8 +531,6 @@ public class ScalaPluginLoader implements PluginLoader {
         } else {
             //we found are a regular class.
             //it should have a public zero-argument constructor
-
-            ScalaPluginLoaderException exception;
 
             try {
                 Constructor ctr = clazz.getConstructor();

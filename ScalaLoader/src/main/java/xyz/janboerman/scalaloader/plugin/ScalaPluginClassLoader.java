@@ -1,28 +1,85 @@
 package xyz.janboerman.scalaloader.plugin;
 
+//import net.glowstone.GlowServer;
+//import net.glowstone.util.GlowUnsafeValues;
 import org.bukkit.Server;
+import org.bukkit.UnsafeValues;
+import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.CodeSigner;
+import java.security.CodeSource;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
+import java.util.logging.Level;
 
 /**
  * ClassLoader that loads {@link ScalaPlugin}s.
  * The {@link ScalaPluginLoader} will create instances per scala plugin.
  */
 public class ScalaPluginClassLoader extends URLClassLoader {
+
+    private enum Environment {
+        CRAFTBUKKIT {
+            private MethodHandle commodoreConvert = null;
+
+            @Override
+            public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
+                if (commodoreConvert == null) {
+                    MethodHandles.Lookup lookup = MethodHandles.lookup();
+                    Server craftServer = currentPluginClassLoader.getServer();
+                    Class<?> commodoreClass = Class.forName(
+                            craftServer.getClass().getPackageName() + ".util.Commodore");
+                    String methodName = "convert";
+                    MethodType methodType =  MethodType.methodType(byte[].class, new Class<?>[] {byte[].class, boolean.class});
+                    commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
+                }
+
+                boolean isModern = currentPluginClassLoader.apiVersion != ApiVersion.LEGACY;
+                return (byte[]) commodoreConvert.invoke(original, isModern);
+            }
+        },
+        GLOWSTONE {
+//            @Override
+//            public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
+//                GlowServer glowServer = (GlowServer) currentPluginClassLoader.getServer();
+//                GlowUnsafeValues glowUnsafeValues = (GlowUnsafeValues) glowServer.getUnsafe();
+//                glowUnsafeValues.processClass() -- not yet implemented in the GlowStone 1.15 branch
+//            }
+        },
+        UNKNOWN;
+
+        public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
+            Server server = currentPluginClassLoader.getServer();
+            UnsafeValues unsafeValues = server.getUnsafe();
+            String fakeDescription = "name: Fake" + System.lineSeparator() +
+                    "version: 1.0" + System.lineSeparator() +
+                    "main: xyz.janboerman.scalaloader.FakePlugin" + System.lineSeparator() +
+                    "api-version: " + currentPluginClassLoader.getApiVersion().getVersionString() + System.lineSeparator();
+
+            PluginDescriptionFile pluginDescriptionFile = new PluginDescriptionFile(new StringReader(fakeDescription));
+
+            return unsafeValues.processClass(pluginDescriptionFile, jarEntryPath, original);
+        }
+    }
+
 
     static {
         registerAsParallelCapable();
@@ -33,7 +90,9 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     private final Server server;
     private final Map<String, Object> extraPluginYaml;
     private final File pluginJarFile;
-    private final String apiVersion;
+    private final JarFile jarFile;
+    private final ApiVersion apiVersion;
+    private final Environment environment;
 
     private final ConcurrentMap<String, Class<?>> classes = new ConcurrentHashMap<>();
 
@@ -46,7 +105,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @param server the Server in which the plugin will run
      * @param extraPluginYaml extra plugin settings not defined through the ScalaPlugin's constructor, but in the plugin.yml file
      * @param pluginJarFile the plugin's jar file
-     * @param apiVersion bukkit's api version that's used by the plugin, see {@link ApiVersion#getVersionString()}.
+     * @param apiVersion bukkit's api version that's used by the plugin}.
      */
     protected ScalaPluginClassLoader(ScalaPluginLoader pluginLoader,
                                      URL[] urls,
@@ -54,7 +113,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                                      Server server,
                                      Map<String, Object> extraPluginYaml,
                                      File pluginJarFile,
-                                     String apiVersion) {
+                                     ApiVersion apiVersion) throws IOException {
         super(urls, parent);
 
         this.pluginLoader = pluginLoader;
@@ -63,7 +122,16 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         this.server = server;
         this.extraPluginYaml = extraPluginYaml;
         this.pluginJarFile = pluginJarFile;
+        this.jarFile = new JarFile(pluginJarFile);
         this.apiVersion = apiVersion;
+
+        Environment environment = Environment.UNKNOWN;
+        if (server.getClass().getName().startsWith("org.bukkit.craftbukkit")) {
+            environment = Environment.CRAFTBUKKIT;
+        } else if (server.getClass().getName().startsWith("net.glowstone")) {
+            environment = Environment.GLOWSTONE;
+        }
+        this.environment = environment;
     }
 
     /**
@@ -110,7 +178,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * Get the version of bukkit's api the plugin uses.
      * @return bukkit's api version
      */
-    public String getApiVersion() {
+    public ApiVersion getApiVersion() {
         return apiVersion;
     }
 
@@ -143,8 +211,61 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
         //search in our own jar
         try {
-            found = super.findClass(name);
+            //do a manual search so that we can transform the class bytes.
+            String path = name.replace('.', '/') + ".class";
+            JarEntry jarEntry = jarFile.getJarEntry(path);
+
+            if (jarEntry != null) {
+                //a classfile exists for the given class name
+                try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
+                    byte[] classBytes = inputStream.readAllBytes();
+
+                    try {
+                        classBytes = environment.transform(path, classBytes, this);
+                    } catch (Throwable throwable) {
+                        if (!(throwable instanceof NoSuchMethodError)) {
+                            getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Could not transform class: " + path, throwable);
+                        } //else: running on bukkit 1.12.2 or earlier
+                        //just continue with the original classBytes
+                    }
+
+                    int dotIndex = name.lastIndexOf('.');
+                    if (dotIndex != -1) {
+                        String packageName = name.substring(0, dotIndex);
+                        if (getDefinedPackage(packageName) == null) {
+                            try {
+                                Manifest manifest = jarFile.getManifest();
+                                if (manifest != null) {
+                                    definePackage(packageName, manifest, this.getURLs()[0]);
+                                } else {
+                                    definePackage(packageName, null, null, null, null, null, null, null);
+                                }
+                            } catch (IllegalArgumentException e) {
+                                if (getDefinedPackage(packageName) == null) {
+                                    throw new IllegalStateException("Cannot find package " + packageName);
+                                }
+                            }
+                        }
+                    }
+
+                    CodeSigner[] codeSigners = jarEntry.getCodeSigners();
+                    CodeSource codeSource = new CodeSource(getURLs()[0], codeSigners);
+
+                    found = defineClass(name, classBytes, 0, classBytes.length, codeSource);
+                } catch (IOException e) {
+                    throw new ClassNotFoundException("Could not find class: " + name, e);
+                }
+            }
+
+            if (found == null) {
+                //fallback to URLClassLoader - only needed because plugin authors might call addURL reflectively
+                //this block can be removed once we implement a library loading api
+                //see https://hub.spigotmc.org/jira/browse/SPIGOT-3723
+                found = super.findClass(name);
+            }
         } catch (ClassNotFoundException e) { /*ignored - continue onwards*/ }
+
+        //TODO search in library classloaders?
 
         //search in other ScalaPlugins
         if (found == null && searchInScalaPluginLoader) {

@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.event;
+package xyz.janboerman.scalaloader.event.plugin;
 
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
