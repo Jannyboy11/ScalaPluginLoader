@@ -166,10 +166,8 @@ public class ScalaPluginLoader implements PluginLoader {
                 return getJavaPluginLoader().getPluginDescription(file);
             }
 
-            //null for unknown api version
-            ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElse(ApiVersion.LEGACY);
-
-            //TODO transform bytes if necessary based on apiVersion
+            //assume latest if unspecified
+            ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElseGet(ApiVersion::latest);
 
             PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();
 
@@ -192,11 +190,6 @@ public class ScalaPluginLoader implements PluginLoader {
                 } catch (ScalaPluginLoaderException e) {
                     throw new InvalidDescriptionException(e, "Couldn't create/get plugin instance for main class " + mainClass);
                 }
-
-                //moved to ScalaPlugin constructor
-                //plugin.getScalaDescription().setApiVersion(apiVersion == null ? null : apiVersion.getVersionString());
-                //plugin.getScalaDescription().setMain(mainClass); //required per PluginDescriptionFile constructor - not actually used.
-                //plugin.init(this, server, pluginYmlFileYaml, new File(file.getParent(), plugin.getName()), file, scalaPluginClassLoader);
 
                 if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
                     throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());

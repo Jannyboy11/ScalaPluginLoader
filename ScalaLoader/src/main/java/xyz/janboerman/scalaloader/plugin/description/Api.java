@@ -7,14 +7,12 @@ import java.lang.annotation.Target;
 
 /**
  * The {@link Api} annotation can be used to signal to the {@link xyz.janboerman.scalaloader.plugin.ScalaPluginLoader} which version of the bukkit api is used.
- * The annotation should only be used to annotate your ScalaPlugin's main class.
- * The plugin loader may choose to ignore this information.
+ * The annotation should only be used to annotate your ScalaPlugin's main class. Using this annotation is equivalent to defining an 'api-version' property in the plugin.yml file for JavaPlugins.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.TYPE})
 public @interface Api {
 
-    //TODO actually make use of this
     ApiVersion value();
 
 }

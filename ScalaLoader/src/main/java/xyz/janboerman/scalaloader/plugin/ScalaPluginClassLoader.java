@@ -52,7 +52,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
                 }
 
-                boolean isModern = currentPluginClassLoader.apiVersion != ApiVersion.LEGACY;
+                boolean isModern = currentPluginClassLoader.getApiVersion() != ApiVersion.LEGACY;
                 return (byte[]) commodoreConvert.invoke(original, isModern);
             }
         },
@@ -105,7 +105,9 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @param server the Server in which the plugin will run
      * @param extraPluginYaml extra plugin settings not defined through the ScalaPlugin's constructor, but in the plugin.yml file
      * @param pluginJarFile the plugin's jar file
-     * @param apiVersion bukkit's api version that's used by the plugin}.
+     * @param apiVersion bukkit's api version that's used by the plugin
+     *
+     * @throws IOException if the plugin's file could not be read as a {@link JarFile}
      */
     protected ScalaPluginClassLoader(ScalaPluginLoader pluginLoader,
                                      URL[] urls,

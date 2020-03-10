@@ -57,9 +57,10 @@ import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.permissions.PermissionDefault
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCommand, Permission => SPPermission}
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
-import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
+import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion, Api, ApiVersion}
 
 @Scala(version = ScalaVersion.v2_12_6)
+@Api(ApiVersion.v1_15)
 object ExamplePlugin
     extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.1-SNAPSHOT")
         .commands(new SPCommand("foo")
