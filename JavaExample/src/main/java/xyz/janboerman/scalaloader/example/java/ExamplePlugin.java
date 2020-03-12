@@ -27,7 +27,7 @@ public class ExamplePlugin extends ScalaPlugin {
     private final Random random = new Random();
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.12.3-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.13.0-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     @Override
@@ -42,6 +42,7 @@ public class ExamplePlugin extends ScalaPlugin {
         getLogger().info("commands from PluginDescriptionFile = " + pluginDescriptionFile.getCommands());
         getLogger().info("permissions from PluginDescriptionFile = " + pluginDescriptionFile.getPermissions().stream().map(Permission::getName).collect(Collectors.toList()));
 
+        //ClassCastException! ScalaPluginClassLoader cannot be cast to PluginClassLoader! WHY IS BUKKIT TRYING TO USE THE JAVA PLUGIN LOADER FOR MY SCALA PLUGIN?!
         getLogger().info("Got " + ExamplePlugin$.MODULE$.getInt() + " from the Scala example plugin :)");
 
         //this works because 2.12.6 is binary compatible with 2.12.10

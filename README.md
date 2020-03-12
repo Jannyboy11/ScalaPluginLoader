@@ -34,15 +34,15 @@ jars by changing the URLs to "file://some/location.jar". The scala classes aren'
 that needs them, so you can run ScalaLoader once without ScalaPlugins to generate the config.
 
 ### Roadmap
-There's only ~~seven~~ four features that are missing in my opinion:
+There's only ~~seven~~ three features that are missing in my opinion:
 - ~~The first con. I want JavaPlugins te be able to access the Scala library classes, however they will need to tell
 ScalaLoader somehow which version they want to use.~~ Now implemented in ScalaPluginLoader#openUpToJavaPlugin(ScalaPlugin,JavaPlugin).
 Currently this does not inject the Scala library classes into the JavaPlugin's classloader, but it's a start.
 - ~~Make the ScalaPluginLoader parallel capable. Right now ScalaPlugins are loaded sequentially.~~
 - ~~Use bukkit's api-version to transform classes so that plugins will be compatible once they are loaded.~~
-- HandlerList- and cancellable-related boilerplate reduction for custom events.
-- ConfigurationSerializable-related boilerplate reduction using the type-class pattern.
+- ~~HandlerList- and cancellable-related boilerplate reduction for custom events.~~
 - API to load third-party libraries (can be specific to certain Scala versions, or not).
+- ConfigurationSerializable-related boilerplate reduction using the type-class pattern.
 - Link using TASTy if the scalaplugin's jar includes TASTy attributes.
 
 ### Example Plugin

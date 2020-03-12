@@ -24,9 +24,15 @@ object HomeExecutor extends CommandExecutor {
 
         val action = args(0)
         action match {
-            case "set" => homes.put(player.getUniqueId, Home(player.getUniqueId, "home", player.getLocation))
+            case "set" =>
+                homes.put(player.getUniqueId, Home(player.getUniqueId, "home", player.getLocation))
+                player.sendMessage("Home set!")
             case "tp" => homes.get(player.getUniqueId) match {
-                case Some(home) => player.teleport(home.getLocation())
+                case Some(home) =>
+                    if (ExamplePlugin.eventBus.callEvent(HomeTeleportEvent(player, home)))
+                        player.teleport(home.getLocation())
+                    else
+                        player.sendMessage("Some plugin prevented you from teleporting to your home!")
                 case None => player.sendMessage("You don't have a home yet.")
             }
             case _ => return false
