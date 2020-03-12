@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
+import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.event.plugin.ScalaPluginDisableEvent;
 import xyz.janboerman.scalaloader.event.plugin.ScalaPluginEnableEvent;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
@@ -54,6 +55,8 @@ public class ScalaPluginLoader implements PluginLoader {
     private final Map<File, ScalaPlugin> scalaPluginsByFile = new HashMap<>();
     private final Map<ScalaPlugin, File> filesByScalaPlugin = new HashMap<>();
 
+    private final EventBus eventBus;
+
     /**
      * Per PluginLoader API, the constructor has only one parameter: the Server.
      * @param server the server.
@@ -65,6 +68,8 @@ public class ScalaPluginLoader implements PluginLoader {
         if (INSTANCE == null) {
             INSTANCE = this;
         }
+
+        this.eventBus = new EventBus(server.getPluginManager());
     }
 
     /**
@@ -83,6 +88,16 @@ public class ScalaPluginLoader implements PluginLoader {
 
     PluginLoader getJavaPluginLoader() {
         return lazyJavaPluginLoader == null ? lazyJavaPluginLoader = getScalaLoader().getPluginLoader() : lazyJavaPluginLoader;
+    }
+
+    /**
+     * Get the event bus.
+     *
+     * @apiNote This method is provided for JavaPlugins. ScalaPlugin's can use {@link ScalaPlugin#getEventBus()} instead.
+     * @return the event bus
+     */
+    public EventBus getEventBus() {
+        return eventBus;
     }
 
     @SuppressWarnings("unchecked")

@@ -8,6 +8,8 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
+import xyz.janboerman.scalaloader.event.transform.EventTransformations;
+import xyz.janboerman.scalaloader.event.transform.EventUsageError;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 
 import java.io.*;
@@ -36,7 +38,7 @@ import java.util.logging.Level;
  */
 public class ScalaPluginClassLoader extends URLClassLoader {
 
-    private enum Environment {
+    private enum Platform {
         CRAFTBUKKIT {
             private MethodHandle commodoreConvert = null;
 
@@ -92,7 +94,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     private final File pluginJarFile;
     private final JarFile jarFile;
     private final ApiVersion apiVersion;
-    private final Environment environment;
+    private final Platform platform;
 
     private final ConcurrentMap<String, Class<?>> classes = new ConcurrentHashMap<>();
 
@@ -127,13 +129,13 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         this.jarFile = new JarFile(pluginJarFile);
         this.apiVersion = apiVersion;
 
-        Environment environment = Environment.UNKNOWN;
+        Platform platform = Platform.UNKNOWN;
         if (server.getClass().getName().startsWith("org.bukkit.craftbukkit")) {
-            environment = Environment.CRAFTBUKKIT;
+            platform = Platform.CRAFTBUKKIT;
         } else if (server.getClass().getName().startsWith("net.glowstone")) {
-            environment = Environment.GLOWSTONE;
+            platform = Platform.GLOWSTONE;
         }
-        this.environment = environment;
+        this.platform = platform;
     }
 
     /**
@@ -223,7 +225,14 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     byte[] classBytes = inputStream.readAllBytes();
 
                     try {
-                        classBytes = environment.transform(path, classBytes, this);
+                        classBytes = EventTransformations.transform(classBytes, this);
+                    } catch (EventUsageError throwable) {
+                        getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Event class " + name + " is invalid.", throwable);
+                        throw new ClassNotFoundException(throwable.getMessage());
+                    }
+
+                    try {
+                        classBytes = platform.transform(path, classBytes, this);
                     } catch (Throwable throwable) {
                         if (!(throwable instanceof NoSuchMethodError)) {
                             getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Could not transform class: " + path, throwable);

@@ -76,6 +76,11 @@ public final class ScalaLoader extends JavaPlugin {
         }
 
         iActuallyManagedToOverrideTheDefaultJavaPluginLoader = myHackWorked;
+        if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
+            getLogger().info("Managed to override the default .jar file association!");
+        } else {
+            getLogger().info("Did not manage to override the default .jar file association. Plugins may not load in the expected order.");
+        }
     }
 
     public Pattern[] getJavaPluginLoaderPattners() {

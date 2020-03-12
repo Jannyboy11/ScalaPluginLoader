@@ -1,7 +1,6 @@
 package xyz.janboerman.scalaloader.event.plugin;
 
 import org.bukkit.event.Cancellable;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.server.PluginEnableEvent;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
@@ -12,7 +11,6 @@ import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
  */
 public class ScalaPluginDisableEvent extends PluginDisableEvent implements Cancellable {
 
-    private static final HandlerList handlers = new HandlerList();
     private boolean cancel;
 
     public ScalaPluginDisableEvent(ScalaPlugin plugin) {
@@ -22,15 +20,6 @@ public class ScalaPluginDisableEvent extends PluginDisableEvent implements Cance
     @Override
     public ScalaPlugin getPlugin() {
         return (ScalaPlugin) super.getPlugin();
-    }
-
-    @Override
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 
     @Override

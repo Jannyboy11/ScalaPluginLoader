@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
+import xyz.janboerman.scalaloader.event.EventBus;
 
 import java.io.*;
 import java.net.URL;
@@ -88,6 +89,16 @@ public abstract class ScalaPlugin implements Plugin {
      */
     protected ScalaPluginClassLoader getClassLoader() {
         return classLoader;
+    }
+
+    /**
+     * Get the ScalaLoader's EventBus! This event bus allows you to call {@link xyz.janboerman.scalaloader.event.Event}s,
+     * which will allow you to write less boilerplate.
+     *
+     * @return the event bus
+     */
+    protected final EventBus getEventBus() {
+        return getClassLoader().getPluginLoader().getEventBus();
     }
 
     /**
