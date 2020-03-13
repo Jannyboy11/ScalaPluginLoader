@@ -43,7 +43,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             private MethodHandle commodoreConvert = null;
 
             @Override
-            public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
+            protected byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
                 if (commodoreConvert == null) {
                     MethodHandles.Lookup lookup = MethodHandles.lookup();
                     Server craftServer = currentPluginClassLoader.getServer();
@@ -68,7 +68,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         },
         UNKNOWN;
 
-        public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
+        protected byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
             Server server = currentPluginClassLoader.getServer();
             UnsafeValues unsafeValues = server.getUnsafe();
             String fakeDescription = "name: Fake" + System.lineSeparator() +
@@ -187,16 +187,45 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     }
 
     /**
-     * Finds and loads a class used by the ScalaPlugin loaded by this ClassLoader.
+     * <p>
+     *  Tries to load a class with the given name using the following search priorities:
+     * </p>
+     * <ol>
+     *     <li>Search for the class in the ScalaPlugin's own jar file</li>
+     *     <li>Search for the class in other ScalaPlugins</li>
+     *     <li>Search for the class in JavaPlugins and Bukkit/Server implementation classes</li>
+     * </ol>
      *
-     * @param name the name of the class to be found
-     * @return a class with the given name, if found
-     * @throws ClassNotFoundException if no class with the given name could be found
-     * @see #findClass(String, boolean)
+     * @param name the name of the class
+     * @return a
+     * @throws ClassNotFoundException
      */
     @Override
-    public Class<?> findClass(final String name) throws ClassNotFoundException {
-        return findClass(name, true);
+    public Class<?> loadClass(final String name) throws ClassNotFoundException {
+        //load order:
+        //  1.  the plugin's jar
+        //  2.  other scalaplugins
+        //  3.  javaplugins, Bukkit/NMS classes (parent)
+
+        ClassNotFoundException fallback = new ClassNotFoundException("Could not find class: " + name + ".");
+        Class<?> clazz;
+
+        try {
+            //findClass tries to find the class in the ScalaPlugin's jar first,
+            //if that fails, it attempts to find the class in other ScalaPlugins using the ScalaPluginLoader
+            clazz = findClass(name, true);
+            if (clazz != null) return clazz;
+        } catch (ClassNotFoundException e) {
+            fallback.addSuppressed(e);
+            try {
+                clazz = getParent().loadClass(name);
+                if (clazz != null) return clazz;
+            } catch (ClassNotFoundException e2) {
+                fallback.addSuppressed(e2);
+            }
+        }
+
+        throw fallback;
     }
 
     /**

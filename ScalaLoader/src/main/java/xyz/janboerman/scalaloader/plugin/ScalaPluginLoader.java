@@ -319,10 +319,13 @@ public class ScalaPluginLoader implements PluginLoader {
      * Loads all classes in the ScalaPlugin's jar file.
      * @param scalaPlugin the ScalaPlugin
      *
-     * @deprecated pollutes the JavaPluginLoader with scala-version-specific classes.
-     *             use {@link #openUpToJavaPlugin(ScalaPlugin, JavaPlugin)} instead.
+     * @deprecated This method pollutes the JavaPluginLoader with scala-version-specific classes.
+     *             Use {@link #openUpToJavaPlugin(ScalaPlugin, JavaPlugin)} instead.
+     *             ForRemoval because as of January 2020 this method is inherently broken.
+     *             The PluginClassLoader used to load JavaPlugins will now try to explicitly cast the ClassLoader
+     *             of classes in the JavaPluginLoader's classes cache to PluginClassLoader - resulting in a ClassCastException.
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public void forceLoadAllClasses(ScalaPlugin scalaPlugin) {
         try {
             getAllClasses(scalaPlugin).forEach(noop -> {});
