@@ -7,7 +7,7 @@
     <groupId>xyz.janboerman</groupId>
     <artifactId>ScalaPluginLoader</artifactId>
     <packaging>pom</packaging>
-    <version>0.13.1-SNAPSHOT</version>
+    <version>0.13.2-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

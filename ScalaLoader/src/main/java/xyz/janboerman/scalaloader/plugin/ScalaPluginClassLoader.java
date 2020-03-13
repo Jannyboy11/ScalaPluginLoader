@@ -41,21 +41,31 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     private enum Platform {
         CRAFTBUKKIT {
             private MethodHandle commodoreConvert = null;
+            private boolean attempted = false;
 
             @Override
-            protected byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
-                if (commodoreConvert == null) {
+            protected byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
+                if (!attempted) {
+                    attempted = true;
                     MethodHandles.Lookup lookup = MethodHandles.lookup();
                     Server craftServer = currentPluginClassLoader.getServer();
-                    Class<?> commodoreClass = Class.forName(
-                            craftServer.getClass().getPackageName() + ".util.Commodore");
-                    String methodName = "convert";
-                    MethodType methodType =  MethodType.methodType(byte[].class, new Class<?>[] {byte[].class, boolean.class});
-                    commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
+                    try {
+                        Class<?> commodoreClass = Class.forName(
+                                craftServer.getClass().getPackageName() + ".util.Commodore");
+                        String methodName = "convert";
+                        MethodType methodType = MethodType.methodType(byte[].class, new Class<?>[]{byte[].class, boolean.class});
+                        commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
+                    } catch (ClassNotFoundException ingored) {
+                        //running on craftbukkit 1.12.2 or earlier
+                    }
                 }
 
-                boolean isModern = currentPluginClassLoader.getApiVersion() != ApiVersion.LEGACY;
-                return (byte[]) commodoreConvert.invoke(original, isModern);
+                if (commodoreConvert != null) {
+                    boolean isModern = currentPluginClassLoader.getApiVersion() != ApiVersion.LEGACY;
+                    classBytes = (byte[]) commodoreConvert.invoke(classBytes, isModern);
+                }
+
+                return classBytes;
             }
         },
         GLOWSTONE {
@@ -69,19 +79,23 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         UNKNOWN;
 
         protected byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
-            Server server = currentPluginClassLoader.getServer();
-            UnsafeValues unsafeValues = server.getUnsafe();
-            String fakeDescription = "name: Fake" + System.lineSeparator() +
-                    "version: 1.0" + System.lineSeparator() +
-                    "main: xyz.janboerman.scalaloader.FakePlugin" + System.lineSeparator() +
-                    "api-version: " + currentPluginClassLoader.getApiVersion().getVersionString() + System.lineSeparator();
+            try {
+                Server server = currentPluginClassLoader.getServer();
+                UnsafeValues unsafeValues = server.getUnsafe();
+                String fakeDescription = "name: Fake" + System.lineSeparator() +
+                        "version: 1.0" + System.lineSeparator() +
+                        "main: xyz.janboerman.scalaloader.FakePlugin" + System.lineSeparator() +
+                        "api-version: " + currentPluginClassLoader.getApiVersion().getVersionString() + System.lineSeparator();
 
-            PluginDescriptionFile pluginDescriptionFile = new PluginDescriptionFile(new StringReader(fakeDescription));
+                PluginDescriptionFile pluginDescriptionFile = new PluginDescriptionFile(new StringReader(fakeDescription));
 
-            return unsafeValues.processClass(pluginDescriptionFile, jarEntryPath, original);
+                return unsafeValues.processClass(pluginDescriptionFile, jarEntryPath, original);
+            } catch (NoSuchMethodError e) {
+                //UnsafeValues#processClass does not exist, just return the original class bytes
+                return original;
+            }
         }
     }
-
 
     static {
         registerAsParallelCapable();
@@ -322,7 +336,8 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         if (loadedConcurrently == null) {
             //if we find this class for the first time
             if (pluginLoader.addClassGlobally(getScalaVersion(), name, found)) {
-                injectIntoJavaPluginLoaderScope(name, found);
+                //TODO will bukkit ever get a proper pluginloader api? https://hub.spigotmc.org/jira/browse/SPIGOT-4255
+                //injectIntoJavaPluginLoaderScope(name, found);
             }
         } else {
             //if some other thread tried to load the same class and won the race, use that class instead.
@@ -376,7 +391,11 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      *
      * @param className the name of the class
      * @param clazz the class
+     *
+     * @deprecated JavaPlugins that try to find classes using the JavaPluginLoader expect to only find JavaPlugins
+     * @see <a href="https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/diff/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java?until=c3aeaea0fb88600643e01b6b4259e9d5da49e0e7">PluginClassLoader</a>
      */
+    @Deprecated(forRemoval = true)
     protected final void injectIntoJavaPluginLoaderScope(String className, Class<?> clazz) {
         PluginLoader likelyJavaPluginLoader = pluginLoader.getJavaPluginLoader();
         //TODO loop the plugin(class)loader hierarchy until we find a JavaPluginLoader?
@@ -408,7 +427,11 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      *
      * @param className the name of the class
      * @see #injectIntoJavaPluginLoaderScope(String, Class)
+     *
+     * @deprecated JavaPlugins that try to find classes using the JavaPluginLoader expect to only find JavaPlugins
+     * @see <a href="https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/diff/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java?until=c3aeaea0fb88600643e01b6b4259e9d5da49e0e7">PluginClassLoader</a>
      */
+    @Deprecated(forRemoval = true)
     protected final void removeFromJavaPluginLoaderScope(String className) {
         PluginLoader likelyJavaPluginLoader = pluginLoader.getJavaPluginLoader();
         if (likelyJavaPluginLoader instanceof JavaPluginLoader) {

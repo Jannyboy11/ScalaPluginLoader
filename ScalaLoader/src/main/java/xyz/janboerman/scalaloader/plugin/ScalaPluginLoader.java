@@ -398,7 +398,8 @@ public class ScalaPluginLoader implements PluginLoader {
             if (classes != null) {
                 scalaPluginClassLoader.getClasses().forEach((className, clazz) -> {
                     classes.remove(className, clazz);
-                    scalaPluginClassLoader.removeFromJavaPluginLoaderScope(className);
+                    //TODO will bukkit ever get a proper pluginloader api? https://hub.spigotmc.org/jira/browse/SPIGOT-4255
+                    //scalaPluginClassLoader.removeFromJavaPluginLoaderScope(className);
                 });
                 if (classes.isEmpty()) {
                     sharedScalaPluginClasses.remove(scalaVersion);
