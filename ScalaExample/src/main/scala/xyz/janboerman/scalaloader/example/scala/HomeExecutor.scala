@@ -29,10 +29,12 @@ object HomeExecutor extends CommandExecutor {
                 player.sendMessage("Home set!")
             case "tp" => homes.get(player.getUniqueId) match {
                 case Some(home) =>
-                    if (ExamplePlugin.eventBus.callEvent(HomeTeleportEvent(player, home)))
+                    if (ExamplePlugin.eventBus.callEvent(HomeTeleportEvent(player, home))) {
                         player.teleport(home.getLocation())
-                    else
+                        player.sendMessage("Welcome home!");
+                    } else {
                         player.sendMessage("Some plugin prevented you from teleporting to your home!")
+                    }
                 case None => player.sendMessage("You don't have a home yet.")
             }
             case _ => return false
