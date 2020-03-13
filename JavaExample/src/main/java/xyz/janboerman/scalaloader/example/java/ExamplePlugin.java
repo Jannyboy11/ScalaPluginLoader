@@ -27,7 +27,7 @@ public class ExamplePlugin extends ScalaPlugin {
     private final Random random = new Random();
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.13.2-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.13.3-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     @Override

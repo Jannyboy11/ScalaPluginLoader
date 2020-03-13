@@ -19,6 +19,8 @@ ScalaLoader uses a custom PluginLoader that loads the Scala runtime classes for 
 - Supports custom scala versions by adding/changing URLs in the config file.
 - Annotation-based detection of the plugin's main class - no need to write a plugin.yml.
 If you wish to use a plugin.yml still, you can, however I always found it a pain.
+- A boilerplate-free event api! #getHandlerList(), #getHandlers(), #setCancelled(boolean) and #isCancelled() can be generated
+at class-load time!
 
 #### Cons
 - Scala library classes are only accessible to ScalaPlugins (You can still write them in Java though).
@@ -147,7 +149,7 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 ##### SBT
 ```
 resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.2" % "provided"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.3" % "provided"
 ```
 
 ##### Maven
@@ -160,7 +162,7 @@ libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader"
 <dependency>
     <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.13.2</version>
+    <version>v0.13.3</version>
     <scope>provided</scope>
 </dependency>
 ```
