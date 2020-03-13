@@ -9,7 +9,6 @@ package xyz.janboerman.scalaloader.event;
  *     <li>a method: <code>public void setCancelled(boolean cancel) { this.$cancel = cancel; }</code></li>
  * </ul>
  *
- *
  * @apiNote events that implement this interface are expected to either not override any methods at all,
  *      or implement both. If only one of the two methods is overridden, an exception is thrown by the ScalaPluginClassLoader.
  *

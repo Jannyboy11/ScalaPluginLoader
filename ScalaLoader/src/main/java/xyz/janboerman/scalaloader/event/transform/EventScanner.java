@@ -97,7 +97,7 @@ class EventScanner extends ClassVisitor {
 
                 @Override
                 public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                    if (owner.equals(result.className)) {
+                    if ("<init>".equals(name) && owner.equals(result.className)) {
                         //constructor is calling this(params..) instead of super(params..)
                         isPrimaryConstructor = false;
                     }
