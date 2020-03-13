@@ -11,6 +11,7 @@ package xyz.janboerman.scalaloader.event;
  *
  * @apiNote events that implement this interface are expected to either not override any methods at all,
  *      or implement both. If only one of the two methods is overridden, an exception is thrown by the ScalaPluginClassLoader.
+ * @apiNote JavaPlugins must not ever define events that implement this interface.
  *
  * @see org.bukkit.event.Cancellable
  */
