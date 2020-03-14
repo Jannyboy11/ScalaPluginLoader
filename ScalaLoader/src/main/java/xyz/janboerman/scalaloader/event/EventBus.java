@@ -5,6 +5,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import xyz.janboerman.scalaloader.event.transform.EventError;
+import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 
 /**
@@ -19,6 +21,13 @@ public class EventBus {
 
     private final PluginManager pluginManager;
 
+    /**
+     * Construct the event bus.
+     *
+     * @deprecated not meant to be constructed explicitly. Use {@link ScalaPlugin#getEventBus()} or {@link ScalaPluginLoader#getEventBus()}.
+     * @param pluginManager Bukkit's PluginManager
+     */
+    @Deprecated
     public EventBus(PluginManager pluginManager) {
         this.pluginManager = pluginManager;
     }
@@ -96,8 +105,11 @@ public class EventBus {
      * @param <L> the listener type
      */
     public <L extends Listener, E extends Event> void registerEvent(Class<E> event, L listener, EventPriority priority, EventExecutor<L, E> executor, Plugin plugin, boolean ignoreCancelled) {
-        //for scalaplugins this methodcall is replaced by the bukkit-event overloads
-        registerEvent((Class<? extends org.bukkit.event.Event>) (Class<?>) event, listener, priority, (org.bukkit.plugin.EventExecutor) executor, plugin, ignoreCancelled);
+        if (executor instanceof org.bukkit.plugin.EventExecutor) {
+            registerEvent((Class<? extends org.bukkit.event.Event>) (Class<?>) event, listener, priority, (org.bukkit.plugin.EventExecutor) executor, plugin, ignoreCancelled);
+        } else {
+            throw new EventError("Cannot implement " + EventExecutor.class.getName() + " from your JavaPlugin!, use Bukkit's the EventHandler reflection API instead!");
+        }
     }
 
     /**
@@ -127,7 +139,10 @@ public class EventBus {
      * @param <L> the listener type
      */
     public <L extends Listener, E extends Event> void registerEvent(Class<E> event, L listener, EventPriority priority, EventExecutor<L, E> executor, Plugin plugin) {
-        //for scalaplugins this methodcall is replaced by the bukkit-event overloads
-        registerEvent((Class<? extends org.bukkit.event.Event>) (Class<?>) event, listener, priority, (org.bukkit.plugin.EventExecutor) executor, plugin);
+        if (executor instanceof org.bukkit.plugin.EventExecutor) {
+            registerEvent((Class<? extends org.bukkit.event.Event>) (Class<?>) event, listener, priority, (org.bukkit.plugin.EventExecutor) executor, plugin);
+        } else {
+            throw new EventError("Cannot implement " + EventExecutor.class.getName() + " from your JavaPlugin!, use Bukkit's the EventHandler reflection API instead!");
+        }
     }
 }

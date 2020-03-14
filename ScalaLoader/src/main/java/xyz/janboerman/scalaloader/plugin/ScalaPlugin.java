@@ -97,8 +97,8 @@ public abstract class ScalaPlugin implements Plugin {
      *
      * @return the event bus
      */
-    protected final EventBus getEventBus() {
-        return getClassLoader().getPluginLoader().getEventBus();
+    public final EventBus getEventBus() {
+        return getPluginLoader().getEventBus();
     }
 
     /**

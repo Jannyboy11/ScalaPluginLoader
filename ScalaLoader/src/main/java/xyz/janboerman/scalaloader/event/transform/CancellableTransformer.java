@@ -67,7 +67,6 @@ class CancellableTransformer extends ClassVisitor {
     @Override
     public void visitEnd() {
         if (scanResult.implementsScalaLoaderCancellable) {
-            assert scanResult.hasValidIsCancelled == scanResult.hasValidSetCancelled;
             boolean generate = !scanResult.hasValidSetCancelled;
 
             if (generate) {

@@ -15,11 +15,11 @@ class EventScanner extends ClassVisitor {
         super(ASM_API);
     }
 
-    ScanResult scan(ClassReader classReader) throws EventUsageError {
+    ScanResult scan(ClassReader classReader) throws EventError {
         classReader.accept(this, ClassReader.EXPAND_FRAMES);
 
         if (result.hasValidSetCancelled != result.hasValidIsCancelled) {
-            throw new EventUsageError("Event class " + result.className.replace('/', '.') + " implements " + Cancellable.class.getName() + ", "
+            throw new EventError("Event class " + result.className.replace('/', '.') + " implements " + Cancellable.class.getName() + ", "
                     + "but only overrides " + (result.hasValidSetCancelled ? "setCancelled" : "isCancelled") + ". "
                     + "You need to either override both isCancelled and setCancelled, or none of the two.");
         }

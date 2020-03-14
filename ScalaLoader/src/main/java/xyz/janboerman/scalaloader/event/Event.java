@@ -1,7 +1,7 @@
 package xyz.janboerman.scalaloader.event;
 
 import org.bukkit.Server;
-import xyz.janboerman.scalaloader.event.transform.EventUsageError;
+import xyz.janboerman.scalaloader.event.transform.EventError;
 
 /**
  * <p>
@@ -45,8 +45,8 @@ import xyz.janboerman.scalaloader.event.transform.EventUsageError;
  * </p>
  *
  * @implNote because transformations are done at the classloader-level, JavaPlugins cannot extend this class because they use a
- * different classloader implementation. JavaPlugins can listen to instances of subclasses of {@link Event}s just fine though.
- * It is only the {@link Event} base type that is toxic, don't ever use it explicitly in a JavaPlugin.
+ * different classloader implementation. JavaPlugins can listen to instances of subclasses of {@link Event}s just fine through Bukkit's
+ * EventHandler reflection api. It is only the {@link Event} base type that is toxic, don't ever use it explicitly in a JavaPlugin.
  *
  * @see Cancellable
  * @see EventBus
@@ -59,7 +59,7 @@ public abstract class Event {
      * @param asynchronous true if the event is asynchronous, false if the event is executed in the server thread.
      */
     public Event(boolean asynchronous) {
-        throw new EventUsageError("Cannot extend " + Event.class.getName() + " from a JavaPlugin");
+        throw new EventError("Cannot extend " + Event.class.getName() + " from a JavaPlugin");
     }
 
     /**
@@ -67,7 +67,7 @@ public abstract class Event {
      * @implNote can only be used by ScalaPlugins!
      */
     public Event() {
-        throw new EventUsageError("Cannot extend " + Event.class.getName() + " from a JavaPlugin");
+        throw new EventError("Cannot extend " + Event.class.getName() + " from a JavaPlugin");
     }
 
     /**
@@ -78,7 +78,7 @@ public abstract class Event {
      * @see org.bukkit.scheduler.BukkitScheduler
      */
     public boolean isAsynchronous() {
-        throw new EventUsageError("Somehow " + getClass().getName() + " was not transformed to a subclass of org.bukkit.event.Event. This is a bug in ScalaLoader!");
+        throw new EventError("Somehow " + getClass().getName() + " was not transformed to a subclass of org.bukkit.event.Event. This is a bug in ScalaLoader!");
     }
 
     /**
@@ -86,7 +86,7 @@ public abstract class Event {
      * @return the name of the event
      */
     public String getEventName() {
-        throw new EventUsageError("Somehow " + getClass().getName() + " was not transformed to a subclass of org.bukkit.event.Event. This is a bug in ScalaLoader!");
+        throw new EventError("Somehow " + getClass().getName() + " was not transformed to a subclass of org.bukkit.event.Event. This is a bug in ScalaLoader!");
     }
 
 }

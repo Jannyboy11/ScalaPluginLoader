@@ -9,7 +9,7 @@ import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
-import xyz.janboerman.scalaloader.event.transform.EventUsageError;
+import xyz.janboerman.scalaloader.event.transform.EventError;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 
 import java.io.*;
@@ -211,8 +211,8 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * </ol>
      *
      * @param name the name of the class
-     * @return a
-     * @throws ClassNotFoundException
+     * @return a class with the given name
+     * @throws ClassNotFoundException if a class could not be found by this classloader
      */
     @Override
     public Class<?> loadClass(final String name) throws ClassNotFoundException {
@@ -269,7 +269,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
                     try {
                         classBytes = EventTransformations.transform(classBytes, this);
-                    } catch (EventUsageError throwable) {
+                    } catch (EventError throwable) {
                         getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Event class " + name + " is invalid.", throwable);
                         throw new ClassNotFoundException(throwable.getMessage());
                     }
