@@ -13,7 +13,9 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
  * An event bus for ScalaPlugin {@link Event}s.
  * The instance of this event bus can be obtained in your ScalaPlugin's main class using {@code super.getEventBus()} or {@link ScalaPluginLoader#getEventBus()}
  *
- * @implNote JavaPlugins must not use this class!
+ * @apiNote JavaPlugins should not use this class, they are better off using Bukkit's PluginManager api.
+ * @implNote Some of the internals of this class rely on the fact that the bytecode of ScalaPlugins is transformed using
+ *      {@link xyz.janboerman.scalaloader.event.transform.EventTransformations#transform(byte[], ClassLoader)} before they are "defined" by the classloader.
  *
  * @see Event
  */
@@ -25,7 +27,7 @@ public class EventBus {
      * Construct the event bus.
      *
      * @deprecated not meant to be constructed explicitly. Use {@link ScalaPlugin#getEventBus()} or {@link ScalaPluginLoader#getEventBus()}.
-     * @param pluginManager Bukkit's PluginManager
+     * @param pluginManager the server's PluginManager
      */
     @Deprecated
     public EventBus(PluginManager pluginManager) {
@@ -38,6 +40,7 @@ public class EventBus {
      *
      * @param event the event
      * @return true if the event is allowed to happen, otherwise false
+     * @apiNote if the event does not implement {@link Cancellable}, true is always returned.
      */
     public boolean callEvent(org.bukkit.event.Event event) {
         pluginManager.callEvent(event);
@@ -55,7 +58,9 @@ public class EventBus {
      * @param event the event
      * @return true if the event is allowed to happen, otherwise false
      *
-     * @apiNote this method is not type-safe. The argument must have a type that must be a subtype of {@link Event} or {@link org.bukkit.event.Event}.
+     * @apiNote this method is not type-safe. The argument's type must be a subtype of either {@link Event} or {@link org.bukkit.event.Event}.
+     * @apiNote if the event does not implement {@link xyz.janboerman.scalaloader.event.Cancellable} or {@link Cancellable}, true is always returned.
+     * @throws RuntimeException if the type of the passed argument is not a subtype of {@link Event} or {@link org.bukkit.event.Event}.
      */
     public boolean callEvent(Object event) {
         if (event instanceof org.bukkit.event.Event) {

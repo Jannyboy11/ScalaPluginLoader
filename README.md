@@ -149,7 +149,7 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 ##### SBT
 ```
 resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.3" % "provided"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.4" % "provided"
 ```
 
 ##### Maven
@@ -162,7 +162,7 @@ libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader"
 <dependency>
     <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.13.3</version>
+    <version>v0.13.4</version>
     <scope>provided</scope>
 </dependency>
 ```

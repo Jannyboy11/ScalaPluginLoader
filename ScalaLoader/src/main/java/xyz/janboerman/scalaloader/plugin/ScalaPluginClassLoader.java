@@ -231,12 +231,18 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             if (clazz != null) return clazz;
         } catch (ClassNotFoundException e) {
             fallback.addSuppressed(e);
-            try {
-                clazz = getParent().loadClass(name);
-                if (clazz != null) return clazz;
-            } catch (ClassNotFoundException e2) {
-                fallback.addSuppressed(e2);
-            }
+        }
+
+        try {
+            //the parent classloader has access to:
+            //  - scala library classes
+            //  - javaplugins
+            //  - server classes (bukkit, craftbukkit, nms, and server-included libraries)
+
+            clazz = getParent().loadClass(name);
+            if (clazz != null) return clazz;
+        } catch (ClassNotFoundException e) {
+            fallback.addSuppressed(e);
         }
 
         throw fallback;

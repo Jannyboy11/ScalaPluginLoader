@@ -27,6 +27,10 @@ public enum ScalaVersion {
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.10%2Fscala-reflect-2.12.10.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.10%2Fscala-library-2.12.10.jar"
     ),
+    v2_12_11("2.12.10", true,
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.11%2Fscala-reflect-2.12.11.jar",
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.11%2Fscala-library-2.12.11.jar"
+    ),
     @Deprecated(forRemoval = true)
     v2_13_0_M4("2.13.0-M4", false,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.0-M4%2Fscala-reflect-2.13.0-M4.jar",

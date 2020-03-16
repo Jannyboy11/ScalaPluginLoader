@@ -39,11 +39,11 @@ public interface Cancellable {
 /*
 Ideally, we would have used a Scala trait such as the following:
 
-trait Cancellable { self: Event =>
+trait Cancellable extends org.bukkit.event.Cancellable { self: Event =>
     private cancel: Boolean
 
-    def isCancelled: Boolean = cancel
-    def setCancelled(cancel: Boolean): Unit = this.cancel = cancel;
+    override def isCancelled: Boolean = cancel
+    override def setCancelled(cancel: Boolean): Unit = this.cancel = cancel;
 }
 
 But sadly we can't do this in Java. So the next best option is to inject this field and these methods into the class using a transforming classloader.
