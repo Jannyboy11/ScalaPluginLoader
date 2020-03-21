@@ -175,7 +175,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
             } //end while - no more JarEntries
 
-            if (mainClassCandidate == null || !mainClassCandidate.getMainClass().isPresent()) {
+            if (mainClassCandidate == null || mainClassCandidate.getMainClass().isEmpty()) {
                 getScalaLoader().getLogger().warning("Could not find main class in file " + file.getName() + ". Did you annotate your main class with @Scala and is it public?");
                 getScalaLoader().getLogger().warning("Delegating to JavaPluginLoader...");
                 return getJavaPluginLoader().getPluginDescription(file);
@@ -220,7 +220,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 return plugin.getDescription();
 
             } catch (ClassNotFoundException e) {
-                throw new InvalidDescriptionException(e, "Could find the class that was found the main class");
+                throw new InvalidDescriptionException(e, "The main class of your plugin could not be found!");
             } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
                 throw new InvalidDescriptionException(e,
                         "Your plugin's constructor and/or initializers tried to access classes that were not yet loaded. " +
@@ -357,9 +357,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
     @Override
     public void enablePlugin(Plugin plugin) {
-        if (plugin instanceof JavaPlugin) {
-            getJavaPluginLoader().enablePlugin(plugin);
-        } else if (plugin instanceof ScalaPlugin) {
+        if (plugin instanceof ScalaPlugin) {
             ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
             if (scalaPlugin.isEnabled()) return;
 
@@ -371,15 +369,14 @@ public class ScalaPluginLoader implements PluginLoader {
             scalaPlugin.setEnabled(true);
             scalaPlugin.onEnable();
         } else {
-            throw new IllegalArgumentException("ScalaPluginLoader can only enable " + ScalaPlugin.class.getSimpleName() + "s");
+            //delegate unknown plugin types
+            getJavaPluginLoader().enablePlugin(plugin);
         }
     }
 
     @Override
     public void disablePlugin(Plugin plugin) {
-        if (plugin instanceof JavaPlugin) {
-            getJavaPluginLoader().disablePlugin(plugin);
-        } else if (plugin instanceof ScalaPlugin) {
+        if (plugin instanceof ScalaPlugin) {
             ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
             if (!scalaPlugin.isEnabled()) return;
 
@@ -418,6 +415,9 @@ public class ScalaPluginLoader implements PluginLoader {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else {
+            //delegate unknown plugin types
+            getJavaPluginLoader().disablePlugin(plugin);
         }
     }
 
