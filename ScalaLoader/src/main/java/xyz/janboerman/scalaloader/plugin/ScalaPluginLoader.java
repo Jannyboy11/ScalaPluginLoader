@@ -545,7 +545,7 @@ public class ScalaPluginLoader implements PluginLoader {
             //it should have a public zero-argument constructor
 
             try {
-                Constructor ctr = clazz.getConstructor();
+                Constructor<?> ctr = clazz.getConstructor();
                 Object pluginInstance = ctr.newInstance();
 
                 return clazz.cast(pluginInstance);

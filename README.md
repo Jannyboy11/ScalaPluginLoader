@@ -49,7 +49,7 @@ Currently this does not inject the Scala library classes into the JavaPlugin's c
 
 ### Example Plugin
 
-```
+```scala
 package xyz.janboerman.scalaloader.example.scala
 
 import org.bukkit.ChatColor
@@ -104,7 +104,7 @@ object ExamplePlugin
 ### Depending on a ScalaPlugin from a JavaPlugin
 
 plugin.yml:
-```
+```yaml
 name: DummyPlugin
 version: 1.0
 main: xyz.janboerman.dummy.dummyplugin.DummyPlugin
@@ -113,7 +113,7 @@ softdepend: [ScalaExample] #A hard dependency will not work! Your plugin will no
 ```
 
 Java code:
-```
+```java
 package xyz.janboerman.dummy.dummyplugin;
 
 import org.bukkit.plugin.java.JavaPlugin;
@@ -147,13 +147,13 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 
 ## Dependency Information
 ##### SBT
-```
+```scala
 resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.4" % "provided"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.5" % "provided"
 ```
 
 ##### Maven
-```
+```xml
 <repository>
     <id>jitpack.io</id>
     <url>https://jitpack.io</url>
@@ -162,7 +162,7 @@ libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader"
 <dependency>
     <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.13.4</version>
+    <version>v0.13.5</version>
     <scope>provided</scope>
 </dependency>
 ```

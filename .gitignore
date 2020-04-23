@@ -12,3 +12,5 @@ ScalaLoader/target/*
 .settings/*
 .project
 .classpath
+
+stager_feedback.txt

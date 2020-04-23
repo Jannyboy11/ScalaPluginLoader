@@ -31,16 +31,6 @@ public enum ScalaVersion {
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.11%2Fscala-reflect-2.12.11.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.11%2Fscala-library-2.12.11.jar"
     ),
-    @Deprecated(forRemoval = true)
-    v2_13_0_M4("2.13.0-M4", false,
-            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.0-M4%2Fscala-reflect-2.13.0-M4.jar",
-            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.0-M4%2Fscala-library-2.13.0-M4.jar"
-    ),
-    @Deprecated(forRemoval = true)
-    v2_13_0_M5("2.13.0-M5", false,
-            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.0-M5%2Fscala-reflect-2.13.0-M5.jar",
-            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.0-M5%2Fscala-library-2.13.0-M5.jar"
-    ),
     v2_13_0("2.13.0", true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.0%2Fscala-reflect-2.13.0.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.0%2Fscala-library-2.13.0.jar"
@@ -48,6 +38,10 @@ public enum ScalaVersion {
     v2_13_1("2.13.1", true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.1%2Fscala-reflect-2.13.1.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.1%2Fscala-library-2.13.1.jar"
+    ),
+    v2_13_2("2.13.2", true,
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.2%2Fscala-reflect-2.13.2.jar",
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.2%2Fscala-library-2.13.2.jar"
     );
 
     private static Map<String, ScalaVersion> byVersion = new HashMap<>();
