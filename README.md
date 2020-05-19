@@ -140,16 +140,16 @@ public final class DummyPlugin extends JavaPlugin {
 ## Compiling
 It's a [maven](https://maven.apache.org/) project, so just `cd ScalaLoader` and `mvn package` and you're good to go.
 Be sure to use the shaded jar and not the original one.
-Note that while ScalaLoader can run on Java 11, it requires JDK12+ to compile.
+Note that while ScalaLoader can run on Java 11, it requires JDK14+ to compile.
 
 ### Pre-built plugin jar file?
 Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 
-## Dependency Information
+## Dependency Information [![](https://jitpack.io/v/Jannyboy11/ScalaPluginLoader.svg)](https://jitpack.io/#Jannyboy11/ScalaPluginLoader)
 ##### SBT
 ```scala
 resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.5" % "provided"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.6" % "provided"
 ```
 
 ##### Maven
@@ -162,7 +162,7 @@ libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader"
 <dependency>
     <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.13.5</version>
+    <version>v0.13.6</version>
     <scope>provided</scope>
 </dependency>
 ```
