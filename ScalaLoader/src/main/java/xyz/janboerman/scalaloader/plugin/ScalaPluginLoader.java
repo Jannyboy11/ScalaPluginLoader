@@ -181,7 +181,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 return getJavaPluginLoader().getPluginDescription(file);
             }
 
-            //assume latest if unspecified
+            //assume latest if unspecified //TODO use the bukkit api version that we're running on instead?
             ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElseGet(ApiVersion::latest);
 
             PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();
@@ -263,6 +263,7 @@ public class ScalaPluginLoader implements PluginLoader {
     /**
      * Makes classes from a ScalaPlugin visible to the JavaPlugin's classloader so that the ScalaPlugin
      * can be used by the JavaPlugin.
+     * @apiNote this only makes the classes that are in the ScalaPlugin's jar file available - that excludes the Scala standard library classes.
      * @param scalaPlugin the scala plugin
      * @param javaPlugin the java plugin
      */

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.13.5-SNAPSHOT</version>
+        <version>0.13.7-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -67,7 +67,7 @@
                     <!-- the javadoc tool is too picky for me -->
                     <failOnError>false</failOnError>
 
-                    <additionalOptions>-source 13 --enable-preview</additionalOptions>
+                    <additionalOptions>-source 14 --enable-preview</additionalOptions>
                 </configuration>
 
                 <!-- I don't even get why this workaround is required.
@@ -77,7 +77,7 @@
                     <dependency>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm</artifactId>
-                        <version>7.3.1</version>
+                        <version>8.0.1</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -126,7 +126,7 @@
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>bukkit</artifactId>
-            <version>1.15.2-R0.1-SNAPSHOT</version>
+            <version>1.16.1-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

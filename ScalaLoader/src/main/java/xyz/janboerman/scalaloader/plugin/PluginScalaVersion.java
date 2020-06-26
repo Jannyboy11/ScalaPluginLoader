@@ -43,7 +43,6 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
     @Override
     public boolean equals(Object other) {
         if (other == this) return true;
-        if (other == null) return false;
         if (!(other instanceof PluginScalaVersion)) return false;
         PluginScalaVersion that = (PluginScalaVersion) other;
         return Objects.equals(this.scalaVersion, that.scalaVersion);

@@ -2,11 +2,10 @@ package xyz.janboerman.scalaloader.event.transform;
 
 import org.bukkit.event.Event;
 import org.objectweb.asm.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 
 public class EventTransformations {
 
-    static final int ASM_API = Opcodes.ASM7;
+    static final int ASM_API = Opcodes.ASM8;
 
     static final String BUKKIT_EVENT_DESCRIPTOR = "Lorg/bukkit/event/Event;";
     static final String BUKKIT_CANCELLABLE_DESCRIPTOR = "Lorg/bukkit/event/Cancellable;";
@@ -84,17 +83,17 @@ public class EventTransformations {
      *
      *
      * @param clazz the class to be transformed
-     * @param classLoader the classloader that ASM uses to compute the least upper bound for the StackMapTable
+     * @param pluginClassLoader the classloader that ASM uses to compute the least upper bound for the StackMapTable
      * @return the transformed class bytes
      */
     //TODO write some tests for this method
-    public static byte[] transform(byte[] clazz, ClassLoader classLoader) {
+    public static byte[] transform(byte[] clazz, ClassLoader pluginClassLoader) {
         ScanResult eventResult = new EventScanner().scan(new ClassReader(clazz));
 
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS) {
             @Override
             protected ClassLoader getClassLoader() {
-                return classLoader;
+                return pluginClassLoader;
             }
         };
 

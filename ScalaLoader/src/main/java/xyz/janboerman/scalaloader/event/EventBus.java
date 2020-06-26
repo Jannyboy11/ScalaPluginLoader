@@ -71,7 +71,7 @@ public class EventBus {
     }
 
     /**
-     * Register a listener. The EventBus will try to created {@link org.bukkit.plugin.EventExecutor}s based on methods in the listener's class that are annotated with {@link org.bukkit.event.EventHandler}.
+     * Register a listener. The EventBus will try to create {@link org.bukkit.plugin.EventExecutor}s based on methods in the listener's class that are annotated with {@link org.bukkit.event.EventHandler}.
      * These methods must have a single parameter, that is of a subtype of {@link Event} or {@link org.bukkit.event.Event}.
      *
      * @param listener the event listener
@@ -113,7 +113,7 @@ public class EventBus {
         if (executor instanceof org.bukkit.plugin.EventExecutor) {
             registerEvent((Class<? extends org.bukkit.event.Event>) (Class<?>) event, listener, priority, (org.bukkit.plugin.EventExecutor) executor, plugin, ignoreCancelled);
         } else {
-            throw new EventError("Cannot implement " + EventExecutor.class.getName() + " from your JavaPlugin!, use Bukkit's the EventHandler reflection API instead!");
+            throw new EventError("Cannot implement " + EventExecutor.class.getName() + " from your JavaPlugin!, use Bukkit's EventHandler reflection API instead!");
         }
     }
 
@@ -147,7 +147,7 @@ public class EventBus {
         if (executor instanceof org.bukkit.plugin.EventExecutor) {
             registerEvent((Class<? extends org.bukkit.event.Event>) (Class<?>) event, listener, priority, (org.bukkit.plugin.EventExecutor) executor, plugin);
         } else {
-            throw new EventError("Cannot implement " + EventExecutor.class.getName() + " from your JavaPlugin!, use Bukkit's the EventHandler reflection API instead!");
+            throw new EventError("Cannot implement " + EventExecutor.class.getName() + " from your JavaPlugin!, use Bukkit's EventHandler reflection API instead!");
         }
     }
 }

@@ -6,13 +6,13 @@ import org.bukkit.event.Listener;
  * An event executor. Can be implemented using a lambda expression in your ScalaPlugin.
  *
  * @implNote <p>    This interface CANNOT be implemented by class that are not loaded through the {@link xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader},
- *                  which basically boils down to you can't use this from a JavaPlugin. Use Bukkit's Listener/EventHandler reflection api instead!
+ *                  which basically means you can't use this from a JavaPlugin. Use Bukkit's Listener/EventHandler reflection api instead!
  *           </p>
  * <pre>
  *     <code>
  *         public class MyListener implements org.bukkit.event.Listener {
  *            {@literal @} org.bukkit.event.EventHandler
- *            public void onEvent(SomeScalaPluginEvent) {
+ *            public void onEvent(SomeScalaPluginEvent event) {
  *                //use the event
  *            }
  *         }

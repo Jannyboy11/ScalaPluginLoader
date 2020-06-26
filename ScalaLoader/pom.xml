@@ -5,11 +5,16 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.13.5-SNAPSHOT</version>
+        <version>0.13.7-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ScalaLoader</artifactId>
+
+    <properties>
+        <asmVersion>8.0.1</asmVersion>
+        <junitVersion>5.6.2</junitVersion>
+    </properties>
 
     <build>
         <defaultGoal>clean package</defaultGoal>
@@ -34,7 +39,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.2.0</version>
                 <configuration>
                     <archive>
                         <manifestEntries>
@@ -47,7 +52,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>3.2.4</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -71,7 +76,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.2.0</version>
                 <configuration>
                     <!-- bukkit library javadoc -->
                     <links>
@@ -105,6 +110,9 @@
 
                     <!-- the javadoc tool is too picky for me -->
                     <failOnError>false</failOnError>
+
+                    <!-- so that proper hyperlinks to standard jdk classes are generated -->
+                    <additionalOptions>-source 11</additionalOptions>
                 </configuration>
 
                 <!-- I don't even get why this workaround is required.
@@ -114,18 +122,18 @@
                     <dependency>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm</artifactId>
-                        <version>7.3.1</version>
+                        <version>${asmVersion}</version>
                     </dependency>
                 </dependencies>
             </plugin>
 
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M4</version>
+                <version>3.0.0-M5</version>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.0.0-M4</version>
+                <version>3.0.0-M5</version>
             </plugin>
         </plugins>
 
@@ -139,43 +147,45 @@
     </repositories>
 
     <dependencies>
+        <!-- Depend on spigot-api instead of bukkit because bukkit is no longer hosted on the spigot maven. -->
+        <!-- We still are only using bukkit methods so ScalaLoader will still work on CraftBukkit -->
         <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>bukkit</artifactId>
-            <version>1.15.2-R0.1-SNAPSHOT</version>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.16.1-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
-            <version>7.3.1</version>
+            <version>${asmVersion}</version>
         </dependency>
 
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-commons</artifactId>
-            <version>7.3.1</version>
+            <version>${asmVersion}</version>
         </dependency>
 
         <!-- for debugging only -->
 <!--        <dependency>-->
 <!--            <groupId>org.ow2.asm</groupId>-->
 <!--            <artifactId>asm-util</artifactId>-->
-<!--            <version>7.3.1</version>-->
+<!--            <version>${asmVersion}</version>-->
 <!--        </dependency>-->
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.6.0</version>
+            <version>${junitVersion}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.6.0</version>
+            <version>${junitVersion}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -44,7 +44,7 @@ Currently this does not inject the Scala library classes into the JavaPlugin's c
 - ~~Use bukkit's api-version to transform classes so that plugins will be compatible once they are loaded.~~
 - ~~HandlerList- and cancellable-related boilerplate reduction for custom events.~~
 - API to load third-party libraries (can be specific to certain Scala versions, or not).
-- ConfigurationSerializable-related boilerplate reduction using the type-class pattern.
+- ConfigurationSerializable-related boilerplate reduction. I'm thinking macros can help here.
 - Link using TASTy if the scalaplugin's jar includes TASTy attributes.
 
 ### Example Plugin
@@ -149,7 +149,7 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 ##### SBT
 ```scala
 resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.6" % "provided"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.7" % "provided"
 ```
 
 ##### Maven
@@ -162,7 +162,7 @@ libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader"
 <dependency>
     <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.13.6</version>
+    <version>v0.13.7</version>
     <scope>provided</scope>
 </dependency>
 ```

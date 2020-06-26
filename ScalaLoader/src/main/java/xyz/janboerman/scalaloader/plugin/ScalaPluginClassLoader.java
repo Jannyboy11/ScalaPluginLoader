@@ -276,8 +276,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     try {
                         classBytes = EventTransformations.transform(classBytes, this);
                     } catch (EventError throwable) {
-                        getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Event class " + name + " is invalid.", throwable);
-                        throw new ClassNotFoundException(throwable.getMessage());
+                        throw new ClassNotFoundException("Event class " + name + " is invalid.", throwable);
                     }
 
                     try {

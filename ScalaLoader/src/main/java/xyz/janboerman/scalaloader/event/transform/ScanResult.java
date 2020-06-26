@@ -24,10 +24,10 @@ class ScanResult {
         stringJoiner.add("extends ScalaLoader Event = " + extendsScalaLoaderEvent);
         stringJoiner.add("implements ScalaLoader Cancellable = " + implementsScalaLoaderCancellable);
         stringJoiner.add("static HandlerList field name = " + staticHandlerListFieldName);
-        stringJoiner.add("hasGetHandlers = " + hasGetHandlers);
-        stringJoiner.add("hasGetHandlerList = " + hasGetHandlerList);
-        stringJoiner.add("hasIsCancelled = " + hasValidIsCancelled);
-        stringJoiner.add("hasSetCancelled = " + hasValidSetCancelled);
+        stringJoiner.add("has getHandlers = " + hasGetHandlers);
+        stringJoiner.add("has getHandlerList = " + hasGetHandlerList);
+        stringJoiner.add("has isCancelled = " + hasValidIsCancelled);
+        stringJoiner.add("has setCancelled = " + hasValidSetCancelled);
         stringJoiner.add("primary constructor descriptors = " + primaryConstructorDescriptors);
         stringJoiner.add("has class initializer = " + hasClassInitializer);
         return stringJoiner.toString();

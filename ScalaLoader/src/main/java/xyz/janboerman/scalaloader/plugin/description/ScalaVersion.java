@@ -42,6 +42,10 @@ public enum ScalaVersion {
     v2_13_2("2.13.2", true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.2%2Fscala-reflect-2.13.2.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.2%2Fscala-library-2.13.2.jar"
+    ),
+    v2_13_3("2.13.3", true,
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.3%2Fscala-reflect-2.13.3.jar",
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.3%2Fscala-library-2.13.3.jar"
     );
 
     private static Map<String, ScalaVersion> byVersion = new HashMap<>();

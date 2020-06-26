@@ -63,7 +63,7 @@ class EventScanner extends ClassVisitor {
             result.hasGetHandlers = true;
         }
 
-        else if (SETCANCELLED_NAME.equals(name) && SETCANCELLED_DESCRIPTOR.equals(descriptor)) {
+        else if (SETCANCELLED_NAME.equals(name) && (access & ACC_STATIC) == 0 && SETCANCELLED_DESCRIPTOR.equals(descriptor)) {
             result.hasValidSetCancelled = true;
 
             return new MethodVisitor(ASM_API) {
@@ -77,7 +77,7 @@ class EventScanner extends ClassVisitor {
             };
         }
 
-        else if (ISCANCELLED_NAME.equals(name) && ISCANCELLED_DESCRIPTOR.equals(descriptor)) {
+        else if (ISCANCELLED_NAME.equals(name) && (access & ACC_STATIC) == 0 && ISCANCELLED_DESCRIPTOR.equals(descriptor)) {
             result.hasValidIsCancelled = true;
 
             return new MethodVisitor(ASM_API) {
@@ -92,7 +92,7 @@ class EventScanner extends ClassVisitor {
         }
 
         else if ("<init>".equals(name)) {
-            return new MethodVisitor(ASM7) {
+            return new MethodVisitor(ASM_API) {
                 boolean isPrimaryConstructor = true;
 
                 @Override

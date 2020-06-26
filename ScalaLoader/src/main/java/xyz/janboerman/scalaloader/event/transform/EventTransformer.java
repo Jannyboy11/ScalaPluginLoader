@@ -83,13 +83,13 @@ class EventTransformer extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        if (GETHANDLERS_METHODNAME.equals(name) && GETHANDLERS_DESCRIPTOR.equals(descriptor) && (access & ACC_STATIC) == 0) {
-            //make getHandlers public and final
-            access = (access | ACC_PUBLIC | ACC_FINAL) & ~(ACC_PRIVATE | ACC_PROTECTED);
+        if (GETHANDLERS_METHODNAME.equals(name) && GETHANDLERS_DESCRIPTOR.equals(descriptor)) {
+            //make getHandlers public
+            access = (access | ACC_PUBLIC) & ~(ACC_PRIVATE | ACC_PROTECTED);
             return super.visitMethod(access, name, descriptor, signature, exceptions);
         }
 
-        else if (GETHANDLERLIST_METHODNAME.equals(name) && GETHANDLERLIST_DESCRIPTOR.equals(descriptor) && (access & ACC_STATIC) == ACC_STATIC) {
+        else if (GETHANDLERLIST_METHODNAME.equals(name) && GETHANDLERLIST_DESCRIPTOR.equals(descriptor)) {
             //make getHandlerList public
             access = (access | ACC_PUBLIC) & ~(ACC_PRIVATE | ACC_PROTECTED);
             return super.visitMethod(access, name, descriptor, signature, exceptions);
@@ -99,7 +99,7 @@ class EventTransformer extends ClassVisitor {
                 && scanResult.extendsScalaLoaderEvent
                 && scanResult.staticHandlerListFieldName == null) {
             //add initialization of $HANDLERS static field to the class initializer
-            return new MethodVisitor(ASM7, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+            return new MethodVisitor(ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
 
                 @Override
                 public void visitCode() {

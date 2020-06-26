@@ -298,8 +298,8 @@ public final class ScalaLoader extends JavaPlugin {
     public boolean saveScalaVersionsToConfig(PluginScalaVersion... versions) {
         FileConfiguration config = getConfig();
         Set<PluginScalaVersion> scalaVersions = new LinkedHashSet<>(Arrays.asList(versions));
-        boolean wasAdded = scalaVersions.addAll((List<PluginScalaVersion>) config.getList("scala-versions", Collections.emptyList()));
-        config.set("scala-versions", new ArrayList<>(scalaVersions));
+        boolean wasAdded = scalaVersions.addAll((List<PluginScalaVersion>) config.getList("scala-versions", List.of()));
+        config.set("scala-versions", List.copyOf(scalaVersions));
         saveConfig();
         return wasAdded;
     }

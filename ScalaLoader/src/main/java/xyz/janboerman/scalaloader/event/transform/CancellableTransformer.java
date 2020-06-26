@@ -27,12 +27,26 @@ class CancellableTransformer extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        if (scanResult.implementsScalaLoaderCancellable && !scanResult.hasValidIsCancelled && ISCANCELLED_NAME.equals(name) && ISCANCELLED_DESCRIPTOR.equals(descriptor)) {
-            return null; //if the scanresult says isCancelled is invalid, then pretend it doesn't exist
+        if (ISCANCELLED_NAME.equals(name) && ISCANCELLED_DESCRIPTOR.equals(descriptor)) {
+            if (scanResult.implementsScalaLoaderCancellable && !scanResult.hasValidIsCancelled) {
+                //if the scanresult says isCancelled is invalid, then pretend it doesn't exist
+                return null;
+            } else {
+                //make it public - this wasn't checked in the EventScanner
+                access = (access | ACC_PUBLIC) & ~(ACC_PRIVATE | ACC_PROTECTED);
+                return super.visitMethod(access, name, descriptor, signature, exceptions);
+            }
         }
 
-        else if (scanResult.implementsScalaLoaderCancellable && !scanResult.hasValidSetCancelled && SETCANCELLED_NAME.equals(name) && SETCANCELLED_DESCRIPTOR.equals(descriptor)) {
-            return null; //if the scanresult says setCancelled is invalid, then pretend it doesn't exist
+        else if (SETCANCELLED_NAME.equals(name) && SETCANCELLED_DESCRIPTOR.equals(descriptor)) {
+            if (scanResult.implementsScalaLoaderCancellable && !scanResult.hasValidSetCancelled) {
+                //if the scanresult says setCancelled is invalid, then pretend it doesn't exist
+                return null;
+            } else {
+                //make it public - this wasn't checked in the EventScanner
+                access = (access | ACC_PUBLIC) & ~(ACC_PRIVATE | ACC_PROTECTED);
+                return super.visitMethod(access, name, descriptor, signature, exceptions);
+            }
         }
 
         else if ("<init>".equals(name)
@@ -42,13 +56,14 @@ class CancellableTransformer extends ClassVisitor {
 
             //initialize the $cancel field to false
 
-            return new MethodVisitor(ASM7, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+            return new MethodVisitor(ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
                 @Override
                 public void visitMethodInsn(int opCode, String owner, String name, String descriptor, boolean isInterface) {
                     super.visitMethodInsn(opCode, owner, name, descriptor, isInterface);
 
                     if (opCode == INVOKESPECIAL) {
                         //inject "this.$cancel = false;" after the super constructor call
+                        //TODO how safe is this, could there be an invokeSpecial that is not a super-constructor call?
                         Label label = new Label();
                         super.visitLabel(label);
                         super.visitVarInsn(ALOAD, 0);   //loads 'this' onto the stack

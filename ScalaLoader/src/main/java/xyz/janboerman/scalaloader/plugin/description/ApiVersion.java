@@ -17,7 +17,9 @@ public enum ApiVersion {
     /** Signals that the ScalaPlugin was created for Bukkit 1.14 */
     v1_14("1.14"),
     /** Signals that the ScalaPlugin was created for Bukkit 1.15 */
-    v1_15("1.15");
+    v1_15("1.15"),
+    /** Signals that the ScalaPlugin was created for Bukkit 1.16 */
+    v1_16("1.16");
 
     private static final ApiVersion LATEST_VERSION;
     static {
