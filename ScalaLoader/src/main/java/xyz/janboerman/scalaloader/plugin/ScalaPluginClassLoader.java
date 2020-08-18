@@ -8,6 +8,7 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
+import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
 import xyz.janboerman.scalaloader.event.transform.EventError;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
@@ -39,6 +40,7 @@ import java.util.logging.Level;
 public class ScalaPluginClassLoader extends URLClassLoader {
 
     private enum Platform {
+
         CRAFTBUKKIT {
             private MethodHandle commodoreConvert = null;
             private boolean attempted = false;
@@ -273,12 +275,14 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                 try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
                     byte[] classBytes = inputStream.readAllBytes();
 
+                    //apply event bytecode transformations
                     try {
                         classBytes = EventTransformations.transform(classBytes, this);
                     } catch (EventError throwable) {
                         throw new ClassNotFoundException("Event class " + name + " is invalid.", throwable);
                     }
 
+                    //apply bukkit bytecode transformations
                     try {
                         classBytes = platform.transform(path, classBytes, this);
                     } catch (Throwable throwable) {
@@ -404,26 +408,36 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     protected final void injectIntoJavaPluginLoaderScope(String className, Class<?> clazz) {
         PluginLoader likelyJavaPluginLoader = pluginLoader.getJavaPluginLoader();
         //TODO loop the plugin(class)loader hierarchy until we find a JavaPluginLoader?
-        //TODO this seems impossible to do properly because bukkit provides no api to go from Plugin or ClassLoader to PluginLoader.
+        //TODO this seems impossible to do properly because bukkit provides no api to go PluginLoader to the providing Plugin.
         //TODO best we can do is hardcode checks for common plugin loaders - the JavaPluginLoader and the ScalaPluginLoader (and maybe an EtaPluginLoader in the future? :))
+        //TODO I don't think it's worth the effort because I don't see custom PluginLoader implementations becoming a common thing in the bukkit development space.
 
-        if (likelyJavaPluginLoader instanceof JavaPluginLoader) {
+        if (likelyJavaPluginLoader instanceof JavaPluginLoader /*TODO store in a boolean field?*/) {
             JavaPluginLoader javaPluginLoader = (JavaPluginLoader) likelyJavaPluginLoader;
-            //JavaPluginLoader#setClass is not thread-safe. Bukkit calls this method in PluginClassLoader#findClass, similar to what we're doing here.
-            //That would have been a concurrency bug if the classloader for JavaPlugins was parallel capable, but it turns out,
-            //that the regular PluginClassLoaders are NOT parallel capable. so... yeah. Bukkit is weird/stupid sometimes.
+            //In the past JavaPluginLoader#setClass was not thread-safe, and PluginClassLoader was not parallel capable, but now they are.
+            //So for backwards-compat reasons I need to query whether the PluginClassLoader is parallel capable.
 
-            //To make sure we don't confuse JavaPlugins we use the main thread to call the JavaPluginLoader#setClass(String, Class) method.
-            //I wish bukkit provided me with a lock to do this safely asynchronously.
-            getPluginLoader().getScalaLoader().runInMainThread(() -> {
+            //Define the action that will share the class with the JavaPluginLoader
+            Runnable setClass = () -> {
                 try {
                     Method method = javaPluginLoader.getClass().getDeclaredMethod("setClass", String.class, Class.class);
                     method.setAccessible(true);
                     method.invoke(javaPluginLoader, className, clazz);
                 } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException tooBad) {
-                    //too bad - JavaPlugins won't be able to depend on this ScalaPlugin.
+                    //too bad - JavaPlugins won't be able to magically depend on the ScalaPlugin associated with this classloader.
+                    //TODO we could also cache a boolean for this. If an exception is thrown, don't try again.
                 }
-            });
+            };
+
+            //Are JavaPlugins' PluginClassLoaders parallel capable?
+            ScalaLoader scalaLoader = pluginLoader.getScalaLoader();
+            if (scalaLoader.getClass().getClassLoader().isRegisteredAsParallelCapable() /*TODO store in a boolean field?*/) {
+                //If JavaPlugins' classloader are parallel capable, just run the action, no matter what thread we are on.
+                setClass.run();
+            } else {
+                //If not, schedule the action to be run in the main thread.
+                scalaLoader.runInMainThread(setClass);
+            }
         }
     }
 

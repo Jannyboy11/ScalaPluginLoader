@@ -12,6 +12,7 @@ description:
     No need for a plugin.yml file.
     Can load plugins from Scala singleton 'object's.
     Loads only the necessary Scala classes at runtime.
+    Provides a boilerplate-free event api.
 
 commands:
   resetScalaUrl:

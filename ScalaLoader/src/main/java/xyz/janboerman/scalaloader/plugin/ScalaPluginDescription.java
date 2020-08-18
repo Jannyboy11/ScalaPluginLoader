@@ -277,7 +277,7 @@ public final class ScalaPluginDescription {
         private final String name;
         private String description;
         private String usage;
-        private LinkedHashSet aliases;
+        private LinkedHashSet<String> aliases;
         private String permission;
         private String permissionMessage;
 
@@ -301,7 +301,7 @@ public final class ScalaPluginDescription {
         }
 
         public Command addAlias(String alias) {
-            if (alias == null) aliases = new LinkedHashSet();
+            if (alias == null) aliases = new LinkedHashSet<>();
             this.aliases.add(alias);
             return this;
         }
@@ -343,7 +343,6 @@ public final class ScalaPluginDescription {
         @Override
         public boolean equals(Object other) {
             if (other == this) return true;
-            if (other == null) return false;
             if (!(other instanceof Command)) return false;
             Command that = (Command) other;
             return Objects.equals(this.getName(), that.getName());
@@ -406,7 +405,6 @@ public final class ScalaPluginDescription {
         @Override
         public boolean equals(Object other) {
             if (other == this) return true;
-            if (other == null) return false;
             if (!(other instanceof Permission)) return false;
             Permission that = (Permission) other;
             return Objects.equals(this.getName(), that.getName());

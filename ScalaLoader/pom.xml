@@ -78,9 +78,9 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>3.2.0</version>
                 <configuration>
-                    <!-- bukkit library javadoc -->
+                    <!-- spigot api javadoc -->
                     <links>
-                        <link>https://hub.spigotmc.org/javadocs/bukkit/</link>
+                        <link>https://hub.spigotmc.org/javadocs/spigot/</link>
                     </links>
 
                     <!-- make the javadoc tool stop complain about unrecognised tags -->
@@ -152,7 +152,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.16.1-R0.1-SNAPSHOT</version>
+            <version>1.16.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
