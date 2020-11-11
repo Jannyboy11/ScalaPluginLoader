@@ -6,6 +6,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 
@@ -18,7 +19,7 @@ import java.util.Optional;
  */
 public class DescriptionScanner extends ClassVisitor {
 
-    private static final int ASM_API_VERSION = Opcodes.ASM8;
+    private static final int ASM_API = AsmConstants.ASM_API;
 
     private static final String SCALAPLUGIN_CLASS_NAME = ScalaPlugin.class.getName().replace('.', '/');
     private static final String JAVAPLUGIN_CLASS_NAME = JavaPlugin.class.getName().replace('.', '/');
@@ -43,7 +44,7 @@ public class DescriptionScanner extends ClassVisitor {
      * Initialises the {@link DescriptionScanner} without reading a class file.
      */
     private DescriptionScanner() {
-        super(ASM_API_VERSION);
+        super(ASM_API);
     }
 
     /**
@@ -54,7 +55,7 @@ public class DescriptionScanner extends ClassVisitor {
     public DescriptionScanner(InputStream classBytes) throws IOException {
         this();
         ClassReader classReader = new ClassReader(classBytes);
-        classReader.accept(this, ClassReader.EXPAND_FRAMES);
+        classReader.accept(this, 0);
     }
 
     /**
@@ -64,7 +65,7 @@ public class DescriptionScanner extends ClassVisitor {
     public DescriptionScanner(byte[] classBytes) {
         this();
         ClassReader classReader = new ClassReader(classBytes);
-        classReader.accept(this, ClassReader.EXPAND_FRAMES);
+        classReader.accept(this, 0);
     }
 
     @Override
@@ -166,13 +167,13 @@ public class DescriptionScanner extends ClassVisitor {
         private String version, scalaLibrary, scalaReflect;
 
         private CustomScalaAnnotationVisitor() {
-            super(ASM_API_VERSION);
+            super(ASM_API);
         }
 
         @Override
         public AnnotationVisitor visitAnnotation(String name, String descriptor) {
             return "value".equals(name) && VERSION_ANNOTATION_DESCRIPTOR.equals(descriptor) ?
-                new AnnotationVisitor(ASM_API_VERSION) {
+                new AnnotationVisitor(ASM_API) {
                     @Override
                     public void visit(String name, Object value) {
                         switch(name) {
@@ -194,7 +195,7 @@ public class DescriptionScanner extends ClassVisitor {
     private class ScalaAnnotationVisitor extends AnnotationVisitor {
 
         private ScalaAnnotationVisitor() {
-            super(ASM_API_VERSION);
+            super(ASM_API);
         }
 
         @Override
@@ -208,7 +209,7 @@ public class DescriptionScanner extends ClassVisitor {
     private class ApiAnnotationVisitor extends AnnotationVisitor {
 
         private ApiAnnotationVisitor() {
-            super(ASM_API_VERSION);
+            super(ASM_API);
         }
 
         @Override

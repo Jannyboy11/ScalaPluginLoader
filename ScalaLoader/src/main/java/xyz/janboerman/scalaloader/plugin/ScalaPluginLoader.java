@@ -5,9 +5,16 @@ import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
 import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
+import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanResult;
+import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanner;
+import xyz.janboerman.scalaloader.configurationserializable.transform.PluginTransformer;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.event.plugin.ScalaPluginDisableEvent;
 import xyz.janboerman.scalaloader.event.plugin.ScalaPluginEnableEvent;
@@ -19,17 +26,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -54,6 +55,7 @@ public class ScalaPluginLoader implements PluginLoader {
     private final Map<String, ScalaPlugin> scalaPlugins = new HashMap<>();
     private final Map<File, ScalaPlugin> scalaPluginsByFile = new HashMap<>();
     private final Map<ScalaPlugin, File> filesByScalaPlugin = new HashMap<>();
+    private final Collection<ScalaPlugin> scalaPluginsView = Collections.unmodifiableCollection(scalaPlugins.values());
 
     private final EventBus eventBus;
 
@@ -61,12 +63,15 @@ public class ScalaPluginLoader implements PluginLoader {
      * Per PluginLoader API, the constructor has only one parameter: the Server.
      * @param server the server.
      */
+    @SuppressWarnings("deprecation")
     public ScalaPluginLoader(Server server) {
         this.server = Objects.requireNonNull(server, "Server cannot be null!");
 
         //Static abuse but I cannot find a more elegant way to do this.
         if (INSTANCE == null) {
             INSTANCE = this;
+        } else {
+            throw new IllegalStateException("The ScalaPluginLoader can only be instantiated once!");
         }
 
         this.eventBus = new EventBus(server.getPluginManager());
@@ -75,7 +80,7 @@ public class ScalaPluginLoader implements PluginLoader {
     /**
      * Get the instance that was created when this ScalaPluginLoader was constructed.
      * @apiNote if you call this method from your own plugin, your plugin must have a dependency on {@link ScalaLoader}.
-     * @return the instance that was created either by bukkit's {@link PluginManager} or by the {@link ScalaLoader},
+     * @return the instance that was created either by bukkit's {@link PluginManager} or by {@link ScalaLoader},
      *         or null if no ScalaPluginLoader was constructed yet.
      */
     public static ScalaPluginLoader getInstance() {
@@ -100,6 +105,15 @@ public class ScalaPluginLoader implements PluginLoader {
         return eventBus;
     }
 
+    /**
+     * Get the ScalaPlugins.
+     *
+     * @return an unmodifiable collection containing all ScalaPlugins.
+     */
+    public Collection<ScalaPlugin> getScalaPlugins() {
+        return scalaPluginsView;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public PluginDescriptionFile getPluginDescription(File file) throws InvalidDescriptionException {
@@ -122,6 +136,8 @@ public class ScalaPluginLoader implements PluginLoader {
 
         Map<String, Object> pluginYamlData = null;
 
+        BiFunction<ClassWriter, String, ClassVisitor> transformerProvider = (classWriter, mainClassName) -> classWriter;
+
         try {
             DescriptionScanner mainClassCandidate = null;
 
@@ -132,8 +148,10 @@ public class ScalaPluginLoader implements PluginLoader {
                 if (jarEntry.getName().endsWith(".class")) {
 
                     InputStream classBytesInputStream = jarFile.getInputStream(jarEntry);
+                    byte[] classBytes = Compat.readAllBytes(classBytesInputStream);
 
-                    DescriptionScanner descriptionScanner = new DescriptionScanner(classBytesInputStream);
+                    //scan class to see if this class is the best candidate for the main class
+                    DescriptionScanner descriptionScanner = new DescriptionScanner(classBytes);
 
                     //Emit a warning when the class does extend ScalaPlugin, but does not have de @Scala or @CustomScala annotation
                     if (descriptionScanner.extendsScalaPlugin() && !descriptionScanner.getScalaVersion().isPresent()) {
@@ -147,6 +165,20 @@ public class ScalaPluginLoader implements PluginLoader {
                     //The smallest element is the best candidate!
                     mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
 
+
+                    //scan class to see if this class is configurationserializable and wants to register a plugin transformer:
+                    GlobalScanResult configSerResult = new GlobalScanner().scan(new ClassReader(classBytes));
+                    final BiFunction<ClassWriter, String, ClassVisitor> finalTransformerProvider = transformerProvider;
+                    transformerProvider = (classWriter, mainClassName) -> {
+                        ClassVisitor oldVisitor = finalTransformerProvider.apply(classWriter, mainClassName);
+                        ClassVisitor newVisitor = PluginTransformer.of(oldVisitor, configSerResult, mainClassName);
+                        if (newVisitor != null) {
+                            return newVisitor;
+                        } else {
+                            return oldVisitor;
+                        }
+                    };
+                    //TODO DelegateSerialization
 
                 } else if (jarEntry.getName().equals("plugin.yml")) {
                     //If it contains a main class and it doesn't extend ScalaPlugin directly we should try to delegate to the JavaPluginLoader
@@ -175,13 +207,13 @@ public class ScalaPluginLoader implements PluginLoader {
 
             } //end while - no more JarEntries
 
-            if (mainClassCandidate == null || mainClassCandidate.getMainClass().isEmpty()) {
+            if (mainClassCandidate == null || !mainClassCandidate.getMainClass().isPresent()) {
                 getScalaLoader().getLogger().warning("Could not find main class in file " + file.getName() + ". Did you annotate your main class with @Scala and is it public?");
                 getScalaLoader().getLogger().warning("Delegating to JavaPluginLoader...");
                 return getJavaPluginLoader().getPluginDescription(file);
             }
 
-            //assume latest if unspecified //TODO use the bukkit api version that we're running on instead?
+            //assume latest if unspecified
             ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElseGet(ApiVersion::latest);
 
             PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();
@@ -191,13 +223,14 @@ public class ScalaPluginLoader implements PluginLoader {
 
                 //load scala version if not already present
                 ScalaLibraryClassLoader scalaLibraryClassLoader = getScalaLoader().loadOrGetScalaVersion(scalaVersion);
+                //TODO actually use the newer ScalaLibraryClassLoader if another scala plugin uses a newer version of Scala.
                 //create plugin classloader using the resolved scala classloader
                 ScalaPluginClassLoader scalaPluginClassLoader =
                         new ScalaPluginClassLoader(this, new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader,
-                                server, pluginYamlData, file, apiVersion);
+                                server, pluginYamlData, file, apiVersion, mainClass, transformerProvider);
                 sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getScalaVersion(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 
-                //create our plugin
+                //create our plugin //TODO do we need to do this here? this can be done at loadPlugin, mkay?
                 Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClass, true, scalaPluginClassLoader);
                 ScalaPlugin plugin;
                 try {
@@ -218,6 +251,9 @@ public class ScalaPluginLoader implements PluginLoader {
 
                 //it is so stupid bukkit doesn't let me extend PluginDescriptionFile.
                 return plugin.getDescription();
+                //TODO Ideally I would use ScalaPluginDescription.toPluginDescriptionFile().
+                //TODO but the ScalaPluginDescription requires a live ScalaPlugin instance (for now)
+                //TODO So I need to give up on this idea, or analyze the bytecode (this is going to be hard o.0)
 
             } catch (ClassNotFoundException e) {
                 throw new InvalidDescriptionException(e, "The main class of your plugin could not be found!");
@@ -326,7 +362,7 @@ public class ScalaPluginLoader implements PluginLoader {
      *             The PluginClassLoader used to load JavaPlugins will now try to explicitly cast the ClassLoader
      *             of classes in the JavaPluginLoader's classes cache to PluginClassLoader - resulting in a ClassCastException.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public void forceLoadAllClasses(ScalaPlugin scalaPlugin) {
         try {
             getAllClasses(scalaPlugin).forEach(noop -> {});
@@ -424,7 +460,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
     @Override
     public Pattern[] getPluginFileFilters() {
-        Pattern[] patterns = getScalaLoader().getJavaPluginLoaderPattners();
+        Pattern[] patterns = getScalaLoader().getJavaPluginLoaderPatterns();
         if (patterns != null) return patterns;
         return pluginFileFilters.clone();
     }

@@ -7,8 +7,14 @@ import org.bukkit.UnsafeValues;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
+import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableError;
+import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
 import xyz.janboerman.scalaloader.event.transform.EventError;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
@@ -28,6 +34,7 @@ import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -53,11 +60,11 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     Server craftServer = currentPluginClassLoader.getServer();
                     try {
                         Class<?> commodoreClass = Class.forName(
-                                craftServer.getClass().getPackageName() + ".util.Commodore");
+                                craftServer.getClass().getPackage().getName() + ".util.Commodore"); //use getClass().getPackageName() in Java11+
                         String methodName = "convert";
                         MethodType methodType = MethodType.methodType(byte[].class, new Class<?>[]{byte[].class, boolean.class});
                         commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
-                    } catch (ClassNotFoundException ingored) {
+                    } catch (ClassNotFoundException | NoSuchMethodException ignored) {
                         //running on craftbukkit 1.12.2 or earlier
                     }
                 }
@@ -80,22 +87,30 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         },
         UNKNOWN;
 
+
+        private Boolean conversionMethodExists = null;
+
         protected byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
-            try {
-                Server server = currentPluginClassLoader.getServer();
-                UnsafeValues unsafeValues = server.getUnsafe();
-                String fakeDescription = "name: Fake" + System.lineSeparator() +
-                        "version: 1.0" + System.lineSeparator() +
-                        "main: xyz.janboerman.scalaloader.FakePlugin" + System.lineSeparator() +
-                        "api-version: " + currentPluginClassLoader.getApiVersion().getVersionString() + System.lineSeparator();
+            if (conversionMethodExists == null || conversionMethodExists) {
+                try {
+                    Server server = currentPluginClassLoader.getServer();
+                    UnsafeValues unsafeValues = server.getUnsafe();
+                    String fakeDescription = "name: Fake" + System.lineSeparator() +
+                            "version: 1.0" + System.lineSeparator() +
+                            "main: xyz.janboerman.scalaloader.FakePlugin" + System.lineSeparator() +
+                            "api-version: " + currentPluginClassLoader.getApiVersion().getVersionString() + System.lineSeparator();
 
-                PluginDescriptionFile pluginDescriptionFile = new PluginDescriptionFile(new StringReader(fakeDescription));
+                    PluginDescriptionFile pluginDescriptionFile = new PluginDescriptionFile(new StringReader(fakeDescription));
 
-                return unsafeValues.processClass(pluginDescriptionFile, jarEntryPath, original);
-            } catch (NoSuchMethodError e) {
-                //UnsafeValues#processClass does not exist, just return the original class bytes
-                return original;
+                    byte[] processed = unsafeValues.processClass(pluginDescriptionFile, jarEntryPath, original);
+                    conversionMethodExists = true;
+                    return processed;
+                } catch (NoSuchMethodError e) {
+                    //UnsafeValues#processClass does not exist, just return the original class bytes
+                }
             }
+
+            return original;
         }
     }
 
@@ -111,6 +126,8 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     private final JarFile jarFile;
     private final ApiVersion apiVersion;
     private final Platform platform;
+    private final String mainClassName;
+    private final BiFunction<ClassWriter, String, ClassVisitor> transformerProvider;
 
     private final ConcurrentMap<String, Class<?>> classes = new ConcurrentHashMap<>();
 
@@ -133,7 +150,9 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                                      Server server,
                                      Map<String, Object> extraPluginYaml,
                                      File pluginJarFile,
-                                     ApiVersion apiVersion) throws IOException {
+                                     ApiVersion apiVersion,
+                                     String mainClassName,
+                                     BiFunction<ClassWriter, String, ClassVisitor> transformerProvider) throws IOException {
         super(urls, parent);
 
         this.pluginLoader = pluginLoader;
@@ -144,6 +163,8 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         this.pluginJarFile = pluginJarFile;
         this.jarFile = new JarFile(pluginJarFile);
         this.apiVersion = apiVersion;
+        this.mainClassName = mainClassName;
+        this.transformerProvider = transformerProvider;
 
         Platform platform = Platform.UNKNOWN;
         if (server.getClass().getName().startsWith("org.bukkit.craftbukkit")) {
@@ -221,9 +242,9 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         //load order:
         //  1.  the plugin's jar
         //  2.  other scalaplugins
-        //  3.  javaplugins, Bukkit/NMS classes (parent)
+        //  3.  scala standard lib, javaplugins, Bukkit/NMS classes (parent)
 
-        ClassNotFoundException fallback = new ClassNotFoundException("Could not find class: " + name + ".");
+        ClassNotFoundException fallback = new ClassNotFoundException(name);
         Class<?> clazz;
 
         try {
@@ -259,7 +280,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @throws ClassNotFoundException if no class with the given name could be found
      * @apiNote this method never returns null, it either returns a class, or throws an exception or error
      */
-    public Class<?> findClass(final String name, boolean searchInScalaPluginLoader) throws ClassNotFoundException {
+    public Class<?> findClass(final String name, final boolean searchInScalaPluginLoader) throws ClassNotFoundException {
         //search in cache
         Class<?> found = classes.get(name);
         if (found != null) return found;
@@ -272,30 +293,60 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
             if (jarEntry != null) {
                 //a classfile exists for the given class name
+
                 try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
-                    byte[] classBytes = inputStream.readAllBytes();
+                    byte[] classBytes = Compat.readAllBytes(inputStream);
 
                     //apply event bytecode transformations
                     try {
                         classBytes = EventTransformations.transform(classBytes, this);
-                    } catch (EventError throwable) {
-                        throw new ClassNotFoundException("Event class " + name + " is invalid.", throwable);
+                    } catch (EventError eventError) {
+                        getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Event class " + name + " is not valid", eventError);
+                    }
+
+                    //apply configurationserializable bytecode transformations
+                    try {
+                        classBytes = ConfigurationSerializableTransformations.transform(classBytes, this);
+                    } catch (ConfigurationSerializableError configSerError) {
+                        getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "ConfigurationSerializable class " + name + " is not valid", configSerError);
+                    }
+
+                    // Note to self 2020-11-11:
+                    // If I ever get a java.lang.ClassFormatError: Invalid length 65526 in LocalVariableTable in class file com/example/MyClass
+                    // then the cause was: visitLocalVariable was not called before visitMaxes and visitEnd, but way earlier!
+                    // this is not explained by the order documented in the MethodVisitor class!
+
+                    //generic transformations - used by @ConfigurationSerializable PluginTransformer
+                    {
+                        ClassWriter classWriter = new ClassWriter(0) {
+                            @Override
+                            protected ClassLoader getClassLoader() {
+                                return ScalaPluginClassLoader.this;
+                            }
+                        };
+
+                        ClassVisitor transformer = transformerProvider.apply(classWriter, mainClassName);
+                        if (transformer != null) {
+                            ClassReader classReader = new ClassReader(classBytes);
+                            classReader.accept(transformer, 0);
+                        }
+
+                        classBytes = classWriter.toByteArray();
                     }
 
                     //apply bukkit bytecode transformations
                     try {
                         classBytes = platform.transform(path, classBytes, this);
                     } catch (Throwable throwable) {
-                        if (!(throwable instanceof NoSuchMethodError)) {
-                            getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Could not transform class: " + path, throwable);
-                        } //else: running on bukkit 1.12.2 or earlier
-                        //just continue with the original classBytes
+                        getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Server implementation could not transform class: " + path, throwable);
                     }
 
+                    //define the package
                     int dotIndex = name.lastIndexOf('.');
                     if (dotIndex != -1) {
                         String packageName = name.substring(0, dotIndex);
-                        if (getDefinedPackage(packageName) == null) {
+                        //TODO use getDefinedPackage in Java11+
+                        if (getPackage(packageName) == null) {
                             try {
                                 Manifest manifest = jarFile.getManifest();
                                 if (manifest != null) {
@@ -304,19 +355,19 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                                     definePackage(packageName, null, null, null, null, null, null, null);
                                 }
                             } catch (IllegalArgumentException e) {
-                                if (getDefinedPackage(packageName) == null) {
+                                if (getPackage(packageName) == null) {
                                     throw new IllegalStateException("Cannot find package " + packageName);
                                 }
                             }
                         }
                     }
 
+                    //define the class
                     CodeSigner[] codeSigners = jarEntry.getCodeSigners();
                     CodeSource codeSource = new CodeSource(getURLs()[0], codeSigners);
-
                     found = defineClass(name, classBytes, 0, classBytes.length, codeSource);
                 } catch (IOException e) {
-                    throw new ClassNotFoundException("Could not find class: " + name, e);
+                    throw new ClassNotFoundException(name, e);
                 }
             }
 
@@ -333,12 +384,12 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         //search in other ScalaPlugins
         if (found == null && searchInScalaPluginLoader) {
             try {
-                found = pluginLoader.getScalaPluginClass(getScalaVersion(), name);
+                found = pluginLoader.getScalaPluginClass(getScalaVersion(), name); /*Do I want this here? not in the loadClass method?*/
             } catch (ClassNotFoundException e) { /*ignored - continue onwards*/ }
         }
 
         if (found == null) {
-            throw new ClassNotFoundException("Could not find class " + name + ".");
+            throw new ClassNotFoundException(name);
         }
 
         final Class<?> loadedConcurrently = classes.putIfAbsent(name, found);
@@ -404,15 +455,15 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @deprecated JavaPlugins that try to find classes using the JavaPluginLoader expect to only find JavaPlugins
      * @see <a href="https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/diff/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java?until=c3aeaea0fb88600643e01b6b4259e9d5da49e0e7">PluginClassLoader</a>
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     protected final void injectIntoJavaPluginLoaderScope(String className, Class<?> clazz) {
         PluginLoader likelyJavaPluginLoader = pluginLoader.getJavaPluginLoader();
-        //TODO loop the plugin(class)loader hierarchy until we find a JavaPluginLoader?
-        //TODO this seems impossible to do properly because bukkit provides no api to go PluginLoader to the providing Plugin.
-        //TODO best we can do is hardcode checks for common plugin loaders - the JavaPluginLoader and the ScalaPluginLoader (and maybe an EtaPluginLoader in the future? :))
-        //TODO I don't think it's worth the effort because I don't see custom PluginLoader implementations becoming a common thing in the bukkit development space.
+        //loop the plugin(class)loader hierarchy until we find a JavaPluginLoader?
+        //this seems impossible to do properly because bukkit provides no api to go PluginLoader to the providing Plugin.
+        //best we can do is hardcode checks for common plugin loaders - the JavaPluginLoader and the ScalaPluginLoader (and maybe an EtaPluginLoader in the future? :))
+        //I don't think it's worth the effort because I don't see custom PluginLoader implementations becoming a common thing in the bukkit development space.
 
-        if (likelyJavaPluginLoader instanceof JavaPluginLoader /*TODO store in a boolean field?*/) {
+        if (likelyJavaPluginLoader instanceof JavaPluginLoader) {
             JavaPluginLoader javaPluginLoader = (JavaPluginLoader) likelyJavaPluginLoader;
             //In the past JavaPluginLoader#setClass was not thread-safe, and PluginClassLoader was not parallel capable, but now they are.
             //So for backwards-compat reasons I need to query whether the PluginClassLoader is parallel capable.
@@ -425,13 +476,12 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     method.invoke(javaPluginLoader, className, clazz);
                 } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException tooBad) {
                     //too bad - JavaPlugins won't be able to magically depend on the ScalaPlugin associated with this classloader.
-                    //TODO we could also cache a boolean for this. If an exception is thrown, don't try again.
                 }
             };
 
             //Are JavaPlugins' PluginClassLoaders parallel capable?
             ScalaLoader scalaLoader = pluginLoader.getScalaLoader();
-            if (scalaLoader.getClass().getClassLoader().isRegisteredAsParallelCapable() /*TODO store in a boolean field?*/) {
+            if (javaPluginClassLoaderParallelCapable()) {
                 //If JavaPlugins' classloader are parallel capable, just run the action, no matter what thread we are on.
                 setClass.run();
             } else {
@@ -450,20 +500,41 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @deprecated JavaPlugins that try to find classes using the JavaPluginLoader expect to only find JavaPlugins
      * @see <a href="https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/diff/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java?until=c3aeaea0fb88600643e01b6b4259e9d5da49e0e7">PluginClassLoader</a>
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     protected final void removeFromJavaPluginLoaderScope(String className) {
         PluginLoader likelyJavaPluginLoader = pluginLoader.getJavaPluginLoader();
         if (likelyJavaPluginLoader instanceof JavaPluginLoader) {
             JavaPluginLoader javaPluginLoader = (JavaPluginLoader) likelyJavaPluginLoader;
-            getPluginLoader().getScalaLoader().runInMainThread(() -> {
+
+            Runnable removeClass = () -> {
                 try {
                     Method method = javaPluginLoader.getClass().getDeclaredMethod("removeClass", String.class);
                     method.setAccessible(true);
                     method.invoke(javaPluginLoader, className);
                 } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException tooBad) {
                 }
-            });
+            };
+
+            if (javaPluginClassLoaderParallelCapable()) {
+                removeClass.run();
+            } else {
+                getPluginLoader().getScalaLoader().runInMainThread(removeClass);
+            }
         }
+    }
+
+    private Boolean scalaLoaderClassLoaderParallelCapable = null;
+    private boolean javaPluginClassLoaderParallelCapable() {
+        if (scalaLoaderClassLoaderParallelCapable != null) return scalaLoaderClassLoaderParallelCapable;
+
+        scalaLoaderClassLoaderParallelCapable = false;
+        ClassLoader javaPluginClassLoader = pluginLoader.getScalaLoader().getClass().getClassLoader();
+        try {
+            Method method = javaPluginClassLoader.getClass().getMethod("isRegisteredAsParallelCapable", new Class<?>[0]);
+            scalaLoaderClassLoaderParallelCapable = (Boolean) method.invoke(javaPluginClassLoader, new Object[0]);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | ClassCastException ignored) {
+        }
+        return scalaLoaderClassLoaderParallelCapable;
     }
 
 }

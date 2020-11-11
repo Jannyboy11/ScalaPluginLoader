@@ -2,10 +2,14 @@ package xyz.janboerman.scalaloader.event.transform;
 
 import org.bukkit.event.Event;
 import org.objectweb.asm.*;
+import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class EventTransformations {
 
-    static final int ASM_API = Opcodes.ASM8;
+    static final int ASM_API = AsmConstants.ASM_API;
 
     static final String BUKKIT_EVENT_DESCRIPTOR = "Lorg/bukkit/event/Event;";
     static final String BUKKIT_CANCELLABLE_DESCRIPTOR = "Lorg/bukkit/event/Cancellable;";
@@ -87,10 +91,10 @@ public class EventTransformations {
      * @return the transformed class bytes
      */
     //TODO write some tests for this method
-    public static byte[] transform(byte[] clazz, ClassLoader pluginClassLoader) {
+    public static byte[] transform(byte[] clazz, ClassLoader pluginClassLoader) throws EventError {
         ScanResult eventResult = new EventScanner().scan(new ClassReader(clazz));
 
-        ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS) {
+        ClassWriter classWriter = new ClassWriter( 0 /*ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS*/) {
             @Override
             protected ClassLoader getClassLoader() {
                 return pluginClassLoader;

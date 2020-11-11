@@ -89,7 +89,7 @@ public class EventBus {
      * @param priority the priority of the executor
      * @param executor the event executor
      * @param plugin the Plugin
-     * @param ignoreCancelled whether to ignore cancelled events (false == don't ignore == handle cancelled events)
+     * @param ignoreCancelled whether to ignore cancelled events (false == don't ignore == handle cancelled events too)
      */
     public void registerEvent(Class<? extends org.bukkit.event.Event> event, Listener listener, EventPriority priority, org.bukkit.plugin.EventExecutor executor, Plugin plugin, boolean ignoreCancelled) {
         pluginManager.registerEvent(event, listener, priority, executor, plugin, ignoreCancelled);
@@ -105,7 +105,7 @@ public class EventBus {
      * @param priority the priority of the executor
      * @param executor the event executor
      * @param plugin the Plugin
-     * @param ignoreCancelled whether to ignore cancelled events (false == don't ignore == handle cancelled events)
+     * @param ignoreCancelled whether to ignore cancelled events (false == don't ignore == handle cancelled events too)
      * @param <E> the event type
      * @param <L> the listener type
      */

@@ -212,9 +212,9 @@ public final class ScalaPluginDescription {
         if (prefix != null) pluginData.put("prefix", prefix);
         if (apiVersion != null) pluginData.put("api-version", apiVersion);
         if (loadOrder != null) pluginData.put("load", loadOrder.name());
-        if (hardDependencies != null && !hardDependencies.isEmpty()) pluginData.put("depend", List.copyOf(hardDependencies));
-        if (softDependencies != null && !softDependencies.isEmpty()) pluginData.put("softdepend", List.copyOf(softDependencies));
-        if (inverseDependencies != null && !inverseDependencies.isEmpty()) pluginData.put("loadbefore", List.copyOf(inverseDependencies));
+        if (hardDependencies != null && !hardDependencies.isEmpty()) pluginData.put("depend", new ArrayList<>(hardDependencies));
+        if (softDependencies != null && !softDependencies.isEmpty()) pluginData.put("softdepend", new ArrayList<>(softDependencies));
+        if (inverseDependencies != null && !inverseDependencies.isEmpty()) pluginData.put("loadbefore", new ArrayList<>(inverseDependencies));
         if (permissionDefault != null) pluginData.put("default-permission", permissionDefault.name());
         if (commands != null && !commands.isEmpty()) {
             Map<String, Map<String, Object>> commandsMap = new HashMap<>();
@@ -226,7 +226,7 @@ public final class ScalaPluginDescription {
                 command.getPermission().ifPresent(permission -> currentCommand.put("permission", permission));
                 command.getPermissionMessage().ifPresent(permissionMessage -> currentCommand.put("permission-message", permissionMessage));
                 Collection<String> aliases = command.getAliases();
-                if (!aliases.isEmpty()) currentCommand.put("aliases", List.copyOf(aliases));
+                if (!aliases.isEmpty()) currentCommand.put("aliases", new ArrayList<>(aliases));
 
                 commandsMap.put(command.getName(), currentCommand);
             }
@@ -242,7 +242,7 @@ public final class ScalaPluginDescription {
         }
 
         Yaml yaml = new Yaml();
-        String pluginYaml = yaml.dump(pluginData); //this can be quite a large string though. but whatever.
+        String pluginYaml = yaml.dump(pluginData); //this can be quite a large string though. but whatever - Compact Strings to the rescue!
 
         try {
             return new PluginDescriptionFile(new StringReader(pluginYaml));

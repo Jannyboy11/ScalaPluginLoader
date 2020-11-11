@@ -48,8 +48,8 @@ class EventTransformer extends ClassVisitor {
             }
 
             if (!scanResult.hasGetHandlers) {
-                //generate "public final HandlerList getHandlers() { return $HANDLERS; }"
-                MethodVisitor methodVisitor = super.visitMethod(ACC_PUBLIC | ACC_FINAL, GETHANDLERS_METHODNAME, GETHANDLERS_DESCRIPTOR, null, null);
+                //generate "public HandlerList getHandlers() { return $HANDLERS; }"
+                MethodVisitor methodVisitor = super.visitMethod(ACC_PUBLIC, GETHANDLERS_METHODNAME, GETHANDLERS_DESCRIPTOR, null, null);
                 methodVisitor.visitCode();
                 Label label0 = new Label();
                 methodVisitor.visitLabel(label0);

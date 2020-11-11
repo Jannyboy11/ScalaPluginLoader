@@ -18,7 +18,7 @@ class EventScanner extends ClassVisitor {
     ScanResult scan(ClassReader classReader) throws EventError {
         classReader.accept(this, ClassReader.EXPAND_FRAMES);
 
-        if (result.hasValidSetCancelled != result.hasValidIsCancelled) {
+        if (result.implementsScalaLoaderCancellable && (result.hasValidSetCancelled != result.hasValidIsCancelled)) {
             throw new EventError("Event class " + result.className.replace('/', '.') + " implements " + Cancellable.class.getName() + ", "
                     + "but only overrides " + (result.hasValidSetCancelled ? "setCancelled" : "isCancelled") + ". "
                     + "You need to either override both isCancelled and setCancelled, or none of the two.");
@@ -71,6 +71,7 @@ class EventScanner extends ClassVisitor {
                 public void visitMethodInsn(int opCode, String owner, String name, String descriptor, boolean isInterface) {
                     if (opCode == INVOKESPECIAL && SCALALOADER_CANCELLABLE_NAME.equals(owner) && SETCANCELLED_NAME.equals(name) && SETCANCELLED_DESCRIPTOR.equals(descriptor) && isInterface) {
                         //encountered a scala-compiler generated call to the default method of the interface
+                        //why does scalac even output this crap? interfaces are not traits.
                         result.hasValidSetCancelled = false;
                     }
                 }
@@ -85,6 +86,7 @@ class EventScanner extends ClassVisitor {
                 public void visitMethodInsn(int opCode, String owner, String name, String descriptor, boolean isInterface) {
                     if (opCode == INVOKESPECIAL && SCALALOADER_CANCELLABLE_NAME.equals(owner) && ISCANCELLED_NAME.equals(name) && ISCANCELLED_DESCRIPTOR.equals(descriptor) && isInterface) {
                         //encountered a scala-compiler generated call to the default method of the interface
+                        //why does scalac even output this crap? interfaces are not traits.
                         result.hasValidIsCancelled = false;
                     }
                 }
@@ -97,7 +99,7 @@ class EventScanner extends ClassVisitor {
 
                 @Override
                 public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                    if ("<init>".equals(name) && owner.equals(result.className)) {
+                    if (opcode == INVOKESPECIAL && "<init>".equals(name) && owner.equals(result.className)) {
                         //constructor is calling this(params..) instead of super(params..)
                         isPrimaryConstructor = false;
                     }

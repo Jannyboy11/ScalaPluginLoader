@@ -5,14 +5,14 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.13.7-SNAPSHOT</version>
+        <version>0.13.8-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ScalaExample</artifactId>
 
     <properties>
-        <scala.version>2.12.11</scala.version>
+        <scala.version>2.13.3</scala.version>
     </properties>
 
     <build>
@@ -35,6 +35,25 @@
                 </executions>
             </plugin>
 
+            <!--
+            javac won't compile a fucking module.info because the "package xyz.janboerman.scalaloader.example.scala does not exist or is empty"!
+            This is a bug because obviously it exists.
+
+            This would be the module-info.java file:
+            module xyz.janboerman.scalaloader.scalaexample {
+
+                requires java.logging;
+                requires org.bukkit;
+                requires transitive scala.library;
+                requires xyz.janboerman.scalaloader;
+
+                exports xyz.janboerman.scalaloader.example.scala;
+                opens xyz.janboerman.scalaloader.example.scala to org.bukkit;
+
+            }
+
+            So for now, as a workaround, keep using an automatic module.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -47,6 +66,18 @@
                     </archive>
                 </configuration>
             </plugin>
+
+<!--            And this would be the java compiler plugin declaration-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                <version>3.8.1</version>-->
+<!--                <configuration>-->
+<!--                    <release>15</release>-->
+<!--                    <compilerArgs>&#45;&#45;enable-preview</compilerArgs>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+
         </plugins>
     </build>
 
@@ -77,9 +108,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>bukkit</artifactId>
-            <version>1.16.1-R0.1-SNAPSHOT</version>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.16.3-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -2,6 +2,7 @@ package xyz.janboerman.scalaloader.example.scala
 
 import org.bukkit.Material
 import org.bukkit.command.{Command, CommandSender}
+import org.bukkit.configuration.serialization.ConfigurationSerialization
 import org.bukkit.event.{EventPriority, Listener}
 import org.bukkit.permissions.PermissionDefault
 import xyz.janboerman.scalaloader.event.EventBus
@@ -9,10 +10,10 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCo
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 
-@Scala(version = ScalaVersion.v2_12_11)
+@Scala(version = ScalaVersion.v2_13_3)
 @Api(ApiVersion.v1_16)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.13.7-SNAPSHOT")
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.13.8-SNAPSHOT")
         .addCommand(new SPCommand("foo") permission "scalaexample.foo")
         .addCommand(new SPCommand("home") permission "scalaexample.home" usage "/home set|tp")
         .permissions(new SPPermission("scalaexample.home") permissionDefault PermissionDefault.TRUE)) {
@@ -25,19 +26,28 @@ object ExamplePlugin
 
     override def onEnable(): Unit = {
         getLogger.info("ScalaExample - I am enabled!")
+
+//        ConfigurationSerialization.registerClass(classOf[Home], "Home")
+        //works because Home is magically registered in the onEnable!
+
+        SerializationTest.test()
+        HomeManager.loadHomes()
+
         eventBus.registerEvents(PlayerJoinListener, this)
         eventBus.registerEvents(RandomHomeTeleportBlocker, this)
         eventBus.registerEvent(classOf[HomeTeleportEvent], new Listener() {}, EventPriority.MONITOR, (l: Listener, ev: HomeTeleportEvent) => {
             if (ev.isCancelled) {
-                getLogger.info("Player " + ev.player.getName + " tried to teleport home, but couldn't!")
+                getLogger.info(s"Player ${ev.player.getName} tried to teleport home, but couldn't!")
             } else {
-                getLogger.info("Player " + ev.player.getName + " teleported home!")
+                getLogger.info(s"Player ${ev.player.getName} teleported home!")
             }
         }, this, false);
+
         getCommand("home").setExecutor(HomeExecutor)
 
         listConfigs()
         checkMaterials()
+        checkConfigurationSerializable()
     }
 
     override def onDisable(): Unit = {
@@ -83,5 +93,9 @@ object ExamplePlugin
     }
 
     def eventBus: EventBus = super.getEventBus()
+
+    private def checkConfigurationSerializable(): Unit = {
+        //ConfigurationSerialization.getClassByAlias()
+    }
 }
 

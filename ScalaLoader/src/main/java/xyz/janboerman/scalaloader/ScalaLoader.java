@@ -11,6 +11,8 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.SimplePluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.java.JavaPluginLoader;
+import org.bstats.bukkit.Metrics;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -24,7 +26,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.bukkit.plugin.java.JavaPluginLoader;
+import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
@@ -38,6 +40,7 @@ import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
  */
 public final class ScalaLoader extends JavaPlugin {
 
+    //TODO Map<String /*scala version*/, String /*highest compatible version*/>
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
 
     private final boolean iActuallyManagedToOverrideTheDefaultJavaPluginLoader;
@@ -83,7 +86,7 @@ public final class ScalaLoader extends JavaPlugin {
         }
     }
 
-    public Pattern[] getJavaPluginLoaderPattners() {
+    public Pattern[] getJavaPluginLoaderPatterns() {
         return javaPluginLoaderPatterns;
     }
 
@@ -120,6 +123,7 @@ public final class ScalaLoader extends JavaPlugin {
             //if the injection didn't work, load scala plugins in onEnable.
             //this violates the JavaDocs of Plugin#onLoad, but we have no other option sadly.
             //Plugin#onLoad states that onLoad of all plugins is called before onEnable is called of any other plugin.
+            //..which is false in this case because ScalaLoader's onEnable is called before the onLoads of all ScalaPlugins.
 
             Plugin[] plugins = getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
             //now while we are at it, let's enable them too.
@@ -129,7 +133,35 @@ public final class ScalaLoader extends JavaPlugin {
 
             //don't re-register the JavaPluginLoader because we cannot know for sure we got loaded by it.
             //we delegate all JavaPlugin-related stuff to the loader of ScalaLoader anyway.
+            //TODO why can't I do this? --> getServer().getPluginManager().registerInterface(getPluginLoader().getClass());
+            //TODO (also note that I still need to override the ".jar" file association with the instance)
         }
+
+        //initialize bStats
+        final int pluginId = 9150;
+        Metrics metrics = new Metrics(this, pluginId);
+        metrics.addCustomChart(new Metrics.DrilldownPie("declared_scala_version", () -> {
+            Map<String /*compat-release version*/, Map<String /*actual version*/, Integer /*amount*/>> stats = new HashMap<>();
+
+            for (ScalaPlugin scalaPlugin : ScalaPluginLoader.getInstance().getScalaPlugins()) {
+                String scalaVersion = scalaPlugin.getDeclaredScalaVersion();
+                String compatVersion;
+
+                int lastDot = scalaVersion.lastIndexOf('.');
+                if (lastDot != -1) {
+                    compatVersion = "Scala " + scalaVersion.substring(0, lastDot);
+                } else {
+                    compatVersion = "unknown";
+                }
+
+                stats.computeIfAbsent(compatVersion, k -> new HashMap<>())
+                        .compute(scalaVersion, (v, amount) -> amount == null ? 1 : amount + 1);
+            }
+
+            return stats;
+        }));
+        //TODO track used features of the ScalaLoader plugin -> ConfigurationSerializable api?, Event api? (could make these drilldowns!)
+        //TODO track popular third-party libraries (once we include a third-party library loading api) (using advanced pie!)
     }
 
     @Override
@@ -185,7 +217,7 @@ public final class ScalaLoader extends JavaPlugin {
 
         if (!downloadScalaJarFiles()) {
             //load classes over the network
-            getLogger().info("Loading scala " + scalaVersion + " libraries from over the network");
+            getLogger().info("Loading Scala " + scalaVersion + " libraries from over the network");
             try {
                 scalaLibraryLoader = new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), new URL[]{
                         new URL(scalaVersion.getScalaLibraryUrl()),
@@ -206,7 +238,7 @@ public final class ScalaLoader extends JavaPlugin {
 
             if (jarFiles.length == 0) {
                 //no jar files found - download dem files
-                getLogger().info("Tried to load scala " + scalaVersion + " libraries from disk, but they were not present. Downloading...");
+                getLogger().info("Tried to load Scala " + scalaVersion + " libraries from disk, but they were not present. Downloading...");
                 File scalaLibraryFile = new File(versionFolder, "scala-library-" + scalaVersion + ".jar");
                 File scalaReflectFile = new File(versionFolder, "scala-reflect-" + scalaVersion + ".jar");
 
@@ -227,7 +259,7 @@ public final class ScalaLoader extends JavaPlugin {
                     fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
 
                 } catch (MalformedURLException e) {
-                    throw new ScalaPluginLoaderException("Invalid scala library url: " + scalaVersion.getScalaLibraryUrl(), e);
+                    throw new ScalaPluginLoaderException("Invalid Scala library url: " + scalaVersion.getScalaLibraryUrl(), e);
                 } catch (IOException e) {
                     throw new ScalaPluginLoaderException("Could not open or close channel", e);
                 } finally {
@@ -251,7 +283,7 @@ public final class ScalaLoader extends JavaPlugin {
                     fos = new FileOutputStream(scalaReflectFile);
                     fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
                 } catch (MalformedURLException e) {
-                    throw new ScalaPluginLoaderException("Invalid scala reflect url: " + scalaVersion.getScalaReflectUrl(), e);
+                    throw new ScalaPluginLoaderException("Invalid Scala reflect url: " + scalaVersion.getScalaReflectUrl(), e);
                 } catch (IOException e) {
                     throw new ScalaPluginLoaderException("Could not open or close channel", e);
                 } finally {
@@ -271,14 +303,14 @@ public final class ScalaLoader extends JavaPlugin {
                 jarFiles = new File[] {scalaLibraryFile, scalaReflectFile};
             }
 
-            getLogger().info("Loading scala " + scalaVersion + " libraries from disk");
+            getLogger().info("Loading Scala " + scalaVersion + " libraries from disk");
             //load jar files.
             URL[] urls = new URL[jarFiles.length];
             for (int i = 0; i < jarFiles.length; i++) {
                 try {
                     urls[i] = jarFiles[i].toURI().toURL();
                 } catch (MalformedURLException e) {
-                    throw new ScalaPluginLoaderException("Could not load scala libraries for version " + scalaVersion + " due to a malformed URL", e);
+                    throw new ScalaPluginLoaderException("Could not load Scala libraries for version " + scalaVersion + " due to a malformed URL", e);
                 }
             }
 
@@ -298,8 +330,8 @@ public final class ScalaLoader extends JavaPlugin {
     public boolean saveScalaVersionsToConfig(PluginScalaVersion... versions) {
         FileConfiguration config = getConfig();
         Set<PluginScalaVersion> scalaVersions = new LinkedHashSet<>(Arrays.asList(versions));
-        boolean wasAdded = scalaVersions.addAll((List<PluginScalaVersion>) config.getList("scala-versions", List.of()));
-        config.set("scala-versions", List.copyOf(scalaVersions));
+        boolean wasAdded = scalaVersions.addAll((List<PluginScalaVersion>) config.getList("scala-versions", Collections.emptyList()));
+        config.set("scala-versions", new ArrayList<>(scalaVersions));
         saveConfig();
         return wasAdded;
     }

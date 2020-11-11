@@ -10,6 +10,8 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import xyz.janboerman.scalaloader.event.EventBus;
+import xyz.janboerman.scalaloader.plugin.description.CustomScala;
+import xyz.janboerman.scalaloader.plugin.description.Scala;
 
 import java.io.*;
 import java.net.URL;
@@ -107,6 +109,28 @@ public abstract class ScalaPlugin implements Plugin {
      */
     public final String getScalaVersion() {
         return getClassLoader().getScalaVersion();
+    }
+
+    /**
+     * Get the version of Scala that this plugin depends on.
+     * At runtime a newer compatible version of Scala could be used instead.
+     * @return the defined scala version
+     */
+    public final String getDeclaredScalaVersion() {
+        Class<?> mainClass = getClass();
+
+        Scala scala = mainClass.getDeclaredAnnotation(Scala.class);
+        if (scala != null) {
+            return scala.version().getVersion();
+        }
+
+        CustomScala customScala = mainClass.getDeclaredAnnotation(CustomScala.class);
+        if (customScala != null) {
+            return customScala.value().value();
+        }
+
+        assert false : "ScalaPlugin defined its Scala version, but not via the @Scala or @CustomScala annotation";
+        return null; //unreachable
     }
 
     /**

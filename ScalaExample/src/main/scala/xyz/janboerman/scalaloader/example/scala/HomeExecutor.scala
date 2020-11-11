@@ -1,17 +1,11 @@
 package xyz.janboerman.scalaloader.example.scala
 
-import java.util.UUID
-
-import org.bukkit.command.{Command, CommandExecutor, CommandSender}
+import org.bukkit.command.{Command, CommandExecutor, CommandSender, TabExecutor}
 import org.bukkit.entity.Player
-
-import scala.collection.mutable
+import org.bukkit.util.StringUtil
 
 //simple home command that manages one home per player.
-object HomeExecutor extends CommandExecutor {
-
-    //normally you wouldn't store the homes in the command class, and you would implement saving/loading from a database/config
-    private val homes = new mutable.HashMap[UUID, Home]()
+object HomeExecutor extends TabExecutor {
 
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean = {
         if (!sender.isInstanceOf[Player]) {
@@ -22,12 +16,15 @@ object HomeExecutor extends CommandExecutor {
         val player = sender.asInstanceOf[Player];
         if (args.length == 0) return false;
 
+        val playerId = player.getUniqueId
         val action = args(0)
         action match {
             case "set" =>
-                homes.put(player.getUniqueId, Home(player.getUniqueId, "home", player.getLocation))
+                val home = Home(playerId, "home", player.getLocation)
+                HomeManager.addHome(playerId, home)
                 player.sendMessage("Home set!")
-            case "tp" => homes.get(player.getUniqueId) match {
+                HomeManager.saveHome(playerId, home)
+            case "tp" => HomeManager.getHome(playerId) match {
                 case Some(home) =>
                     if (ExamplePlugin.eventBus.callEvent(HomeTeleportEvent(player, home))) {
                         player.teleport(home.getLocation())
@@ -41,5 +38,16 @@ object HomeExecutor extends CommandExecutor {
         }
 
         true
+    }
+
+    override def onTabComplete(sender: CommandSender, command: Command, label: String, args: Array[String]): java.util.List[String] = {
+        if (args.isEmpty) return java.util.List.of("set", "tp")
+        else if (args.length == 1) {
+            val firstArg = args(0)
+            if (StringUtil.startsWithIgnoreCase("set", firstArg)) return java.util.List.of[String]("set")
+            else if (StringUtil.startsWithIgnoreCase("tp", firstArg)) return java.util.List.of[String]("tp")
+        }
+
+        java.util.List.of()
     }
 }

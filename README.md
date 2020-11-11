@@ -36,7 +36,7 @@ jars by changing the URLs to "file://some/location.jar". The scala classes aren'
 that needs them, so you can run ScalaLoader once without ScalaPlugins to generate the config.
 
 ### Roadmap
-There's only ~~seven~~ three features that are missing in my opinion:
+There's only ~~seven~~ two features that are missing in my opinion:
 - ~~The first con. I want JavaPlugins te be able to access the Scala library classes, however they will need to tell
 ScalaLoader somehow which version they want to use.~~ Now implemented in ScalaPluginLoader#openUpToJavaPlugin(ScalaPlugin,JavaPlugin).
 Currently this does not inject the Scala library classes into the JavaPlugin's classloader, but it's a start.
@@ -44,7 +44,7 @@ Currently this does not inject the Scala library classes into the JavaPlugin's c
 - ~~Use bukkit's api-version to transform classes so that plugins will be compatible once they are loaded.~~
 - ~~HandlerList- and cancellable-related boilerplate reduction for custom events.~~
 - API to load third-party libraries (can be specific to certain Scala versions, or not).
-- ConfigurationSerializable-related boilerplate reduction. I'm thinking macros can help here.
+- ~~ConfigurationSerializable-related boilerplate reduction.~~
 - Link using TASTy if the scalaplugin's jar includes TASTy attributes.
 
 ### Example Plugin
@@ -138,9 +138,9 @@ public final class DummyPlugin extends JavaPlugin {
 ```
 
 ## Compiling
-It's a [maven](https://maven.apache.org/) project, so just `cd ScalaLoader` and `mvn package` and you're good to go.
-Be sure to use the shaded jar and not the original one.
-Note that while ScalaLoader can run on Java 11, it requires JDK14+ to compile.
+It's a [maven](https://maven.apache.org/) project, so just run `mvn package` and you're good to go.
+The jar file will be built at ./ScalaLoader/target/ScalaLoader-<version>.jar
+Note that while ScalaLoader can run on Java 8, it requires JDK15 to compile.
 
 ### Pre-built plugin jar file?
 Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
@@ -149,7 +149,7 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 ##### SBT
 ```scala
 resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.7" % "provided"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.13.8" % "provided"
 ```
 
 ##### Maven
@@ -162,7 +162,7 @@ libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader"
 <dependency>
     <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.13.7</version>
+    <version>v0.13.8</version>
     <scope>provided</scope>
 </dependency>
 ```
