@@ -109,11 +109,13 @@ class MethodMoney /*implements org.bukkit.configuration.serialization.Configurat
     }
 
     //adapts to 'currency'
+    @Scan.IncludeProperty
     public Currency getCurrency() {
         return currency;
     }
 
     //adapts to 'currency'
+    @Scan.IncludeProperty
     public void setCurrency(Currency currency) {
         this.currency = currency;
     }

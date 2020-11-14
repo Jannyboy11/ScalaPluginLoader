@@ -130,7 +130,8 @@ public abstract class ScalaPlugin implements Plugin {
         }
 
         assert false : "ScalaPlugin defined its Scala version, but not via the @Scala or @CustomScala annotation";
-        return null; //unreachable
+
+        return getScalaVersion(); //fallback - to make this more robust in production
     }
 
     /**
