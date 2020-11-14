@@ -23,9 +23,11 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
@@ -40,7 +42,6 @@ import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
  */
 public final class ScalaLoader extends JavaPlugin {
 
-    //TODO Map<String /*scala version*/, String /*highest compatible version*/>
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
 
     private final boolean iActuallyManagedToOverrideTheDefaultJavaPluginLoader;
@@ -62,7 +63,7 @@ public final class ScalaLoader extends JavaPlugin {
             pluginLoaderMap = (Map) fileAssociationsField.get(pluginManager);
             Iterator<Map.Entry<Pattern, PluginLoader>> iterator = pluginLoaderMap.entrySet().iterator();
 
-            ScalaPluginLoader scalaPluginLoader = new ScalaPluginLoader(server);
+            ScalaPluginLoader scalaPluginLoader = new ScalaPluginLoader(this);
 
             while (iterator.hasNext()) {
                 Map.Entry<Pattern, PluginLoader> entry = iterator.next();
@@ -76,6 +77,7 @@ public final class ScalaLoader extends JavaPlugin {
             myHackWorked = true;
         } catch (Throwable iGiveUp) {
             myHackWorked = false;
+            getLogger().log(Level.WARNING, "Error while trying to replace the standard JavaPluginLoader.", iGiveUp);
         }
 
         iActuallyManagedToOverrideTheDefaultJavaPluginLoader = myHackWorked;
@@ -114,6 +116,9 @@ public final class ScalaLoader extends JavaPlugin {
         } else {
             //couldn't replace the JavaPluginLoader - just register it 'normally' here.
             getServer().getPluginManager().registerInterface(ScalaPluginLoader.class);
+
+            //TODO why not call getServer().getPluginManager().loadPlugins(scalaPluginsFolder); here?
+            //TODO store the returned Plugin[] in a field, which can then be used in our onEnable()
         }
     }
 
@@ -125,6 +130,7 @@ public final class ScalaLoader extends JavaPlugin {
             //Plugin#onLoad states that onLoad of all plugins is called before onEnable is called of any other plugin.
             //..which is false in this case because ScalaLoader's onEnable is called before the onLoads of all ScalaPlugins.
 
+            //TODO get from a field?
             Plugin[] plugins = getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
             //now while we are at it, let's enable them too.
             for (Plugin plugin : plugins) {
@@ -136,6 +142,7 @@ public final class ScalaLoader extends JavaPlugin {
             //TODO why can't I do this? --> getServer().getPluginManager().registerInterface(getPluginLoader().getClass());
             //TODO (also note that I still need to override the ".jar" file association with the instance)
         }
+
 
         //initialize bStats
         final int pluginId = 9150;
@@ -331,7 +338,7 @@ public final class ScalaLoader extends JavaPlugin {
         FileConfiguration config = getConfig();
         Set<PluginScalaVersion> scalaVersions = new LinkedHashSet<>(Arrays.asList(versions));
         boolean wasAdded = scalaVersions.addAll((List<PluginScalaVersion>) config.getList("scala-versions", Collections.emptyList()));
-        config.set("scala-versions", new ArrayList<>(scalaVersions));
+        config.set("scala-versions", Compat.listCopy(scalaVersions));
         saveConfig();
         return wasAdded;
     }

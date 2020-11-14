@@ -4,14 +4,16 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import static org.objectweb.asm.Opcodes.*;
 
-import static xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable.InjectionPoint;
+import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
+import xyz.janboerman.scalaloader.plugin.TransformerRegistry;
 
 public class PluginTransformer extends ClassVisitor {
 
     private final InjectionPoint injectionPoint;
-    private final String configurationSerializableClassName;
-    private final String mainClassName;
+    private final String configurationSerializableClassName;    //using slashes as separator, e.g.: com/example/Foo
+    private final String mainClassName;                         //using dots as separator, e.g.:    com.example.Bar
+    private final boolean serializableClassIsInterface;
 
     private boolean hasOnEnable;
     private boolean hasOnLoad;
@@ -20,17 +22,23 @@ public class PluginTransformer extends ClassVisitor {
 
     private boolean weAreTransformingTheMainClass;
 
-    PluginTransformer(ClassVisitor delegate, InjectionPoint injectionPoint, String configSerType, String mainClassName) {
+    PluginTransformer(ClassVisitor delegate, InjectionPoint injectionPoint, String configSerType, boolean configSerIsInterface, String mainClassName) {
         super(ASM_API, delegate);
         this.injectionPoint = injectionPoint;
         this.configurationSerializableClassName = configSerType;
-        this.mainClassName = mainClassName;
+        this.serializableClassIsInterface = configSerIsInterface;
+        this.mainClassName = mainClassName; //TODO probably not needed anymore since the new TransformerRegistry changes!
     }
 
-    public static PluginTransformer of(ClassVisitor delegate, GlobalScanResult globalScanResult, String mainClassName) {
-        if (!globalScanResult.annotatedByConfigurationSerializable) return null;
+    public static void addTo(TransformerRegistry transformerRegistry, GlobalScanResult scanResult) {
+        if (scanResult.annotatedByConfigurationSerializable
+                || scanResult.annotatedByDelegateSerialization) {
 
-        return new PluginTransformer(delegate, globalScanResult.registerAt, globalScanResult.className, mainClassName);
+            //TODO I could check for the InjectionPoint here already.
+
+            transformerRegistry.addMainClassTransformer((delegate, mainClassName) ->
+                    new PluginTransformer(delegate, scanResult.registerAt, scanResult.className, scanResult.isInterface, mainClassName));
+        }
     }
 
     @Override
@@ -54,7 +62,7 @@ public class PluginTransformer extends ClassVisitor {
                     return new MethodVisitor(ASM_API, superVisitor) {
                         @Override
                         public void visitCode() {
-                            visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, false);
+                            visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, serializableClassIsInterface);
                             super.visitCode();
                         }
                     };
@@ -68,7 +76,7 @@ public class PluginTransformer extends ClassVisitor {
                     return new MethodVisitor(ASM_API, superVisitor) {
                         @Override
                         public void visitCode() {
-                            visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, false);
+                            visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, serializableClassIsInterface);
                             super.visitCode();
                         }
                     };
@@ -82,7 +90,7 @@ public class PluginTransformer extends ClassVisitor {
                     return new MethodVisitor(ASM_API, superVisitor) {
                         @Override
                         public void visitCode() {
-                            visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, false);
+                            visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, serializableClassIsInterface);
                             super.visitCode();
                         }
                     };
@@ -96,7 +104,7 @@ public class PluginTransformer extends ClassVisitor {
                     return new MethodVisitor(ASM_API, superVisitor) {
                         @Override
                         public void visitCode() {
-                            visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, false);
+                            visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, serializableClassIsInterface);
                             super.visitCode();
                         }
                     };
@@ -123,7 +131,7 @@ public class PluginTransformer extends ClassVisitor {
 
             if (methodVisitor != null) {
                 methodVisitor.visitCode();
-                methodVisitor.visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, false);
+                methodVisitor.visitMethodInsn(INVOKESTATIC, configurationSerializableClassName, REGISTER_NAME, REGISTER_DESCRIPTOR, serializableClassIsInterface);
                 methodVisitor.visitInsn(RETURN);
                 methodVisitor.visitMaxs(0, 0);
                 methodVisitor.visitEnd();

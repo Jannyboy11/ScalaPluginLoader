@@ -3,24 +3,30 @@ package xyz.janboerman.scalaloader.configurationserializable.transform;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import org.objectweb.asm.Type;
-import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 
+import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
+import xyz.janboerman.scalaloader.configurationserializable.Scan;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 
 public class GlobalScanner extends ClassVisitor {
 
     private final GlobalScanResult result = new GlobalScanResult();
 
+    private boolean hasModule$;
+    private String classDescriptor;
+
     public GlobalScanner() {
         super(ASM_API);
     }
 
     public GlobalScanResult scan(ClassReader classReader) {
-        classReader.accept(this, ClassReader.EXPAND_FRAMES);
+        classReader.accept(this, 0);
 
         return result;
     }
@@ -28,6 +34,8 @@ public class GlobalScanner extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         result.className = name;
+        result.isInterface = (access & ACC_INTERFACE) == ACC_INTERFACE;
+        this.classDescriptor = 'L' + name + ';';
     }
 
     @Override
@@ -39,52 +47,90 @@ public class GlobalScanner extends ClassVisitor {
                 @Override
                 public void visitEnum(String name, String descriptor, String value) {
                     if (REGISTERAT_NAME.equals(name) && SCALALOADER_INJECTIONPOINT_DESCRIPTOR.equals(descriptor)) {
-                        result.registerAt = ConfigurationSerializable.InjectionPoint.valueOf(value);
+                        result.registerAt = InjectionPoint.valueOf(value);
                     }
                 }
 
                 @Override
                 public void visitEnd() {
                     if (result.registerAt == null) {
-                        result.registerAt = ConfigurationSerializable.InjectionPoint.PLUGIN_ONENABLE; //default value
+                        result.registerAt = InjectionPoint.PLUGIN_ONENABLE; //default value
                     }
+                }
+
+                @Override
+                public AnnotationVisitor visitAnnotation(String name, String descriptor) {
+                    if (SCAN_NAME.equals(name) && SCALALOADER_SCAN_DESCRIPTOR.equals(descriptor)) {
+                        return new AnnotationVisitor(ASM_API) {
+                            @Override
+                            public void visitEnum(String name, String descriptor, String value) {
+                                if ("value".equals(name) && SCALALAODER_SCANTYPE_DESCRIPTOR.equals(descriptor)) {
+                                    result.scanType = Scan.Type.valueOf(value);
+                                }
+                            }
+                        };
+                    }
+
+                    return null;
                 }
             };
         }
 
-//        else if (SCALALOADER_DELEGATESERIALIZATION_DESCRIPTOR.equals(descriptor)) {
-//            result.annotatedByDelegateSerialization = true;
-//
-//            return new AnnotationVisitor(ASM_API) {
-//                @Override
-//                public AnnotationVisitor visitArray(String name) {
-//                    if ("value".equals(name)) {
-//                        return new AnnotationVisitor(ASM_API) {
-//                            List<Type> allowedSerializableSubtypes = new ArrayList<>(2);
-//
-//                            @Override
-//                            public void visit(String name, Object value) {
-//                                //this method will be called for every array element!
-//
-//                                //I guess name equals "value" here too
-//                                Type type = (Type) value;
-//                                if (type.getSort() == Type.OBJECT) {
-//                                    allowedSerializableSubtypes.add(type);
-//                                }
-//                            }
-//
-//                            @Override
-//                            public void visitEnd() {
-//                                result.allowedSerializableSubtypes = allowedSerializableSubtypes.toArray(new Type[0]); //use Type[]::new in Java 11+
-//                            }
-//                        };
-//                    }
-//
-//                    return null;
-//                }
-//            };
-//        }
+        else if (SCALALOADER_DELEGATESERIALIZATION_DESCRIPTOR.equals(descriptor)) {
+            result.annotatedByDelegateSerialization = true;
+
+            return new AnnotationVisitor(ASM_API) {
+                @Override
+                public void visitEnum(String name, String descriptor, String value) {
+                    if (REGISTERAT_NAME.equals(name) && SCALALOADER_INJECTIONPOINT_DESCRIPTOR.equals(descriptor)) {
+                        result.registerAt = InjectionPoint.valueOf(value);
+                    }
+                }
+
+                @Override
+                public void visitEnd() {
+                    if (result.registerAt == null) {
+                        result.registerAt = InjectionPoint.PLUGIN_ONENABLE; //default value
+                    }
+                }
+
+                @Override
+                public AnnotationVisitor visitArray(String name) {
+                    if ("value".equals(name)) {
+                        return new AnnotationVisitor(ASM_API) {
+                            @Override
+                            public void visit(String name, Object value) {
+                                if (result.sumAlternatives == null) result.sumAlternatives = new HashSet<>(2);
+
+                                result.sumAlternatives.add((Type) value);
+                            }
+                        };
+                    }
+
+                    return null;
+                }
+            };
+        }
 
         return null;
+    }
+
+    @Override
+    public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+        if ("MODULE$".equals(name) && (access & ACC_STATIC) == ACC_STATIC && classDescriptor.equals(descriptor)) {
+            hasModule$ = true;
+        }
+
+        return null;
+    }
+
+    @Override
+    public void visitEnd() {
+        if (result.scanType == Scan.Type.SINGLETON_OBJECT && !hasModule$) {
+            result.annotatedByConfigurationSerializable = false; //override! don't generate serialization methods for companion classes of singleton objects!
+
+            //this is necessary so that the plugin's onEnable won't try to call $regsiterWithConfigurationSerialization() for example.
+            //see PluginTransformer.java
+        }
     }
 }

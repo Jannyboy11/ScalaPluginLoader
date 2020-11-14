@@ -21,6 +21,7 @@ public @interface Scan {
         FIELDS,                 //default to empty blacklist
         GETTER_SETTER_METHODS,  //default to empty whitelist    (include both getters and setters)
         CASE_CLASS,             //use productElementName(int)/productElementNames, productArity?, apply and unapply (still need to find matching apply and unapply methods!)
+        SINGLETON_OBJECT,       //just serialize as an empty Map, deserialize using the MODULE$ static final field
         RECORD,                 //java records :) //use getters for serialization, use constructor for deserialization. need to auto-detect the right accessor methods and constructor from the private fields.
         @Deprecated ENUM;       //enums. The bytecode generation for this actually works, BUT there's a bug in Bukkit itself that causes enums to be serialized incorrectly! https://hub.spigotmc.org/jira/browse/SPIGOT-6234
 
@@ -31,6 +32,7 @@ public @interface Scan {
         //TODO  CASE_CLASS for classes that have an unapply and matching apply method
         //TODO  ENUM for classes that have a 'String name()' and 'static Foo valueOf(String name)'
         //TODO  RECORD if the class extends java.lang.Record
+        //TODO  SINGLETON_OBJECT for classes at end with '$' and have a public static final field of the same type named "MODULE$"
         //TODO  otherwise FIELDS
     }
 
@@ -49,7 +51,7 @@ public @interface Scan {
 
         String value() default "";
 
-        //TODO rename this, because it also works for methods that end with '_$eq' (assignment operator overloading in scala)
+        //TODO document that adapts both getter/setter convention from java, as well as the _$eq extension from scala.
         boolean adapt() default true;
 
     }

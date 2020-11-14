@@ -5,7 +5,7 @@ import scala.Option;
 import scala.Some;
 import scala.Tuple2;
 import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
-import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable.DeserializationMethod;
+import xyz.janboerman.scalaloader.configurationserializable.DeserializationMethod;
 import xyz.janboerman.scalaloader.configurationserializable.Scan;
 
 import java.io.File;

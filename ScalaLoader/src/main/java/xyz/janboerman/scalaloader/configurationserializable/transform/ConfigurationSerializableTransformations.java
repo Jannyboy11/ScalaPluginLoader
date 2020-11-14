@@ -7,7 +7,9 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
-//import xyz.janboerman.scalaloader.configurationserializable.DelegateSerialization;
+import xyz.janboerman.scalaloader.configurationserializable.DelegateSerialization;
+import xyz.janboerman.scalaloader.configurationserializable.DeserializationMethod;
+import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import xyz.janboerman.scalaloader.configurationserializable.Scan;
 
 /**
@@ -17,8 +19,8 @@ public class ConfigurationSerializableTransformations {
 
     static final int ASM_API = AsmConstants.ASM_API;
 
-    static final String BUKKIT_CONFIGURATIONSERIALIZABLE_NAME = "org/bukkit/configuration/serialization/ConfigurationSerializable";
-    static final String BUKKIT_SERIALIZABLEAS_DESCRIPTOR = 'L' + SerializableAs.class.getName().replace('.', '/') + ';';
+    static final String BUKKIT_CONFIGURATIONSERIALIZABLE_NAME = Type.getInternalName(org.bukkit.configuration.serialization.ConfigurationSerializable.class);
+    static final String BUKKIT_SERIALIZABLEAS_DESCRIPTOR = Type.getDescriptor(SerializableAs.class);
 
     static final String SERIALIZE_NAME = "serialize";
     static final String SERIALIZE_DESCRIPTOR = "()Ljava/util/Map;";
@@ -36,15 +38,16 @@ public class ConfigurationSerializableTransformations {
     static final String REGISTERAT_NAME = "registerAt";
     static final String ADAPT_NAME = "adapt";
     static final String AS_NAME = "as";
+    static final String VARIANT_NAME = "$variant";
 
     static final String SCALALOADER_CONFIGURATIONSERIALIZABLE_DESCRIPTOR = Type.getDescriptor(ConfigurationSerializable.class);
-//    static final String SCALALOADER_DELEGATESERIALIZATION_DESCRIPTOR = Type.getDescriptor(DelegateSerialization.class);
+    static final String SCALALOADER_DELEGATESERIALIZATION_DESCRIPTOR = Type.getDescriptor(DelegateSerialization.class);
     static final String SCALALOADER_SCAN_DESCRIPTOR = Type.getDescriptor(Scan.class);
     static final String SCALALAODER_SCANTYPE_DESCRIPTOR = Type.getDescriptor(Scan.Type.class);
     static final String SCALALOADER_PROPERTYINCLUDE_DESCRIPTOR = Type.getDescriptor(Scan.IncludeProperty.class);
     static final String SCALALOADER_PROPERTYEXCLUDE_DESCRIPTOR = Type.getDescriptor(Scan.ExcludeProperty.class);
-    static final String SCALALOADER_INJECTIONPOINT_DESCRIPTOR = Type.getDescriptor(ConfigurationSerializable.InjectionPoint.class);
-    static final String SCALALOADER_DESERIALIZATIONMETHOD_DESCRIPTOR = Type.getDescriptor(ConfigurationSerializable.DeserializationMethod.class);
+    static final String SCALALOADER_INJECTIONPOINT_DESCRIPTOR = Type.getDescriptor(InjectionPoint.class);
+    static final String SCALALOADER_DESERIALIZATIONMETHOD_DESCRIPTOR = Type.getDescriptor(DeserializationMethod.class);
 
     static final String MAP_NAME = "java/util/Map";
     static final String MAP_DESCRIPTOR = "Ljava/util/Map;";
@@ -53,6 +56,8 @@ public class ConfigurationSerializableTransformations {
     static final String MAP_PUT_DESCRIPTOR = "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
     static final String MAP_GET_NAME = "get";
     static final String MAP_GET_DESCRIPTOR = "(Ljava/lang/Object;)Ljava/lang/Object;";
+    static final String MAP_PUTALL_NAME = "putAll";
+    static final String MAP_PUTALL_DESCRIPTOR = "(Ljava/util/Map;)V";
     static final String HASHMAP_NAME = "java/util/HashMap";
 
     static final String OPTION_NAME = "scala/Option";
@@ -86,7 +91,8 @@ public class ConfigurationSerializableTransformations {
     //TODO actually, *maybe* the best solution to do this is to *not* do it so that I won't run into these extra problems! (like java modules don't have support for versions!)
     //TODO but not registering scala stdlib classes and generating the transformation bytecode as use-site would still work, so I'm going with that solution when the time comes!
 
-    //TODO also do not forget about 'immutable' java types such as BigDecimal, BigInteger, enums and maybe UUID?
+    //also do not forget about 'immutable' java types such as BigDecimal, BigInteger, UUID TODO and maybe enums?
+    //TODO I don't think I can detect whether a class is an enum without loading it if it is not in the same jar file
 
     private ConfigurationSerializableTransformations() {}
 
@@ -102,6 +108,7 @@ public class ConfigurationSerializableTransformations {
         };
 
         ClassVisitor combinedTransformer = classWriter;
+        combinedTransformer = new DelegateTransformer(combinedTransformer, localResult);
         combinedTransformer = new SerializableTransformer(combinedTransformer, localResult);
 
         new ClassReader(clazz).accept(combinedTransformer, 0);

@@ -179,27 +179,29 @@ class Conversions {
             //non-supported reference types
             case "Ljava/math/BigInteger;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                //store the string in the local variable table
-                //methodVisitor.visitLocalVariable("$temp" + localVariableIndex, "Ljava/lang/String;", null, start, end, localVariableIndex); stackLocal.usedLocals += 1;
-                extraLocals.add(new LocalVariableDefinition("$temp" + localVariableIndex, "Ljava/lang/String;", null, start, end, localVariableIndex)); stackLocal.usedLocals += 1;
-                methodVisitor.visitVarInsn(ASTORE, localVariableIndex);
-                methodVisitor.visitTypeInsn(NEW, "java/math/BigInteger"); //after the INVOKESPECIAL this value stays on the stack!
-                methodVisitor.visitInsn(DUP);                           stackLocal.increasedMaxStack += 1;
-                //load the string again to get it on the right position on the stack
-                methodVisitor.visitVarInsn(ALOAD, localVariableIndex);  stackLocal.increasedMaxStack += 1;
+                //stack: [..., string]
+                methodVisitor.visitTypeInsn(NEW, "java/math/BigInteger");
+                //stack: [..., string, biginteger]
+                methodVisitor.visitInsn(DUP_X1);
+                //stack: [..., biginteger, string, biginteger]
+                methodVisitor.visitInsn(SWAP);
+                //stack: [..., biginteger, biginteger, string]
                 methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/math/BigInteger", "<init>", "(Ljava/lang/String;)V", false);
+                //stack: [..., biginteger]
+                stackLocal.increasedMaxStack += 2;
                 break;
             case "Ljava/math/BigDecimal;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                //store the string in the local variable table
-                //methodVisitor.visitLocalVariable("$temp" + localVariableIndex, "Ljava/lang/String;", null, start, end, localVariableIndex); stackLocal.usedLocals += 1;
-                extraLocals.add(new LocalVariableDefinition("$temp" + localVariableIndex, "Ljava/lang/String;", null, start, end, localVariableIndex)); stackLocal.usedLocals += 1;
-                methodVisitor.visitVarInsn(ASTORE, localVariableIndex);
-                methodVisitor.visitTypeInsn(NEW, "java/math/BigDecimal"); //after the INVOKESPECIAL this value stays on the stack!
-                methodVisitor.visitInsn(DUP);                           stackLocal.increasedMaxStack += 1;
-                //load the string again to get it on the right position on the stack
-                methodVisitor.visitVarInsn(ALOAD, localVariableIndex);  stackLocal.increasedMaxStack += 1;
+                //stack: [..., string]
+                methodVisitor.visitTypeInsn(NEW, "java/math/BigDecimal");
+                //stack: [..., string, bigdecimal]
+                methodVisitor.visitInsn(DUP_X1);
+                //stack: [..., bigdecimal, string, bigdecimal]
+                methodVisitor.visitInsn(SWAP);
+                //stack: [..., bigdecimal, bigdecimal, string]
                 methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/math/BigDecimal", "<init>", "(Ljava/lang/String;)V", false);
+                //stack: [..., bigdecimal]
+                stackLocal.increasedMaxStack += 2;
                 break;
             case "Ljava/util/UUID;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");

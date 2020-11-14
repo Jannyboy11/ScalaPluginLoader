@@ -7,46 +7,56 @@ import java.util.Map;
  * An enumeration of some common recent versions of Scala.
  */
 public enum ScalaVersion {
-    v2_12_6("2.12.6", true,
+
+    //2.12.x
+    v2_12_6(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.6%2Fscala-reflect-2.12.6.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.6%2Fscala-library-2.12.6.jar"
     ),
-    v2_12_7("2.12.7", true,
+    v2_12_7(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.7%2Fscala-reflect-2.12.7.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.7%2Fscala-library-2.12.7.jar"
     ),
-    v2_12_8("2.12.8", true,
+    v2_12_8(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.8%2Fscala-reflect-2.12.8.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.8%2Fscala-library-2.12.8.jar"
     ),
-    v2_12_9("2.12.9", true,
+    v2_12_9(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.9%2Fscala-reflect-2.12.9.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.9%2Fscala-library-2.12.9.jar"
     ),
-    v2_12_10("2.12.10", true,
+    v2_12_10(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.10%2Fscala-reflect-2.12.10.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.10%2Fscala-library-2.12.10.jar"
     ),
-    v2_12_11("2.12.10", true,
+    v2_12_11(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.11%2Fscala-reflect-2.12.11.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.11%2Fscala-library-2.12.11.jar"
     ),
-    v2_13_0("2.13.0", true,
+    v1_12_12(true,
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.12%2Fscala-reflect-2.12.12.jar",
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.12%2Fscala-library-2.12.12.jar"
+    ),
+
+    //2.13.x
+    v2_13_0(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.0%2Fscala-reflect-2.13.0.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.0%2Fscala-library-2.13.0.jar"
     ),
-    v2_13_1("2.13.1", true,
+    v2_13_1(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.1%2Fscala-reflect-2.13.1.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.1%2Fscala-library-2.13.1.jar"
     ),
-    v2_13_2("2.13.2", true,
+    v2_13_2(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.2%2Fscala-reflect-2.13.2.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.2%2Fscala-library-2.13.2.jar"
     ),
-    v2_13_3("2.13.3", true,
+    v2_13_3(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.3%2Fscala-reflect-2.13.3.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.3%2Fscala-library-2.13.3.jar"
     );
+
+    //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
 
     private static Map<String, ScalaVersion> byVersion = new HashMap<>();
     static {
@@ -60,8 +70,8 @@ public enum ScalaVersion {
     private final String scalaReflectUrl;
     private final boolean stable;
 
-    ScalaVersion(String version, boolean stable, String reflect, String library) {
-        this.version = version;
+    ScalaVersion(boolean stable, String reflect, String library) {
+        this.version = name().substring(1).replace('_', '.');
         this.scalaLibraryUrl = library;
         this.scalaReflectUrl = reflect;
         this.stable = stable;

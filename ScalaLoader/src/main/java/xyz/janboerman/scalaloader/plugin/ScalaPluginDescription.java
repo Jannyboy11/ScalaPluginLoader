@@ -5,6 +5,7 @@ import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoadOrder;
 import org.yaml.snakeyaml.Yaml;
+import xyz.janboerman.scalaloader.compat.Compat;
 
 import java.io.*;
 import java.util.*;
@@ -212,9 +213,9 @@ public final class ScalaPluginDescription {
         if (prefix != null) pluginData.put("prefix", prefix);
         if (apiVersion != null) pluginData.put("api-version", apiVersion);
         if (loadOrder != null) pluginData.put("load", loadOrder.name());
-        if (hardDependencies != null && !hardDependencies.isEmpty()) pluginData.put("depend", new ArrayList<>(hardDependencies));
-        if (softDependencies != null && !softDependencies.isEmpty()) pluginData.put("softdepend", new ArrayList<>(softDependencies));
-        if (inverseDependencies != null && !inverseDependencies.isEmpty()) pluginData.put("loadbefore", new ArrayList<>(inverseDependencies));
+        if (hardDependencies != null && !hardDependencies.isEmpty()) pluginData.put("depend", Compat.listCopy(hardDependencies));
+        if (softDependencies != null && !softDependencies.isEmpty()) pluginData.put("softdepend", Compat.listCopy(softDependencies));
+        if (inverseDependencies != null && !inverseDependencies.isEmpty()) pluginData.put("loadbefore", Compat.listCopy(inverseDependencies));
         if (permissionDefault != null) pluginData.put("default-permission", permissionDefault.name());
         if (commands != null && !commands.isEmpty()) {
             Map<String, Map<String, Object>> commandsMap = new HashMap<>();

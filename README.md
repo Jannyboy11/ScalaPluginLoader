@@ -21,6 +21,8 @@ ScalaLoader uses a custom PluginLoader that loads the Scala runtime classes for 
 If you wish to use a plugin.yml still, you can, however I always found it a pain.
 - A boilerplate-free event api! #getHandlerList(), #getHandlers(), #setCancelled(boolean) and #isCancelled() can be generated
 at class-load time!
+- A boilerplate-free ConfigurationSerialization api! #serialize() and #deserialize(Map<String,Object) can be generated
+at class-load time!
 
 #### Cons
 - Scala library classes are only accessible to ScalaPlugins (You can still write them in Java though).
@@ -88,7 +90,7 @@ object ExamplePlugin
 
     @EventHandler
     def onJoin(event: PlayerJoinEvent): Unit = {
-        event.setJoinMessage(ChatColor.GREEN + "Howdy " + event.getPlayer.getName + "!")
+        event.setJoinMessage(s"${ChatColor.GREEN} Howdy ${event.getPlayer.getName}!")
     }
 
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean = {
@@ -139,8 +141,8 @@ public final class DummyPlugin extends JavaPlugin {
 
 ## Compiling
 It's a [maven](https://maven.apache.org/) project, so just run `mvn package` and you're good to go.
-The jar file will be built at ./ScalaLoader/target/ScalaLoader-<version>.jar
-Note that while ScalaLoader can run on Java 8, it requires JDK15 to compile.
+The jar file will be built at `./ScalaLoader/target/ScalaLoader-<version>.jar`
+Note that while ScalaLoader can run on Java 8, it requires JDK15+ to compile.
 
 ### Pre-built plugin jar file?
 Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)

@@ -5,12 +5,14 @@ import org.objectweb.asm.signature.SignatureReader;
 import xyz.janboerman.scalaloader.bytecode.FieldDeclaration;
 import xyz.janboerman.scalaloader.bytecode.LocalVariableDefinition;
 import xyz.janboerman.scalaloader.bytecode.MethodHeader;
-import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
+import xyz.janboerman.scalaloader.configurationserializable.DeserializationMethod;
+import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import xyz.janboerman.scalaloader.configurationserializable.Scan;
+import xyz.janboerman.scalaloader.configurationserializable.Scan.ExcludeProperty;
+import xyz.janboerman.scalaloader.configurationserializable.Scan.IncludeProperty;
 import xyz.janboerman.scalaloader.util.Pair;
 
-import static xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable.DeserializationMethod.*;
-import static xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable.*;
+import static xyz.janboerman.scalaloader.configurationserializable.DeserializationMethod.*;
 import static xyz.janboerman.scalaloader.configurationserializable.Scan.Type.*;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.Conversions.*;
 
@@ -30,6 +32,8 @@ class SerializableTransformer extends ClassVisitor {
     private String className;       //uses slashes, not dots:                   foo/bar/SomeClass
     private String classDescriptor; //uses the norminal descriptor notation:    Lfoo/bar/SomeClass;
     private String superType;       //uses slashes:                             java/lang/Object
+    private String classSignature;  //includes generics                         Lfoo/bar/Seq<Lfoo/bar/Quz;>;
+    private boolean classIsInterface;
 
     private boolean alreadyHasSerializeMethod;
     private boolean alreadyHasDeserializeMethod;
@@ -37,6 +41,7 @@ class SerializableTransformer extends ClassVisitor {
     private boolean alreadyHasDeserializationContructor;
     private boolean alreadyHasNullaryConstructor;
     private boolean alreadyHasClassInitializer;
+    private boolean alreadyHasModule$;
 
     //TODO shouldn't I just keep the parameter names list as a field of MethodHeader?
     private final Map<MethodHeader, List<String> /*parameter names (may be empty!)*/> applyHeaders = new HashMap<>(0);
@@ -60,7 +65,9 @@ class SerializableTransformer extends ClassVisitor {
         if (result.annotatedByConfigurationSerializable) {
             this.className = name;
             this.classDescriptor = 'L' + name + ';';
+            this.classSignature = signature;
             this.superType = superName;
+            this.classIsInterface = (access & ACC_INTERFACE) == ACC_INTERFACE;
 
             //make the class public
             access = (access | ACC_PUBLIC) & ~(ACC_PRIVATE | ACC_PROTECTED);
@@ -97,9 +104,9 @@ class SerializableTransformer extends ClassVisitor {
                 @Override
                 public void visitEnum(String name, String descriptor, String value) {
                     if (CONSTRUCTUSING_NAME.equals(name) && SCALALOADER_DESERIALIZATIONMETHOD_DESCRIPTOR.equals(descriptor)) {
-                        constructUsing = ConfigurationSerializable.DeserializationMethod.valueOf(value);
+                        constructUsing = DeserializationMethod.valueOf(value);
                     } else if (REGISTERAT_NAME.equals(name) && SCALALOADER_INJECTIONPOINT_DESCRIPTOR.equals(descriptor)) {
-                        registerAt = ConfigurationSerializable.InjectionPoint.valueOf(value);
+                        registerAt = InjectionPoint.valueOf(value);
                     }
                     super.visit(name, value);
                 }
@@ -151,16 +158,23 @@ class SerializableTransformer extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(int access, String fieldName, String fieldDescriptor, String fieldSignature, Object value) {
+        if ("MODULE$".equals(fieldName) && (access & ACC_STATIC) == ACC_STATIC && fieldDescriptor.equals(classDescriptor)) {
+            alreadyHasModule$ = true;
+        }
+
         if (result.annotatedByConfigurationSerializable && (access & ACC_STATIC) == 0 && (access & ACC_TRANSIENT) == 0) {
             //TODO only do this for ScanTypes FIELDS and RECORD.
             return new FieldVisitor(ASM_API, super.visitField(access, fieldName, fieldDescriptor, fieldSignature, value)) {
                 String property = fieldName;
+                boolean include;
+                boolean exclude;
 
                 @Override
                 public AnnotationVisitor visitAnnotation(String annDescriptor, boolean visible) {
                     AnnotationVisitor superVisitor = super.visitAnnotation(annDescriptor, visible);
 
                     if (SCALALOADER_PROPERTYINCLUDE_DESCRIPTOR.equals(annDescriptor)) {
+                        include = true;
                         return new AnnotationVisitor(ASM_API, superVisitor) {
                             @Override
                             public void visit(String name, Object value) {
@@ -173,6 +187,7 @@ class SerializableTransformer extends ClassVisitor {
                     }
 
                     else if (SCALALOADER_PROPERTYEXCLUDE_DESCRIPTOR.equals(annDescriptor)) {
+                        exclude = true;
                         property = null;
                         return superVisitor;
                     }
@@ -184,6 +199,11 @@ class SerializableTransformer extends ClassVisitor {
 
                 @Override
                 public void visitEnd() {
+                    if (include && exclude) {
+                        throw new ConfigurationSerializableError("Can't annotate field " + fieldName + " with both "
+                            + "@" + IncludeProperty.class.getSimpleName() + " and "
+                            + "@" + ExcludeProperty.class.getSimpleName() + ", please remove one of the two!");
+                    }
                     if (property != null) {
                         propertyFields.put(property, new FieldDeclaration(access, fieldName, fieldDescriptor, fieldSignature));
                     }
@@ -200,7 +220,8 @@ class SerializableTransformer extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String methodName, String methodDescriptor, String methodSignature, String[] exceptions) {
         MethodVisitor superVisitor = super.visitMethod(access, methodName, methodDescriptor, methodSignature, exceptions);
-        if (result.annotatedByConfigurationSerializable) {boolean isStatic = (access & ACC_STATIC) == ACC_STATIC;
+        if (result.annotatedByConfigurationSerializable) {
+            boolean isStatic = (access & ACC_STATIC) == ACC_STATIC;
 
             if (!isStatic && SERIALIZE_NAME.equals(methodName) && SERIALIZE_DESCRIPTOR.equals(methodDescriptor)) {
                 alreadyHasSerializeMethod = true;
@@ -239,7 +260,7 @@ class SerializableTransformer extends ClassVisitor {
                         @Override
                         public void visitCode() {
                             //call registerWithConfigurationSerialization$()
-                            visitMethodInsn(INVOKESTATIC, className, REGISTER_NAME, REGISTER_DESCRIPTOR, false);
+                            visitMethodInsn(INVOKESTATIC, className, REGISTER_NAME, REGISTER_DESCRIPTOR, classIsInterface);
                             super.visitCode();
                         }
                     };
@@ -332,7 +353,16 @@ class SerializableTransformer extends ClassVisitor {
 
     @Override
     public void visitEnd() {
+        annotatedByConfigurationSerializable:
         if (result.annotatedByConfigurationSerializable) {
+
+            // do some checks!
+
+            // verify that if our scan type is SINGLETON_OBJECT, then there is a MODULE$
+            if (scanType == SINGLETON_OBJECT && !alreadyHasModule$)
+                break annotatedByConfigurationSerializable;
+
+
             boolean hasDeserizalizationMethod = alreadyHasDeserializationContructor || alreadyHasValueOfMethod || alreadyHasDeserializeMethod;
 
             //verify that every getter has a setter and vice versa - only needed when we need to generate both the serializer and deserializer methods
@@ -423,6 +453,9 @@ class SerializableTransformer extends ClassVisitor {
                     //sadly, scalac does output signatures like Option<Tuple2<Object,Object>> so that's not really possible without reading the scala signature!
             }
 
+
+            // finally we get to the code generation part!
+            // first up: the serialize() method!
 
             if (!alreadyHasSerializeMethod) {
                 //generate serialize method.
@@ -537,9 +570,6 @@ class SerializableTransformer extends ClassVisitor {
                         methodVisitor.visitVarInsn(ALOAD, 1);
                         methodVisitor.visitInsn(ARETURN);
 
-                        //TODO according to the ASM analyzer - "Execution can fall off the end of the code" ! I guess our maxStack was too low!
-                        //TODO am I leaving something on the stack? there are no jumps so this is *weird*
-
                         break;
                     case CASE_CLASS:
                         //call unapply. (the one with the most type parameters)
@@ -547,12 +577,12 @@ class SerializableTransformer extends ClassVisitor {
                         assert applyHeader != null : "applyHeader is null when trying to generate code for serialize() method for ScanType CASE_CLASS";
                         assert unapplyHeader != null : "unapplyHeader is null when trying to generate code for seralize() method for ScanType CASE_CLASS";
 
-                        if (unapplyHeader.getReturnDescriptor().equals("Z")) {
+                        if (unapplyParamCount == 0) {
                             //just continue to the end, return the map as-is.
 
                             //call unapply(this)
                             methodVisitor.visitVarInsn(ALOAD, 0);
-                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "unapply", unapplyHeader.descriptor, false);
+                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "unapply", unapplyHeader.descriptor, classIsInterface);
                             maxStack = Math.max(maxStack, 1);
                             //we now have just a boolean on top of the operand stack
 
@@ -572,17 +602,16 @@ class SerializableTransformer extends ClassVisitor {
 
                             maxStack = Math.max(maxStack, 1);
 
-                        } else if (unapplyHeader.getReturnSignature().equals("Lscala/Option<Ljava/lang/Object;>;")) {
+                        } else if (unapplyParamCount == 1) {
                             //put the thing into the map
 
                             //call unapply(this)
                             methodVisitor.visitVarInsn(ALOAD, 0);
-                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "unapply", unapplyHeader.descriptor, false);
+                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "unapply", unapplyHeader.descriptor, classIsInterface);
                             maxStack = Math.max(1, maxStack);
 
                             final Label endTestVarLabel = new Label();
                             final int testIndex = maxLocal++;
-                            //methodVisitor.visitLocalVariable("test", OPTION_DESCRIPTOR, "Lscala/Option<Ljava/lang/Object;>;", label1, endTestVarLabel, testIndex);
                             extraLocalVariables.add(new LocalVariableDefinition("test", OPTION_DESCRIPTOR, "Lscala/Option<Ljava/lang/Object;>;", label1, endTestVarLabel, testIndex));
                             methodVisitor.visitVarInsn(ASTORE, testIndex);
 
@@ -639,12 +668,11 @@ class SerializableTransformer extends ClassVisitor {
 
                             //call unapply(this)
                             methodVisitor.visitVarInsn(ALOAD, 0);
-                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "unapply", unapplyHeader.descriptor, false);
+                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "unapply", unapplyHeader.descriptor, classIsInterface);
                             maxStack = Math.max(1, maxStack);
 
                             final Label endTestVarLabel = new Label();
                             final int testIndex = maxLocal++;
-                            //methodVisitor.visitLocalVariable("test", OPTION_DESCRIPTOR, "Lscala/Option<Ljava/lang/Object;>;", label1, endTestVarLabel, testIndex);
                             extraLocalVariables.add(new LocalVariableDefinition("test", OPTION_DESCRIPTOR, "Lscala/Option<Ljava/lang/Object;>;", label1, endTestVarLabel, testIndex));
                             methodVisitor.visitVarInsn(ASTORE, testIndex);
 
@@ -666,7 +694,6 @@ class SerializableTransformer extends ClassVisitor {
                             final int tupleIndex = maxLocal++;
 
                             //define and store tuple local variable
-                            //methodVisitor.visitLocalVariable("tup", 'L' + tupleName + ';', null /*TODO?*/, definedTrueLabel, endTestVarLabel, tupleIndex);
                             extraLocalVariables.add(new LocalVariableDefinition("tup", 'L' + tupleName + ';', null /*TODO?*/, definedTrueLabel, endTestVarLabel, tupleIndex));
                             methodVisitor.visitVarInsn(ALOAD, testIndex);
                             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, OPTION_NAME, "get", "()Ljava/lang/Object;", false);
@@ -678,6 +705,7 @@ class SerializableTransformer extends ClassVisitor {
                             for (int paramIndex = 0; paramIndex < unapplyParamCount; paramIndex++) {
 
                                 String propertyName = applyParamNames.get(paramIndex);
+
                                 String paramSignature = applyHeader.getParameterSignature(paramIndex);
                                 String paramDescriptor = applyHeader.getParameterDescriptor(paramIndex);
                                 String paramType = Type.getType(paramDescriptor).getInternalName();
@@ -739,6 +767,15 @@ class SerializableTransformer extends ClassVisitor {
 
                         break;
 
+                    case SINGLETON_OBJECT:
+                        assert alreadyHasModule$ : "scanType SINGELTON_OBJECT without a MODULE$ static field";
+
+                        //literally zero extra code is needed to put values into the map - we just need to return it!
+                        methodVisitor.visitVarInsn(ALOAD, 1);
+                        methodVisitor.visitInsn(ARETURN);
+
+                        break;
+
                     //case CONSTANTS
                         //TODO ideally I'd just encode a 'switch' on strings in bytecode
                         //break;
@@ -746,7 +783,7 @@ class SerializableTransformer extends ClassVisitor {
 
                 final Label lastLabel = new Label();
                 methodVisitor.visitLabel(lastLabel);
-                methodVisitor.visitLocalVariable("this", classDescriptor, null, label0, lastLabel, 0);
+                methodVisitor.visitLocalVariable("this", classDescriptor, classSignature, label0, lastLabel, 0);
                 methodVisitor.visitLocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label1, lastLabel, 1);
                 for (LocalVariableDefinition local : extraLocalVariables) {
                     methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableIndex);
@@ -754,6 +791,9 @@ class SerializableTransformer extends ClassVisitor {
                 methodVisitor.visitMaxs(maxStack, maxLocal);
                 methodVisitor.visitEnd();
             }
+
+
+            // code generation part 2: deserialize!
 
             if (!hasDeserizalizationMethod) {
                 //generate deserialization method
@@ -776,7 +816,7 @@ class SerializableTransformer extends ClassVisitor {
                         methodVisitor.visitInsn(RETURN);
                         Label label2 = new Label();
                         methodVisitor.visitLabel(label2);
-                        methodVisitor.visitLocalVariable("this", classDescriptor, null, label0, label2, 0);
+                        methodVisitor.visitLocalVariable("this", classDescriptor, classSignature, label0, label2, 0);
                         methodVisitor.visitMaxs(1, 1);
                         methodVisitor.visitEnd();
                     }
@@ -887,11 +927,11 @@ class SerializableTransformer extends ClassVisitor {
 
                     //lastLabel is already visted at this point
                     if (thisFirstThenMap) {
-                        methodVisitor.visitLocalVariable("this", classDescriptor, null, label0, lastLabel, 0);
+                        methodVisitor.visitLocalVariable("this", classDescriptor, classSignature, label0, lastLabel, 0);
                         methodVisitor.visitLocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, lastLabel, 1);
                     } else {
                         methodVisitor.visitLocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, lastLabel, 0);
-                        methodVisitor.visitLocalVariable("result", classDescriptor, null, label1, lastLabel, 1);
+                        methodVisitor.visitLocalVariable("result", classDescriptor, classSignature, label1, lastLabel, 1);
                     }
                     for (LocalVariableDefinition extraLocal : extraLocalVariables) {
                         methodVisitor.visitLocalVariable(extraLocal.name, extraLocal.descriptor, extraLocal.signature, extraLocal.startLabel, extraLocal.endLabel, extraLocal.tableIndex);
@@ -950,7 +990,7 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitInsn(RETURN);
 
                             methodVisitor.visitLabel(endLabel);
-                            methodVisitor.visitLocalVariable("this", classDescriptor, null, label0, endLabel, 0);
+                            methodVisitor.visitLocalVariable("this", classDescriptor, classSignature, label0, endLabel, 0);
                             methodVisitor.visitLocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, endLabel, 1);
                             for (LocalVariableDefinition extraLocal : extraLocalVariables) {
                                 methodVisitor.visitLocalVariable(extraLocal.name, extraLocal.descriptor, extraLocal.signature, extraLocal.startLabel, extraLocal.endLabel, extraLocal.tableIndex);
@@ -1078,7 +1118,7 @@ class SerializableTransformer extends ClassVisitor {
 
                             final Label applyLabel = new Label();
                             methodVisitor.visitLabel(applyLabel);
-                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "apply", applyHeader.descriptor, false);
+                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "apply", applyHeader.descriptor, classIsInterface);
                             maxStack = Math.max(1, maxStack);
                             methodVisitor.visitInsn(ARETURN);
                             methodVisitor.visitLabel(endLabel);
@@ -1090,6 +1130,45 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitEnd();
                             break;
                     }
+                }
+
+                else if (scanType == SINGLETON_OBJECT) {
+                    //just get the single instance!
+
+                    assert alreadyHasModule$ : "scanType SINGELTON_OBJECT without a MODULE$ static field";
+
+                    //the MODULE$-check is needed because the scala compiler will also generate the annotation @ConfigurationSerializable on the companion class of the singleton object.
+                    //if we would also generate this code in the companion class, then the GETSTATIC call will result in a NoSuchFieldError.
+
+                    String deserializationMethodName;
+                    switch (constructUsing) {
+                        case MAP_CONSTRUCTOR:
+                            throw new ConfigurationSerializableError("Can't generate a deserialization constructor for singleton objects, it would violate the object model!");
+
+                        case DESERIALIZE:
+                            deserializationMethodName = DESERIALIZE_NAME;
+                            break;
+                        case VALUE_OF:
+                            deserializationMethodName = VALUEOF_NAME;
+                            break;
+                        default:
+                            throw new RuntimeException("Unreachable, got constructUsing "
+                                    + DeserializationMethod.class.getSimpleName() + "."
+                                    + constructUsing.name());
+                    }
+
+                    MethodVisitor methodVisitor = visitMethod(ACC_PUBLIC | ACC_STATIC, deserializationMethodName, deserializationDescriptor(classDescriptor), deserializationSignature(classDescriptor), null);
+                    methodVisitor.visitCode();
+                    final Label startLabel = new Label();
+                    methodVisitor.visitLabel(startLabel);
+                    methodVisitor.visitFieldInsn(GETSTATIC, className, "MODULE$", classDescriptor);
+                    methodVisitor.visitInsn(ARETURN);
+                    final Label endLabel = new Label();
+                    methodVisitor.visitLabel(endLabel);
+                    methodVisitor.visitLocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, startLabel, endLabel, 0);
+                    methodVisitor.visitMaxs(1, 1);
+                    methodVisitor.visitEnd();
+
                 }
 
                 else if (scanType == ENUM) {
@@ -1117,7 +1196,7 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitLdcInsn("name");
                             methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_GET_NAME, MAP_GET_DESCRIPTOR, true);
                             methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "valueOf", "(Ljava/lang/String;)" + classDescriptor, false);
+                            methodVisitor.visitMethodInsn(INVOKESTATIC, className, "valueOf", "(Ljava/lang/String;)" + classDescriptor, classIsInterface);
                             methodVisitor.visitInsn(ARETURN);
 
                             Label endLabel = new Label();
@@ -1135,8 +1214,13 @@ class SerializableTransformer extends ClassVisitor {
             }
 
             //generate public static void registerWithConfigurationSerializable$() { ConfigurationSerialization.registerClass(MyClass.class [,"myAlias"]?); }
-            boolean noAlias = serializableAs == null || serializableAs.isEmpty();
 
+
+
+            // code generation part 3:
+
+            // generate a static method on the class that when called will register the class to Bukkit's ConfigurationSerialization system.
+            boolean noAlias = serializableAs == null || serializableAs.isEmpty();
             MethodVisitor methodVisitor = this.visitMethod(ACC_PUBLIC | ACC_STATIC, REGISTER_NAME, REGISTER_DESCRIPTOR, null, null);
             methodVisitor.visitCode();
             Label label0 = new Label();
@@ -1154,11 +1238,11 @@ class SerializableTransformer extends ClassVisitor {
             methodVisitor.visitMaxs(noAlias ? 1 : 2, 0);
             methodVisitor.visitEnd();
 
+            //generate class initializer which calls registerWithConfigurationSerialization
             if (!alreadyHasClassInitializer && registerAt == InjectionPoint.CLASS_INITIALIZER) {
-                //generate class initializer which calls registerWithConfigurationSerialization
                 MethodVisitor mvStaticInit = this.visitMethod(ACC_STATIC, CLASS_INIT_NAME, "()V", null, null);
                 mvStaticInit.visitCode();
-                mvStaticInit.visitMethodInsn(INVOKESTATIC, className, REGISTER_NAME, REGISTER_DESCRIPTOR, false);
+                mvStaticInit.visitMethodInsn(INVOKESTATIC, className, REGISTER_NAME, REGISTER_DESCRIPTOR, classIsInterface);
                 mvStaticInit.visitInsn(RETURN);
                 mvStaticInit.visitMaxs(0, 0);
                 mvStaticInit.visitEnd();
@@ -1167,17 +1251,6 @@ class SerializableTransformer extends ClassVisitor {
 
         super.visitEnd();
     }
-
-    //TODO check for DelegateSerialization annotation
-
-    //TODO adds serialize() method
-    //TODO adds ConfigurationSerializable interface
-    //TODO adds deserialize, valueOf or Map constructor!
-    //TODO  either ConfigurationSerialization#registerClass(Class, Alias)
-    //TODO  or ConfigurationSerialization#registerClass(Class) depending on whether there is an alias.
-    //TODO make sure to properly box an unbox primitives!
-
-
 
 }
 

@@ -1,17 +1,22 @@
 package xyz.janboerman.scalaloader.configurationserializable.transform;
 
 import org.objectweb.asm.Type;
-import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
+import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
+import xyz.janboerman.scalaloader.configurationserializable.Scan;
+
+import java.util.Set;
 
 public class GlobalScanResult {
 
-    String className;   //asm internal name
+    String className;   //asm internal name (e.g. "com/example/Foo")
+    boolean isInterface;
 
-    boolean annotatedByDelegateSerialization;   //not yet used
+    boolean annotatedByDelegateSerialization;
     boolean annotatedByConfigurationSerializable;
 
-    ConfigurationSerializable.InjectionPoint registerAt;
+    InjectionPoint registerAt;
+    Scan.Type scanType;
 
-    Type[] allowedSerializableSubtypes;
+    Set<Type> sumAlternatives;
 
 }

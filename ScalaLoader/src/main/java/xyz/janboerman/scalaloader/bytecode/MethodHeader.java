@@ -100,7 +100,9 @@ public class MethodHeader {
             @Override
             public void visitEnd() {
                 super.visitEnd();
-                MethodHeader.this.parameterSignatures = parameterSignatures.toArray(new String[0]);  //use String[]::new in Java 11+
+                if (parameterSignatures != null) {
+                    MethodHeader.this.parameterSignatures = parameterSignatures.toArray(new String[0]);  //use String[]::new in Java 11+
+                }
             }
         });
     }

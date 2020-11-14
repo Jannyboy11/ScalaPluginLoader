@@ -3,6 +3,12 @@ package xyz.janboerman.scalaloader.compat;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.StringJoiner;
 
 public class Compat {
 
@@ -18,5 +24,21 @@ public class Compat {
             outputStream.flush();
             return outputStream.toByteArray();
         }
+    }
+
+    public static <T> List<T> listCopy(Collection<T> coll) {
+        return new ArrayList<>(coll);
+    }
+
+    public static <T> Set<T> setCopy(Collection<T> coll) {
+        return new LinkedHashSet<>(coll);
+    }
+
+    public static String stringRepeat(String base, int repeat) {
+        StringJoiner stringJoiner = new StringJoiner("");
+        for (int i = 0; i < repeat; ++i) {
+            stringJoiner.add(base);
+        }
+        return stringJoiner.toString();
     }
 }

@@ -31,6 +31,7 @@ import java.security.CodeSigner;
 import java.security.CodeSource;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -127,7 +128,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     private final ApiVersion apiVersion;
     private final Platform platform;
     private final String mainClassName;
-    private final BiFunction<ClassWriter, String, ClassVisitor> transformerProvider;
+    private final TransformerRegistry transformerRegistry;
 
     private final ConcurrentMap<String, Class<?>> classes = new ConcurrentHashMap<>();
 
@@ -152,7 +153,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                                      File pluginJarFile,
                                      ApiVersion apiVersion,
                                      String mainClassName,
-                                     BiFunction<ClassWriter, String, ClassVisitor> transformerProvider) throws IOException {
+                                     TransformerRegistry transformerRegistry) throws IOException {
         super(urls, parent);
 
         this.pluginLoader = pluginLoader;
@@ -164,7 +165,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         this.jarFile = new JarFile(pluginJarFile);
         this.apiVersion = apiVersion;
         this.mainClassName = mainClassName;
-        this.transformerProvider = transformerProvider;
+        this.transformerRegistry = transformerRegistry;
 
         Platform platform = Platform.UNKNOWN;
         if (server.getClass().getName().startsWith("org.bukkit.craftbukkit")) {
@@ -291,11 +292,17 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             String path = name.replace('.', '/') + ".class";
             JarEntry jarEntry = jarFile.getJarEntry(path);
 
+            //TODO! if the plugin jar is Multi-Release, then prioritize the most recent release that is as new as the jvm we're running on
+            //TODO I don't think we are doing this yet, but the super.findClass(name) call probably does.
+
             if (jarEntry != null) {
                 //a classfile exists for the given class name
 
                 try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
                     byte[] classBytes = Compat.readAllBytes(inputStream);
+
+                    //TODO make it possible for TransformerRegistry to apply early transformations, before the event, configurationserialization transformations apply.
+                    //TODO I may want to use this for sum types to generate the @ConfigurationSerialization annotation once Scan.Type.AUTO_DETECT is implemented!
 
                     //apply event bytecode transformations
                     try {
@@ -311,12 +318,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "ConfigurationSerializable class " + name + " is not valid", configSerError);
                     }
 
-                    // Note to self 2020-11-11:
-                    // If I ever get a java.lang.ClassFormatError: Invalid length 65526 in LocalVariableTable in class file com/example/MyClass
-                    // then the cause was: visitLocalVariable was not called before visitMaxes and visitEnd, but way earlier!
-                    // this is not explained by the order documented in the MethodVisitor class!
-
-                    //generic transformations - used by @ConfigurationSerializable PluginTransformer
+                    //apply transformations that were registered by other classes
                     {
                         ClassWriter classWriter = new ClassWriter(0) {
                             @Override
@@ -325,14 +327,35 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                             }
                         };
 
-                        ClassVisitor transformer = transformerProvider.apply(classWriter, mainClassName);
-                        if (transformer != null) {
-                            ClassReader classReader = new ClassReader(classBytes);
-                            classReader.accept(transformer, 0);
+                        ClassVisitor classVisitor = classWriter;
+
+                        //apply main class transformations
+                        if (name.equals(mainClassName)) {
+                            for (BiFunction<ClassVisitor, String, ClassVisitor> mainClassTransformer : transformerRegistry.mainClassTransformers) {
+                                classVisitor = mainClassTransformer.apply(classVisitor, mainClassName);
+                            }
                         }
 
-                        classBytes = classWriter.toByteArray();
+                        //apply other transformations
+                        List<BiFunction<ClassVisitor, String, ClassVisitor>> targetedTransformers = transformerRegistry.byClassTransformers.get(name);
+                        if (targetedTransformers != null) {
+                            for (BiFunction<ClassVisitor, String, ClassVisitor> targetedTransformer : targetedTransformers) {
+                                classVisitor = targetedTransformer.apply(classVisitor, mainClassName);
+                            }
+                        }
+
+                        //if there were any transformers, then apply the transformations!
+                        if (classVisitor != classWriter) {
+                            ClassReader classReader = new ClassReader(classBytes);
+                            classReader.accept(classVisitor, 0);
+                            classBytes = classWriter.toByteArray();
+                        }
                     }
+
+                    // Note to self 2020-11-11:
+                    // If I ever get a java.lang.ClassFormatError: Invalid length 65526 in LocalVariableTable in class file com/example/MyClass
+                    // then the cause was: visitLocalVariable was not called before visitMaxes and visitEnd, but way earlier!
+                    // this is not explained by the order documented in the MethodVisitor class!
 
                     //apply bukkit bytecode transformations
                     try {
@@ -340,6 +363,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     } catch (Throwable throwable) {
                         getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Server implementation could not transform class: " + path, throwable);
                     }
+
 
                     //define the package
                     int dotIndex = name.lastIndexOf('.');
@@ -376,6 +400,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                 //this block can be removed once we implement a library loading api
                 //see https://hub.spigotmc.org/jira/browse/SPIGOT-3723
                 found = super.findClass(name);
+                //note that bytecode transformations are NOT applied to classes that were loaded this way!!
             }
         } catch (ClassNotFoundException e) { /*ignored - continue onwards*/ }
 

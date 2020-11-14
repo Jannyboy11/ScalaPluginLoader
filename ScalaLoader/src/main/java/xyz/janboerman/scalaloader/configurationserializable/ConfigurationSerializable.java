@@ -19,18 +19,4 @@ public @interface ConfigurationSerializable {
 
     InjectionPoint registerAt() default InjectionPoint.PLUGIN_ONENABLE;
 
-    public enum DeserializationMethod {
-        DESERIALIZE,
-        VALUE_OF,
-        MAP_CONSTRUCTOR,    //only valid for ScanTypes: FIELDS, GETTER_SETTER_METHODS and RECORD.
-    }
-
-    public enum InjectionPoint {
-        PLUGIN_ONENABLE,
-        PLUGIN_ONLOAD,
-        PLUGIN_CONSTRUCTOR,
-        PLUGIN_CLASS_INTIALIZER,
-        CLASS_INITIALIZER,
-    }
-
 }

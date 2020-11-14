@@ -2,7 +2,7 @@ package xyz.janboerman.scalaloader.configurationserializable.transform;
 
 import org.objectweb.asm.signature.SignatureVisitor;
 
-import static xyz.janboerman.scalaloader.bytecode.AsmConstants.ASM_API;
+import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.ASM_API;
 
 class UnapplyParamCounter extends SignatureVisitor {
 
@@ -14,8 +14,6 @@ class UnapplyParamCounter extends SignatureVisitor {
     }
 
     public void visitBaseType(char primitiveType) {
-//        System.out.println("DEBUG visitBaseType primitiveTypeDescriptor=" + primitiveType);
-
         if ('Z' == primitiveType) {
             count = 0;
         }
@@ -25,8 +23,6 @@ class UnapplyParamCounter extends SignatureVisitor {
 
     @Override
     public void visitClassType(String name) {
-//        System.out.println("DEBUG visitClassType name=" + name);
-
         switch (name) {
             case "scala/Option":    count += 1;     break;
             case "scala/Tuple2":    count += 1;     break;
@@ -52,11 +48,6 @@ class UnapplyParamCounter extends SignatureVisitor {
             case "scala/Tuple22":   count += 21;    break;
         }
     }
-
-//    @Override
-//    public void visitEnd() {
-//        System.out.println("DEBUG visitEnd count=" + count);
-//    }
 
     public int getParamCount() {
         return count;

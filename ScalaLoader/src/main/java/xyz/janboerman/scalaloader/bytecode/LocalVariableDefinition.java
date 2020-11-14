@@ -1,7 +1,6 @@
 package xyz.janboerman.scalaloader.bytecode;
 
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
 
 import java.util.Objects;
 

@@ -7,11 +7,11 @@ import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
 import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariantTransformer;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanResult;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanner;
 import xyz.janboerman.scalaloader.configurationserializable.transform.PluginTransformer;
@@ -25,6 +25,7 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,7 @@ import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -59,6 +61,32 @@ public class ScalaPluginLoader implements PluginLoader {
 
     private final EventBus eventBus;
 
+    private final Comparator<DescriptionScanner> descriptionComparator;
+    {
+        //filled optionals are smaller then empty optionals.
+        Comparator<Optional<?>> optionalComparator = Comparator.comparing(optional -> !optional.isPresent());
+        //smaller package hierarchy = smaller string
+        Comparator<String> packageComparator = Comparator.comparing(className -> className.split("\\."), Comparator.comparing(array -> array.length));
+
+        //smaller element = better main class candidate!
+        descriptionComparator = Comparator.nullsLast(Comparator /* get rid of null descriptors */
+                .<DescriptionScanner, Optional<?>>comparing(DescriptionScanner::getMainClass, optionalComparator /* get rid of descriptions without a main class */)
+                .thenComparing(DescriptionScanner::extendsScalaPlugin /* classes that extend ScalaPlugin directly are less likely to be the best candidate. */)
+                .thenComparing(DescriptionScanner::getClassName, packageComparator /* less deeply nested class = better candidate*/)
+                .thenComparing(DescriptionScanner::getClassName /* fallback - just compare the class name strings */));
+    }
+
+    private final ScalaCompatMap scalaCompatMap = new ScalaCompatMap();
+    private final Map<File, PluginJarScanResult> preScannedPluginJars = new HashMap<>();
+
+    @SuppressWarnings("deprecation")
+    public ScalaPluginLoader(ScalaLoader scalaLoader) {
+        this.lazyScalaLoader = scalaLoader;
+        this.server = scalaLoader.getServer();
+        this.eventBus = new EventBus(server.getPluginManager());
+        init();
+    }
+
     /**
      * Per PluginLoader API, the constructor has only one parameter: the Server.
      * @param server the server.
@@ -66,7 +94,11 @@ public class ScalaPluginLoader implements PluginLoader {
     @SuppressWarnings("deprecation")
     public ScalaPluginLoader(Server server) {
         this.server = Objects.requireNonNull(server, "Server cannot be null!");
+        this.eventBus = new EventBus(server.getPluginManager());
+        init();
+    }
 
+    private void init() {
         //Static abuse but I cannot find a more elegant way to do this.
         if (INSTANCE == null) {
             INSTANCE = this;
@@ -74,7 +106,28 @@ public class ScalaPluginLoader implements PluginLoader {
             throw new IllegalStateException("The ScalaPluginLoader can only be instantiated once!");
         }
 
-        this.eventBus = new EventBus(server.getPluginManager());
+        //pre-scan plugins so that scala-versions can be detected BEFORE the main classes are instantiated!
+        //this is just a best-effort thing because the PluginManager may load plugins at arbitrary points in time.
+
+        File pluginsFolder = new File(getScalaLoader().getDataFolder(), "scalaplugins"); //TODO un-hardcode?
+        if (pluginsFolder.exists()) {
+            File[] pluginJarFiles = pluginsFolder.listFiles((dir, name) -> Arrays.stream(getPluginFileFilters())
+                    .anyMatch(pattern -> pattern.matcher(name).find()));
+            if (pluginJarFiles != null) {
+                for (File pluginJarFile : pluginJarFiles) {
+                    try {
+                        PluginJarScanResult scanResult = scanJar(pluginJarFile);
+
+                        preScannedPluginJars.put(pluginJarFile, scanResult);
+                        scanResult.mainClassCandidate.getScalaVersion().ifPresent(scalaCompatMap::add);
+
+                    } catch (IOException e) {
+                        getScalaLoader().getLogger().log(Level.SEVERE, "Could not read plugin jar file: " + pluginJarFile.getName(), e);
+                        //not much else we can do here, throwing an exception would be inappropriate.
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -114,159 +167,174 @@ public class ScalaPluginLoader implements PluginLoader {
         return scalaPluginsView;
     }
 
+
+    private PluginJarScanResult scanJar(File file) throws IOException {
+        PluginJarScanResult result = new PluginJarScanResult();
+
+        getScalaLoader().getLogger().info("Reading ScalaPlugin file: " + file.getName() + "..");
+
+        TransformerRegistry transformerRegistry = new TransformerRegistry();
+        Map<String, List<BiFunction<ClassVisitor, String, ClassVisitor>>> transformers = new HashMap<>();
+
+        Map<String, Object> pluginYamlData = Collections.emptyMap();
+        DescriptionScanner mainClassCandidate = null;
+
+        JarFile jarFile = new JarFile(file);
+        Enumeration<JarEntry> entryEnumeration = jarFile.entries();
+        while (entryEnumeration.hasMoreElements()) {
+            JarEntry jarEntry = entryEnumeration.nextElement();
+            if (jarEntry.getName().endsWith(".class")) {
+
+                InputStream classBytesInputStream = jarFile.getInputStream(jarEntry);
+                byte[] classBytes = Compat.readAllBytes(classBytesInputStream);
+
+                //scan class to see if this class is the best candidate for the main class
+                DescriptionScanner descriptionScanner = new DescriptionScanner(classBytes);
+
+                //Emit a warning when the class does extend ScalaPlugin, but does not have de @Scala or @CustomScala annotation
+                if (descriptionScanner.extendsScalaPlugin() && !descriptionScanner.getScalaVersion().isPresent()) {
+                    getScalaLoader().getLogger().warning("Class " + jarEntry.getName() + " extends ScalaPlugin but does not have the @Scala or @CustomScala annotation.");
+                    //this is just a soft warning and not a hard error because this class itself may be subclassed by the actual main class
+                }
+
+                //TODO in the future I could transform the class to use the the relocated scala library?
+                //TODO if I find the 'perfect' main class candidate - break the loop early. That would break access from JavaPlugins though.
+                //TODO What if I create a 'fake' PluginClassLoader and add it to the JavaPluginLoader that uses the ScalaPluginClassLoader as a parent? :)
+
+                //The smallest element is the best candidate!
+                mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
+
+                //scan class to see if this class is configurationserializable and wants to register a plugin transformer:
+                final GlobalScanResult configSerResult = new GlobalScanner().scan(new ClassReader(classBytes));
+                PluginTransformer.addTo(transformerRegistry, configSerResult);
+                AddVariantTransformer.addTo(transformerRegistry, configSerResult);
+
+            } else if (jarEntry.getName().equals("plugin.yml")) {
+                //If it contains a main class and it doesn't extend ScalaPlugin directly we should try to delegate to the JavaPluginLoader
+                //If it doesn't contain a main class then we add the 'fields' of the plugin yaml to the ScalaPluginDescription.
+
+                Yaml yaml = new Yaml();
+                InputStream pluginYamlInputStream = jarFile.getInputStream(jarEntry);
+                pluginYamlData = (Map<String, Object>) yaml.loadAs(pluginYamlInputStream, Map.class);
+
+                if (pluginYamlData.containsKey("main")) {
+                    String yamlDefinedMainClassName = pluginYamlData.get("main").toString();
+                    String mainClassEntry = yamlDefinedMainClassName + ".class";
+                    JarEntry pluginYamlDefinedMainJarEntry = jarFile.getJarEntry(mainClassEntry);
+
+                    if (pluginYamlDefinedMainJarEntry != null) {
+                        InputStream classBytesInputStream = jarFile.getInputStream(pluginYamlDefinedMainJarEntry);
+                        DescriptionScanner yamlMainScanner = new DescriptionScanner(classBytesInputStream);
+
+                        if (yamlMainScanner.extendsJavaPlugin()) {
+                            //TODO check whether this main class depends on a scala version - if yes then can we make the scala library classes accessible?
+                            //TODO would I need to transform the bytecode so that is uses a relocated scala library?
+                            result.isJavaPluginExplicitly = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        result.mainClassCandidate = mainClassCandidate;
+        result.transformerRegistry = transformerRegistry;
+        result.extraYaml = pluginYamlData;
+
+        return result;
+    }
+
+
+
     @SuppressWarnings("unchecked")
     @Override
     public PluginDescriptionFile getPluginDescription(File file) throws InvalidDescriptionException {
         final ScalaPlugin alreadyPresent = scalaPluginsByFile.get(file);
         if (alreadyPresent != null) return alreadyPresent.getDescription();
 
-        getScalaLoader().getLogger().info("Reading ScalaPlugin jar: " + file.getName() + "..");
+        PluginJarScanResult jarScanResult = preScannedPluginJars.get(file);
+        if (jarScanResult == null) {
+            try {
+                jarScanResult = scanJar(file);
+                if (jarScanResult.isJavaPluginExplicitly) {
+                    return getJavaPluginLoader().getPluginDescription(file);
+                }
+            } catch (IOException e) {
+                throw new InvalidDescriptionException(e, "Could not read jar file " + file.getName());
+            }
+        }
 
-        //filled optionals are smaller then empty optionals.
-        Comparator<Optional<?>> optionalComparator = Comparator.comparing(optional -> !optional.isPresent());
-        //smaller package hierarchy = smaller string
-        Comparator<String> packageComparator = Comparator.comparing(className -> className.split("\\."), Comparator.comparing(array -> array.length));
+        DescriptionScanner mainClassCandidate = jarScanResult.mainClassCandidate;
+        Map<String, Object> pluginYamlData = jarScanResult.extraYaml;
+        TransformerRegistry transformerRegistry = jarScanResult.transformerRegistry;
 
-        //smaller element = better main class candidate!
-        Comparator<DescriptionScanner> descriptionComparator = Comparator.nullsLast(Comparator /* get rid of null descriptors */
-                .<DescriptionScanner, Optional<?>>comparing(DescriptionScanner::getMainClass, optionalComparator /* get rid of descriptions without a main class */)
-                .thenComparing(DescriptionScanner::extendsScalaPlugin /* classes that extend ScalaPlugin directly are less likely to be the best candidate. */)
-                .thenComparing(DescriptionScanner::getClassName, packageComparator /* less deeply nested class = better candidate*/)
-                .thenComparing(DescriptionScanner::getClassName /* fallback - just compare the class name strings */));
+        if (mainClassCandidate == null || !mainClassCandidate.getMainClass().isPresent()) {
+            getScalaLoader().getLogger().warning("Could not find main class in file " + file.getName() + ". Did you annotate your main class with @Scala and is it public?");
+            getScalaLoader().getLogger().warning("Delegating to JavaPluginLoader...");
+            return getJavaPluginLoader().getPluginDescription(file);
+        }
 
-        Map<String, Object> pluginYamlData = null;
+        assert mainClassCandidate.getScalaVersion().isPresent() : "Plugin main class is present without a PluginScalaVersion o.0";
 
-        BiFunction<ClassWriter, String, ClassVisitor> transformerProvider = (classWriter, mainClassName) -> classWriter;
+        //assume latest if unspecified
+        ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElseGet(ApiVersion::latest);
+
+        PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();
 
         try {
-            DescriptionScanner mainClassCandidate = null;
+            final String mainClass = mainClassCandidate.getMainClass().get();
 
-            JarFile jarFile = new JarFile(file);
-            Enumeration<JarEntry> entryEnumeration = jarFile.entries();
-            while (entryEnumeration.hasMoreElements()) {
-                JarEntry jarEntry = entryEnumeration.nextElement();
-                if (jarEntry.getName().endsWith(".class")) {
+            //get the latest compatible scala version - best effort
+            scalaVersion = scalaCompatMap.getLatestVersion(scalaVersion);
+            //load scala version if not already present
+            ScalaLibraryClassLoader scalaLibraryClassLoader = getScalaLoader().loadOrGetScalaVersion(scalaVersion);
 
-                    InputStream classBytesInputStream = jarFile.getInputStream(jarEntry);
-                    byte[] classBytes = Compat.readAllBytes(classBytesInputStream);
+            //create plugin classloader using the resolved scala classloader
+            ScalaPluginClassLoader scalaPluginClassLoader =
+                    new ScalaPluginClassLoader(this, new URL[]{ file.toURI().toURL() }, scalaLibraryClassLoader,
+                            server, pluginYamlData, file, apiVersion, mainClass, transformerRegistry);
+            sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getScalaVersion(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 
-                    //scan class to see if this class is the best candidate for the main class
-                    DescriptionScanner descriptionScanner = new DescriptionScanner(classBytes);
+            //create our plugin
+            Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClass, true, scalaPluginClassLoader);
+            //sadly this can't be postponed to #loadPlugin(File), because the plugin's constructor constructs part of the description
+            //that's used by the PluginDescriptionFile that we need to return
 
-                    //Emit a warning when the class does extend ScalaPlugin, but does not have de @Scala or @CustomScala annotation
-                    if (descriptionScanner.extendsScalaPlugin() && !descriptionScanner.getScalaVersion().isPresent()) {
-                        getScalaLoader().getLogger().warning("Class " + jarEntry.getName() + " extends ScalaPlugin but does not have the @Scala or @CustomScala annotation.");
-                    }
-
-                    //TODO in the future I could transform the class to use the the relocated scala library?
-                    //TODO if I find the 'perfect' main class candidate - break the loop early. That would break access from JavaPlugins though.
-                    //TODO What if I create a 'fake' PluginClassLoader and add it to the JavaPluginLoader that uses the ScalaPluginClassLoader as a parent? :)
-
-                    //The smallest element is the best candidate!
-                    mainClassCandidate = BinaryOperator.minBy(descriptionComparator).apply(mainClassCandidate, descriptionScanner);
-
-
-                    //scan class to see if this class is configurationserializable and wants to register a plugin transformer:
-                    GlobalScanResult configSerResult = new GlobalScanner().scan(new ClassReader(classBytes));
-                    final BiFunction<ClassWriter, String, ClassVisitor> finalTransformerProvider = transformerProvider;
-                    transformerProvider = (classWriter, mainClassName) -> {
-                        ClassVisitor oldVisitor = finalTransformerProvider.apply(classWriter, mainClassName);
-                        ClassVisitor newVisitor = PluginTransformer.of(oldVisitor, configSerResult, mainClassName);
-                        if (newVisitor != null) {
-                            return newVisitor;
-                        } else {
-                            return oldVisitor;
-                        }
-                    };
-                    //TODO DelegateSerialization
-
-                } else if (jarEntry.getName().equals("plugin.yml")) {
-                    //If it contains a main class and it doesn't extend ScalaPlugin directly we should try to delegate to the JavaPluginLoader
-                    //If it doesn't contain a main class then we add the 'fields' of the plugin yaml to the ScalaPluginDescription.
-
-                    Yaml yaml = new Yaml();
-                    InputStream pluginYamlInputStream  = jarFile.getInputStream(jarEntry);
-                    pluginYamlData = (Map<String, Object>) yaml.loadAs(pluginYamlInputStream, Map.class);
-
-                    if (pluginYamlData.containsKey("main")) {
-                        String yamlDefinedMainClassName = pluginYamlData.get("main").toString();
-                        String mainClassEntry = yamlDefinedMainClassName + ".class";
-                        JarEntry pluginYamlDefinedMainJarEntry = jarFile.getJarEntry(mainClassEntry);
-
-                        if (pluginYamlDefinedMainJarEntry != null) {
-                            InputStream classBytesInputStream = jarFile.getInputStream(pluginYamlDefinedMainJarEntry);
-                            DescriptionScanner yamlMainScanner = new DescriptionScanner(classBytesInputStream);
-
-                            if (yamlMainScanner.extendsJavaPlugin()) {
-                                //TODO check whether this main class depends on a scala version - if yes transform the classes from the java plugin
-                                return getJavaPluginLoader().getPluginDescription(file);
-                            }
-                        } //else: main does exist and is not a javaplugin. just continue
-                    } //else: plugin yaml doesn't contain main
-                } //else: jarentry is not the plugin.yml
-
-            } //end while - no more JarEntries
-
-            if (mainClassCandidate == null || !mainClassCandidate.getMainClass().isPresent()) {
-                getScalaLoader().getLogger().warning("Could not find main class in file " + file.getName() + ". Did you annotate your main class with @Scala and is it public?");
-                getScalaLoader().getLogger().warning("Delegating to JavaPluginLoader...");
-                return getJavaPluginLoader().getPluginDescription(file);
-            }
-
-            //assume latest if unspecified
-            ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElseGet(ApiVersion::latest);
-
-            PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();
-
+            ScalaPlugin plugin;
             try {
-                final String mainClass = mainClassCandidate.getMainClass().get();
-
-                //load scala version if not already present
-                ScalaLibraryClassLoader scalaLibraryClassLoader = getScalaLoader().loadOrGetScalaVersion(scalaVersion);
-                //TODO actually use the newer ScalaLibraryClassLoader if another scala plugin uses a newer version of Scala.
-                //create plugin classloader using the resolved scala classloader
-                ScalaPluginClassLoader scalaPluginClassLoader =
-                        new ScalaPluginClassLoader(this, new URL[]{file.toURI().toURL()}, scalaLibraryClassLoader,
-                                server, pluginYamlData, file, apiVersion, mainClass, transformerProvider);
-                sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getScalaVersion(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
-
-                //create our plugin //TODO do we need to do this here? this can be done at loadPlugin, mkay?
-                Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClass, true, scalaPluginClassLoader);
-                ScalaPlugin plugin;
-                try {
-                     plugin = createPluginInstance(pluginMainClass);
-                } catch (ScalaPluginLoaderException e) {
-                    throw new InvalidDescriptionException(e, "Couldn't create/get plugin instance for main class " + mainClass);
-                }
-
-                if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
-                    throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
-                }
-
-                //be sure to cache the plugin - later in loadPlugin we just return the cached instance!
-                scalaPluginsByFile.put(file, plugin);
-
-                //used by forceLoadAllClasses
-                filesByScalaPlugin.put(plugin, file);
-
-                //it is so stupid bukkit doesn't let me extend PluginDescriptionFile.
-                return plugin.getDescription();
-                //TODO Ideally I would use ScalaPluginDescription.toPluginDescriptionFile().
-                //TODO but the ScalaPluginDescription requires a live ScalaPlugin instance (for now)
-                //TODO So I need to give up on this idea, or analyze the bytecode (this is going to be hard o.0)
-
-            } catch (ClassNotFoundException e) {
-                throw new InvalidDescriptionException(e, "The main class of your plugin could not be found!");
-            } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
-                throw new InvalidDescriptionException(e,
-                        "Your plugin's constructor and/or initializers tried to access classes that were not yet loaded. " +
-                                "Try to move stuff over to onLoad() and onEnable().");
+                 plugin = createPluginInstance(pluginMainClass);
             } catch (ScalaPluginLoaderException e) {
-                throw new InvalidDescriptionException(e, "Failed to create scala library classloader");
+                throw new InvalidDescriptionException(e, "Couldn't create/get plugin instance for main class " + mainClass);
             }
 
+            if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
+                throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
+            }
+
+            //be sure to cache the plugin - later in #loadPlugin(File) we just return the cached instance!
+            scalaPluginsByFile.put(file, plugin);
+
+            //used by forceLoadAllClasses
+            filesByScalaPlugin.put(plugin, file);
+
+            //it is so stupid bukkit doesn't let me extend PluginDescriptionFile.
+            return plugin.getDescription();
+
+            //Ideally I would use ScalaPluginDescription.toPluginDescriptionFile().
+            //but the ScalaPluginDescription requires a live ScalaPlugin instance (for now)
+            //So I need to give up on this idea, or analyze the bytecode (that is going to be hard o.0)
+
+        } catch (ClassNotFoundException e) {
+            throw new InvalidDescriptionException(e, "The main class of your plugin could not be found!");
+        } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
+            throw new InvalidDescriptionException(e,
+                    "Your plugin's constructor, initializer or class initializer tried to access classes that were not yet loaded. " +
+                            "Try to move stuff over to onLoad() or onEnable().");
+        } catch (ScalaPluginLoaderException e) {
+            throw new InvalidDescriptionException(e, "Failed to create scala library classloader.");
+        } catch (MalformedURLException e) {
+            throw new InvalidDescriptionException(e, "Invalid jar file location.");
         } catch (IOException e) {
-            throw new InvalidDescriptionException(e, "Could not read jar file " + file.getName());
+            throw new InvalidDescriptionException(e, "Failed to create scala plugin classloader.");
         }
     }
 
@@ -296,6 +364,7 @@ public class ScalaPluginLoader implements PluginLoader {
     //TODO make an equivalent version for the scala standard library.
     //TODO it should inspect the javaplugin's bytecode to see which scala library classes
     //TODO are needed - so we don't load them all (that would be A LOT of RAM xD).
+    //TODO call that method in openUpToJavaPlugin.
     /**
      * Makes classes from a ScalaPlugin visible to the JavaPlugin's classloader so that the ScalaPlugin
      * can be used by the JavaPlugin.
@@ -559,6 +628,8 @@ public class ScalaPluginLoader implements PluginLoader {
      * @throws ScalaPluginLoaderException when a plugin instance could not be created for the given class
      */
     private <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
+        //TODO change this logic:
+        //TODO If there is a static final field with name MODULE$ with the same type as the class itself AND the name ends with a '$' character, then it must be a singleton object!
         //TODO this seems very scala-compiler-implementation-detail dependent. I hope this will still work in Scala 3.
         //TODO how to make this more robust?
 
