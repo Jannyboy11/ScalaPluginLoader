@@ -56,18 +56,6 @@ class Money {
         }
 
         yamlConfiguration = YamlConfiguration.loadConfiguration(saveFile);
-        // TODO the Currency enum was not serialized correctly!
-        /*  It got serialized as:
-         *      currency: !!xyz.janboerman.scalaloader.example.java.Currency 'DOLLARS'
-         *  Instead of
-         *      currency:
-         *          ==: Currency
-         *          name: 'DOLLARS'
-         *  :(
-         *  I reproduced it in a minimal test case, and reported an issue on SpigotMC's jira:
-         *  https://hub.spigotmc.org/jira/browse/SPIGOT-6234
-         *  So, in the meantime, I have un-enum'ed the Currency class.
-         */
         logger.info("deserialized currency = " + yamlConfiguration.get("currency"));
         logger.info("deserialized fieldMoney = " + yamlConfiguration.get("fieldMoney"));
         logger.info("deserialized methodMoney = " + yamlConfiguration.get("methodMoney"));

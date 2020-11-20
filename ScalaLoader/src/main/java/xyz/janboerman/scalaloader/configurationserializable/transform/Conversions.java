@@ -7,6 +7,8 @@ import org.objectweb.asm.Type;
 import static xyz.janboerman.scalaloader.bytecode.AsmConstants.*;
 import xyz.janboerman.scalaloader.bytecode.LocalVariableDefinition;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 class Conversions {
@@ -263,278 +265,67 @@ class Conversions {
         return descriptor;
     }
 
-//    // primitives:
-//
-//    public static Integer byte2Integer(byte b) {
-//        return Integer.valueOf((int) b);
+    //TODO arrays of boxed primitives
+    //TODO arrays of other reference types that I want to support out of the box:
+    //TODO BigInteger, BigDecimal, String and UUID
+    //TODO ACTUALLY - I think it's probably better to generate that bytecode in the classfile itself! (in case of nested arrays!)
+    //TODO arrays of enums
+    //TODO arrays of other configurationserializable types
+
+//    private static List<Integer> toList(Integer[] IntegerArray) {
+//        return Arrays.asList(IntegerArray);
 //    }
 //
-//    public static byte Integer2byte(Integer i) {
-//        return i.byteValue();
+//    private static Integer[] listToIntegerArray(List<Integer> list) {
+//        return list.toArray(new Integer[list.size()]);
 //    }
 //
-//    public static Integer short2Integer(short s) {
-//        return Integer.valueOf((int) s);
-//    }
-//
-//    public static short Integer2short(Integer i) {
-//        return i.shortValue();
-//    }
-//
-//    public static Integer int2Integer(int i) {
-//        return Integer.valueOf(i);
-//    }
-//
-//    public static int Integer2int(Integer i) {
-//        return i.intValue();
-//    }
-//
-//    public static String long2String(long l) {
-//        return Long.toString(l);
-//    }
-//
-//    public static long String2long(String s) {
-//        return Long.parseLong(s);
-//    }
-//
-//    public static Double float2Double(float f) {
-//        return Double.valueOf((double) f);
-//    }
-//
-//    public static float Double2float(Double d) {
-//        return (float) d.doubleValue();
-//    }
-//
-//    public static Double double2Double(double d) {
-//        return Double.valueOf(d);
-//    }
-//
-//    public static double Double2double(Double d) {
-//        return d.doubleValue();
-//    }
-//
-//    public static String char2String(char c) {
-//        return Character.toString(c);
-//    }
-//
-//    public static char String2char(String s) {
-//        return s.charAt(0);
-//    }
-//
-//    public static Boolean boolean2Boolean(boolean b) {
-//        return Boolean.valueOf(b);
-//    }
-//
-//    public static boolean Boolean2boolean(Boolean b) {
-//        return b.booleanValue();
-//    }
-//
-//
-//    // boxed primitives:
-//
-//    public static Integer Byte2Integer(Byte b) {
-//        return Integer.valueOf(b.intValue());
-//    }
-//
-//    public static Byte Integer2Byte(Integer i) {
-//        return Byte.valueOf(i.byteValue());
-//    }
-//
-//    public static Integer Short2Integer(Short s) {
-//        return Integer.valueOf(s.intValue());
-//    }
-//
-//    public static Short Integer2Short(Integer i) {
-//        return Short.valueOf(i.shortValue());
-//    }
-//
-//    // Integer is already correct!
-//
-//    public static String Long2String(Long l) {
-//        return l.toString();
-//    }
-//
-//    public static Long String2Long(String s) {
-//        return Long.valueOf(s);
-//    }
-//
-//    public static Double Float2Double(Float f) {
-//        return Double.valueOf(f.doubleValue());
-//    }
-//
-//    public static Float Double2Float(Double d) {
-//        return Float.valueOf(d.floatValue());
-//    }
-//
-//    // Double is already correct!
-//
-//    public static String Character2String(Character c) {
-//        return c.toString();
-//    }
-//
-//    public static Character String2Char(String s) {
-//        return Character.valueOf(s.charAt(0));
-//    }
-//
-//    // Boolean is already correct!
-//
-//    // other reference types:
-//
-//    public static String BigInteger2String(BigInteger bi) {
-//        return bi.toString();
-//    }
-//
-//    public static BigInteger String2BigInteger(String s) {
-//        return new BigInteger(s);
-//    }
-//
-//    public static String BigDecimal2String(BigDecimal bd) {
-//        return bd.toString();
-//    }
-//
-//    public static BigDecimal String2BigDecimal(String s) {
-//        return new BigDecimal(s);
-//    }
-//
-//    public static long Long2long(Object lo) {
-//        return Long.parseLong((String) lo);
-//    }
-//
-//    // String is already correct!
-//
-//    public static byte[] List2byteArray(List<Integer> list) {
-//        byte[] result = new byte[list.size()];
-//        for (int i = 0; i < result.length; i++) {
-//            result[i] = Integer2byte(list.get(i));
-//        }
-//        return result;
-//    }
-//
-//    public static List<Integer> byteArray2List(byte[] bytes) {
-//        List<Integer> result = new ArrayList<>(bytes.length);
-//        for (int i = 0; i < bytes.length; i++) {
-//            result.add(byte2Integer(bytes[i]));
-//        }
-//        return result;
-//    }
-//
-//    public static short[] List2shortArray(List<Integer> list) {
-//        short[] result = new short[list.size()];
-//        for (int i = 0; i < result.length; i++) {
-//            result[i] = Integer2short(list.get(i));
-//        }
-//        return result;
-//    }
-//
-//    public static List<Integer> shortArray2List(short[] shorts) {
-//        List<Integer> result = new ArrayList<>();
-//        for (short aShort : shorts) {
-//            result.add(short2Integer(aShort));
-//        }
-//        return result;
-//    }
-//
-//    public static int[] List2intArray(List<Integer> list) {
-//        int[] result = new int[list.size()];
-//        for (int i = 0; i < result.length; i++) {
-//            result[i] = Integer2int(list.get(i));
-//        }
-//        return result;
-//    }
-//
-//    public static List<Integer> intArray2List(int[] ints) {
-//        List<Integer> result = new ArrayList<>();
-//        for (int anInt : ints) {
-//            result.add(int2Integer(anInt));
-//        }
-//        return result;
-//    }
-//
-//    public static long[] List2longArray(List<String> list) {
-//        long[] result = new long[list.size()];
-//        for (int i = 0; i < result.length; i++) {
-//            result[i] = String2long(list.get(i));
-//        }
-//        return result;
-//    }
-//
-//    public static List<String> longArray2List(long[] longs) {
-//        List<String> result = new ArrayList<>(longs.length);
-//        for (long aLong : longs) {
-//            result.add(Long2String(aLong));
-//        }
-//        return result;
-//    }
-//
-//    public static float[] List2floatArray(List<Double> list) {
-//        float[] result = new float[list.size()];
-//        for (int i = 0; i < result.length; i++) {
-//            result[i] = Double2float(list.get(i));
-//        }
-//        return result;
-//    }
-//
-//    public static List<Double> floatArray2List(float[] floats) {
-//        List<Double> result = new ArrayList<>(floats.length);
-//        for (float aFloat : floats) {
-//            result.add(float2Double(aFloat));
-//        }
-//        return result;
-//    }
-//
-//    public static double[] List2doubleArray(List<Double> list) {
-//        double[] result = new double[list.size()];
-//        for (int i = 0; i < result.length; i++) {
-//            result[i] = Double2double(list.get(i));
-//        }
-//        return result;
-//    }
-//
-//    public static List<Double> doubleArray2List(double[] doubles) {
-//        List<Double> result = new ArrayList<>(doubles.length);
-//        for (double d : doubles) {
-//            result.add(double2Double(d));
-//        }
-//        return result;
-//    }
-//
-//    public static char[] List2charArray(List<String> list) {
-//        char[] result = new char[list.size()];
-//        for (int i = 0; i < result.length; i++) {
-//            result[i] = String2char(list.get(i));
-//        }
-//        return result;
-//    }
-//
-//    public static List<String> charArray2List(char[] chars) {
+//    private static List<String> toList(Long[] LongArray) {
 //        List<String> result = new ArrayList<>();
-//        for (char c : chars) {
-//            result.add(c);
+//        for (Long l : LongArray) {
+//            result.add(l.toString());
 //        }
 //        return result;
 //    }
 //
-//    public static boolean[] List2booleanArray(List<Boolean> list) {
-//        boolean[] result = new boolean[list.size()];
-//        for (int i = 0; i < result.length; i++) {
-//            result[i] = Boolean2boolean(list.get(i));
+//    private static Long[] listToLongArray(List<String> list) {
+//        Long[] result = new Long[list.size()];
+//        for (int i = 0; i < result.length; ++i) {
+//            result[i] = Long.valueOf(list.get(i));
 //        }
 //        return result;
 //    }
 //
-//    public static List<Boolean> booleanArray2List(boolean[] booleans) {
-//        List<Boolean> result = new ArrayList<>(booleans.length);
-//        for (boolean b : booleans) {
-//            result.add(Boolean2boolean(b));
+//    private static List<Integer> toList(int[] intArray) {
+//        List<Integer> result = new ArrayList<>(intArray.length);
+//        for (int i : intArray) {
+//            result.add(Integer.valueOf(i));
 //        }
 //        return result;
 //    }
 //
-//    //TODO arrays of boxed primitives
-//    //TODO arrays of other reference types that I want to support out of the box:
-//    //TODO BigInteger, BigDecimal, String and UUID
-//    //TODO ACTUALLY - I think it's probably better to generate that bytecode in the classfile itself! (in case of nested arrays!)
-//    //TODO arrays of enums
-//    //TODO arrays of other configurationserializable types
+//    private static int[] toIntArray(List<Integer> list) {
+//        int[] result = new int[list.size()];
+//        for (int i = 0; i < result.length; ++i) {
+//            result[i] = list.get(i).intValue();
+//        }
+//        return result;
+//    }
+//
+//    private static List<String> toList(long[] longArray) {
+//        List<String> result = new ArrayList<>(longArray.length);
+//        for (long l : longArray) {
+//            result.add(Long.toString(l));
+//        }
+//        return result;
+//    }
+//
+//    private static long[] toLongArray(List<String> list) {
+//        long[] result = new long[list.size()];
+//        for (int i = 0; i < result.length; ++i) {
+//            result[i] = Long.parseLong(list.get(i));
+//        }
+//        return result;
+//    }
 
 }

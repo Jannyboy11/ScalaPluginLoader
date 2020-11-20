@@ -67,7 +67,7 @@ public class EventBus {
             return callEvent((org.bukkit.event.Event) event);
         }
         throw new RuntimeException("Called " + getClass().getName() + "#callEvent(" + Object.class.getName() + ") with an " +
-                "argument that does not have a strict subtype of " + Event.class.getName() + " or " + org.bukkit.event.Event.class.getName() + "!");
+                "argument that does not have a type that is a subtype of " + Event.class.getName() + " or " + org.bukkit.event.Event.class.getName() + "!");
     }
 
     /**

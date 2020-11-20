@@ -45,12 +45,18 @@ public final class ScalaLoader extends JavaPlugin {
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
 
     private final boolean iActuallyManagedToOverrideTheDefaultJavaPluginLoader;
-    private File scalaPluginsFolder;
+    private final File scalaPluginsFolder;
     private JavaPluginLoader weFoundTheJavaPluginLoader;
     private Map<Pattern, PluginLoader> pluginLoaderMap;
     private Pattern[] javaPluginLoaderPatterns;
 
     public ScalaLoader() {
+        //setup scala plugins folder (can't do this in initializer yet because the super() constructor initializes the dataFolder)
+        this.scalaPluginsFolder = new File(getDataFolder(), "scalaplugins");
+        if (!scalaPluginsFolder.exists()) {
+            scalaPluginsFolder.mkdirs();
+        }
+
         //dirty hack to override the previous pattern.
 
         boolean myHackWorked; //try to get hold of the pattern. k thnx
@@ -88,6 +94,10 @@ public final class ScalaLoader extends JavaPlugin {
         }
     }
 
+    public File getScalaPluginsFolder() {
+        return scalaPluginsFolder;
+    }
+
     public Pattern[] getJavaPluginLoaderPatterns() {
         return javaPluginLoaderPatterns;
     }
@@ -97,12 +107,6 @@ public final class ScalaLoader extends JavaPlugin {
     public void onLoad() {
         //setup config
         configure();
-
-        //setup scala plugins folder
-        this.scalaPluginsFolder = new File(getDataFolder(), "scalaplugins");
-        if (!scalaPluginsFolder.exists()) {
-            scalaPluginsFolder.mkdirs();
-        }
 
         //try to load scala plugins in the same plugin load phase as java plugins
         if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {

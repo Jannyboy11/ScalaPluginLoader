@@ -37,6 +37,10 @@ public enum ScalaVersion {
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.12%2Fscala-reflect-2.12.12.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.12%2Fscala-library-2.12.12.jar"
     ),
+    v1_12_13(true,
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.13%2Fscala-reflect-2.12.13.jar",
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.13%2Fscala-library-2.12.13.jar"
+    ),
 
     //2.13.x
     v2_13_0(true,
@@ -54,6 +58,10 @@ public enum ScalaVersion {
     v2_13_3(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.3%2Fscala-reflect-2.13.3.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.3%2Fscala-library-2.13.3.jar"
+    ),
+    v2_13_4(true,
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.4%2Fscala-reflect-2.13.4.jar",
+            "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.4%2Fscala-library-2.13.4.jar"
     );
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!

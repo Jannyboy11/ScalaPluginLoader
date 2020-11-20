@@ -23,7 +23,7 @@ public @interface Scan {
         CASE_CLASS,             //use productElementName(int)/productElementNames, productArity?, apply and unapply (still need to find matching apply and unapply methods!)
         SINGLETON_OBJECT,       //just serialize as an empty Map, deserialize using the MODULE$ static final field
         RECORD,                 //java records :) //use getters for serialization, use constructor for deserialization. need to auto-detect the right accessor methods and constructor from the private fields.
-        @Deprecated ENUM;       //enums. The bytecode generation for this actually works, BUT there's a bug in Bukkit itself that causes enums to be serialized incorrectly! https://hub.spigotmc.org/jira/browse/SPIGOT-6234
+        ENUM;                   //enums. uses name() and valueOf(name). There used to be a bug in bukkit itself, but that's been fixed in 1.16.4: https://hub.spigotmc.org/jira/browse/SPIGOT-6234
 
         //TODO CONSTANTS?       //for enumerations or classes that only have a fixed number of inhabitants that reside in static final fields
 

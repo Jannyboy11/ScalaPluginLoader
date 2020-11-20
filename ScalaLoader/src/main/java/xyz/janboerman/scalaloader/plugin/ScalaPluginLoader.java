@@ -109,7 +109,7 @@ public class ScalaPluginLoader implements PluginLoader {
         //pre-scan plugins so that scala-versions can be detected BEFORE the main classes are instantiated!
         //this is just a best-effort thing because the PluginManager may load plugins at arbitrary points in time.
 
-        File pluginsFolder = new File(getScalaLoader().getDataFolder(), "scalaplugins"); //TODO un-hardcode?
+        File pluginsFolder = getScalaLoader().getScalaPluginsFolder();
         if (pluginsFolder.exists()) {
             File[] pluginJarFiles = pluginsFolder.listFiles((dir, name) -> Arrays.stream(getPluginFileFilters())
                     .anyMatch(pattern -> pattern.matcher(name).find()));
