@@ -23,10 +23,10 @@ class ScalaCompatMap {
         });
 
         //special-case for the transition to scala 3
-        if ("3.0.0".equals(versionString)) {
-            //if we detect that scala 3.0.0 is present, then mark it as highest compatible version for scala 2.13.x
-            compatReleaseToLatestVersionMap.put("2.13", "3.0.0");
-            //3.0.1 won't be backwards compatible anymore with 2.13.x (by the looks of current developments)
+        if (versionString.startsWith("3.0.")) {
+            //if we detect that scala 3.0.x is present, then mark it as highest compatible version for scala 2.13.x
+            compatReleaseToLatestVersionMap.put("2.13", versionString);
+            //3.1 won't be backwards compatible anymore with 2.13.x (by the looks of current developments)
         }
     }
 
@@ -71,8 +71,9 @@ class ScalaCompatMap {
         return compatVersion;
     }
 
+    @Override
     public String toString() {
-        StringJoiner sj = new StringJoiner(", ", "[", "]");
+        final StringJoiner sj = new StringJoiner(", ", "[", "]");
         for (Entry<String, String> compatLatestEntry : compatReleaseToLatestVersionMap.entrySet()) {
             final String compatVersion = compatLatestEntry.getKey();
             final String latestVersionForCompat = compatLatestEntry.getValue();

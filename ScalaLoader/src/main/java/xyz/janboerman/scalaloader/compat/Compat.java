@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.compat;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.jar.JarFile;
 
 public class Compat {
 
@@ -40,5 +42,9 @@ public class Compat {
             stringJoiner.add(base);
         }
         return stringJoiner.toString();
+    }
+
+    public static JarFile jarFile(File jarFile) throws IOException {
+        return new JarFile(jarFile);
     }
 }

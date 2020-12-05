@@ -349,7 +349,7 @@ public final class ScalaLoader extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        switch (command.getName().toLowerCase()) {
+        switch (command.getName()) {
             case "resetScalaUrl":
                 if (args.length == 0) return false;
                 String version = args[0];
@@ -377,7 +377,7 @@ public final class ScalaLoader extends JavaPlugin {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
-        switch (command.getName().toLowerCase()) {
+        switch (command.getName()) {
             case "resetScalaUrl":
                 if (args.length == 0) {
                     LinkedList<String> scalaVersions = Arrays.stream(ScalaVersion.values())

@@ -162,7 +162,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         this.server = server;
         this.extraPluginYaml = extraPluginYaml;
         this.pluginJarFile = pluginJarFile;
-        this.jarFile = new JarFile(pluginJarFile);
+        this.jarFile = Compat.jarFile(pluginJarFile);
         this.apiVersion = apiVersion;
         this.mainClassName = mainClassName;
         this.transformerRegistry = transformerRegistry;
@@ -290,10 +290,9 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         try {
             //do a manual search so that we can transform the class bytes.
             String path = name.replace('.', '/') + ".class";
-            JarEntry jarEntry = jarFile.getJarEntry(path);
-
-            //TODO! if the plugin jar is Multi-Release, then prioritize the most recent release that is as new as the jvm we're running on
-            //TODO I don't think we are doing this yet, but the super.findClass(name) call probably does.
+            JarEntry jarEntry = jarFile.getJarEntry(path);  //will find classes from multi-release jars when running on Paper.
+            // issue link: https://github.com/PaperMC/Paper/issues/4841
+            // commit that introduced the patch: https://github.com/PaperMC/Paper/commit/f15abda5627005fcdf6da4b43f2636b17d41c96c
 
             if (jarEntry != null) {
                 //a classfile exists for the given class name

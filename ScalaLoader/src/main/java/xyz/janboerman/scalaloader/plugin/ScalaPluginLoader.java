@@ -179,7 +179,7 @@ public class ScalaPluginLoader implements PluginLoader {
         Map<String, Object> pluginYamlData = Collections.emptyMap();
         DescriptionScanner mainClassCandidate = null;
 
-        JarFile jarFile = new JarFile(file);
+        JarFile jarFile = Compat.jarFile(file);
         Enumeration<JarEntry> entryEnumeration = jarFile.entries();
         while (entryEnumeration.hasMoreElements()) {
             JarEntry jarEntry = entryEnumeration.nextElement();
@@ -345,7 +345,7 @@ public class ScalaPluginLoader implements PluginLoader {
      * @throws IOException if a jarfile could not be created
      */
     public JarFile getJarFile(ScalaPlugin scalaPlugin) throws IOException {
-        return new JarFile(filesByScalaPlugin.get(scalaPlugin));
+        return Compat.jarFile(filesByScalaPlugin.get(scalaPlugin));
     }
 
     @SuppressWarnings("unchecked")
@@ -604,6 +604,12 @@ public class ScalaPluginLoader implements PluginLoader {
     }
 
     private static boolean checkCompat(final String ownVersion, final String otherVersion) {
+        //TODO special-case Scala 2.13.x and Scala 3.0.0
+        //TODO do we still need this/does this need to be changed now that we have the ScalaCompatMap?
+
+        //TODO I think we no longer need to iteratoe over all ScalaPluginClassLoaders and apply a filter
+        //TODO it can probably just be done with a map lookup.
+
         int indexOfDot = ownVersion.lastIndexOf('.');
         if (indexOfDot == -1) return ownVersion.equals(otherVersion);
 

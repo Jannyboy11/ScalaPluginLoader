@@ -1,10 +1,13 @@
 package xyz.janboerman.scalaloader.compat;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.JarFile;
+import java.util.zip.ZipFile;
 
 public class Compat {
 
@@ -24,5 +27,9 @@ public class Compat {
 
     public static String stringRepeat(String base, int repeat) {
         return base.repeat(repeat);
+    }
+
+    public static JarFile jarFile(File jarFile) throws IOException {
+        return new JarFile(jarFile, true, ZipFile.OPEN_READ, JarFile.runtimeVersion());
     }
 }
