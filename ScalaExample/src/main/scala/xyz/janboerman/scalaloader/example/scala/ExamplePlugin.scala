@@ -2,15 +2,13 @@ package xyz.janboerman.scalaloader.example.scala
 
 import org.bukkit.Material
 import org.bukkit.command.{Command, CommandSender}
-import org.bukkit.configuration.serialization.ConfigurationSerialization
 import org.bukkit.event.{EventPriority, Listener}
 import org.bukkit.permissions.PermissionDefault
-import xyz.janboerman.scalaloader.event.EventBus
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCommand, Permission => SPPermission}
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 
-@Scala(version = ScalaVersion.v2_13_3)
+@Scala(version = ScalaVersion.v2_13_5)
 @Api(ApiVersion.v1_16)
 object ExamplePlugin
     extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.13.8-SNAPSHOT")
@@ -27,15 +25,12 @@ object ExamplePlugin
     override def onEnable(): Unit = {
         getLogger.info("ScalaExample - I am enabled!")
 
-//        ConfigurationSerialization.registerClass(classOf[Home], "Home")
-        //works because Home is magically registered in the onEnable!
-
-        SerializationTest.test()
+        //works because Home is magically registered at ConfigurationSerialization at the start of the onEnable!
         HomeManager.loadHomes()
 
-        eventBus.registerEvents(PlayerJoinListener, this)
-        eventBus.registerEvents(RandomHomeTeleportBlocker, this)
-        eventBus.registerEvent(classOf[HomeTeleportEvent], new Listener() {}, EventPriority.MONITOR, (l: Listener, ev: HomeTeleportEvent) => {
+        getEventBus.registerEvents(PlayerJoinListener, this)
+        getEventBus.registerEvents(RandomHomeTeleportBlocker, this)
+        getEventBus.registerEvent(classOf[HomeTeleportEvent], new Listener() {}, EventPriority.MONITOR, (l: Listener, ev: HomeTeleportEvent) => {
             if (ev.isCancelled) {
                 getLogger.info(s"Player ${ev.player.getName} tried to teleport home, but couldn't!")
             } else {
@@ -47,7 +42,7 @@ object ExamplePlugin
 
         listConfigs()
         checkMaterials()
-        checkConfigurationSerializable()
+        SerializationTest.test()
     }
 
     override def onDisable(): Unit = {
@@ -92,10 +87,5 @@ object ExamplePlugin
             getLogger.info("Materials work as intended!")
     }
 
-    def eventBus: EventBus = super.getEventBus()
-
-    private def checkConfigurationSerializable(): Unit = {
-        //ConfigurationSerialization.getClassByAlias()
-    }
 }
 

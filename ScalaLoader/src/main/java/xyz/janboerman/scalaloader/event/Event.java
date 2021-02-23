@@ -59,7 +59,7 @@ public abstract class Event {
      * @param asynchronous true if the event is asynchronous, false if the event is executed in the server thread.
      */
     public Event(boolean asynchronous) {
-        throw new EventError("Cannot extend " + Event.class.getName() + " from a JavaPlugin");
+        throw new EventError("Cannot extend " + Event.class.getName() + " from within a JavaPlugin");
     }
 
     /**
@@ -67,7 +67,7 @@ public abstract class Event {
      * @implNote can only be used by ScalaPlugins!
      */
     public Event() {
-        throw new EventError("Cannot extend " + Event.class.getName() + " from a JavaPlugin");
+        throw new EventError("Cannot extend " + Event.class.getName() + " from within a JavaPlugin");
     }
 
     /**

@@ -4,6 +4,9 @@ import org.objectweb.asm.Label;
 
 import java.util.Objects;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class LocalVariableDefinition {
 
     public final String name;

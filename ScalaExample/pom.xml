@@ -5,14 +5,14 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.13.8-SNAPSHOT</version>
+        <version>0.13.9-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ScalaExample</artifactId>
 
     <properties>
-        <scala.version>2.13.4</scala.version>
+        <scala.version>2.13.5</scala.version>
     </properties>
 
     <build>
@@ -36,8 +36,9 @@
             </plugin>
 
             <!--
-            javac won't compile a fucking module.info because the "package xyz.janboerman.scalaloader.example.scala does not exist or is empty"!
-            This is a bug because obviously it exists.
+            javac won't compile a module.info because the "package xyz.janboerman.scalaloader.example.scala does not exist or is empty"!
+            This is a bug because obviously it exists (albeit with only Scala sources).
+            Best we can do for now is to wait for this bug getting patched, or Scala getting support for Java modules.
 
             This would be the module-info.java file:
             module xyz.janboerman.scalaloader.scalaexample {
@@ -86,10 +87,6 @@
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
         </repository>
-        <repository>
-            <id>jCenter</id>
-            <url>https://jcenter.bintray.com/</url>
-        </repository>
     </repositories>
 
     <dependencies>
@@ -110,7 +107,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.16.4-R0.1-SNAPSHOT</version>
+            <version>1.16.5-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -58,7 +58,7 @@ public class ExamplePlugin extends ScalaPlugin {
         //IntelliJ is too dumb to understand ScalaExample's automatic module, so it complains ExamplePlugin$ is not visible, but actually it is.
         getLogger().info("Got " + ExamplePlugin$.MODULE$.getInt() + " from the Scala example plugin :)");
 
-        //this works because 2.13.0 is binary compatible with 2.13.3 (and we are experiencing the same IntelliJ bug again!)
+        //this works because 2.13.0 is binary compatible with 2.13.5 (and we are experiencing the same IntelliJ bug again!)
         Home home = Home.apply(UUID.randomUUID(), "home", getServer().getWorlds().get(0).getSpawnLocation());
 
         new Money(this).test(); //checks whether bytecode transformations worked correctly

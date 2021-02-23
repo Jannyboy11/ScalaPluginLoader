@@ -174,7 +174,6 @@ public class ScalaPluginLoader implements PluginLoader {
         getScalaLoader().getLogger().info("Reading ScalaPlugin file: " + file.getName() + "..");
 
         TransformerRegistry transformerRegistry = new TransformerRegistry();
-        Map<String, List<BiFunction<ClassVisitor, String, ClassVisitor>>> transformers = new HashMap<>();
 
         Map<String, Object> pluginYamlData = Collections.emptyMap();
         DescriptionScanner mainClassCandidate = null;
@@ -644,7 +643,9 @@ public class ScalaPluginLoader implements PluginLoader {
             //the instance is already present in the MODULE$ field when this class is loaded.
 
             try {
-                Field field = clazz.getField("MODULE$");
+                Field field = clazz.getDeclaredField("MODULE$");
+                //TODO assert that it is public, static and final
+
                 Object pluginInstance = field.get(null);
 
                 return clazz.cast(pluginInstance);

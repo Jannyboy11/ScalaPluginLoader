@@ -71,7 +71,8 @@ record RecordMoney(Currency currency, BigDecimal amount) {
 }
 
 @ConfigurationSerializable(as = "CONSTRUCTOR RECORD MONKEY", scan = @Scan(Scan.Type.RECORD), constructUsing = DeserializationMethod.MAP_CONSTRUCTOR)
-record ConstructorRecordMoney(Currency currency, BigInteger amount) {}
+record ConstructorRecordMoney(Currency currency, BigInteger amount) {
+}
 
 @ConfigurationSerializable(as = "FIELD MONKEY", scan = @Scan(Scan.Type.FIELDS))
 class FieldMoney /*implements org.bukkit.configuration.serialization.ConfigurationSerializable*/ {

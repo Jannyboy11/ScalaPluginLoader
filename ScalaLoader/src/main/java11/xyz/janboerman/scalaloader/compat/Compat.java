@@ -9,6 +9,9 @@ import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipFile;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class Compat {
 
     private Compat() {}

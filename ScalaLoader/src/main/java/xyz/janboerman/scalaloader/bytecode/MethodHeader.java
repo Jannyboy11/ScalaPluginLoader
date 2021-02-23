@@ -12,6 +12,9 @@ import java.util.Objects;
 
 import static org.objectweb.asm.Opcodes.*;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class MethodHeader {
 
     public final int access;

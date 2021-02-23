@@ -12,6 +12,9 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.jar.JarFile;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class Compat {
 
     private Compat() {}

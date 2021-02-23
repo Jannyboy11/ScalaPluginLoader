@@ -26,7 +26,7 @@ object HomeExecutor extends TabExecutor {
                 HomeManager.saveHome(playerId, home)
             case "tp" => HomeManager.getHome(playerId) match {
                 case Some(home) =>
-                    if (ExamplePlugin.eventBus.callEvent(HomeTeleportEvent(player, home))) {
+                    if (ExamplePlugin.getEventBus.callEvent(HomeTeleportEvent(player, home))) {
                         player.teleport(home.getLocation())
                         player.sendMessage("Welcome home!");
                     } else {

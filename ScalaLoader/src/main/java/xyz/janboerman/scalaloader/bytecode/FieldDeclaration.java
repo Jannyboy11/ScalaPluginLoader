@@ -1,11 +1,13 @@
 package xyz.janboerman.scalaloader.bytecode;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class FieldDeclaration {
 
     public final int access;

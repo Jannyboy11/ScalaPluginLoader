@@ -8,6 +8,6 @@ object PlayerJoinListener extends Listener {
 
     @EventHandler
     def onJoin(event: PlayerJoinEvent): Unit =
-        event.setJoinMessage(s"${ChatColor.GREEN} Howdy ${event.getPlayer.getName}!")
+        event.setJoinMessage(s"${ChatColor.GREEN}Howdy ${event.getPlayer.getName}!")
 
 }

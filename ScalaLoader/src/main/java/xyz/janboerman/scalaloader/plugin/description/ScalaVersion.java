@@ -62,6 +62,11 @@ public enum ScalaVersion {
     v2_13_4(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.4%2Fscala-reflect-2.13.4.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.4%2Fscala-library-2.13.4.jar"
+    ),
+    //use Maven central instead of bintray jcenter (see https://jfrog.com/blog/into-the-sunset-bintray-jcenter-gocenter-and-chartcenter/)
+    v2_13_5(true,
+            "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-reflect/2.13.5/scala-reflect-2.13.5.jar",
+            "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-library/2.13.5/scala-library-2.13.5.jar"
     );
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!

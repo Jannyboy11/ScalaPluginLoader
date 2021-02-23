@@ -11,6 +11,8 @@ import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
  */
 public class ScalaPluginEnableEvent extends PluginEnableEvent implements Cancellable {
 
+    private static final HandlerList handlers = new HandlerList();
+
     private boolean cancel;
 
     public ScalaPluginEnableEvent(ScalaPlugin plugin) {
@@ -33,6 +35,11 @@ public class ScalaPluginEnableEvent extends PluginEnableEvent implements Cancell
     }
 
     public static HandlerList getHandlerList() {
-        return PluginEnableEvent.getHandlerList();
+        return handlers;
+    }
+
+    @Override
+    public HandlerList getHandlers() {
+        return handlers;
     }
 }
