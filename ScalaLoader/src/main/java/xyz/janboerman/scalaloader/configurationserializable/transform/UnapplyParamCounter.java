@@ -13,13 +13,15 @@ class UnapplyParamCounter extends SignatureVisitor {
         super(ASM_API);
     }
 
+
+    //visitBaseType | visitTypeVariable | visitArrayType | ( visitClassType visitTypeArgument* ( visitInnerClassType visitTypeArgument* )* visitEnd ) )
+
+    @Override
     public void visitBaseType(char primitiveType) {
         if ('Z' == primitiveType) {
             count = 0;
         }
     }
-
-    //visitBaseType | visitTypeVariable | visitArrayType | ( visitClassType visitTypeArgument* ( visitInnerClassType visitTypeArgument* )* visitEnd ) )
 
     @Override
     public void visitClassType(String name) {

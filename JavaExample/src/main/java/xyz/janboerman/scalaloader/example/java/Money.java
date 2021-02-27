@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 class Money {
@@ -56,12 +57,12 @@ class Money {
         }
 
         yamlConfiguration = YamlConfiguration.loadConfiguration(saveFile);
-        logger.info("deserialized currency = " + yamlConfiguration.get("currency"));
-        logger.info("deserialized fieldMoney = " + yamlConfiguration.get("fieldMoney"));
-        logger.info("deserialized methodMoney = " + yamlConfiguration.get("methodMoney"));
-        logger.info("deserialized caseMoney = " + yamlConfiguration.get("caseMoney"));
-        logger.info("deserialized recordMoney = " + yamlConfiguration.get("recordMoney"));
-        logger.info("deserialized constructorRecordMoney = " + yamlConfiguration.get("constructorRecordMoney"));
+        assert currency.equals(yamlConfiguration.get("currency")) : "original currency does not equal deserialized currency";
+        assert fieldMoney.equals(yamlConfiguration.get("fieldMoney")) : "original fieldMoney does not equal deserialized fieldMoney";
+        assert methodMoney.equals(yamlConfiguration.get("methodMoney")) : "original methodMoney does not equal deserialized methodMoney";
+        assert caseMoney.equals(yamlConfiguration.get("caseMoney")) : "original caseMoney does not equal deserialized caseMoney";
+        assert recordMoney.equals(yamlConfiguration.get("recordMoney")) : "original recordMoney does not equal deserialized recordMoney";
+        assert ctorRecordMoney.equals(yamlConfiguration.get("constructorRecordMoney")) : "original constructorRecordMoney does not equal deserialized constructorRecordMoney";
     }
 
 }
@@ -85,6 +86,20 @@ class FieldMoney /*implements org.bukkit.configuration.serialization.Configurati
 
     public String toString() {
         return "FieldMoney(" + currency + ',' + amount + ')';
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(currency, amount);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof FieldMoney that)) return false;
+
+        return Objects.equals(this.currency, that.currency)
+                && Math.abs(this.amount - that.amount) < 0.0001F;
     }
 }
 
@@ -119,14 +134,30 @@ class MethodMoney /*implements org.bukkit.configuration.serialization.Configurat
         this.amount = amount;
     }
 
+    @Override
     public String toString() {
         return "MethodMoney(" + getCurrency() + ',' + getAmount() + ')';
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getCurrency(), getAmount());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof MethodMoney that)) return false;
+
+        return Objects.equals(this.getCurrency(), that.getCurrency())
+                && this.getAmount() == that.getAmount();
     }
 }
 
 @ConfigurationSerializable(as = "CASE MONKEY", scan = @Scan(Scan.Type.CASE_CLASS))
 class CaseMoney {
-    //this is not a true case class, but a public static apply and unapply are all that's needed for the bytecode transformation to work!
+    //this is not a true case class, but a public static apply and unapply, plus parameter names present in the bytecode are all that's needed for the bytecode transformation to work!
+    //the scala compiler generates all three of those things by default, but the java compiler requires the -parameters flag.
 
     private final Currency currency;
     private final String amount;
@@ -146,6 +177,20 @@ class CaseMoney {
 
     public String toString() {
         return "CaseMoney(" + currency + ',' + amount + ')';
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(currency, amount);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof CaseMoney that)) return false;
+
+        return Objects.equals(this.currency, that.currency)
+                && Objects.equals(this.amount, that.amount);
     }
 
 }

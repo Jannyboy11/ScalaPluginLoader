@@ -15,7 +15,7 @@ import static org.objectweb.asm.Opcodes.*;
 /**
  * This class is NOT part of the public API!
  */
-public class MethodHeader {
+public final class MethodHeader {
 
     public final int access;
     public final String name;
@@ -83,7 +83,7 @@ public class MethodHeader {
                     @Override
                     public void visitEnd() {
                         super.visitEnd();
-                        if (parameterSignatures == null) parameterSignatures = new ArrayList<>(0);
+                        if (parameterSignatures == null) parameterSignatures = new ArrayList<>(1);
                         parameterSignatures.add(super.toString());
                     }
                 };

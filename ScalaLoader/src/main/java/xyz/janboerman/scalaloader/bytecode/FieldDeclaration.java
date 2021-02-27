@@ -8,7 +8,7 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 /**
  * This class is NOT part of the public API!
  */
-public class FieldDeclaration {
+public final class FieldDeclaration {
 
     public final int access;
     public final String name;

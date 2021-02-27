@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -35,8 +37,34 @@ public class Compat {
         return new ArrayList<>(coll);
     }
 
+    public static <T> List<T> listOf(T... items) {
+        return Collections.unmodifiableList(Arrays.asList(items));
+    }
+
+    public static <T> List<T> singletonList(T item) {
+        return Collections.singletonList(item);
+    }
+
+    public static <T> List<T> emptyList() {
+        return Collections.emptyList();
+    }
+
     public static <T> Set<T> setCopy(Collection<T> coll) {
         return new LinkedHashSet<>(coll);
+    }
+
+    public static <T> Set<T> setOf(T... items) {
+        Set<T> set = new LinkedHashSet<>();
+        Collections.addAll(set, items);
+        return Collections.unmodifiableSet(set);
+    }
+
+    public static <T> Set<T> singletonSet(T item) {
+        return Collections.singleton(item);
+    }
+
+    public static <T> Set<T> emptySet() {
+        return Collections.emptySet();
     }
 
     public static String stringRepeat(String base, int repeat) {
@@ -50,4 +78,5 @@ public class Compat {
     public static JarFile jarFile(File jarFile) throws IOException {
         return new JarFile(jarFile);
     }
+
 }

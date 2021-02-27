@@ -10,8 +10,11 @@ import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.FieldVisitor;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
+import xyz.janboerman.scalaloader.bytecode.AsmConstants;
+import xyz.janboerman.scalaloader.bytecode.TypeSignature;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableError;
 import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations;
@@ -290,7 +293,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         try {
             //do a manual search so that we can transform the class bytes.
             String path = name.replace('.', '/') + ".class";
-            JarEntry jarEntry = jarFile.getJarEntry(path);  //will find classes from multi-release jars when running on Paper.
+            JarEntry jarEntry = jarFile.getJarEntry(path);  //if running on Paper and Java 11 or higher, this will find the class meant for the newest compatible release of Java. (Multi-Release JARs ftw!)
             // issue link: https://github.com/PaperMC/Paper/issues/4841
             // commit that introduced the patch: https://github.com/PaperMC/Paper/commit/f15abda5627005fcdf6da4b43f2636b17d41c96c
 
@@ -299,6 +302,35 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
                 try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
                     byte[] classBytes = Compat.readAllBytes(inputStream);
+
+                    // TODO ====== DEBUG TypeSignature ======
+
+                    ClassReader debugReader = new ClassReader(classBytes);
+                    debugReader.accept(new ClassVisitor(AsmConstants.ASM_API) {
+                        private boolean debug;
+
+                        @Override
+                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+                            if ("xyz/janboerman/scalaloader/example/java/ArraySerializable".equals(name)
+                                || "xyz/janboerman/scalaloader/example/java/ListSerializable".equals(name)) {
+                                System.out.println("visiting " + name);
+                                debug = true;
+                            }
+                        }
+
+                        @Override
+                        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+                            if (debug) {
+                                TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
+                                System.out.println(typeSignature);
+                            }
+                            return null;
+                        }
+                    }, 0);
+
+                    // TODO ====== END OF DEBUG ======
+
+
 
                     //TODO make it possible for TransformerRegistry to apply early transformations, before the event, configurationserialization transformations apply.
                     //TODO I may want to use this for sum types to generate the @ConfigurationSerialization annotation once Scan.Type.AUTO_DETECT is implemented!
@@ -317,7 +349,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "ConfigurationSerializable class " + name + " is not valid", configSerError);
                     }
 
-                    //apply transformations that were registered by other classes
+                    //apply transformations that were registered by other classes (also used by configuration serialization)
                     {
                         ClassWriter classWriter = new ClassWriter(0) {
                             @Override

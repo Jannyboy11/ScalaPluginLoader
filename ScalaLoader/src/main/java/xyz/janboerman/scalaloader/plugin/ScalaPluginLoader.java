@@ -606,7 +606,7 @@ public class ScalaPluginLoader implements PluginLoader {
         //TODO special-case Scala 2.13.x and Scala 3.0.0
         //TODO do we still need this/does this need to be changed now that we have the ScalaCompatMap?
 
-        //TODO I think we no longer need to iteratoe over all ScalaPluginClassLoaders and apply a filter
+        //TODO I think we no longer need to iterate over all ScalaPluginClassLoaders and apply a filter
         //TODO it can probably just be done with a map lookup.
 
         int indexOfDot = ownVersion.lastIndexOf('.');

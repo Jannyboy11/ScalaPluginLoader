@@ -1,27 +1,28 @@
 package xyz.janboerman.scalaloader.configurationserializable.transform;
 
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.*;
+import org.objectweb.asm.Type;  //explicitly import because there is also java.lang.reflect.Type
 import static org.objectweb.asm.Opcodes.*;
-import org.objectweb.asm.Type;
-import static xyz.janboerman.scalaloader.bytecode.AsmConstants.*;
-import xyz.janboerman.scalaloader.bytecode.LocalVariableDefinition;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import static xyz.janboerman.scalaloader.bytecode.AsmConstants.*;
+import xyz.janboerman.scalaloader.bytecode.*;
+
+import java.util.*;
 
 class Conversions {
 
     private Conversions() {}
 
-    static StackLocal toSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, List<LocalVariableDefinition> extraLocals) {
-        StackLocal stackLocal = new StackLocal();
+    static StackLocal toSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables) {
+        final StackLocal stackLocal = new StackLocal();
 
-        //TODO implement arrays, java.util.List, java.util.Set and java.util.Map later.
+        //TODO detect arrays
+
+
+        //TODO implement conversion of elements of java.util.List, java.util.Set and java.util.Map later.
         //TODO look at their signature!
 
-        //TODO scala type don't need any special conversion in theory because I can just INTERCEPT CLASSLOADING and make them implement ConfigurationSerializable :)) (and register them ofc!)
+        //TODO just like conversion for arrays, implement conversion for scala collection types (both mutable and immutable) (including: tuples, Option, Either, Try)
 
         switch (descriptor) {
             //primitives
@@ -94,17 +95,141 @@ class Conversions {
         return stackLocal;
     }
 
-    static StackLocal toLiveType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, List<LocalVariableDefinition> extraLocals) {
-        StackLocal stackLocal = new StackLocal();
+    private static void arrayToSerializedType(StackLocal stackLocal, MethodVisitor methodVisitor, String descriptor, String signature, TypeSignature typeSignature, int localVariableIndex, Label start, Label end, LocalVariableTable locals) {
+        assert TypeSignature.ARRAY.equals(typeSignature.getTypeName()) : "not an array";
 
-        //TODO other types?
+        Label endLabel = new Label();
 
+        //store the array as a local variable.
+        Label label0 = new Label();
+        methodVisitor.visitLabel(label0);
+        final int outerArrayLocalVariableIndex = localVariableIndex++;
+        methodVisitor.visitVarInsn(ASTORE, outerArrayLocalVariableIndex);
+        LocalVariableDefinition array0 = new LocalVariableDefinition("array0", descriptor, signature, label0, endLabel, outerArrayLocalVariableIndex);
+        locals.add(array0);
+
+        //store the list as a local variable, use ArrayList(int) constructor.
+        final int outerListLocalVariableIndex = localVariableIndex++;
+        Label label1 = new Label();
+        methodVisitor.visitLabel(label1);
+        methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");
+        methodVisitor.visitInsn(DUP);
+        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);
+        methodVisitor.visitInsn(ARRAYLENGTH);
+        methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "(I)V", false);
+        methodVisitor.visitVarInsn(ASTORE, outerListLocalVariableIndex);
+        LocalVariableDefinition list0 = new LocalVariableDefinition("list0", "Ljava/util/List;", "Ljava/util/List<" + typeSignature.toSignature() + ">", label1, endLabel, outerListLocalVariableIndex);
+        locals.add(list0);
+
+        //setup int idx0
+        //setup int size
+        final int sizeLocalVariableIndex = localVariableIndex++;
+        final int outerIndexLocalVariableIndex = localVariableIndex++;
+        Label label2 = new Label();
+        methodVisitor.visitLabel(label2);
+        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);
+        methodVisitor.visitInsn(ARRAYLENGTH);
+        methodVisitor.visitVarInsn(ISTORE, sizeLocalVariableIndex);
+        LocalVariableDefinition size = new LocalVariableDefinition("size", "I", null, label2, endLabel, sizeLocalVariableIndex);
+        locals.add(size);
+        methodVisitor.visitInsn(ICONST_0);
+        methodVisitor.visitVarInsn(ISTORE, outerIndexLocalVariableIndex);
+        LocalVariableDefinition idx0 = new LocalVariableDefinition("idx0", "I", null, label2, endLabel, outerIndexLocalVariableIndex);
+        locals.add(idx0);
+
+        Label label3 = new Label();         //jump target
+        methodVisitor.visitLabel(label3);
+        Object[] localVariablesFrame = locals.frame();
+        methodVisitor.visitFrame(F_FULL, localVariablesFrame.length, localVariablesFrame, 0, null);
+        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);
+        methodVisitor.visitVarInsn(ILOAD, sizeLocalVariableIndex);
+
+        Label conditionFalseLabel = new Label();
+        methodVisitor.visitJumpInsn(IF_ICMPGE, conditionFalseLabel);
+        final int itemLocalVariableIndex = localVariableIndex++;
+        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);
+        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);
+        //determine bytecode opcodes based on array component type
+        final String arrayComponentDescriptor = typeSignature.getTypeArguments().get(0).toDescriptor();
+        final String arrayComponentSignature = typeSignature.getTypeArguments().get(0).toSignature();
+        methodVisitor.visitInsn(arrayLoad(arrayComponentDescriptor));
+
+        //TODO insert bytecode for converting the array component.
+        //TODO toLiveType(...)
+
+        //TODO call list.add (don't forget to pop the boolean!)
+
+
+        //TODO cleanup. (visitLabel(endLabel))
+
+    }
+
+    private static final int arrayLoad(String descriptor) {
+        switch (descriptor) {
+            case "B":
+                return BALOAD;
+            case "S":
+                return SALOAD;
+            case "I":
+            case "Z":
+                return IALOAD;
+            case "C":
+                return CALOAD;
+            case "F":
+                return FALOAD;
+            case "D":
+                return DALOAD;
+            case "J":
+                return LALOAD;
+            default:
+                return AALOAD;
+        }
+    }
+
+    private static final int storeLocalVariable(String descriptor) {
+        switch (descriptor) {
+            case "B":
+            case "S":
+            case "I":
+            case "Z":
+            case "C":
+                return ISTORE;
+            case "F":
+                return FSTORE;
+            case "D":
+                return DSTORE;
+            case "J":
+                return LSTORE;
+            default:
+                return ASTORE;
+        }
+    }
+
+    //fieldVisitor = classWriter.visitField(ACC_PRIVATE | ACC_FINAL, "arrayOfListOfArrayOfInt", "[Ljava/util/List;", "[Ljava/util/List<[I>;", null);
+    //fieldVisitor.visitEnd();
+    private final List<int[]>[] arrayOfListOfArrayOfInt = new List[0];
+
+    static StackLocal toLiveType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables) {
+        final StackLocal stackLocal = new StackLocal();
+
+        TypeSignature typeSignature;
         if (signature != null) {
-            switch (signature) {
-                //TODO arrays, java.util.List, java.util.Set, java.util.Map
-                //TODO recursive calls!
+            typeSignature = TypeSignature.ofSignature(signature);
+        } else {
+            typeSignature = TypeSignature.ofDescriptor(descriptor);
+        }
+
+        if (!typeSignature.getTypeArguments().isEmpty()) {
+            if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
+                //generate code for transforming arrays to lists and their elements
+
+
+
+            } else {
+                //TODO generate code converting elements of collections.
             }
         }
+
 
         switch (descriptor) {
             //primitives
@@ -214,6 +339,8 @@ class Conversions {
             case "Ljava/lang/String;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
                 break;
+
+            //TODO convert elements
             case "Ljava/util/List;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/util/List");
                 break;
@@ -271,61 +398,5 @@ class Conversions {
     //TODO ACTUALLY - I think it's probably better to generate that bytecode in the classfile itself! (in case of nested arrays!)
     //TODO arrays of enums
     //TODO arrays of other configurationserializable types
-
-//    private static List<Integer> toList(Integer[] IntegerArray) {
-//        return Arrays.asList(IntegerArray);
-//    }
-//
-//    private static Integer[] listToIntegerArray(List<Integer> list) {
-//        return list.toArray(new Integer[list.size()]);
-//    }
-//
-//    private static List<String> toList(Long[] LongArray) {
-//        List<String> result = new ArrayList<>();
-//        for (Long l : LongArray) {
-//            result.add(l.toString());
-//        }
-//        return result;
-//    }
-//
-//    private static Long[] listToLongArray(List<String> list) {
-//        Long[] result = new Long[list.size()];
-//        for (int i = 0; i < result.length; ++i) {
-//            result[i] = Long.valueOf(list.get(i));
-//        }
-//        return result;
-//    }
-//
-//    private static List<Integer> toList(int[] intArray) {
-//        List<Integer> result = new ArrayList<>(intArray.length);
-//        for (int i : intArray) {
-//            result.add(Integer.valueOf(i));
-//        }
-//        return result;
-//    }
-//
-//    private static int[] toIntArray(List<Integer> list) {
-//        int[] result = new int[list.size()];
-//        for (int i = 0; i < result.length; ++i) {
-//            result[i] = list.get(i).intValue();
-//        }
-//        return result;
-//    }
-//
-//    private static List<String> toList(long[] longArray) {
-//        List<String> result = new ArrayList<>(longArray.length);
-//        for (long l : longArray) {
-//            result.add(Long.toString(l));
-//        }
-//        return result;
-//    }
-//
-//    private static long[] toLongArray(List<String> list) {
-//        long[] result = new long[list.size()];
-//        for (int i = 0; i < result.length; ++i) {
-//            result[i] = Long.parseLong(list.get(i));
-//        }
-//        return result;
-//    }
 
 }

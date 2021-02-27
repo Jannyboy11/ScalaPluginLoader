@@ -61,8 +61,10 @@ public class ExamplePlugin extends ScalaPlugin {
         //this works because 2.13.0 is binary compatible with 2.13.5 (and we are experiencing the same IntelliJ bug again!)
         Home home = Home.apply(UUID.randomUUID(), "home", getServer().getWorlds().get(0).getSpawnLocation());
 
-        new Money(this).test(); //checks whether bytecode transformations worked correctly
-        testDeserializedTypes();    //check which types we get back after one round trip of live->serialized->live
+        new Money(this).test();                 //checks whether basic bytecode transformations worked correctly
+        new ArraySerializationTest(this).test();    //checks whether arrays get converted properly into lists and back
+        new ListSerializationTest(this).test();
+        //testDeserializedTypes();    //check which types we get back after one round trip of live->serialized->live
     }
 
     @Override
@@ -105,4 +107,12 @@ public class ExamplePlugin extends ScalaPlugin {
         MultiBox mb = (MultiBox) config.get("multibox");
     }
 
+    static boolean assertionsEnabled() {
+        try {
+            assert false;
+            return false;
+        } catch (AssertionError ae) {
+            return true;
+        }
+    }
 }

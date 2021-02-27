@@ -25,8 +25,6 @@ public @interface Scan {
         RECORD,                 //java records :) //use getters for serialization, use constructor for deserialization. need to auto-detect the right accessor methods and constructor from the private fields.
         ENUM;                   //enums. uses name() and valueOf(name). There used to be a bug in bukkit itself, but that's been fixed in 1.16.4: https://hub.spigotmc.org/jira/browse/SPIGOT-6234
 
-        //TODO CONSTANTS?       //for enumerations or classes that only have a fixed number of inhabitants that reside in static final fields
-
         //TODO AUTO_DETECT ??? would be nice to have since we can pick
         //TODO  CONSTANTS for other classes that have a private constructor but static final fields of its own type
         //TODO  CASE_CLASS for classes that have an unapply and matching apply method

@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * This class is NOT part of the public API!
  */
-public class LocalVariableDefinition {
+public final class LocalVariableDefinition {
 
     public final String name;
     public final String descriptor;
