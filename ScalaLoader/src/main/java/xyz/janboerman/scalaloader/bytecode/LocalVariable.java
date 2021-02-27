@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * This class is NOT part of the public API!
  */
-public final class LocalVariableDefinition {
+public final class LocalVariable {
 
     public final String name;
     public final String descriptor;
@@ -16,7 +16,7 @@ public final class LocalVariableDefinition {
     public final Label endLabel;
     public final int tableIndex;
 
-    public LocalVariableDefinition(
+    public LocalVariable(
             String name,
             String descriptor,
             String signature,
@@ -35,9 +35,9 @@ public final class LocalVariableDefinition {
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;
-        if (!(o instanceof LocalVariableDefinition)) return false;
+        if (!(o instanceof LocalVariable)) return false;
 
-        LocalVariableDefinition that = (LocalVariableDefinition) o;
+        LocalVariable that = (LocalVariable) o;
         return Objects.equals(this.name, that.name)
                 && Objects.equals(this.descriptor, that.descriptor)
                 && this.tableIndex == that.tableIndex;

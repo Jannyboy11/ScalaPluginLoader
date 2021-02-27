@@ -9,18 +9,22 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-public final class LocalVariableTable implements Iterable<LocalVariableDefinition> {
+/**
+ * This class is NOT part of the public API!
+ */
+public final class LocalVariableTable implements Iterable<LocalVariable> {
 
-    private int maxCount = 0;
-    private final Set<LocalVariableDefinition> localVariables;
-    private final ArrayList<LocalVariableDefinition> frameData;
+    private int maxCount;
+    private final Set<LocalVariable> localVariables;
+    private final ArrayList<LocalVariable> frameData;
 
     public LocalVariableTable() {
         this.localVariables = new LinkedHashSet<>();
         this.frameData = new ArrayList<>(0);
+        this.maxCount = 0;
     }
 
-    public void add(LocalVariableDefinition localVariable) {
+    public void add(LocalVariable localVariable) {
         int tableIndex = localVariable.tableIndex;
         assert 0 <= tableIndex;
         //assert that the new local variable's index is not more than 1 above the currently known highest local variable.
@@ -33,8 +37,8 @@ public final class LocalVariableTable implements Iterable<LocalVariableDefinitio
         addFrame(localVariable);
     }
 
-    public void add(LocalVariableDefinition... localVariables) {
-        for (LocalVariableDefinition localVariable : localVariables) {
+    public void add(LocalVariable... localVariables) {
+        for (LocalVariable localVariable : localVariables) {
             this.localVariables.add(localVariable);
             this.maxCount = Math.max(maxCount, localVariable.tableIndex + 1);
             addFrame(localVariable);
@@ -46,7 +50,7 @@ public final class LocalVariableTable implements Iterable<LocalVariableDefinitio
         assert IntStream.range(0, frameData.size()).allMatch(index -> frameData.get(index).tableIndex == index);
     }
 
-    private void addFrame(LocalVariableDefinition localVariable) {
+    private void addFrame(LocalVariable localVariable) {
         int tableIndex = localVariable.tableIndex;
         if (tableIndex < frameData.size()) {
             //replace
@@ -78,22 +82,22 @@ public final class LocalVariableTable implements Iterable<LocalVariableDefinitio
         }
     }
 
-    public void removeFrame(LocalVariableDefinition localVariable) {
+    public void removeFrame(LocalVariable localVariable) {
         frameData.remove(localVariable);
     }
 
     @Override
-    public Iterator<LocalVariableDefinition> iterator() {
+    public Iterator<LocalVariable> iterator() {
         return getLocalVariables().iterator();
     }
 
-    public Set<LocalVariableDefinition> getLocalVariables() {
+    public Set<LocalVariable> getLocalVariables() {
         return Collections.unmodifiableSet(localVariables);
     }
 
     public Object[] frame() {
-        return frameData.stream().map(localVariableDefinition -> {
-            String desc = localVariableDefinition.descriptor;
+        return frameData.stream().map(localVariable -> {
+            String desc = localVariable.descriptor;
             switch (desc) {
                 case "B":
                 case "S":
@@ -107,6 +111,8 @@ public final class LocalVariableTable implements Iterable<LocalVariableDefinitio
                     return Opcodes.FLOAT;
                 case "D":
                     return Opcodes.DOUBLE;
+                case "V":
+                    return Opcodes.TOP;
                 default:
                     return Type.getType(desc).getInternalName();
             }

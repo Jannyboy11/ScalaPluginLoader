@@ -7,7 +7,7 @@ import java.util.*;
 //@ConfigurationSerializable(as = "ArraySerializationTest", scan = @Scan(Scan.Type.FIELDS))
 @SerializableAs("ArraySerializable")
 @Deprecated
-public class ArraySerializable implements ConfigurationSerializable {
+class ArraySerializable implements ConfigurationSerializable {
 
     //just needs container type conversion: String[]<->List<String>
     private String[] strings = new String[] { "hello", "world" };

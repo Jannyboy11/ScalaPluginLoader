@@ -98,80 +98,103 @@ class Conversions {
     private static void arrayToSerializedType(StackLocal stackLocal, MethodVisitor methodVisitor, String descriptor, String signature, TypeSignature typeSignature, int localVariableIndex, Label start, Label end, LocalVariableTable locals) {
         assert TypeSignature.ARRAY.equals(typeSignature.getTypeName()) : "not an array";
 
-        Label endLabel = new Label();
+        final Label endLabel = new Label();                                         //[..., array]
 
         //store the array as a local variable.
-        Label label0 = new Label();
+        final Label label0 = new Label();
         methodVisitor.visitLabel(label0);
         final int outerArrayLocalVariableIndex = localVariableIndex++;
-        methodVisitor.visitVarInsn(ASTORE, outerArrayLocalVariableIndex);
-        LocalVariableDefinition array0 = new LocalVariableDefinition("array0", descriptor, signature, label0, endLabel, outerArrayLocalVariableIndex);
+        methodVisitor.visitVarInsn(ASTORE, outerArrayLocalVariableIndex);           //[...]
+        LocalVariable array0 = new LocalVariable("array0", descriptor, signature, label0, endLabel, outerArrayLocalVariableIndex);
         locals.add(array0);
 
         //store the list as a local variable, use ArrayList(int) constructor.
         final int outerListLocalVariableIndex = localVariableIndex++;
-        Label label1 = new Label();
+        final Label label1 = new Label();
         methodVisitor.visitLabel(label1);
-        methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");
-        methodVisitor.visitInsn(DUP);
-        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);
-        methodVisitor.visitInsn(ARRAYLENGTH);
-        methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "(I)V", false);
-        methodVisitor.visitVarInsn(ASTORE, outerListLocalVariableIndex);
-        LocalVariableDefinition list0 = new LocalVariableDefinition("list0", "Ljava/util/List;", "Ljava/util/List<" + typeSignature.toSignature() + ">", label1, endLabel, outerListLocalVariableIndex);
+        methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");                    //[..., list]
+        methodVisitor.visitInsn(DUP);                                               //[..., list, list]
+        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            //[..., list, list, array]
+        methodVisitor.visitInsn(ARRAYLENGTH);                                       //[..., list, list, array.length]
+        methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "(I)V", false);   //stack = 1
+        methodVisitor.visitVarInsn(ASTORE, outerListLocalVariableIndex);            //[..., list]
+        final LocalVariable list0 = new LocalVariable("list0", "Ljava/util/List;", "Ljava/util/List<" + typeSignature.toSignature() + ">;", label1, endLabel, outerListLocalVariableIndex);
         locals.add(list0);
 
         //setup int idx0
         //setup int size
         final int sizeLocalVariableIndex = localVariableIndex++;
         final int outerIndexLocalVariableIndex = localVariableIndex++;
-        Label label2 = new Label();
+        final Label label2 = new Label();
         methodVisitor.visitLabel(label2);
-        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);
-        methodVisitor.visitInsn(ARRAYLENGTH);
-        methodVisitor.visitVarInsn(ISTORE, sizeLocalVariableIndex);
-        LocalVariableDefinition size = new LocalVariableDefinition("size", "I", null, label2, endLabel, sizeLocalVariableIndex);
+        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            //[..., list, array]
+        methodVisitor.visitInsn(ARRAYLENGTH);                                       //[..., list, array.length]
+        methodVisitor.visitVarInsn(ISTORE, sizeLocalVariableIndex);                 //[..., list]
+        final LocalVariable size = new LocalVariable("size", "I", null, label2, endLabel, sizeLocalVariableIndex);
         locals.add(size);
-        methodVisitor.visitInsn(ICONST_0);
-        methodVisitor.visitVarInsn(ISTORE, outerIndexLocalVariableIndex);
-        LocalVariableDefinition idx0 = new LocalVariableDefinition("idx0", "I", null, label2, endLabel, outerIndexLocalVariableIndex);
+        methodVisitor.visitInsn(ICONST_0);                                          //[..., list, idx=0]
+        methodVisitor.visitVarInsn(ISTORE, outerIndexLocalVariableIndex);           //[..., list]
+        final LocalVariable idx0 = new LocalVariable("idx0", "I", null, label2, endLabel, outerIndexLocalVariableIndex);
         locals.add(idx0);
 
-        Label label3 = new Label();         //jump target
-        methodVisitor.visitLabel(label3);
-        Object[] localVariablesFrame = locals.frame();
-        methodVisitor.visitFrame(F_FULL, localVariablesFrame.length, localVariablesFrame, 0, null);
-        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);
-        methodVisitor.visitVarInsn(ILOAD, sizeLocalVariableIndex);
+        final Label jumpBackTarget = new Label();
+        methodVisitor.visitLabel(jumpBackTarget);
+        final Object[] localVariablesFrame = locals.frame();
+        final int currentLocals = localVariablesFrame.length;
+        methodVisitor.visitFrame(F_FULL, currentLocals, localVariablesFrame, 1, new Object[] {"java/util/List"});  //TODO could there be MORE items on the stack?
+        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);            //[..., list, idx]
+        methodVisitor.visitVarInsn(ILOAD, sizeLocalVariableIndex);                  //[..., list, idx, size]
 
-        Label conditionFalseLabel = new Label();
-        methodVisitor.visitJumpInsn(IF_ICMPGE, conditionFalseLabel);
-        final int itemLocalVariableIndex = localVariableIndex++;
-        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);
-        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);
+        final Label conditionFalseLabel = new Label();
+        methodVisitor.visitJumpInsn(IF_ICMPGE, conditionFalseLabel);                //[..., list]
+        final int itemLocalVariableIndex = localVariableIndex++;    //TODO unnecessary?
+        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            //[..., list, array]
+        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);            //[..., list, array, idx]
         //determine bytecode opcodes based on array component type
         final String arrayComponentDescriptor = typeSignature.getTypeArguments().get(0).toDescriptor();
         final String arrayComponentSignature = typeSignature.getTypeArguments().get(0).toSignature();
-        methodVisitor.visitInsn(arrayLoad(arrayComponentDescriptor));
+        methodVisitor.visitInsn(arrayLoad(arrayComponentDescriptor));               //[..., list, element]
 
+        //convert array element
+        final Label startBodyLabel = new Label();
+        final Label endBodyLabel = new Label();
+        methodVisitor.visitLabel(startBodyLabel);
         //TODO insert bytecode for converting the array component.
         //TODO toLiveType(...)
+        //TODO for now, just no-op. (that means that this method will just work for arrays of reference types for now)
+        final int bodyMaxStackIncrease = 0; //TODO
+        //TODO take the stack into account as well!
+        methodVisitor.visitLabel(endBodyLabel);                                     //[..., list, serialized(element)]
 
-        //TODO call list.add (don't forget to pop the boolean!)
+        //add to the list
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "add", "(Ljava/lang/Object;)Z", true);      //[..., boolean]
+        methodVisitor.visitInsn(POP);                                               //[...]
+        //increment index
+        methodVisitor.visitIincInsn(outerIndexLocalVariableIndex, 1);
+        methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
+
+        //we have arrived at the end of the array
+        methodVisitor.visitLabel(conditionFalseLabel);                              //[..., list]
+        locals.removeFramesFromIndex(currentLocals);
+        methodVisitor.visitFrame(F_FULL, currentLocals, localVariablesFrame, 1, new Object[] {"java/util/List"}); //TODO there could be more elements!
+
+        //load the list
+        methodVisitor.visitVarInsn(ALOAD, outerListLocalVariableIndex);                 //stack = 1
+        methodVisitor.visitLabel(endLabel);
+        //continue execution
 
 
-        //TODO cleanup. (visitLabel(endLabel))
-
+        stackLocal.increasedMaxStack += 3 + bodyMaxStackIncrease;
     }
 
     private static final int arrayLoad(String descriptor) {
         switch (descriptor) {
             case "B":
+            case "Z":
                 return BALOAD;
             case "S":
                 return SALOAD;
             case "I":
-            case "Z":
                 return IALOAD;
             case "C":
                 return CALOAD;
@@ -204,10 +227,6 @@ class Conversions {
                 return ASTORE;
         }
     }
-
-    //fieldVisitor = classWriter.visitField(ACC_PRIVATE | ACC_FINAL, "arrayOfListOfArrayOfInt", "[Ljava/util/List;", "[Ljava/util/List<[I>;", null);
-    //fieldVisitor.visitEnd();
-    private final List<int[]>[] arrayOfListOfArrayOfInt = new List[0];
 
     static StackLocal toLiveType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables) {
         final StackLocal stackLocal = new StackLocal();

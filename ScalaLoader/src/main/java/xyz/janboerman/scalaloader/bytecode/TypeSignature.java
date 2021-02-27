@@ -240,7 +240,6 @@ public final class TypeSignature {
 //    //      visitEnd.
 //    //  visitEnd.
 
-
 }
 
 //class Foo<X> {

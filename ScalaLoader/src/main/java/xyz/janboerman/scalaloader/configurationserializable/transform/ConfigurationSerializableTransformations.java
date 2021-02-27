@@ -12,6 +12,9 @@ import xyz.janboerman.scalaloader.configurationserializable.DeserializationMetho
 import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import xyz.janboerman.scalaloader.configurationserializable.Scan;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * This class is NOT part of the public API!
  */
@@ -59,9 +62,17 @@ public class ConfigurationSerializableTransformations {
     static final String MAP_PUTALL_NAME = "putAll";
     static final String MAP_PUTALL_DESCRIPTOR = "(Ljava/util/Map;)V";
     static final String HASHMAP_NAME = "java/util/HashMap";
+    static final String HASHMAP_DESCRIPTOR = "Ljava/util/HashMap;";
 
     static final String OPTION_NAME = "scala/Option";
     static final String OPTION_DESCRIPTOR = "Lscala/Option;";
+
+    static final Type MAP_TYPE = Type.getType(Map.class);
+    static final Type HASHMAP_TYPE = Type.getType(HashMap.class);
+    static final Type STRING_TYPE = Type.getType(String.class);
+    static final Type OBJECT_TYPE = Type.getType(Object.class);
+    static final Type BOOLEAN_TYPE = Type.BOOLEAN_TYPE;
+    static final Type OPTION_TYPE = Type.getType(OPTION_DESCRIPTOR);
 
     static String deserializationDescriptor(String returnTypeDescriptor) {
         return "(Ljava/util/Map;)" + returnTypeDescriptor;
