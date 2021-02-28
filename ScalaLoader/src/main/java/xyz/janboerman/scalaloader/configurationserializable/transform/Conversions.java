@@ -12,10 +12,7 @@ class Conversions {
 
     private Conversions() {}
 
-    //TODO return void.
-    static StackLocal toSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
-        final StackLocal stackLocal = new StackLocal();
-
+    static void toSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
         //TODO detect arrays
 
 
@@ -114,7 +111,6 @@ class Conversions {
             //TODO Locale, CharSet?
         }
 
-        return stackLocal;
     }
 
     private static void arrayToSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, TypeSignature typeSignature, OperandStack operandStack, int localVariableIndex, Label start, Label end, LocalVariableTable locals) {
@@ -183,8 +179,7 @@ class Conversions {
         final Label startBodyLabel = new Label();
         final Label endBodyLabel = new Label();
         methodVisitor.visitLabel(startBodyLabel);
-        final StackLocal bodyStackLocal = toSerializedType(methodVisitor, arrayComponentDescriptor, arrayComponentSignature, localVariableIndex, startBodyLabel, endBodyLabel, locals, operandStack);
-        @Deprecated final int bodyMaxStackIncrease = bodyStackLocal.increasedMaxStack;
+        toSerializedType(methodVisitor, arrayComponentDescriptor, arrayComponentSignature, localVariableIndex, startBodyLabel, endBodyLabel, locals, operandStack);
         methodVisitor.visitLabel(endBodyLabel);                                                                                     //[..., list, serialized(element)]
 
         locals.removeFramesFromIndex(currentLocals);
@@ -248,9 +243,7 @@ class Conversions {
     }
     //TODO loadLocalVariable
 
-    //TODO return void instead of StackLocal
-    static StackLocal toLiveType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
-        final StackLocal stackLocal = new StackLocal();
+    static void toLiveType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
 
         TypeSignature typeSignature;
         if (signature != null) {
@@ -311,7 +304,7 @@ class Conversions {
                 break;
             case "C":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                methodVisitor.visitInsn(ICONST_0); stackLocal.increasedMaxStack += 1;   //TODO get rid of StackLocal
+                methodVisitor.visitInsn(ICONST_0);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
                 operandStack.replaceTop(STRING_TYPE);
                 operandStack.push(Type.INT_TYPE);
@@ -365,7 +358,7 @@ class Conversions {
                 break;
             case "Ljava/lang/Character":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                methodVisitor.visitInsn(ICONST_0); stackLocal.increasedMaxStack += 1;   //TODO get rid of StackLocal
+                methodVisitor.visitInsn(ICONST_0);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Character", "valueOf", "(C)Ljava/lang/Character;", false);
                 operandStack.replaceTop(STRING_TYPE);
@@ -390,7 +383,6 @@ class Conversions {
                 operandStack.pop(2);    operandStack.push(BIGINTEGER_TYPE, STRING_TYPE);                    //stack: [..., biginteger, biginteger, string]
                 methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/math/BigInteger", "<init>", "(Ljava/lang/String;)V", false);
                 operandStack.pop(2);                                                                        //stack: [..., biginteger]
-                stackLocal.increasedMaxStack += 2;
                 break;
             case "Ljava/math/BigDecimal;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
@@ -403,7 +395,6 @@ class Conversions {
                 operandStack.pop(2);    operandStack.push(BIGDECIMAL_TYPE, STRING_TYPE);                    //stack: [..., bigdecimal, bigdecimal, string]
                 methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/math/BigDecimal", "<init>", "(Ljava/lang/String;)V", false);
                 operandStack.pop(2);                                                                        //stack: [..., bigdecimal]
-                stackLocal.increasedMaxStack += 2;
                 break;
             case "Ljava/util/UUID;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
@@ -439,8 +430,6 @@ class Conversions {
                 operandStack.replaceTop(type);
                 break;
         }
-
-        return stackLocal;
     }
 
     static String boxedType(String type) {

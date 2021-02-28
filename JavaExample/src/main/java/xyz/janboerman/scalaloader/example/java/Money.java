@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.example.java;
 
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import scala.Option;
 import scala.Some;
@@ -7,6 +8,7 @@ import scala.Tuple2;
 import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
 import xyz.janboerman.scalaloader.configurationserializable.DeserializationMethod;
 import xyz.janboerman.scalaloader.configurationserializable.Scan;
+import static xyz.janboerman.scalaloader.example.java.ExamplePlugin.assertionsEnabled;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,8 +21,10 @@ class Money {
 
     private final File saveFile;
     private final Logger logger;
+    private final ExamplePlugin plugin;
 
     Money(ExamplePlugin examplePlugin) {
+        this.plugin = examplePlugin;
         File dataFolder = examplePlugin.getDataFolder();
         dataFolder.mkdirs();
         saveFile = new File(dataFolder, "money-serialization-test.yml");
@@ -35,6 +39,7 @@ class Money {
     }
 
     public void test() {
+        plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "Test " + ChatColor.RESET + "money.equals(deserialize(serialize(money))");
 
         Currency currency = Currency.DOLLARS;
         FieldMoney fieldMoney = new FieldMoney();       fieldMoney.amount = 9001;   fieldMoney.currency = Currency.EUROS;
@@ -63,6 +68,9 @@ class Money {
         assert caseMoney.equals(yamlConfiguration.get("caseMoney")) : "original caseMoney does not equal deserialized caseMoney";
         assert recordMoney.equals(yamlConfiguration.get("recordMoney")) : "original recordMoney does not equal deserialized recordMoney";
         assert ctorRecordMoney.equals(yamlConfiguration.get("constructorRecordMoney")) : "original constructorRecordMoney does not equal deserialized constructorRecordMoney";
+        if (assertionsEnabled()) {
+            plugin.getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "Test passed!");
+        }
     }
 
 }

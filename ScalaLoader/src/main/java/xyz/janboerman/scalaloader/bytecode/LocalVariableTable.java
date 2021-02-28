@@ -67,6 +67,10 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
         return maxCount;
     }
 
+    public int currentLocals() {
+        return localVariables.size();
+    }
+
     public void removeFrames(int howMany) {
         int initialLastIndex = frameData.size() - 1;
         for (int i = 0; i < howMany; i++) {

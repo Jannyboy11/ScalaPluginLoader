@@ -1,7 +1,8 @@
 package xyz.janboerman.scalaloader.example.scala
 
-import java.io.File
+import org.bukkit.ChatColor
 
+import java.io.File
 import org.bukkit.configuration.file.YamlConfiguration
 import xyz.janboerman.scalaloader.configurationserializable.Scan.IncludeProperty
 import xyz.janboerman.scalaloader.configurationserializable.{ConfigurationSerializable, DelegateSerialization, Scan}
@@ -15,10 +16,18 @@ object SerializationTest {
     if (!saveFile.exists()) saveFile.createNewFile()
 
     def test(): Unit = {
+        val console = ExamplePlugin.getServer.getConsoleSender
+        console.sendMessage(s"${ChatColor.YELLOW}Test ${ChatColor.RESET}case/methods/fields class value.equals(deserialize(serialize(value))")
+
         val writeConfiguration = new YamlConfiguration();
-        writeConfiguration.set("case", CaseSerializationTest("case", 1337))
-        writeConfiguration.set("methods", new MethodsSerializationTest("methods", 1338))
-        writeConfiguration.set("fields", new FieldsSerializationTest("fields", 1339))
+
+        val caseTest = CaseSerializationTest("case", 1337)
+        val methodTest = new MethodsSerializationTest("methods", 1338)
+        val fieldTest = new FieldsSerializationTest("fields", 1339)
+
+        writeConfiguration.set("case", caseTest)
+        writeConfiguration.set("methods", methodTest)
+        writeConfiguration.set("fields", fieldTest)
         writeConfiguration.save(saveFile)
 
         val readConfiguration = YamlConfiguration.loadConfiguration(saveFile)
@@ -26,9 +35,12 @@ object SerializationTest {
         val methodsSerializationTest = readConfiguration.get("methods")
         val fieldsSerializationTest = readConfiguration.get("fields")
 
-        ExamplePlugin.getLogger.info(s"deserialized case = $caseSerializationTest")
-        ExamplePlugin.getLogger.info(s"deserialized methods = $methodsSerializationTest")
-        ExamplePlugin.getLogger.info(s"deserialized fields = $fieldsSerializationTest")
+        assert(caseTest == caseSerializationTest);
+        assert(methodTest == methodsSerializationTest)
+        assert(fieldTest == fieldsSerializationTest)
+        if (ExamplePlugin.assertionsEnabled()) {
+            console.sendMessage(s"${ChatColor.GREEN}Test passed!")
+        }
 
         Maybe.test()
     }
@@ -48,6 +60,15 @@ class MethodsSerializationTest(private var name: String, private var count: Int)
 
     override def toString(): String = s"MethodsSerializableTest($name,$count)"
 
+    override def equals(obj: Any): Boolean = {
+        obj match {
+            case mst: MethodsSerializationTest => this.getName() == mst.getName() && this.getCount() == mst.getCount()
+            case _ => false
+        }
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(getName(), getCount())
+
 }
 
 @ConfigurationSerializable(as = "FieldsSerializationTest", scan = new Scan(value = Scan.Type.FIELDS))
@@ -61,6 +82,15 @@ class FieldsSerializationTest private(private var name: String) {
     }
 
     override def toString(): String = s"FieldsSerializationTest($name, $count)"
+
+    override def equals(obj: Any): Boolean = {
+        obj match {
+            case fst: FieldsSerializationTest => this.name == fst.name && this.count == fst.count
+            case _ => false
+        }
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(name, count)
 }
 
 
@@ -71,7 +101,8 @@ object Maybe {
     if (!saveFile.exists()) saveFile.createNewFile()
 
     def test(): Unit = {
-        val logger = ExamplePlugin.getLogger
+        val console = ExamplePlugin.getServer.getConsoleSender
+        console.sendMessage(s"${ChatColor.YELLOW}Test ${ChatColor.RESET}mabye.equals(deserialize(serialize(maybe))")
 
         val justHello = Maybe("Hello")
         val nothing = Maybe(null)
@@ -82,8 +113,11 @@ object Maybe {
         config.save(saveFile)
 
         config = YamlConfiguration.loadConfiguration(saveFile)
-        logger.info(s"deserialized justHello = ${config.get("justHello")}")
-        logger.info(s"deserialized nothing = ${config.get("nothing")}")
+        assert(justHello == config.get("justHello"))
+        assert(nothing == config.get("nothing"))
+        if (ExamplePlugin.assertionsEnabled()) {
+            console.sendMessage(s"${ChatColor.GREEN}Test passed!")
+        }
     }
 
     def apply[T](value: T): Maybe[T] = if (value == null) NoValue else Just(value)

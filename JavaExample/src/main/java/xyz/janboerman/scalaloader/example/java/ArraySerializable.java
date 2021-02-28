@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.example.java;
 
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
@@ -16,11 +17,13 @@ class ArraySerializationTest {
 
     private final File saveFile;
     private final Logger logger;
+    private final ExamplePlugin plugin;
 
     ArraySerializationTest(ExamplePlugin plugin) {
+        this.plugin = plugin;
         File dataFolder = plugin.getDataFolder();
         dataFolder.mkdirs();
-        saveFile = new File(dataFolder, "array-serialization-test.yml");
+        this.saveFile = new File(dataFolder, "array-serialization-test.yml");
         if (!saveFile.exists()) {
             try {
                 saveFile.createNewFile();
@@ -32,7 +35,7 @@ class ArraySerializationTest {
     }
 
     void test() {
-        logger.info("test deserialize(serialize(arrayserializable)).equals(arrayserializable)");
+        plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "Test " + ChatColor.RESET + "test deserialize(serialize(arrayserializable)).equals(arrayserializable)");
 
         org.bukkit.configuration.serialization.ConfigurationSerialization.registerClass(ArraySerializable.class, "ArraySerializable");
 
@@ -47,8 +50,8 @@ class ArraySerializationTest {
         yamlConfiguration = YamlConfiguration.loadConfiguration(saveFile);
         ArraySerializable bs = (ArraySerializable) yamlConfiguration.get("as");
         assert as.equals(bs) : "deserialized ArraySerializable does not equal the original ArraySerializable";
-        if (!assertionsEnabled()) {
-            logger.info("test passed!");
+        if (assertionsEnabled()) {
+            plugin.getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "Test passed!");
         }
     }
 }

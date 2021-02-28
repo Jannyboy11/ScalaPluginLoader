@@ -35,7 +35,7 @@ public class ExamplePlugin extends ScalaPlugin {
     private static ExamplePlugin instance; //static abuse let's go!
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.13.8-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.13.10-SNAPSHOT").addHardDepend("ScalaExample"));
         instance = this;
     }
 

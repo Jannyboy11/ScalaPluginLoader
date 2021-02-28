@@ -11,7 +11,7 @@ import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, Sc
 @Scala(version = ScalaVersion.v2_13_5)
 @Api(ApiVersion.v1_16)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.13.8-SNAPSHOT")
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.13.10-SNAPSHOT")
         .addCommand(new SPCommand("foo") permission "scalaexample.foo")
         .addCommand(new SPCommand("home") permission "scalaexample.home" usage "/home set|tp")
         .permissions(new SPPermission("scalaexample.home") permissionDefault PermissionDefault.TRUE)) {
@@ -85,6 +85,16 @@ object ExamplePlugin
             getLogger.info("This is a pluginloader bug!")
         else
             getLogger.info("Materials work as intended!")
+    }
+
+    private[scala] def assertionsEnabled(): Boolean = {
+        try {
+            assert(false)
+            false
+        } catch {
+            case ae: AssertionError =>
+                true
+        }
     }
 
 }

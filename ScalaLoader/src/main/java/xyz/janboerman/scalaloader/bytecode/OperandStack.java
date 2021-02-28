@@ -101,7 +101,7 @@ public final class OperandStack {
     }
 
     /**
-     * The largest size (as determined by @link{OperandStack#stackSize()}) that this stack has been in its lifetime.
+     * The largest size (as determined by {@link #stackSize()}) that this stack has been in its lifetime.
      * @return the maximum stack size
      */
     public int maxStack() {
