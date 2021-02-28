@@ -114,7 +114,8 @@ public final class OperandStack {
 
     public Object[] frame() {
         return operandTypes.stream().map(type -> {
-            switch (type.getInternalName()) {
+            String internalName = type.getInternalName();
+            switch (internalName) {
                 case "B":
                 case "S":
                 case "I":
@@ -130,7 +131,7 @@ public final class OperandStack {
                 case "V":
                     return Opcodes.TOP;
                 default:
-                    return type;
+                    return internalName;
             }
         }).toArray();
     }

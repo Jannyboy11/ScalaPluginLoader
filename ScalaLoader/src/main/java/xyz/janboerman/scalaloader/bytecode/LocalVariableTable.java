@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -25,12 +26,12 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
     }
 
     public void add(LocalVariable localVariable) {
-        int tableIndex = localVariable.tableIndex;
-        assert 0 <= tableIndex;
+        final int tableIndex = localVariable.tableIndex;
+        assert 0 <= tableIndex : "index in the local variable table below 0";
         //assert that the new local variable's index is not more than 1 above the currently known highest local variable.
-        assert tableIndex <= maxLocals();
+        assert tableIndex <= maxLocals() : "local variable " + localVariable + " is more than 1 higher than the currently known highest local variable in the table " + this + ", maxLocals = " + maxLocals();
         //assert that the local variable is replaces an older one, or is added at the 'next' index.
-        assert tableIndex <= frameData.size();
+        assert tableIndex <= localVariables.size() : "local variable " + localVariable + " does not 'replace' another, nor, is it the 'next' local variable in the table " + this;
 
         localVariables.add(localVariable);
         maxCount = Math.max(maxCount, tableIndex + 1);
@@ -99,6 +100,10 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
         return Collections.unmodifiableSet(localVariables);
     }
 
+    public List<LocalVariable> getFrameLocals() {
+        return Collections.unmodifiableList(frameData);
+    }
+
     public Object[] frame() {
         return frameData.stream().map(localVariable -> {
             String desc = localVariable.descriptor;
@@ -121,6 +126,11 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
                     return Type.getType(desc).getInternalName();
             }
         }).toArray();
+    }
+
+    @Override
+    public String toString() {
+        return localVariables.toString();
     }
 
 }
