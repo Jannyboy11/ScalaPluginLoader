@@ -27,6 +27,16 @@ public final class OperandStack {
         }
     }
 
+    public void push(Type... types) {
+        for (Type type : types) {
+            if (!Type.VOID_TYPE.equals(type)) {
+                this.operandTypes.add(type);
+            }
+        }
+
+        this.maxCount = Math.max(this.maxCount, stackSize());
+    }
+
     public Type replaceTop(Type type) {
         int lastIndex = operandTypes.size() - 1;
         Type lastElement = operandTypes.get(lastIndex);

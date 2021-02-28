@@ -6,14 +6,14 @@ import static org.objectweb.asm.Opcodes.*;
 
 import static xyz.janboerman.scalaloader.bytecode.AsmConstants.*;
 import xyz.janboerman.scalaloader.bytecode.*;
-
-import java.util.*;
+import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 
 class Conversions {
 
     private Conversions() {}
 
-    static StackLocal toSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables) {
+    //TODO return void.
+    static StackLocal toSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
         final StackLocal stackLocal = new StackLocal();
 
         //TODO detect arrays
@@ -30,44 +30,58 @@ class Conversions {
             case "S": //interestingly, I can just call a method that takes an int with a short.
             case "I": //so we just fall-through
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+                operandStack.replaceTop(Integer_TYPE);
                 break;
             case "J":
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "toString", "(J)Ljava/lang/String;", false);
+                operandStack.replaceTop(STRING_TYPE);
                 break;
             case "F":
                 methodVisitor.visitInsn(F2D); //convert float to double and fall-through to Double.valueOf(double)
+                operandStack.replaceTop(Type.DOUBLE_TYPE);
             case "D":
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
+                operandStack.replaceTop(Double_TYPE);
                 break;
             case "C":
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Character", "toString", "(C)Ljava/lang/String;", false);
+                operandStack.replaceTop(STRING_TYPE);
                 break;
             case "Z":
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
+                operandStack.replaceTop(Boolean_TYPE);
                 break;
 
             //boxed primitives
             case "Ljava/lang/Byte;":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Byte", "intValue", "()I", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+                operandStack.replaceTop(Type.INT_TYPE);
+                operandStack.replaceTop(Integer_TYPE);
                 break;
             case "Ljava/lang/Short;":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Short", "intValue", "()I", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+                operandStack.replaceTop(Type.INT_TYPE);
+                operandStack.replaceTop(Integer_TYPE);
                 break;
             case "Ljava/lang/Integer;":
                 break;
             case "Ljava/lang/Long;":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Long", "toString", "()Ljava/lang/String;", false);
+                operandStack.replaceTop(STRING_TYPE);
                 break;
             case "Ljava/lang/Float":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Float", "doubleValue", "()D", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
+                operandStack.replaceTop(Type.DOUBLE_TYPE);
+                operandStack.replaceTop(Double_TYPE);
                 break;
             case "Ljava/lang/Double;":
                 break;
             case "Ljava/lang/Character;":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Character", "toString", "()Ljava/lang/String;", false);
+                operandStack.replaceTop(STRING_TYPE);
                 break;
             case "Ljava/lang/Boolean;":
                 break;
@@ -78,33 +92,43 @@ class Conversions {
 
             case "Ljava/math/BigInteger;":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/math/BigInteger", "toString", "()Ljava/lang/String;", false);
+                operandStack.replaceTop(STRING_TYPE);
                 break;
             case "Ljava/math/BigDecimal;":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/math/BigDecimal", "toString", "()Ljava/lang/String;", false);
+                operandStack.replaceTop(STRING_TYPE);
                 break;
             case "Ljava/util/UUID;":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/util/UUID", "toString", "()Ljava/lang/String;", false);
+                operandStack.replaceTop(STRING_TYPE);
                 break;
+
+            //in any other case: assume the type is ConfigurationSerializable and just no-op!
+            default:
+                //TODO insert a cast?
+                //TODO should not be necessary, we are serializing, not deserializing.
+                break;
+
 
             //TODO something like Date, DateFormat, Instant, LocalDateTime, other Time-api related things?
             //TODO Locale, CharSet?
-
-            //in any other case: assume the type is ConfigurationSerializable and just no-op!
         }
 
         return stackLocal;
     }
 
-    private static void arrayToSerializedType(StackLocal stackLocal, MethodVisitor methodVisitor, String descriptor, String signature, TypeSignature typeSignature, int localVariableIndex, Label start, Label end, LocalVariableTable locals) {
+    private static void arrayToSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, TypeSignature typeSignature, OperandStack operandStack, int localVariableIndex, Label start, Label end, LocalVariableTable locals) {
         assert TypeSignature.ARRAY.equals(typeSignature.getTypeName()) : "not an array";
 
-        final Label endLabel = new Label();                                         //[..., array]
+        final Type ARRAY_TYPE = Type.getType(descriptor);
+
+        final Label endLabel = new Label();                                                                                 //[..., array]
 
         //store the array as a local variable.
         final Label label0 = new Label();
         methodVisitor.visitLabel(label0);
         final int outerArrayLocalVariableIndex = localVariableIndex++;
-        methodVisitor.visitVarInsn(ASTORE, outerArrayLocalVariableIndex);           //[...]
+        methodVisitor.visitVarInsn(ASTORE, outerArrayLocalVariableIndex);           operandStack.pop();                     //[...]
         LocalVariable array0 = new LocalVariable("array0", descriptor, signature, label0, endLabel, outerArrayLocalVariableIndex);
         locals.add(array0);
 
@@ -112,12 +136,12 @@ class Conversions {
         final int outerListLocalVariableIndex = localVariableIndex++;
         final Label label1 = new Label();
         methodVisitor.visitLabel(label1);
-        methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");                    //[..., list]
-        methodVisitor.visitInsn(DUP);                                               //[..., list, list]
-        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            //[..., list, list, array]
-        methodVisitor.visitInsn(ARRAYLENGTH);                                       //[..., list, list, array.length]
-        methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "(I)V", false);   //stack = 1
-        methodVisitor.visitVarInsn(ASTORE, outerListLocalVariableIndex);            //[..., list]
+        methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");              operandStack.push(ARRAYLIST_TYPE);                //[..., list]
+        methodVisitor.visitInsn(DUP);                                               operandStack.push(ARRAYLIST_TYPE);              //[..., list, list]
+        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            operandStack.push(ARRAY_TYPE);    //[..., list, list, array]
+        methodVisitor.visitInsn(ARRAYLENGTH);                                       operandStack.replaceTop(Type.INT_TYPE);         //[..., list, list, array.length]
+        methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "(I)V", false);   operandStack.pop(2);
+        methodVisitor.visitVarInsn(ASTORE, outerListLocalVariableIndex);            operandStack.pop();
         final LocalVariable list0 = new LocalVariable("list0", "Ljava/util/List;", "Ljava/util/List<" + typeSignature.toSignature() + ">;", label1, endLabel, outerListLocalVariableIndex);
         locals.add(list0);
 
@@ -127,64 +151,58 @@ class Conversions {
         final int outerIndexLocalVariableIndex = localVariableIndex++;
         final Label label2 = new Label();
         methodVisitor.visitLabel(label2);
-        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            //[..., list, array]
-        methodVisitor.visitInsn(ARRAYLENGTH);                                       //[..., list, array.length]
-        methodVisitor.visitVarInsn(ISTORE, sizeLocalVariableIndex);                 //[..., list]
+        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            operandStack.push(ARRAY_TYPE);                  //[..., list, array]
+        methodVisitor.visitInsn(ARRAYLENGTH);                                       operandStack.replaceTop(Type.INT_TYPE);          //[..., list, array.length]
+        methodVisitor.visitVarInsn(ISTORE, sizeLocalVariableIndex);                 operandStack.pop();                             //[..., list]
         final LocalVariable size = new LocalVariable("size", "I", null, label2, endLabel, sizeLocalVariableIndex);
         locals.add(size);
-        methodVisitor.visitInsn(ICONST_0);                                          //[..., list, idx=0]
-        methodVisitor.visitVarInsn(ISTORE, outerIndexLocalVariableIndex);           //[..., list]
+        methodVisitor.visitInsn(ICONST_0);                                          operandStack.push(Type.INT_TYPE);               //[..., list, idx=0]
+        methodVisitor.visitVarInsn(ISTORE, outerIndexLocalVariableIndex);           operandStack.pop();                             //[..., list]
         final LocalVariable idx0 = new LocalVariable("idx0", "I", null, label2, endLabel, outerIndexLocalVariableIndex);
         locals.add(idx0);
 
-        final Label jumpBackTarget = new Label();
+        final Label jumpBackTarget = new Label();                                                                                   //[..., list]
         methodVisitor.visitLabel(jumpBackTarget);
         final Object[] localVariablesFrame = locals.frame();
         final int currentLocals = localVariablesFrame.length;
-        methodVisitor.visitFrame(F_FULL, currentLocals, localVariablesFrame, 1, new Object[] {"java/util/List"});  //TODO could there be MORE items on the stack?
-        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);            //[..., list, idx]
-        methodVisitor.visitVarInsn(ILOAD, sizeLocalVariableIndex);                  //[..., list, idx, size]
+        methodVisitor.visitFrame(F_FULL, currentLocals, localVariablesFrame, operandStack.operandsSize(), operandStack.frame());
+        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);            operandStack.push(Type.INT_TYPE);               //[..., list, idx]
+        methodVisitor.visitVarInsn(ILOAD, sizeLocalVariableIndex);                  operandStack.push(Type.INT_TYPE);               //[..., list, idx, size]
 
         final Label conditionFalseLabel = new Label();
-        methodVisitor.visitJumpInsn(IF_ICMPGE, conditionFalseLabel);                //[..., list]
-        final int itemLocalVariableIndex = localVariableIndex++;    //TODO unnecessary?
-        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            //[..., list, array]
-        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);            //[..., list, array, idx]
+        methodVisitor.visitJumpInsn(IF_ICMPGE, conditionFalseLabel);                operandStack.pop(2);                    //[..., list]
+        //no need to make a local variable for the current array element, just leave it on the stack! :)
+        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            operandStack.push(ARRAY_TYPE);                  //[..., list, array]
+        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);            operandStack.push(Type.INT_TYPE);               //[..., list, array, idx]
         //determine bytecode opcodes based on array component type
         final String arrayComponentDescriptor = typeSignature.getTypeArguments().get(0).toDescriptor();
         final String arrayComponentSignature = typeSignature.getTypeArguments().get(0).toSignature();
-        methodVisitor.visitInsn(arrayLoad(arrayComponentDescriptor));               //[..., list, element]
+        methodVisitor.visitInsn(arrayLoad(arrayComponentDescriptor));               operandStack.replaceTop(2, Type.getType(arrayComponentDescriptor));     //[..., list, element]
 
-        //convert array element
+        //convert the array element
         final Label startBodyLabel = new Label();
         final Label endBodyLabel = new Label();
         methodVisitor.visitLabel(startBodyLabel);
-        //TODO insert bytecode for converting the array component.
-        //TODO toLiveType(...)
-        //TODO for now, just no-op. (that means that this method will just work for arrays of reference types for now)
-        final int bodyMaxStackIncrease = 0; //TODO
-        //TODO take the stack into account as well!
-        methodVisitor.visitLabel(endBodyLabel);                                     //[..., list, serialized(element)]
+        final StackLocal bodyStackLocal = toSerializedType(methodVisitor, arrayComponentDescriptor, arrayComponentSignature, localVariableIndex, startBodyLabel, endBodyLabel, locals, operandStack);
+        @Deprecated final int bodyMaxStackIncrease = bodyStackLocal.increasedMaxStack;
+        methodVisitor.visitLabel(endBodyLabel);                                                                                     //[..., list, serialized(element)]
+
+        locals.removeFramesFromIndex(currentLocals);
 
         //add to the list
-        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "add", "(Ljava/lang/Object;)Z", true);      //[..., boolean]
-        methodVisitor.visitInsn(POP);                                               //[...]
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "add", "(Ljava/lang/Object;)Z", true);      operandStack.replaceTop(2, Type.BOOLEAN_TYPE);     //[..., boolean]
+        methodVisitor.visitInsn(POP);                                               operandStack.pop();                             //[...]
         //increment index
         methodVisitor.visitIincInsn(outerIndexLocalVariableIndex, 1);
+        //load the list again
+        methodVisitor.visitVarInsn(ALOAD, outerListLocalVariableIndex);             operandStack.push(LIST_TYPE);                   //[..., list]
         methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
 
         //we have arrived at the end of the array
-        methodVisitor.visitLabel(conditionFalseLabel);                              //[..., list]
-        locals.removeFramesFromIndex(currentLocals);
-        methodVisitor.visitFrame(F_FULL, currentLocals, localVariablesFrame, 1, new Object[] {"java/util/List"}); //TODO there could be more elements!
+        methodVisitor.visitLabel(conditionFalseLabel);                                                                              //[..., list]
+        methodVisitor.visitFrame(F_FULL, currentLocals, localVariablesFrame, operandStack.operandsSize(), operandStack.frame());
 
-        //load the list
-        methodVisitor.visitVarInsn(ALOAD, outerListLocalVariableIndex);                 //stack = 1
-        methodVisitor.visitLabel(endLabel);
         //continue execution
-
-
-        stackLocal.increasedMaxStack += 3 + bodyMaxStackIncrease;
     }
 
     private static final int arrayLoad(String descriptor) {
@@ -208,6 +226,7 @@ class Conversions {
                 return AALOAD;
         }
     }
+    //TODO arrayStore
 
     private static final int storeLocalVariable(String descriptor) {
         switch (descriptor) {
@@ -227,8 +246,10 @@ class Conversions {
                 return ASTORE;
         }
     }
+    //TODO loadLocalVariable
 
-    static StackLocal toLiveType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables) {
+    //TODO return void instead of StackLocal
+    static StackLocal toLiveType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
         final StackLocal stackLocal = new StackLocal();
 
         TypeSignature typeSignature;
@@ -255,35 +276,52 @@ class Conversions {
             case "B":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Integer", "byteValue", "()B", false);
+                operandStack.replaceTop(Integer_TYPE);
+                operandStack.replaceTop(Type.BYTE_TYPE);
                 break;
             case "S":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Integer", "shortValue", "()S", false);
+                operandStack.replaceTop(Integer_TYPE);
+                operandStack.replaceTop(Type.SHORT_TYPE);
                 break;
             case "I":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false);
+                operandStack.replaceTop(Integer_TYPE);
+                operandStack.replaceTop(Type.INT_TYPE);
                 break;
             case "J":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "parseLong", "(Ljava/lang/String;)J", false);
+                operandStack.replaceTop(STRING_TYPE);
+                operandStack.replaceTop(Type.LONG_TYPE);
                 break;
             case "F":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Double");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Double", "floatValue", "()F", false);
+                operandStack.replaceTop(Double_TYPE);
+                operandStack.replaceTop(Type.FLOAT_TYPE);
                 break;
             case "D":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Double");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false);
+                operandStack.replaceTop(Double_TYPE);
+                operandStack.replaceTop(Type.DOUBLE_TYPE);
                 break;
             case "C":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                methodVisitor.visitInsn(ICONST_0); stackLocal.increasedMaxStack += 1;
+                methodVisitor.visitInsn(ICONST_0); stackLocal.increasedMaxStack += 1;   //TODO get rid of StackLocal
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
+                operandStack.replaceTop(STRING_TYPE);
+                operandStack.push(Type.INT_TYPE);
+                operandStack.replaceTop(2, Type.CHAR_TYPE);
                 break;
             case "Z":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z", false);
+                operandStack.replaceTop(Boolean_TYPE);
+                operandStack.replaceTop(Type.BOOLEAN_TYPE);
                 break;
 
             //boxed primitives
@@ -291,88 +329,114 @@ class Conversions {
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Integer", "byteValue", "()B", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;", false);
+                operandStack.replaceTop(Integer_TYPE);
+                operandStack.replaceTop(Type.BYTE_TYPE);
+                operandStack.replaceTop(Byte_TYPE);
                 break;
             case "Ljava/lang/Short;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Integer", "shortValue", "()S", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;", false);
+                operandStack.replaceTop(Integer_TYPE);
+                operandStack.replaceTop(Type.SHORT_TYPE);
+                operandStack.replaceTop(Short_TYPE);
                 break;
             case "Ljava/lang/Integer;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");
+                operandStack.replaceTop(Integer_TYPE);
                 break;
             case "Ljava/lang/Long;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "valueOf", "(Ljava/lang/String;)Ljava/lang/Long;", false);
+                operandStack.replaceTop(STRING_TYPE);
+                operandStack.replaceTop(Long_TYPE);
                 break;
             case "Ljava/lang/Float;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Double");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Double", "floatValue", "()F", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
+                operandStack.replaceTop(Double_TYPE);
+                operandStack.replaceTop(Type.FLOAT_TYPE);
+                operandStack.replaceTop(Float_TYPE);
                 break;
             case "Ljava/lang/Double;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Double");
+                operandStack.replaceTop(Double_TYPE);
                 break;
             case "Ljava/lang/Character":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                methodVisitor.visitInsn(ICONST_0); stackLocal.increasedMaxStack += 1;
+                methodVisitor.visitInsn(ICONST_0); stackLocal.increasedMaxStack += 1;   //TODO get rid of StackLocal
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Character", "valueOf", "(C)Ljava/lang/Character;", false);
+                operandStack.replaceTop(STRING_TYPE);
+                operandStack.push(Type.INT_TYPE);
+                operandStack.replaceTop(2, Type.CHAR_TYPE);
+                operandStack.replaceTop(Character_TYPE);
                 break;
             case "Ljava/lang/Boolean;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
+                operandStack.replaceTop(Boolean_TYPE);
                 break;
 
             //non-supported reference types
             case "Ljava/math/BigInteger;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                //stack: [..., string]
+                operandStack.replaceTop(STRING_TYPE);                                                               //stack: [..., string]
                 methodVisitor.visitTypeInsn(NEW, "java/math/BigInteger");
-                //stack: [..., string, biginteger]
+                operandStack.push(BIGINTEGER_TYPE);                                                                 //stack: [..., string, biginteger]
                 methodVisitor.visitInsn(DUP_X1);
-                //stack: [..., biginteger, string, biginteger]
+                operandStack.pop(2);    operandStack.push(BIGINTEGER_TYPE, STRING_TYPE, BIGINTEGER_TYPE);   //stack: [..., biginteger, string, biginteger]
                 methodVisitor.visitInsn(SWAP);
-                //stack: [..., biginteger, biginteger, string]
+                operandStack.pop(2);    operandStack.push(BIGINTEGER_TYPE, STRING_TYPE);                    //stack: [..., biginteger, biginteger, string]
                 methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/math/BigInteger", "<init>", "(Ljava/lang/String;)V", false);
-                //stack: [..., biginteger]
+                operandStack.pop(2);                                                                        //stack: [..., biginteger]
                 stackLocal.increasedMaxStack += 2;
                 break;
             case "Ljava/math/BigDecimal;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                //stack: [..., string]
+                operandStack.replaceTop(STRING_TYPE);                                                               //stack: [..., string]
                 methodVisitor.visitTypeInsn(NEW, "java/math/BigDecimal");
-                //stack: [..., string, bigdecimal]
+                operandStack.push(BIGDECIMAL_TYPE);                                                                 //stack: [..., string, bigdecimal]
                 methodVisitor.visitInsn(DUP_X1);
-                //stack: [..., bigdecimal, string, bigdecimal]
+                operandStack.pop(2);    operandStack.push(BIGDECIMAL_TYPE, STRING_TYPE, BIGDECIMAL_TYPE);   //stack: [..., bigdecimal, string, bigdecimal]
                 methodVisitor.visitInsn(SWAP);
-                //stack: [..., bigdecimal, bigdecimal, string]
+                operandStack.pop(2);    operandStack.push(BIGDECIMAL_TYPE, STRING_TYPE);                    //stack: [..., bigdecimal, bigdecimal, string]
                 methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/math/BigDecimal", "<init>", "(Ljava/lang/String;)V", false);
-                //stack: [..., bigdecimal]
+                operandStack.pop(2);                                                                        //stack: [..., bigdecimal]
                 stackLocal.increasedMaxStack += 2;
                 break;
             case "Ljava/util/UUID;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/util/UUID", "fromString", "(Ljava/lang/String;)Ljava/util/UUID;", false);
+                operandStack.replaceTop(STRING_TYPE);
+                operandStack.replaceTop(UUID_TYPE);
                 break;
 
             //supported reference types
             case "Ljava/lang/String;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
+                operandStack.replaceTop(STRING_TYPE);
                 break;
 
             //TODO convert elements
             case "Ljava/util/List;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/util/List");
+                operandStack.replaceTop(LIST_TYPE);
                 break;
             case "Ljava/util/Set;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Set");
+                operandStack.replaceTop(SET_TYPE);
                 break;
             case "Ljava/util/Map;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Map");
+                operandStack.push(MAP_TYPE);
                 break;
 
             default:
                 //assume ConfigurationSerializable, just cast.
-                methodVisitor.visitTypeInsn(CHECKCAST, Type.getType(descriptor).getInternalName());
+                Type type = Type.getType(descriptor);
+                methodVisitor.visitTypeInsn(CHECKCAST, type.getInternalName());
+                operandStack.replaceTop(type);
                 break;
         }
 

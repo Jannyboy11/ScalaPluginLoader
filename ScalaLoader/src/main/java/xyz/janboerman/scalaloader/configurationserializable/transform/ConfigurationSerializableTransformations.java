@@ -1,19 +1,14 @@
 package xyz.janboerman.scalaloader.configurationserializable.transform;
 
 import org.bukkit.configuration.serialization.SerializableAs;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Type;
-import xyz.janboerman.scalaloader.bytecode.AsmConstants;
-import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
-import xyz.janboerman.scalaloader.configurationserializable.DelegateSerialization;
-import xyz.janboerman.scalaloader.configurationserializable.DeserializationMethod;
-import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
-import xyz.janboerman.scalaloader.configurationserializable.Scan;
+import org.objectweb.asm.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import xyz.janboerman.scalaloader.bytecode.AsmConstants;
+import xyz.janboerman.scalaloader.configurationserializable.*;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.*;
 
 /**
  * This class is NOT part of the public API!
@@ -73,6 +68,22 @@ public class ConfigurationSerializableTransformations {
     static final Type OBJECT_TYPE = Type.getType(Object.class);
     static final Type BOOLEAN_TYPE = Type.BOOLEAN_TYPE;
     static final Type OPTION_TYPE = Type.getType(OPTION_DESCRIPTOR);
+    static final Type LIST_TYPE = Type.getType(List.class);
+    static final Type ARRAYLIST_TYPE = Type.getType(ArrayList.class);
+    static final Type SET_TYPE = Type.getType(Set.class);
+    static final Type BIGINTEGER_TYPE = Type.getType(BigInteger.class);
+    static final Type BIGDECIMAL_TYPE = Type.getType(BigDecimal.class);
+    static final Type UUID_TYPE = Type.getType(UUID.class);
+
+    static final Type Byte_TYPE = Type.getType(Byte.class);
+    static final Type Short_TYPE = Type.getType(Short.class);
+    static final Type Integer_TYPE = Type.getType(Integer.class);
+    static final Type Long_TYPE = Type.getType(Long.class);
+    static final Type Float_TYPE = Type.getType(Float.class);
+    static final Type Double_TYPE = Type.getType(Double.class);
+    static final Type Boolean_TYPE = Type.getType(Boolean.class);
+    static final Type Character_TYPE = Type.getType(Character.class);
+    static final Type Void_TYPE = Type.getType(Void.class);
 
     static String deserializationDescriptor(String returnTypeDescriptor) {
         return "(Ljava/util/Map;)" + returnTypeDescriptor;
