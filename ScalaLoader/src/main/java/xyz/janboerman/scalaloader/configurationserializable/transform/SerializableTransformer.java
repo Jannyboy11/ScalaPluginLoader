@@ -362,7 +362,7 @@ class SerializableTransformer extends ClassVisitor {
 
             // verify that if our scan type is SINGLETON_OBJECT, then there is a MODULE$
             // we need this check because the Scala compiler will generate annotations on the companion class of a singleton object!
-            // If we encountered a 'regular' class, then abort - don't generate any code!
+            // If we encountered a 'regular' class with scanType SINGLETON_OBJECT, then abort - don't generate any code!
             if (scanType == SINGLETON_OBJECT && !alreadyHasModule$)
                 break annotatedByConfigurationSerializable;
 
@@ -459,8 +459,6 @@ class SerializableTransformer extends ClassVisitor {
 
             // finally we get to the code generation part!
             // first up: the serialize() method!
-
-            // TODO get rid of maxStack and maxLocals variables, those are no longer needed when LocalVariableTable and OperandStack are in use!
 
             if (!alreadyHasSerializeMethod) {
                 //generate serialize method.
@@ -881,8 +879,14 @@ class SerializableTransformer extends ClassVisitor {
                     }
 
                     //return the deserialized instance
-                    methodVisitor.visitVarInsn(ALOAD, thisIndex);                       operandStack.push(Type.getType(classDescriptor));
-                    methodVisitor.visitInsn(ARETURN);                                   operandStack.pop();
+                    if (thisFirstThenMap) {
+                        //map constructor: <init>'s return type is void, so just return nothing.
+                        methodVisitor.visitInsn(RETURN);
+                    } else {
+                        //static deserialization method: load the deserialized instance and return that.
+                        methodVisitor.visitVarInsn(ALOAD, thisIndex);                   operandStack.push(Type.getType(classDescriptor));
+                        methodVisitor.visitInsn(ARETURN);                               operandStack.pop();
+                    }
 
                     methodVisitor.visitLabel(veryLastLabel);
                     for (LocalVariable localVariable : localVariableTable) {
@@ -956,7 +960,8 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitLabel(label0);
 
                             mapDefinition = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, endLabel, 0);
-                            localVariableTable.add(mapDefinition);
+                            thisDefinition = new LocalVariable("this", classDescriptor, classSignature, label0, endLabel, 1);
+                            localVariableTable.add(mapDefinition, thisDefinition);
 
                             //return null if the map argument was null
                             methodVisitor.visitVarInsn(ALOAD, mapDefinition.tableIndex);        operandStack.push(MAP_TYPE);
@@ -1023,7 +1028,8 @@ class SerializableTransformer extends ClassVisitor {
                             final Label label0 = new Label();
                             methodVisitor.visitLabel(label0);
                             LocalVariable mapDefinition = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, endLabel, 0);
-                            localVariableTable.add(mapDefinition);
+                            LocalVariable thisDefinition = new LocalVariable("this", classDescriptor, classSignature, label0, endLabel, 1);
+                            localVariableTable.add(mapDefinition, thisDefinition);
 
                             //check whether the map is null and return null
                             final Label notNullLabel = new Label();

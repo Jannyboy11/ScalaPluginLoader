@@ -138,49 +138,4 @@ public class ConfigurationSerializableTransformations {
         return classWriter.toByteArray();
     }
 
-
-//    static final Set<Class<?>> SUPPORTED_BUKKIT_AND_JAVA_TYPES = Set.of(
-//            //bukkit interfaces
-//            BannerMeta.class,
-//            BlockDataMeta.class,
-//            BlockStateMeta.class,
-//            BookMeta.class,
-//            CompassMeta.class,
-//            CrossbowMeta.class,
-//            EnchantmentStorageMeta.class,
-//            FireworkEffectMeta.class,
-//            FireworkMeta.class,
-//            ItemMeta.class,
-//            KnowledgeBookMeta.class,
-//            LeatherArmorMeta.class,
-//            MapMeta.class,
-//            OfflinePlayer.class,
-//            Player.class,
-//            PotionMeta.class,
-//            SkullMeta.class,
-//            SpawnEggMeta.class,
-//            SuspiciousStewMeta.class,
-//            TropicalFishBucketMeta.class,
-//
-//            //bukkit classes
-//            AttributeModifier.class,
-//            BlockVector.class,
-//            BoundingBox.class,
-//            Color.class,
-//            FireworkEffect.class,
-//            ItemStack.class,
-//            Location.class,
-//            Pattern.class,
-//            PotionEffect.class,
-//            Vector.class,
-//
-//            //java types
-//            Map.class,
-//            List.class,
-//            Set.class,
-//            Double.class,
-//            Integer.class,
-//            String.class
-//    );
-
 }

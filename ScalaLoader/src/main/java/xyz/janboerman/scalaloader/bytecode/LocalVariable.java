@@ -50,6 +50,6 @@ public final class LocalVariable {
 
     @Override
     public String toString() {
-        return "var " + name + ": " + (signature == null ? descriptor : signature) + " @ " + tableIndex;
+        return "LocalVariable{" + name + ": " + (signature == null ? descriptor : signature) + " @ " + tableIndex + "}";
     }
 }

@@ -136,7 +136,12 @@ public final class OperandStack {
         }).toArray();
     }
 
-//    private static void test() {
+    @Override
+    public String toString() {
+        return operandTypes.toString();
+    }
+
+    //    private static void test() {
 //        byte Byte = 0;
 //        short Short = 0;
 //        int Int = 0;

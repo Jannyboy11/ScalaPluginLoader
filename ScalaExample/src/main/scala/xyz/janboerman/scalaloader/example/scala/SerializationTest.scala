@@ -17,7 +17,7 @@ object SerializationTest {
 
     def test(): Unit = {
         val console = ExamplePlugin.getServer.getConsoleSender
-        console.sendMessage(s"${ChatColor.YELLOW}Test ${ChatColor.RESET}case/methods/fields class value.equals(deserialize(serialize(value))")
+        console.sendMessage(s"${ChatColor.YELLOW}Test ${ChatColor.RESET}case class/methods/fields value.equals(deserialize(serialize(value))")
 
         val writeConfiguration = new YamlConfiguration();
 

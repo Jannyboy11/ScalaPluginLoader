@@ -12,15 +12,19 @@ class Conversions {
 
     private Conversions() {}
 
+    //TODO fix bytecode generation of arrayToSerializedType, arrayToLiveType.
+
     static void toSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
 
         TypeSignature typeSignature = signature == null ? TypeSignature.ofDescriptor(descriptor) : TypeSignature.ofDescriptor(signature);
+
+//        System.out.println("DEBUG toSerializedType: typeSignature=" + typeSignature + ", localVariableTable=" + localVariables + ", operandStack=" + operandStack);
 
         //detect arrays
         if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
             //convert array to java.util.List.
             //TODO fix frames!
-            //arrayToSerializedType(methodVisitor, descriptor, signature, typeSignature, operandStack, localVariableIndex, start, end, localVariables);
+            arrayToSerializedType(methodVisitor, descriptor, signature, typeSignature, operandStack, localVariableIndex, start, end, localVariables);
             return;
         }
 
@@ -239,7 +243,7 @@ class Conversions {
             if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
                 //generate code for transforming arrays to lists and their elements
                 //TODO fix frames!
-                //arrayToLiveType(methodVisitor, descriptor, signature, typeSignature, operandStack, localVariableIndex, start, end, localVariables);
+                arrayToLiveType(methodVisitor, descriptor, signature, typeSignature, operandStack, localVariableIndex, start, end, localVariables);
                 return;
             } else {
                 //TODO generate code converting elements of collections and maps
