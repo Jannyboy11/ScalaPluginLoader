@@ -37,7 +37,7 @@ class ArraySerializationTest {
     void test() {
         plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "Test " + ChatColor.RESET + "test deserialize(serialize(arrayserializable)).equals(arrayserializable)");
 
-        org.bukkit.configuration.serialization.ConfigurationSerialization.registerClass(ArraySerializable.class, "ArraySerializable");
+        //org.bukkit.configuration.serialization.ConfigurationSerialization.registerClass(ArraySerializable.class, "ArraySerializable");
 
         ArraySerializable as = new ArraySerializable();
         YamlConfiguration yamlConfiguration = new YamlConfiguration();
@@ -57,8 +57,8 @@ class ArraySerializationTest {
 }
 
 @ConfigurationSerializable(as = "ArraySerializable", scan = @Scan(Scan.Type.FIELDS))
-@org.bukkit.configuration.serialization.SerializableAs("ArraySerializable")
-public class ArraySerializable implements org.bukkit.configuration.serialization.ConfigurationSerializable {
+//@org.bukkit.configuration.serialization.SerializableAs("ArraySerializable")
+public class ArraySerializable /*implements org.bukkit.configuration.serialization.ConfigurationSerializable*/ {
 
     //just needs container type conversion: String[]<->List<String>
     private String[] strings = new String[] { "hello", "world" };
@@ -71,11 +71,11 @@ public class ArraySerializable implements org.bukkit.configuration.serialization
             {true, false, false},
             {false, true, true}
     };
-    private List<int[]>[] arrayOfListOfArrayOfInt = new List[0];
 
     ArraySerializable() {
     }
 
+    /* GENERATED!
     @Override
     public Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
@@ -116,7 +116,9 @@ public class ArraySerializable implements org.bukkit.configuration.serialization
 
         return map;
     }
+     */
 
+    /* Generated!
     public static ArraySerializable deserialize(Map<String, Object> map) {
         ArraySerializable res = new ArraySerializable();
 
@@ -158,6 +160,7 @@ public class ArraySerializable implements org.bukkit.configuration.serialization
 
         return res;
     }
+     */
 
     @Override
     public int hashCode() {

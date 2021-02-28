@@ -7,17 +7,11 @@ import org.bukkit.UnsafeValues;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.*;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
-import xyz.janboerman.scalaloader.bytecode.AsmConstants;
-import xyz.janboerman.scalaloader.bytecode.TypeSignature;
 import xyz.janboerman.scalaloader.compat.Compat;
-import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableError;
-import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations;
+import xyz.janboerman.scalaloader.configurationserializable.transform.*;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
 import xyz.janboerman.scalaloader.event.transform.EventError;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
@@ -32,16 +26,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSigner;
 import java.security.CodeSource;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.BiFunction;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
+import java.util.jar.*;
 import java.util.logging.Level;
 
 /**
@@ -303,34 +291,32 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                 try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
                     byte[] classBytes = Compat.readAllBytes(inputStream);
 
-                    // TODO ====== DEBUG TypeSignature ======
-
-                    ClassReader debugReader = new ClassReader(classBytes);
-                    debugReader.accept(new ClassVisitor(AsmConstants.ASM_API) {
-                        private boolean debug;
-
-                        @Override
-                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-                            if ("xyz/janboerman/scalaloader/example/java/ArraySerializable".equals(name)
-                                || "xyz/janboerman/scalaloader/example/java/ListSerializable".equals(name)) {
-                                System.out.println("visiting " + name);
-                                debug = true;
-                            }
-                        }
-
-                        @Override
-                        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-                            if (debug) {
-                                TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
-                                System.out.println(typeSignature);
-                            }
-                            return null;
-                        }
-                    }, 0);
-
-                    // TODO ====== END OF DEBUG ======
-
-
+//                    // ====== DEBUG TypeSignature ======
+//
+//                    ClassReader debugReader = new ClassReader(classBytes);
+//                    debugReader.accept(new ClassVisitor(AsmConstants.ASM_API) {
+//                        private boolean debug;
+//
+//                        @Override
+//                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+//                            if ("xyz/janboerman/scalaloader/example/java/ArraySerializable".equals(name)
+//                                || "xyz/janboerman/scalaloader/example/java/ListSerializable".equals(name)) {
+//                                System.out.println("visiting " + name);
+//                                debug = true;
+//                            }
+//                        }
+//
+//                        @Override
+//                        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+//                            if (debug) {
+//                                TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
+//                                System.out.println(typeSignature);
+//                            }
+//                            return null;
+//                        }
+//                    }, 0);
+//
+//                    // ====== END OF DEBUG ======
 
                     //TODO make it possible for TransformerRegistry to apply early transformations, before the event, configurationserialization transformations apply.
                     //TODO I may want to use this for sum types to generate the @ConfigurationSerialization annotation once Scan.Type.AUTO_DETECT is implemented!

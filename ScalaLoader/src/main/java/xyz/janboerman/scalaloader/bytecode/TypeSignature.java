@@ -133,12 +133,12 @@ public final class TypeSignature {
 
     //TypeSignature = visitBaseType | visitTypeVariable | visitArrayType | ( visitClassType visitTypeArgument* ( visitInnerClassType visitTypeArgument* )* visitEnd ) )
 
-    static class MySignatureVisitor extends SignatureVisitor {
+    private static class MySignatureVisitor extends SignatureVisitor {
 
         private String rawTypeName;
         private final List<MySignatureVisitor> typeArgs = new ArrayList<>(0);
 
-        MySignatureVisitor() {
+        private MySignatureVisitor() {
             super(AsmConstants.ASM_API);
         }
 
@@ -201,71 +201,4 @@ public final class TypeSignature {
         }
     }
 
-
-//    // test/experimentation stuffs
-//
-//    private static final <S, V, A extends S, B extends V> B apply(Function<? super A, ? extends B> function, A argument) {
-//        return function.apply(argument);
-//    }
-//
-//    private static <X, Y> void test(Foo<X>.Bar<Y> hi) {
-//        //signature of hi:
-//        //  -- not a primitive  (no visitBaseType)
-//        //  visitTypeVariable: "X"
-//        //  visitTypeVariable: "Y"
-//        //  -- not an array     (no visitArrayType)
-//        //  visitClassType: "xyz.janboerman.scalaloader.bytecode.Foo"
-//        //  visitTypeArgument   (unbounded) //TODO I think.
-//        //  visitInnerClassType: Bar
-//        //  visitTypeArgument   (unbounded) //TODO I think.
-//        //  visitEnd
-//    }
-//
-//    private static final Foo<String>.Bar<? extends Number>[] bar = null;
-//    //signature of bar:
-//    //  -- not a primitive (no visitBaseType)
-//    //  -- no type variables
-//    //  visitArrayType:
-//    //      -- no visitBaseType
-//    //      -- no visitTypeVariable
-//    //      -- no visitArrayType
-//    //      visitClassType: xyz.janboerman.scalaloader.bytecode.Foo
-//    //      visitTypeArgument: '='
-//    //          visitClassType: java.lang.String
-//    //          visitEnd.
-//    //      visitInnerClassType: Bar
-//    //      visitTypeArgument: '+'
-//    //          visitClassType: java.lang.Number
-//    //          visitEnd.
-//    //      visitEnd.
-//    //  visitEnd.
-
 }
-
-//class Foo<X> {
-//
-//    private final String[] lol = null;
-//
-//    //signature: [Ljava/util/List<[I>;
-//    private final List<int[]>[] arrayOfListOfArrayOfInt = new List[0];
-//    //expected: TypeSignature(array, [TypeSignature(List, [TypeSignature(array, [TypeSignature(I, [])])])])
-//
-//    //signature: Ljava/util/List<[Ljava/util/List<Ljava/lang/Float;>;>;
-//    private final List<List<Float>[]> listOfArrayOfListOfFloat = Collections.emptyList();
-//    //expected: TypeSignature(List, [TypeSignature(array, [TypeSignature(List, [TypeSignature(Float, [])])])])
-//
-//    class Bar<Y> {
-//
-//    }
-//
-//    public static void main(String[] args) {
-//        TypeSignature ts1 = TypeSignature.ofSignature("[Ljava/util/List<[I>;");
-//        System.out.println();
-//        System.out.println(ts1);
-//        System.out.println("=====");
-//        TypeSignature ts2 = TypeSignature.ofSignature("Ljava/util/List<[Ljava/util/List<Ljava/lang/Float;>;>;");
-//        System.out.println();
-//        System.out.println(ts2);
-//    }
-//
-//}

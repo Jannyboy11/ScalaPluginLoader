@@ -2,6 +2,7 @@ package xyz.janboerman.scalaloader.bytecode;
 
 import org.bukkit.configuration.serialization.*;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 //@ConfigurationSerializable(as = "ArraySerializationTest", scan = @Scan(Scan.Type.FIELDS))
@@ -144,6 +145,20 @@ class ArraySerializable implements ConfigurationSerializable {
                 + ",booleanss = " + Arrays.deepToString(booleanss)
                 + "}";
 
+    }
+
+    private static final double[] testDoubles() {
+        return new double[5];
+    }
+
+    private static final String[] testStrings() {
+        return new String[5];
+    }
+
+    private static <T> T[] testGeneric(Class<T> clazz) {
+        assert !clazz.isPrimitive();
+        Object o = Array.newInstance(clazz, 5);
+        return (T[]) o;
     }
 
     private static final int[] deserializeInts(List<Integer> list0) {
