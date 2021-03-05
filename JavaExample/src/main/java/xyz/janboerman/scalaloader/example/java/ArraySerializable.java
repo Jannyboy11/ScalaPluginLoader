@@ -35,7 +35,7 @@ class ArraySerializationTest {
     }
 
     void test() {
-        plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "Test " + ChatColor.RESET + "test deserialize(serialize(arrayserializable)).equals(arrayserializable)");
+        plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "Test " + ChatColor.RESET + "deserialize(serialize(arrayserializable)).equals(arrayserializable)");
 
         //org.bukkit.configuration.serialization.ConfigurationSerialization.registerClass(ArraySerializable.class, "ArraySerializable");
 
@@ -75,50 +75,51 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
     ArraySerializable() {
     }
 
-    /* GENERATED!
-    @Override
-    public Map<String, Object> serialize() {
-        Map<String, Object> map = new HashMap<>();
+    //TODO both the generated serialize and deserialize are having issues!
 
-        {
-            List<String> list0;
-            list0 = Arrays.asList(strings);
-            map.put("strings", list0);
-        }
-        {
-            List<Integer> list0;
-            list0 = new ArrayList<>(ints.length);
-            for (int x : ints) {
-                list0.add(Integer.valueOf(x));
-            }
-            map.put("ints", list0);
-        }
-        {
-            List<String> list0;
-            list0 = new ArrayList<>(longs.length);
-            for (long x : longs) {
-                list0.add(Long.toString(x));
-            }
-            map.put("longs", list0);
-        }
-        {
-            List<List<Boolean>> list0;
-            list0 = new ArrayList<>(booleanss.length);
-            for (boolean[] xs : booleanss) {
-                List<Boolean> list1 = new ArrayList<>(xs.length);
-                for (boolean x : xs) {
-                    list1.add((Boolean.valueOf(x)));
-                }
-                list0.add(list1);
-            }
-            map.put("booleanss", list0);
-        }
+    //Generated!
+    //@Override
+//    public Map<String, Object> serialize() {
+//        Map<String, Object> map = new HashMap<>();
+//
+//        {
+//            List<String> list0;
+//            list0 = Arrays.asList(strings);
+//            map.put("strings", list0);
+//        }
+////        {
+////            List<Integer> list0;
+////            list0 = new ArrayList<>(ints.length);
+////            for (int x : ints) {
+////                list0.add(Integer.valueOf(x));
+////            }
+////            map.put("ints", list0);
+////        }
+////        {
+////            List<String> list0;
+////            list0 = new ArrayList<>(longs.length);
+////            for (long x : longs) {
+////                list0.add(Long.toString(x));
+////            }
+////            map.put("longs", list0);
+////        }
+////        {
+////            List<List<Boolean>> list0;
+////            list0 = new ArrayList<>(booleanss.length);
+////            for (boolean[] xs : booleanss) {
+////                List<Boolean> list1 = new ArrayList<>(xs.length);
+////                for (boolean x : xs) {
+////                    list1.add((Boolean.valueOf(x)));
+////                }
+////                list0.add(list1);
+////            }
+////            map.put("booleanss", list0);
+////        }
+//
+//        return map;
+//    }
 
-        return map;
-    }
-     */
-
-    /* Generated!
+    //Generated!
     public static ArraySerializable deserialize(Map<String, Object> map) {
         ArraySerializable res = new ArraySerializable();
 
@@ -127,40 +128,40 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
             String[] array0 = list0.toArray(new String[list0.size()]);
             res.strings = array0;
         }
-        {
-            List<Integer> list0 = (List<Integer>) map.get("ints");
-            int[] array0 = new int[list0.size()];
-            for (int idx0 = 0; idx0 < array0.length; idx0++) {
-                array0[idx0] = list0.get(idx0).intValue();
-            }
-            res.ints = array0;
-        }
-        {
-            List<String> list0 = (List<String>) map.get("longs");
-            long[] array0 = new long[list0.size()];
-            for (int idx0 = 0; idx0 < array0.length; idx0++) {
-                array0[idx0] = Long.parseLong(list0.get(idx0));
-            }
-            res.longs = array0;
-        }
-        {
-            List<List<Boolean>> list0 = (List<List<Boolean>>) map.get("booleanss");
-            boolean[][] array0 = new boolean[list0.size()][];
-            for (int idx0 = 0; idx0 < array0.length; idx0++) {
-                List<Boolean> list1 = list0.get(idx0);
-                boolean[] array1 = new boolean[list1.size()];
-                for (int idx1 = 0; idx1 < array1.length; idx1++) {
-                    array1[idx1] = list1.get(idx1).booleanValue();
-                }
-                array0[idx0] = array1;
-            }
-
-            res.booleanss = array0;
-        }
+//        {
+//            List<Integer> list0 = (List<Integer>) map.get("ints");
+//            int[] array0 = new int[list0.size()];
+//            for (int idx0 = 0; idx0 < array0.length; idx0++) {
+//                array0[idx0] = list0.get(idx0).intValue();
+//            }
+//            res.ints = array0;
+//        }
+//        {
+//            List<String> list0 = (List<String>) map.get("longs");
+//            long[] array0 = new long[list0.size()];
+//            for (int idx0 = 0; idx0 < array0.length; idx0++) {
+//                array0[idx0] = Long.parseLong(list0.get(idx0));
+//            }
+//            res.longs = array0;
+//        }
+//        {
+//            List<List<Boolean>> list0 = (List<List<Boolean>>) map.get("booleanss");
+//            boolean[][] array0 = new boolean[list0.size()][];
+//            for (int idx0 = 0; idx0 < array0.length; idx0++) {
+//                List<Boolean> list1 = list0.get(idx0);
+//                boolean[] array1 = new boolean[list1.size()];
+//                for (int idx1 = 0; idx1 < array1.length; idx1++) {
+//                    array1[idx1] = list1.get(idx1).booleanValue();
+//                }
+//                array0[idx0] = array1;
+//            }
+//
+//            res.booleanss = array0;
+//        }
 
         return res;
     }
-     */
+
 
     @Override
     public int hashCode() {

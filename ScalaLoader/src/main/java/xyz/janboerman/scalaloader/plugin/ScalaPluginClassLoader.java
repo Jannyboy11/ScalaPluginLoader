@@ -388,33 +388,6 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                 try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
                     byte[] classBytes = Compat.readAllBytes(inputStream);
 
-//                    // ====== DEBUG TypeSignature ======
-//
-//                    ClassReader debugReader = new ClassReader(classBytes);
-//                    debugReader.accept(new ClassVisitor(AsmConstants.ASM_API) {
-//                        private boolean debug;
-//
-//                        @Override
-//                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-//                            if ("xyz/janboerman/scalaloader/example/java/ArraySerializable".equals(name)
-//                                || "xyz/janboerman/scalaloader/example/java/ListSerializable".equals(name)) {
-//                                System.out.println("visiting " + name);
-//                                debug = true;
-//                            }
-//                        }
-//
-//                        @Override
-//                        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-//                            if (debug) {
-//                                TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
-//                                System.out.println(typeSignature);
-//                            }
-//                            return null;
-//                        }
-//                    }, 0);
-//
-//                    // ====== END OF DEBUG ======
-
                     //TODO make it possible for TransformerRegistry to apply early transformations, before the event, configurationserialization transformations apply.
                     //TODO I may want to use this for sum types to generate the @ConfigurationSerialization annotation once Scan.Type.AUTO_DETECT is implemented!
 

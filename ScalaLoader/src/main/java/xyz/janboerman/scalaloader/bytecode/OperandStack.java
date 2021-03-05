@@ -52,15 +52,8 @@ public final class OperandStack {
     }
 
     public void replaceTop(int popAmount, Type type){
-        shrink(popAmount);
+        pop(popAmount);
         push(type);
-    }
-
-    public void shrink(int subtractAmount) {
-        for (int i = 0; i < subtractAmount && !operandTypes.isEmpty(); i++) {
-            int lastIndex = operandTypes.size() - 1;
-            operandTypes.remove(lastIndex);
-        }
     }
 
     public Type pop() {

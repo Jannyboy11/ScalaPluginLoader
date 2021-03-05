@@ -8,6 +8,8 @@ import static xyz.janboerman.scalaloader.bytecode.AsmConstants.*;
 import xyz.janboerman.scalaloader.bytecode.*;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 
+import java.util.Arrays;
+
 class Conversions {
 
     private Conversions() {}
@@ -24,7 +26,7 @@ class Conversions {
         if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
             //convert array to java.util.List.
             //TODO fix frames!
-            arrayToSerializedType(methodVisitor, descriptor, signature, typeSignature, operandStack, localVariableIndex, start, end, localVariables);
+            //arrayToSerializedType(methodVisitor, typeSignature, operandStack, localVariables, localVariableIndex, start, end);
             return;
         }
 
@@ -126,112 +128,95 @@ class Conversions {
 
     }
 
-    private static void arrayToSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, TypeSignature typeSignature, OperandStack operandStack, int localVariableIndex, Label start, Label end, LocalVariableTable locals) {
-        assert TypeSignature.ARRAY.equals(typeSignature.getTypeName()) : "not an array";
+    private static void arrayToSerializedType(MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable, int localVariableIndex, Label start, Label end) {
 
-        final Type ARRAY_TYPE = Type.getType(descriptor);
+        assert TypeSignature.ARRAY.equals(arrayTypeSignature.getTypeName()) : "not an array";
+        final TypeSignature componentTypeSignature = arrayTypeSignature.getTypeArgument(0);
+        final Type arrayType = Type.getType(arrayTypeSignature.toDescriptor());
+        final Type arrayComponentType = Type.getType(componentTypeSignature.toDescriptor());
 
-        final Label endLabel = new Label();                                                                                 //[..., array]
+        start = new Label();    //shadowing for the win! this way we make sure no new local variable leaks!
+        end = new Label();      //idem! :)
+        methodVisitor.visitLabel(start);
 
-        //store the array as a local variable.
-        final Label label0 = new Label();
-        methodVisitor.visitLabel(label0);
-        final int outerArrayLocalVariableIndex = localVariableIndex++;
-        methodVisitor.visitVarInsn(ASTORE, outerArrayLocalVariableIndex);           operandStack.pop();                     //[...]
-        LocalVariable array0 = new LocalVariable("array0", descriptor, signature, label0, endLabel, outerArrayLocalVariableIndex);
-        locals.add(array0);
+        //store array in local variable
+        methodVisitor.visitTypeInsn(CHECKCAST, arrayType.getInternalName());        operandStack.replaceTop(arrayType);
+        final int arrayIndex = localVariableIndex++;
+        final LocalVariable array = new LocalVariable("array", arrayTypeSignature.toDescriptor(), arrayTypeSignature.toSignature(), start, end, arrayIndex);
+        localVariableTable.add(array);
+        methodVisitor.visitVarInsn(ASTORE, arrayIndex);                             operandStack.pop();
 
-        //store the list as a local variable, use ArrayList(int) constructor.
-        final int outerListLocalVariableIndex = localVariableIndex++;
-        final Label label1 = new Label();
-        methodVisitor.visitLabel(label1);
-        methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");              operandStack.push(ARRAYLIST_TYPE);                //[..., list]
-        methodVisitor.visitInsn(DUP);                                               operandStack.push(ARRAYLIST_TYPE);              //[..., list, list]
-        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            operandStack.push(ARRAY_TYPE);    //[..., list, list, array]
-        methodVisitor.visitInsn(ARRAYLENGTH);                                       operandStack.replaceTop(Type.INT_TYPE);         //[..., list, list, array.length]
-        methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "(I)V", false);   operandStack.pop(2);
-        methodVisitor.visitVarInsn(ASTORE, outerListLocalVariableIndex);            operandStack.pop();
-        final LocalVariable list0 = new LocalVariable("list0", "Ljava/util/List;", "Ljava/util/List<" + typeSignature.toSignature() + ">;", label1, endLabel, outerListLocalVariableIndex);
-        locals.add(list0);
+        //make list and store it in a local variable
+        final int listIndex = localVariableIndex++;
+        methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");                operandStack.push(ARRAYLIST_TYPE);
+        methodVisitor.visitInsn(DUP);                                               operandStack.push(ARRAYLIST_TYPE);
+        methodVisitor.visitVarInsn(ALOAD, arrayIndex);                              operandStack.push(arrayType);
+        methodVisitor.visitInsn(ARRAYLENGTH);                                       operandStack.replaceTop(Type.INT_TYPE);
+        methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "(I)V", false);    operandStack.pop(2);
+        final LocalVariable list = new LocalVariable("list", "Ljava/util/List;", "Ljava/util/List<" + componentTypeSignature + ">;", start, end, listIndex);
+        localVariableTable.add(list);
+        methodVisitor.visitVarInsn(ASTORE, listIndex);                              operandStack.pop();
 
-        //setup int idx0
-        //setup int size
-        final int sizeLocalVariableIndex = localVariableIndex++;
-        final int outerIndexLocalVariableIndex = localVariableIndex++;
-        final Label label2 = new Label();
-        methodVisitor.visitLabel(label2);
-        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            operandStack.push(ARRAY_TYPE);                  //[..., list, array]
-        methodVisitor.visitInsn(ARRAYLENGTH);                                       operandStack.replaceTop(Type.INT_TYPE);          //[..., list, array.length]
-        methodVisitor.visitVarInsn(ISTORE, sizeLocalVariableIndex);                 operandStack.pop();                             //[..., list]
-        final LocalVariable size = new LocalVariable("size", "I", null, label2, endLabel, sizeLocalVariableIndex);
-        locals.add(size);
-        methodVisitor.visitInsn(ICONST_0);                                          operandStack.push(Type.INT_TYPE);               //[..., list, idx=0]
-        methodVisitor.visitVarInsn(ISTORE, outerIndexLocalVariableIndex);           operandStack.pop();                             //[..., list]
-        final LocalVariable idx0 = new LocalVariable("idx0", "I", null, label2, endLabel, outerIndexLocalVariableIndex);
-        locals.add(idx0);
+        //make size and index local variables, additionally create an extra local variable for the array!
+        final int sameArrayIndex = localVariableIndex++;
+        final int sizeIndex = localVariableIndex++;
+        final int indexIndex = localVariableIndex++;
+        methodVisitor.visitVarInsn(ALOAD, arrayIndex);                              operandStack.push(arrayType);
+        final LocalVariable sameArray = new LocalVariable("sameArray", arrayTypeSignature.toDescriptor(), arrayTypeSignature.toSignature(), start, end, sameArrayIndex);
+        localVariableTable.add(sameArray);
+        methodVisitor.visitVarInsn(ASTORE, sameArrayIndex);                         operandStack.pop();
+        methodVisitor.visitVarInsn(ALOAD, sameArrayIndex);                          operandStack.push(arrayType);
+        methodVisitor.visitInsn(ARRAYLENGTH);                                       operandStack.replaceTop(Type.INT_TYPE);
+        final LocalVariable size = new LocalVariable("size", "I", null, start, end, sizeIndex);
+        localVariableTable.add(size);
+        methodVisitor.visitVarInsn(ISTORE, sizeIndex);                              operandStack.pop();
+        methodVisitor.visitInsn(ICONST_0);                                          operandStack.push(Type.INT_TYPE);
+        final LocalVariable index = new LocalVariable("index", "I", null, start, end, indexIndex);
+        localVariableTable.add(index);
+        methodVisitor.visitVarInsn(ISTORE, indexIndex);                             operandStack.pop();
 
-        final Label jumpBackTarget = new Label();                                                                                   //[..., list]
+        //loop body
+        final Label jumpBackTarget = new Label();
+        final Label endOfLoopTarget = new Label();
+
         methodVisitor.visitLabel(jumpBackTarget);
-        final Object[] localVariablesFrame = locals.frame();
-        final int currentLocals = localVariablesFrame.length;
-        methodVisitor.visitFrame(F_FULL, currentLocals, localVariablesFrame, operandStack.operandsSize(), operandStack.frame());
-        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);            operandStack.push(Type.INT_TYPE);               //[..., list, idx]
-        methodVisitor.visitVarInsn(ILOAD, sizeLocalVariableIndex);                  operandStack.push(Type.INT_TYPE);               //[..., list, idx, size]
+        final Object[] localsFrame = localVariableTable.frame();
+        final Object[] stackFrame = operandStack.frame();
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+        methodVisitor.visitVarInsn(ILOAD, indexIndex);                              operandStack.push(Type.INT_TYPE);
+        methodVisitor.visitVarInsn(ILOAD, sizeIndex);                               operandStack.push(Type.INT_TYPE);
+        methodVisitor.visitJumpInsn(IF_ICMPGE, endOfLoopTarget);                    operandStack.pop(2);
+        //load the element
+        methodVisitor.visitVarInsn(ALOAD, sameArrayIndex);                          operandStack.push(arrayType);
+        methodVisitor.visitVarInsn(ILOAD, indexIndex);                              operandStack.push(Type.INT_TYPE);
+        methodVisitor.visitInsn(arrayType.getOpcode(IALOAD));                       operandStack.replaceTop(2, arrayComponentType);
+        //TODO conversion code
+        final Type serializedComponentType = arrayComponentType;    //TODO
+        final int elementIndex = localVariableIndex++;
+        final LocalVariable element = new LocalVariable("element", componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), jumpBackTarget, endOfLoopTarget, elementIndex);
+        localVariableTable.add(element);
+        methodVisitor.visitVarInsn(serializedComponentType.getOpcode(ISTORE), elementIndex);        operandStack.pop();
 
-        final Label conditionFalseLabel = new Label();
-        methodVisitor.visitJumpInsn(IF_ICMPGE, conditionFalseLabel);                operandStack.pop(2);                    //[..., list]
-        //no need to make a local variable for the current array element, just leave it on the stack! :)
-        methodVisitor.visitVarInsn(ALOAD, outerArrayLocalVariableIndex);            operandStack.push(ARRAY_TYPE);                  //[..., list, array]
-        methodVisitor.visitVarInsn(ILOAD, outerIndexLocalVariableIndex);            operandStack.push(Type.INT_TYPE);               //[..., list, array, idx]
-        //determine bytecode opcodes based on array component type
-        final String arrayComponentDescriptor = typeSignature.getTypeArguments().get(0).toDescriptor();
-        final String arrayComponentSignature = typeSignature.getTypeArguments().get(0).toSignature();
-        methodVisitor.visitInsn(arrayLoad(arrayComponentDescriptor));               operandStack.replaceTop(2, Type.getType(arrayComponentDescriptor));     //[..., list, element]
+        //call list.add
+        methodVisitor.visitVarInsn(ALOAD, listIndex);                               operandStack.push(LIST_TYPE);
+        methodVisitor.visitVarInsn(ALOAD, elementIndex);                            operandStack.push(serializedComponentType);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "add", "(Ljava/lang/Object;)Z", true);     operandStack.replaceTop(2, Type.BOOLEAN_TYPE);
+        methodVisitor.visitInsn(POP);                                               operandStack.pop();
 
-        //convert the array element
-        final Label startBodyLabel = new Label();
-        final Label endBodyLabel = new Label();
-        methodVisitor.visitLabel(startBodyLabel);
-        toSerializedType(methodVisitor, arrayComponentDescriptor, arrayComponentSignature, localVariableIndex, startBodyLabel, endBodyLabel, locals, operandStack);
-        locals.removeFramesFromIndex(currentLocals);                                operandStack.replaceTop(OBJECT_TYPE);           //don't care about which element type exactly!
-        methodVisitor.visitLabel(endBodyLabel);                                                                                     //[..., list, serialized(element)]
-
-        //add to the list
-        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "add", "(Ljava/lang/Object;)Z", true);      operandStack.replaceTop(2, Type.BOOLEAN_TYPE);     //[..., boolean]
-        methodVisitor.visitInsn(POP);                                               operandStack.pop();                             //[...]
-        //increment index
-        methodVisitor.visitIincInsn(outerIndexLocalVariableIndex, 1);
-        //load the list again
-        methodVisitor.visitVarInsn(ALOAD, outerListLocalVariableIndex);             operandStack.push(LIST_TYPE);                   //[..., list]
+        //index++;
+        methodVisitor.visitIincInsn(indexIndex, 1);
         methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
 
-        //we have arrived at the end of the array
-        methodVisitor.visitLabel(conditionFalseLabel);                                                                              //[..., list]
-        methodVisitor.visitFrame(F_FULL, currentLocals, localVariablesFrame, operandStack.operandsSize(), operandStack.frame());
+        methodVisitor.visitLabel(endOfLoopTarget);
+        localVariableTable.removeFramesFromIndex(elementIndex);
+        assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
+        assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
 
-        //continue execution
-    }
-
-    private static final int arrayLoad(String descriptor) {
-        switch (descriptor) {
-            case "B":
-            case "Z":
-                return BALOAD;
-            case "S":
-                return SALOAD;
-            case "I":
-                return IALOAD;
-            case "C":
-                return CALOAD;
-            case "F":
-                return FALOAD;
-            case "D":
-                return DALOAD;
-            case "J":
-                return LALOAD;
-            default:
-                return AALOAD;
-        }
+        //load the list again, and continue execution.
+        methodVisitor.visitVarInsn(ALOAD, listIndex);                               operandStack.push(LIST_TYPE);
+        methodVisitor.visitLabel(end);
+        localVariableTable.removeFramesFromIndex(arrayIndex);
     }
 
 
@@ -243,7 +228,7 @@ class Conversions {
             if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
                 //generate code for transforming arrays to lists and their elements
                 //TODO fix frames!
-                arrayToLiveType(methodVisitor, descriptor, signature, typeSignature, operandStack, localVariableIndex, start, end, localVariables);
+                //arrayToLiveType(methodVisitor, descriptor, signature, typeSignature, operandStack, localVariableIndex, start, end, localVariables);
                 return;
             } else {
                 //TODO generate code converting elements of collections and maps
@@ -421,7 +406,10 @@ class Conversions {
 
     private static void arrayToLiveType(MethodVisitor methodVisitor, String descriptor, String signature, TypeSignature typeSignature, OperandStack operandStack, int localVariableIndex, Label start, Label end, LocalVariableTable locals) {
 
-        // a list is already on the stack.                                                                                                                                  //[..., list]
+        //TODO experimentation idea: get rid of the generated code that converts the element in the loop body - just cast to String for now!
+
+        // a list is already on the stack.
+        methodVisitor.visitTypeInsn(CHECKCAST, "java/util/List");                                                                                                       //[..., list]
 
         final TypeSignature componentTypeSignature = typeSignature.getTypeArguments().get(0);
         final Label conditionFalseLabel = new Label();
@@ -440,18 +428,17 @@ class Conversions {
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "size", "()I", true);  operandStack.replaceTop(Type.INT_TYPE);     //[..., size]
 
         final String componentTypeName = componentTypeSignature.getTypeName();
-        final Type COMPONENT_TYPE = Type.getType(componentTypeSignature.toDescriptor());
         final Type ARRAY_TYPE;
         switch (componentTypeName) {
-            case "B":   methodVisitor.visitIntInsn(NEWARRAY, T_BYTE);                   ARRAY_TYPE = Type.getType(byte[].class);                            break;
-            case "S":   methodVisitor.visitIntInsn(NEWARRAY, T_SHORT);                  ARRAY_TYPE = Type.getType(short[].class);                           break;
-            case "I":   methodVisitor.visitIntInsn(NEWARRAY, T_INT);                    ARRAY_TYPE = Type.getType(int[].class);                             break;
-            case "J":   methodVisitor.visitIntInsn(NEWARRAY, T_LONG);                   ARRAY_TYPE = Type.getType(long.class);                              break;
-            case "Z":   methodVisitor.visitIntInsn(NEWARRAY, T_BOOLEAN);                ARRAY_TYPE = Type.getType(boolean[].class);                         break;
-            case "C":   methodVisitor.visitIntInsn(NEWARRAY, T_CHAR);                   ARRAY_TYPE = Type.getType(char[].class);                            break;
-            case "F":   methodVisitor.visitIntInsn(NEWARRAY, T_FLOAT);                  ARRAY_TYPE = Type.getType(float[].class);                           break;
-            case "D":   methodVisitor.visitIntInsn(NEWARRAY, T_DOUBLE);                 ARRAY_TYPE = Type.getType(double[].class);                          break;
-            default:    methodVisitor.visitTypeInsn(ANEWARRAY, componentTypeName);      ARRAY_TYPE = Type.getType(componentTypeSignature.toDescriptor());   break;
+            case "B":   methodVisitor.visitIntInsn(NEWARRAY, T_BYTE);                   ARRAY_TYPE = Type.getType(byte[].class);                                    break;
+            case "S":   methodVisitor.visitIntInsn(NEWARRAY, T_SHORT);                  ARRAY_TYPE = Type.getType(short[].class);                                   break;
+            case "I":   methodVisitor.visitIntInsn(NEWARRAY, T_INT);                    ARRAY_TYPE = Type.getType(int[].class);                                     break;
+            case "J":   methodVisitor.visitIntInsn(NEWARRAY, T_LONG);                   ARRAY_TYPE = Type.getType(long.class);                                      break;
+            case "Z":   methodVisitor.visitIntInsn(NEWARRAY, T_BOOLEAN);                ARRAY_TYPE = Type.getType(boolean[].class);                                 break;
+            case "C":   methodVisitor.visitIntInsn(NEWARRAY, T_CHAR);                   ARRAY_TYPE = Type.getType(char[].class);                                    break;
+            case "F":   methodVisitor.visitIntInsn(NEWARRAY, T_FLOAT);                  ARRAY_TYPE = Type.getType(float[].class);                                   break;
+            case "D":   methodVisitor.visitIntInsn(NEWARRAY, T_DOUBLE);                 ARRAY_TYPE = Type.getType(double[].class);                                  break;
+            default:    methodVisitor.visitTypeInsn(ANEWARRAY, componentTypeName);      ARRAY_TYPE = Type.getType("[" + componentTypeSignature.toDescriptor());     break;
         }                                                                               operandStack.replaceTop(ARRAY_TYPE);                                                //[..., array]
 
         //store the array
@@ -493,8 +480,10 @@ class Conversions {
         final Label bodyStart = new Label();
         final Label bodyEnd = new Label();
         methodVisitor.visitLabel(bodyStart);
-        toLiveType(methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localVariableIndex, bodyStart, bodyEnd, locals, operandStack);
-        locals.removeFramesFromIndex(localVariableIndex);                               operandStack.replaceTop(COMPONENT_TYPE);                                            //[...,, array, index, element]
+        //TODO un-debug this
+        methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");                 operandStack.replaceTop(STRING_TYPE);
+        //toLiveType(methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localVariableIndex, bodyStart, bodyEnd, locals, operandStack); operandStack.replaceTop(COMPONENT_TYPE);
+        locals.removeFramesFromIndex(localVariableIndex);                                                                                                                   //[...,, array, index, element]
         methodVisitor.visitLabel(bodyEnd);
         methodVisitor.visitInsn(arrayStore(componentTypeSignature.toDescriptor()));     operandStack.pop(3);                                                        //[...]
 

@@ -67,6 +67,10 @@ public final class TypeSignature {
         return Collections.unmodifiableList(typeArguments);
     }
 
+    public TypeSignature getTypeArgument(int index) {
+        return typeArguments.get(index);
+    }
+
     public final String toDescriptor() {
         String typeName = getTypeName();
         switch (typeName) {
