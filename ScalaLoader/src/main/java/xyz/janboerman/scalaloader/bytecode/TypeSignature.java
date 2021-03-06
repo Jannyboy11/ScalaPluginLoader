@@ -95,7 +95,7 @@ public final class TypeSignature {
         String typeName = getTypeName();
         switch (typeName) {
             case ARRAY:
-                return "[" + getTypeArguments().get(0).toSignature();
+                return "[" + getTypeArgument(0).toSignature();
             case "B":
             case "S":
             case "I":
