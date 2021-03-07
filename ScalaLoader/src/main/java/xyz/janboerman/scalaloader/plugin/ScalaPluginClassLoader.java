@@ -8,14 +8,8 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.analysis.Analyzer;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.SimpleVerifier;
-import org.objectweb.asm.util.*;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
-import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.transform.*;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
@@ -171,97 +165,6 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             platform = Platform.GLOWSTONE;
         }
         this.platform = platform;
-
-
-        //TODO we got invalid bytecode. bukkit threw up when it tried to transform our bytecode, so try to debug using the analyzer.
-        /*
-        [18:40:56 ERROR]: [ScalaLoader] Server implementation could not transform class: xyz/janboerman/scalaloader/example/java/ArraySerializable.class
-        java.lang.ArrayIndexOutOfBoundsException: Index 65536 out of bounds for length 306
-                at org.bukkit.craftbukkit.libs.org.objectweb.asm.ClassReader.createDebugLabel(ClassReader.java:2673) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at org.bukkit.craftbukkit.libs.org.objectweb.asm.ClassReader.readCode(ClassReader.java:1867) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at org.bukkit.craftbukkit.libs.org.objectweb.asm.ClassReader.readMethod(ClassReader.java:1481) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at org.bukkit.craftbukkit.libs.org.objectweb.asm.ClassReader.accept(ClassReader.java:711) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at org.bukkit.craftbukkit.libs.org.objectweb.asm.ClassReader.accept(ClassReader.java:394) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at org.bukkit.craftbukkit.v1_16_R3.util.Commodore.convert(Commodore.java:174) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader$Platform$1.transform(ScalaPluginClassLoader.java:66) ~[?:?]
-                at xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.findClass(ScalaPluginClassLoader.java:379) ~[?:?]
-                at xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.loadClass(ScalaPluginClassLoader.java:245) ~[?:?]
-                at xyz.janboerman.scalaloader.example.java.ExamplePlugin.onEnable(ExamplePlugin.java) ~[?:?]
-                at xyz.janboerman.scalaloader.plugin.ScalaPluginLoader.enablePlugin(ScalaPluginLoader.java:475) ~[?:?]
-                at org.bukkit.plugin.SimplePluginManager.enablePlugin(SimplePluginManager.java:483) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at org.bukkit.craftbukkit.v1_16_R3.CraftServer.enablePlugin(CraftServer.java:500) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at org.bukkit.craftbukkit.v1_16_R3.CraftServer.enablePlugins(CraftServer.java:414) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at net.minecraft.server.v1_16_R3.MinecraftServer.loadWorld(MinecraftServer.java:465) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at net.minecraft.server.v1_16_R3.DedicatedServer.init(DedicatedServer.java:239) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at net.minecraft.server.v1_16_R3.MinecraftServer.w(MinecraftServer.java:936) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at net.minecraft.server.v1_16_R3.MinecraftServer.lambda$a$0(MinecraftServer.java:174) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at java.lang.Thread.run(Thread.java:832) [?:?]
-        [18:40:56 ERROR]: Error occurred (in the plugin loader) while enabling JavaExample v0.13.10-SNAPSHOT (Is it up to date?)
-        java.lang.ClassFormatError: Invalid length 65521 in LocalVariableTable in class file xyz/janboerman/scalaloader/example/java/ArraySerializable
-                at java.lang.ClassLoader.defineClass1(Native Method) ~[?:?]
-                at java.lang.ClassLoader.defineClass(ClassLoader.java:1016) ~[?:?]
-                at java.security.SecureClassLoader.defineClass(SecureClassLoader.java:151) ~[?:?]
-                at xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.findClass(ScalaPluginClassLoader.java:409) ~[?:?]
-                at xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.loadClass(ScalaPluginClassLoader.java:245) ~[?:?]
-                at xyz.janboerman.scalaloader.example.java.ExamplePlugin.onEnable(ExamplePlugin.java) ~[?:?]
-                at xyz.janboerman.scalaloader.plugin.ScalaPluginLoader.enablePlugin(ScalaPluginLoader.java:475) ~[?:?]
-                at org.bukkit.plugin.SimplePluginManager.enablePlugin(SimplePluginManager.java:483) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at org.bukkit.craftbukkit.v1_16_R3.CraftServer.enablePlugin(CraftServer.java:500) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at org.bukkit.craftbukkit.v1_16_R3.CraftServer.enablePlugins(CraftServer.java:414) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at net.minecraft.server.v1_16_R3.MinecraftServer.loadWorld(MinecraftServer.java:465) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at net.minecraft.server.v1_16_R3.DedicatedServer.init(DedicatedServer.java:239) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at net.minecraft.server.v1_16_R3.MinecraftServer.w(MinecraftServer.java:936) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at net.minecraft.server.v1_16_R3.MinecraftServer.lambda$a$0(MinecraftServer.java:174) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                at java.lang.Thread.run(Thread.java:832) [?:?]
-         */
-//        System.out.println("!!! DEBUG ANALYZING ArraySerializable !!!");
-//        SimpleVerifier verifier = new SimpleVerifier(Type.getObjectType("xyz/janboerman/scalaloader/example/java/ArraySerializable"),Type.getObjectType("java/lang/Object"), false);
-//        Analyzer analyzer = new Analyzer(verifier);
-//        verifier.setClassLoader(this);
-//        MethodNode serializeNode = new MethodNode(AsmConstants.ASM_API, Opcodes.ACC_PUBLIC, "serialize",
-//                "()Ljava/util/Map;",
-//                "()Ljava/util/Map<Ljava/lang/String;Ljava/langObject;>;",null);
-//        MethodNode deserializeNode = new MethodNode(AsmConstants.ASM_API, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "deserialize",
-//                "(Ljava/util/Map;)Lxyz/janboerman/scalaloader/example/java/ArraySerializable;",
-//                "(Ljava/util/Map<Ljava/lang/String;Ljava/lang/Object;>;)Lxyz/janboerman/scalaloader/example/java/ArraySerializable;", null);
-//        try {
-//            analyzer.analyze("xyz/janboerman/scalaloader/example/java/ArraySerializable", serializeNode);
-//            analyzer.analyze("xyz/janboerman/scalaloader/example/java/ArraySerializable", deserializeNode);
-//        } catch (AnalyzerException ae) {
-//            ae.printStackTrace();
-//        }
-//        System.out.println("!!! DEBUG END !!!");
-
-        /*  TODO does this just mean that we forgot to call methodVisitor.visitEnd()?! or methodVisitor.visitInsn(ARETURN) ?!
-        [20:08:45 INFO]: !!! DEBUG ANALYZING ArraySerializable !!!
-        [20:08:45 WARN]: xyz.janboerman.scalaloader.asm.tree.analysis.AnalyzerException: Execution can fall off the end of the code
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.asm.tree.analysis.Analyzer.findSubroutine(Analyzer.java:391)
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.asm.tree.analysis.Analyzer.analyze(Analyzer.java:139)
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.<init>(ScalaPluginClassLoader.java:228)
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.plugin.ScalaPluginLoader.getPluginDescription(ScalaPluginLoader.java:292)
-        [20:08:45 WARN]:        at org.bukkit.plugin.SimplePluginManager.loadPlugins(SimplePluginManager.java:148)
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.ScalaLoader.onLoad(ScalaLoader.java:113)
-        [20:08:45 WARN]:        at org.bukkit.craftbukkit.v1_16_R3.CraftServer.loadPlugins(CraftServer.java:393)
-        [20:08:45 WARN]:        at net.minecraft.server.v1_16_R3.DedicatedServer.init(DedicatedServer.java:206)
-        [20:08:45 WARN]:        at net.minecraft.server.v1_16_R3.MinecraftServer.w(MinecraftServer.java:936)
-        [20:08:45 WARN]:        at net.minecraft.server.v1_16_R3.MinecraftServer.lambda$a$0(MinecraftServer.java:174)
-        [20:08:45 WARN]:        at java.base/java.lang.Thread.run(Thread.java:832)
-        [20:08:45 INFO]: !!! DEBUG END !!!
-        [20:08:45 INFO]: !!! DEBUG ANALYZING ArraySerializable !!!
-        [20:08:45 WARN]: xyz.janboerman.scalaloader.asm.tree.analysis.AnalyzerException: Execution can fall off the end of the code
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.asm.tree.analysis.Analyzer.findSubroutine(Analyzer.java:391)
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.asm.tree.analysis.Analyzer.analyze(Analyzer.java:139)
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.<init>(ScalaPluginClassLoader.java:228)
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.plugin.ScalaPluginLoader.getPluginDescription(ScalaPluginLoader.java:292)
-        [20:08:45 WARN]:        at org.bukkit.plugin.SimplePluginManager.loadPlugins(SimplePluginManager.java:148)
-        [20:08:45 WARN]:        at xyz.janboerman.scalaloader.ScalaLoader.onLoad(ScalaLoader.java:113)
-        [20:08:45 WARN]:        at org.bukkit.craftbukkit.v1_16_R3.CraftServer.loadPlugins(CraftServer.java:393)
-        [20:08:45 WARN]:        at net.minecraft.server.v1_16_R3.DedicatedServer.init(DedicatedServer.java:206)
-        [20:08:45 WARN]:        at net.minecraft.server.v1_16_R3.MinecraftServer.w(MinecraftServer.java:936)
-        [20:08:45 WARN]:        at net.minecraft.server.v1_16_R3.MinecraftServer.lambda$a$0(MinecraftServer.java:174)
-        [20:08:45 WARN]:        at java.base/java.lang.Thread.run(Thread.java:832)
-        [20:08:45 INFO]: !!! DEBUG END !!!
-         */
     }
 
     /**
@@ -439,119 +342,6 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         }
                     }
 
-                    //TODO bukkit bytecode transformations error out.
-                    //TODO let's analyze the classbytes to see if we can find out the cause.
-
-                    //trace:
-                    /*
-                    [20:47:30 ERROR]: Error occurred (in the plugin loader) while enabling JavaExample v0.13.10-SNAPSHOT (Is it up to date?)
-                    java.lang.ArrayIndexOutOfBoundsException: Index 65536 out of bounds for length 306
-                            at xyz.janboerman.scalaloader.asm.ClassReader.createDebugLabel(ClassReader.java:2686) ~[?:?]
-                            at xyz.janboerman.scalaloader.asm.ClassReader.readCode(ClassReader.java:1880) ~[?:?]
-                            at xyz.janboerman.scalaloader.asm.ClassReader.readMethod(ClassReader.java:1491) ~[?:?]
-                            at xyz.janboerman.scalaloader.asm.ClassReader.accept(ClassReader.java:721) ~[?:?]
-                            at xyz.janboerman.scalaloader.asm.ClassReader.accept(ClassReader.java:401) ~[?:?]
-                            at xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.findClass(ScalaPluginClassLoader.java:501) ~[?:?]
-                            at xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.loadClass(ScalaPluginClassLoader.java:342) ~[?:?]
-                            at xyz.janboerman.scalaloader.example.java.ExamplePlugin.onEnable(ExamplePlugin.java) ~[?:?]
-                            at xyz.janboerman.scalaloader.plugin.ScalaPluginLoader.enablePlugin(ScalaPluginLoader.java:475) ~[?:?]
-                            at org.bukkit.plugin.SimplePluginManager.enablePlugin(SimplePluginManager.java:483) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                            at org.bukkit.craftbukkit.v1_16_R3.CraftServer.enablePlugin(CraftServer.java:500) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                            at org.bukkit.craftbukkit.v1_16_R3.CraftServer.enablePlugins(CraftServer.java:414) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                            at net.minecraft.server.v1_16_R3.MinecraftServer.loadWorld(MinecraftServer.java:465) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                            at net.minecraft.server.v1_16_R3.DedicatedServer.init(DedicatedServer.java:239) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                            at net.minecraft.server.v1_16_R3.MinecraftServer.w(MinecraftServer.java:936) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                            at net.minecraft.server.v1_16_R3.MinecraftServer.lambda$a$0(MinecraftServer.java:174) ~[paper-1.16.5.jar:git-Paper-3dadd97bb]
-                            at java.lang.Thread.run(Thread.java:832) [?:?]
-                     */
-                    //interestingly, the index = exactly 2^16 (or 1<<16 written in Java)
-//                    ClassReader debugReader = new ClassReader(classBytes);
-//                    TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out));
-//                    ClassVisitor debugVisitor = new ClassVisitor(AsmConstants.ASM_API, traceClassVisitor) {
-//                        private boolean debug = false;
-//
-//                        @Override
-//                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-//                            if ("xyz/janboerman/scalaloader/example/java/ArraySerializable".equals(name)) {
-//                                debug = true;
-//                            }
-//
-//                            if (debug) super.visit(version, access, name, signature, superName, interfaces);
-//                        }
-//
-//                        @Override
-//                        public void visitSource(String source, String debug) {
-//                            if (this.debug) super.visitSource(source, debug);
-//                        }
-//
-//                        @Override
-//                        public void visitNestHost(String nestHost) {
-//                            if (this.debug) super.visitNestHost(nestHost);
-//                        }
-//
-//                        @Override
-//                        public void visitOuterClass(String owner, String name, String descriptor) {
-//                            if (this.debug) super.visitOuterClass(owner, name, descriptor);
-//                        }
-//
-//                        @Override
-//                        public void visitAttribute(Attribute attribute) {
-//                            if (this.debug) super.visitAttribute(attribute);
-//                        }
-//
-//                        @Override
-//                        public void visitNestMember(String nestMember) {
-//                            if (this.debug) super.visitNestMember(nestMember);
-//                        }
-//
-//                        @Override
-//                        public void visitPermittedSubclass(String permittedSubclass) {
-//                            if (this.debug) super.visitPermittedSubclass(permittedSubclass);
-//                        }
-//
-//                        @Override
-//                        public void visitInnerClass(String name, String outerName, String innerName, int access) {
-//                            if (this.debug) super.visitInnerClass(name, outerName, innerName, access);
-//                        }
-//
-//                        @Override
-//                        public ModuleVisitor visitModule(String name, int access, String version) {
-//                            return debug ? super.visitModule(name, access, version) : null;
-//                        }
-//
-//                        @Override
-//                        public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-//                            return debug ? super.visitAnnotation(descriptor, visible) : null;
-//                        }
-//
-//                        @Override
-//                        public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-//                            return debug ? super.visitTypeAnnotation(typeRef, typePath, descriptor, visible) : null;
-//                        }
-//
-//                        @Override
-//                        public RecordComponentVisitor visitRecordComponent(String name, String descriptor, String signature) {
-//                            return debug ? super.visitRecordComponent(name, descriptor, signature) : null;
-//                        }
-//
-//                        @Override
-//                        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-//                            return debug ? super.visitField(access, name, descriptor, signature, value) : null;
-//                        }
-//
-//                        @Override
-//                        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-//                            return debug ? super.visitMethod(access, name, descriptor, signature, exceptions) : null;
-//                        }
-//
-//                        @Override
-//                        public void visitEnd() {
-//                            if (debug) super.visitEnd();
-//                        }
-//                    };
-//                    debugReader.accept(debugVisitor, 0);
-
-
                     // Note to self 2020-11-11:
                     // If I ever get a java.lang.ClassFormatError: Invalid length 65526 in LocalVariableTable in class file com/example/MyClass
                     // then the cause was: visitLocalVariable was not called before visitMaxes and visitEnd, but way earlier!
@@ -563,7 +353,6 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     } catch (Throwable throwable) {
                         getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Server implementation could not transform class: " + path, throwable);
                     }
-
 
                     //define the package
                     int dotIndex = name.lastIndexOf('.');

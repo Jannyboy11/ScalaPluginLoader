@@ -26,7 +26,7 @@ class ListSerializationTest {
         this.plugin = plugin;
         File dataFolder = plugin.getDataFolder();
         dataFolder.mkdirs();
-        saveFile = new File(dataFolder, "array-serialization-test.yml");
+        saveFile = new File(dataFolder, "list-serialization-test.yml");
         if (!saveFile.exists()) {
             try {
                 saveFile.createNewFile();

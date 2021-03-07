@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -36,6 +37,8 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
         localVariables.add(localVariable);
         maxCount = Math.max(maxCount, tableIndex + 1);
         addFrame(localVariable);
+
+        assert frameData.stream().noneMatch(Objects::isNull) : "a local variable in the frame is null";
     }
 
     public void add(LocalVariable... localVariables) {
@@ -47,6 +50,8 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
 
         //assert that there are no gaps in the local variable table
         assert IntStream.range(0, maxLocals()).allMatch(index -> this.localVariables.stream().anyMatch(lvd -> lvd.tableIndex == index));
+        //assert that no local variable in the frame is null
+        assert frameData.stream().allMatch(Objects::nonNull);
         //assert that the frame data is consistent
         assert IntStream.range(0, frameData.size()).allMatch(index -> frameData.get(index).tableIndex == index);
     }
@@ -56,8 +61,14 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
         if (tableIndex < frameData.size()) {
             //replace
             frameData.set(tableIndex, localVariable);
-        } else {
+        } else if (tableIndex == frameData.size()){
             //append
+            frameData.add(localVariable);
+        } else {
+            //add nulls and replace later
+            for (int i = frameData.size(); i < tableIndex; i++) {
+                frameData.add(null);
+            }
             frameData.add(localVariable);
         }
 

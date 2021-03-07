@@ -823,8 +823,8 @@ class SerializableTransformer extends ClassVisitor {
                     final Label veryLastLabel = new Label();
                     final int thisIndex = thisFirstThenMap ? 0 : 1;
                     final int mapIndex = thisFirstThenMap ? 1 : 0;
-                    LocalVariable localVariableThis = new LocalVariable("this", classDescriptor, classSignature, label0, veryLastLabel, thisIndex);
-                    LocalVariable localVariableMap = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, veryLastLabel, mapIndex);
+                    final LocalVariable localVariableThis = new LocalVariable("this", classDescriptor, classSignature, label0, veryLastLabel, thisIndex);
+                    final LocalVariable localVariableMap = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, veryLastLabel, mapIndex);
                     localVariableTable.add(localVariableThis, localVariableMap);
 
                     final Label label1 = new Label();

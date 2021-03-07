@@ -78,7 +78,7 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
     //TODO both the generated serialize and deserialize are having issues!
 
     //Generated!
-    //@Override
+//    @Override
 //    public Map<String, Object> serialize() {
 //        Map<String, Object> map = new HashMap<>();
 //
