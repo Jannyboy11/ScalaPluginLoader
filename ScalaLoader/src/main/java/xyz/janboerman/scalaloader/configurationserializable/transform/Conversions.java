@@ -17,6 +17,8 @@ class Conversions {
 
     private Conversions() {}
 
+    //TODO get rid of localVariableIndex, start label and end label?
+
     static void toSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
 
         TypeSignature typeSignature = signature == null ? TypeSignature.ofDescriptor(descriptor) : TypeSignature.ofDescriptor(signature);
@@ -24,7 +26,7 @@ class Conversions {
         //detect arrays
         if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
             //convert array to java.util.List.
-            arrayToSerializedType(methodVisitor, typeSignature, operandStack, localVariables, localVariableIndex);
+            arrayToSerializedType(methodVisitor, typeSignature, operandStack, localVariables, localVariables.frameSize());
             return;
         } //else if (collection types)
 
@@ -190,7 +192,7 @@ class Conversions {
         //load the element
         methodVisitor.visitVarInsn(ALOAD, sameArrayIndex);                          operandStack.push(arrayType);
         methodVisitor.visitVarInsn(ILOAD, indexIndex);                              operandStack.push(Type.INT_TYPE);
-        methodVisitor.visitInsn(arrayType.getOpcode(IALOAD));                       operandStack.replaceTop(2, arrayComponentType);
+        methodVisitor.visitInsn(arrayComponentType.getOpcode(IALOAD));              operandStack.replaceTop(2, arrayComponentType);
 
         //convert
         final int elementIndex = localVariableIndex++;
@@ -267,7 +269,7 @@ class Conversions {
         if (!typeSignature.getTypeArguments().isEmpty()) {
             if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
                 //generate code for transforming arrays to lists and their elements
-                arrayToLiveType(methodVisitor, typeSignature, operandStack, localVariables, localVariableIndex);
+                arrayToLiveType(methodVisitor, typeSignature, operandStack, localVariables, localVariables.frameSize());
                 return;
             } else {
                 //TODO generate code converting elements of collections and maps
@@ -536,7 +538,7 @@ class Conversions {
             case "D":   mv.visitIntInsn(NEWARRAY, T_DOUBLE);                    break;
             case "Z":   mv.visitIntInsn(NEWARRAY, T_BOOLEAN);                   break;
             case "C":   mv.visitIntInsn(NEWARRAY, T_CHAR);                      break;
-            default:    mv.visitTypeInsn(ANEWARRAY, ofWhat.getTypeName());      break;
+            default:    mv.visitTypeInsn(ANEWARRAY, ofWhat.internalName());      break;
         }
     }
 

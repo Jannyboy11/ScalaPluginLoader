@@ -8,8 +8,11 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
+//import org.objectweb.asm.tree.analysis.*;
+//import org.objectweb.asm.util.*;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
+//import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.transform.*;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
@@ -74,7 +77,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 //            public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
 //                GlowServer glowServer = (GlowServer) currentPluginClassLoader.getServer();
 //                GlowUnsafeValues glowUnsafeValues = (GlowUnsafeValues) glowServer.getUnsafe();
-//                glowUnsafeValues.processClass() -- not yet implemented in the GlowStone 1.15 branch
+//                glowUnsafeValues.processClass() -- not yet implemented in the GlowStone 1.16 branch
 //            }
         },
         UNKNOWN;
@@ -342,6 +345,93 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         }
                     }
 
+//                    ClassReader debugReader = new ClassReader(classBytes);
+//                    TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out));
+//                    ClassVisitor debugVisitor = new ClassVisitor(AsmConstants.ASM_API, traceClassVisitor) {
+//                        private boolean debug = false;
+//
+//                        @Override
+//                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+//                            if ("xyz/janboerman/scalaloader/example/java/ArraySerializable".equals(name)) {
+//                                debug = true;
+//                            }
+//
+//                            if (debug) super.visit(version, access, name, signature, superName, interfaces);
+//                        }
+//
+//                        @Override
+//                        public void visitSource(String source, String debug) {
+//                            if (this.debug) super.visitSource(source, debug);
+//                        }
+//
+//                        @Override
+//                        public void visitNestHost(String nestHost) {
+//                            if (this.debug) super.visitNestHost(nestHost);
+//                        }
+//
+//                        @Override
+//                        public void visitOuterClass(String owner, String name, String descriptor) {
+//                            if (this.debug) super.visitOuterClass(owner, name, descriptor);
+//                        }
+//
+//                        @Override
+//                        public void visitAttribute(Attribute attribute) {
+//                            if (this.debug) super.visitAttribute(attribute);
+//                        }
+//
+//                        @Override
+//                        public void visitNestMember(String nestMember) {
+//                            if (this.debug) super.visitNestMember(nestMember);
+//                        }
+//
+//                        @Override
+//                        public void visitPermittedSubclass(String permittedSubclass) {
+//                            if (this.debug) super.visitPermittedSubclass(permittedSubclass);
+//                        }
+//
+//                        @Override
+//                        public void visitInnerClass(String name, String outerName, String innerName, int access) {
+//                            if (this.debug) super.visitInnerClass(name, outerName, innerName, access);
+//                        }
+//
+//                        @Override
+//                        public ModuleVisitor visitModule(String name, int access, String version) {
+//                            return debug ? super.visitModule(name, access, version) : null;
+//                        }
+//
+//                        @Override
+//                        public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+//                            return debug ? super.visitAnnotation(descriptor, visible) : null;
+//                        }
+//
+//                        @Override
+//                        public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
+//                            return debug ? super.visitTypeAnnotation(typeRef, typePath, descriptor, visible) : null;
+//                        }
+//
+//                        @Override
+//                        public RecordComponentVisitor visitRecordComponent(String name, String descriptor, String signature) {
+//                            return debug ? super.visitRecordComponent(name, descriptor, signature) : null;
+//                        }
+//
+//                        @Override
+//                        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+//                            return debug ? super.visitField(access, name, descriptor, signature, value) : null;
+//                        }
+//
+//                        @Override
+//                        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+//                            return debug ? super.visitMethod(access, name, descriptor, signature, exceptions) : null;
+//                        }
+//
+//                        @Override
+//                        public void visitEnd() {
+//                            if (debug) super.visitEnd();
+//                        }
+//                    };
+//                    debugReader.accept(debugVisitor, 0);
+
+
                     // Note to self 2020-11-11:
                     // If I ever get a java.lang.ClassFormatError: Invalid length 65526 in LocalVariableTable in class file com/example/MyClass
                     // then the cause was: visitLocalVariable was not called before visitMaxes and visitEnd, but way earlier!
@@ -353,6 +443,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     } catch (Throwable throwable) {
                         getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Server implementation could not transform class: " + path, throwable);
                     }
+
 
                     //define the package
                     int dotIndex = name.lastIndexOf('.');

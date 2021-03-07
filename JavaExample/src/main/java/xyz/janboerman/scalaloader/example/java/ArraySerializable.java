@@ -62,20 +62,18 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
 
     //just needs container type conversion: String[]<->List<String>
     private String[] strings = new String[] { "hello", "world" };
-//    //needs container type conversion as well as component type conversion: int[]<->List<Integer>
-//    private int[] ints = new int[] {0, 1, 2};
-//    //idem, but the component type conversion is more than just (un)boxing: long[]<->List<String>
-//    private long[] longs = new long[] {4L, 5L, 6L};
-//    //idem, but the component itself is a container, and therefore needs nested conversion: boolean[][]<->List<List<Boolean>> (need to utilise recursion!)
-//    private boolean[][] booleanss = new boolean[][] {
-//            {true, false, false},
-//            {false, true, true}
-//    };
+    //needs container type conversion as well as component type conversion: int[]<->List<Integer>
+    private int[] ints = new int[] {0, 1, 2};
+    //idem, but the component type conversion is more than just (un)boxing: long[]<->List<String>
+    private long[] longs = new long[] {4L, 5L, 6L};
+    //idem, but the component itself is a container, and therefore needs nested conversion: boolean[][]<->List<List<Boolean>> (need to utilise recursion!)
+    private boolean[][] booleanss = new boolean[][] {
+            {true, false, false},
+            {false, true, true}
+    };
 
     ArraySerializable() {
     }
-
-    //TODO both the generated serialize and deserialize are having issues!
 
     //Generated!
 //    @Override
@@ -87,34 +85,34 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
 //            list0 = Arrays.asList(strings);
 //            map.put("strings", list0);
 //        }
-////        {
-////            List<Integer> list0;
-////            list0 = new ArrayList<>(ints.length);
-////            for (int x : ints) {
-////                list0.add(Integer.valueOf(x));
-////            }
-////            map.put("ints", list0);
-////        }
-////        {
-////            List<String> list0;
-////            list0 = new ArrayList<>(longs.length);
-////            for (long x : longs) {
-////                list0.add(Long.toString(x));
-////            }
-////            map.put("longs", list0);
-////        }
-////        {
-////            List<List<Boolean>> list0;
-////            list0 = new ArrayList<>(booleanss.length);
-////            for (boolean[] xs : booleanss) {
-////                List<Boolean> list1 = new ArrayList<>(xs.length);
-////                for (boolean x : xs) {
-////                    list1.add((Boolean.valueOf(x)));
-////                }
-////                list0.add(list1);
-////            }
-////            map.put("booleanss", list0);
-////        }
+//        {
+//            List<Integer> list0;
+//            list0 = new ArrayList<>(ints.length);
+//            for (int x : ints) {
+//                list0.add(Integer.valueOf(x));
+//            }
+//            map.put("ints", list0);
+//        }
+//        {
+//            List<String> list0;
+//            list0 = new ArrayList<>(longs.length);
+//            for (long x : longs) {
+//                list0.add(Long.toString(x));
+//            }
+//            map.put("longs", list0);
+//        }
+//        {
+//            List<List<Boolean>> list0;
+//            list0 = new ArrayList<>(booleanss.length);
+//            for (boolean[] xs : booleanss) {
+//                List<Boolean> list1 = new ArrayList<>(xs.length);
+//                for (boolean x : xs) {
+//                    list1.add((Boolean.valueOf(x)));
+//                }
+//                list0.add(list1);
+//            }
+//            map.put("booleanss", list0);
+//        }
 //
 //        return map;
 //    }
@@ -128,36 +126,36 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
 //            String[] array0 = list0.toArray(new String[list0.size()]);
 //            res.strings = array0;
 //        }
-////        {
-////            List<Integer> list0 = (List<Integer>) map.get("ints");
-////            int[] array0 = new int[list0.size()];
-////            for (int idx0 = 0; idx0 < array0.length; idx0++) {
-////                array0[idx0] = list0.get(idx0).intValue();
-////            }
-////            res.ints = array0;
-////        }
-////        {
-////            List<String> list0 = (List<String>) map.get("longs");
-////            long[] array0 = new long[list0.size()];
-////            for (int idx0 = 0; idx0 < array0.length; idx0++) {
-////                array0[idx0] = Long.parseLong(list0.get(idx0));
-////            }
-////            res.longs = array0;
-////        }
-////        {
-////            List<List<Boolean>> list0 = (List<List<Boolean>>) map.get("booleanss");
-////            boolean[][] array0 = new boolean[list0.size()][];
-////            for (int idx0 = 0; idx0 < array0.length; idx0++) {
-////                List<Boolean> list1 = list0.get(idx0);
-////                boolean[] array1 = new boolean[list1.size()];
-////                for (int idx1 = 0; idx1 < array1.length; idx1++) {
-////                    array1[idx1] = list1.get(idx1).booleanValue();
-////                }
-////                array0[idx0] = array1;
-////            }
-////
-////            res.booleanss = array0;
-////        }
+//        {
+//            List<Integer> list0 = (List<Integer>) map.get("ints");
+//            int[] array0 = new int[list0.size()];
+//            for (int idx0 = 0; idx0 < array0.length; idx0++) {
+//                array0[idx0] = list0.get(idx0).intValue();
+//            }
+//            res.ints = array0;
+//        }
+//        {
+//            List<String> list0 = (List<String>) map.get("longs");
+//            long[] array0 = new long[list0.size()];
+//            for (int idx0 = 0; idx0 < array0.length; idx0++) {
+//                array0[idx0] = Long.parseLong(list0.get(idx0));
+//            }
+//            res.longs = array0;
+//        }
+//        {
+//            List<List<Boolean>> list0 = (List<List<Boolean>>) map.get("booleanss");
+//            boolean[][] array0 = new boolean[list0.size()][];
+//            for (int idx0 = 0; idx0 < array0.length; idx0++) {
+//                List<Boolean> list1 = list0.get(idx0);
+//                boolean[] array1 = new boolean[list1.size()];
+//                for (int idx1 = 0; idx1 < array1.length; idx1++) {
+//                    array1[idx1] = list1.get(idx1).booleanValue();
+//                }
+//                array0[idx0] = array1;
+//            }
+//
+//            res.booleanss = array0;
+//        }
 //
 //        return res;
 //    }
@@ -168,9 +166,9 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
         int result = 1;
 
         result = 31 * result + Arrays.hashCode(strings);
-//        result = 31 * result + Arrays.hashCode(ints);
-//        result = 31 * result + Arrays.hashCode(longs);
-//        result = 31 * result + Arrays.deepHashCode(booleanss);
+        result = 31 * result + Arrays.hashCode(ints);
+        result = 31 * result + Arrays.hashCode(longs);
+        result = 31 * result + Arrays.deepHashCode(booleanss);
 
         return result;
     }
@@ -182,9 +180,9 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
 
         ArraySerializable that = (ArraySerializable) obj;
         if (!Arrays.equals(this.strings, that.strings)) return false;
-//        if (!Arrays.equals(this.ints, that.ints)) return false;
-//        if (!Arrays.equals(this.longs, that.longs)) return false;
-//        if (!Arrays.deepEquals(this.booleanss, that.booleanss)) return false;
+        if (!Arrays.equals(this.ints, that.ints)) return false;
+        if (!Arrays.equals(this.longs, that.longs)) return false;
+        if (!Arrays.deepEquals(this.booleanss, that.booleanss)) return false;
 
         return true;
     }
@@ -193,9 +191,9 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
     public String toString() {
         return "ArraySerializable"
                 + "{strings = " + Arrays.toString(strings)
-//                + ",ints = " + Arrays.toString(ints)
-//                + ",longs = " + Arrays.toString(longs)
-//                + ",booleanss = " + Arrays.deepToString(booleanss)
+                + ",ints = " + Arrays.toString(ints)
+                + ",longs = " + Arrays.toString(longs)
+                + ",booleanss = " + Arrays.deepToString(booleanss)
                 + "}";
 
     }

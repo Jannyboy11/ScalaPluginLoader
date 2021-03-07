@@ -27,12 +27,17 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
     }
 
     public void add(LocalVariable localVariable) {
+        assert localVariable != null : "can't add a null localVariable";
+
         final int tableIndex = localVariable.tableIndex;
+        //assert that the position of the local variable in the table is 0 or more.
         assert 0 <= tableIndex : "index in the local variable table below 0";
         //assert that the new local variable's index is not more than 1 above the currently known highest local variable.
         assert tableIndex <= maxLocals() : "local variable " + localVariable + " is more than 1 higher than the currently known highest local variable in the table " + this + ", maxLocals = " + maxLocals();
         //assert that the local variable is replaces an older one, or is added at the 'next' index.
         assert tableIndex <= localVariables.size() : "local variable " + localVariable + " does not 'replace' another, nor, is it the 'next' local variable in the table " + this;
+        //assert that the local variable is the last one in the frame
+        assert tableIndex == frameData.size() : "local variable " + localVariable + " can't be appended at the end of the frame: " + frameData;
 
         localVariables.add(localVariable);
         maxCount = Math.max(maxCount, tableIndex + 1);
@@ -43,6 +48,8 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
 
     public void add(LocalVariable... localVariables) {
         for (LocalVariable localVariable : localVariables) {
+            assert localVariable != null : "local variable can't be null!";
+
             this.localVariables.add(localVariable);
             this.maxCount = Math.max(maxCount, localVariable.tableIndex + 1);
             addFrame(localVariable);
@@ -57,6 +64,8 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
     }
 
     private void addFrame(LocalVariable localVariable) {
+        assert localVariable != null : "local variable can't be null!";
+
         int tableIndex = localVariable.tableIndex;
         if (tableIndex < frameData.size()) {
             //replace
@@ -69,7 +78,8 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
             for (int i = frameData.size(); i < tableIndex; i++) {
                 frameData.add(null);
             }
-            frameData.add(localVariable);
+            addFrame(localVariable);
+            assert frameData.get(frameData.size() - 1) != null : "last local in the frame was is not null!";
         }
 
         //callers need to assert that our frame data is consistent.
@@ -79,16 +89,12 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
         return maxCount;
     }
 
-    public int currentLocals() {
+    public int localsSize() {
         return localVariables.size();
     }
 
-    public void removeFrames(int howMany) {
-        int initialLastIndex = frameData.size() - 1;
-        for (int i = 0; i < howMany; i++) {
-            int index = initialLastIndex - i;
-            frameData.remove(index);
-        }
+    public int frameSize() {
+        return frameData.size();
     }
 
     public void removeFramesFromIndex(int index) {
@@ -96,10 +102,9 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
         for (int i = size - 1; i >= index; i--) {
             frameData.remove(i);
         }
-    }
+        frameData.trimToSize();
 
-    public void removeFrame(LocalVariable localVariable) {
-        frameData.remove(localVariable);
+        assert frameData.stream().noneMatch(Objects::isNull) : "there is a null localvariable in the frame data";
     }
 
     @Override

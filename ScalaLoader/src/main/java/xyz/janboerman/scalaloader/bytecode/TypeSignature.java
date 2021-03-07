@@ -58,6 +58,14 @@ public final class TypeSignature {
         return typeName;
     }
 
+    public String internalName() {
+        if (ARRAY.equals(typeName)) {
+            return '[' + getTypeArgument(0).internalName();
+        }
+
+        return typeName;
+    }
+
     /**
      * The type arguments types of this type.
      * If this TypeSignature was constructed from an array signature, the type arguments only contains one element.

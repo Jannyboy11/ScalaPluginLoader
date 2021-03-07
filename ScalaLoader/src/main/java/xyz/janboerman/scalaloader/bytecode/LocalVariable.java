@@ -40,12 +40,14 @@ public final class LocalVariable {
         LocalVariable that = (LocalVariable) o;
         return Objects.equals(this.name, that.name)
                 && Objects.equals(this.descriptor, that.descriptor)
-                && this.tableIndex == that.tableIndex;
+                && this.tableIndex == that.tableIndex
+                && Objects.equals(this.startLabel, that.startLabel)
+                && Objects.equals(this.endLabel, that.endLabel);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, descriptor, tableIndex);
+        return Objects.hash(name, descriptor, tableIndex, startLabel, endLabel);
     }
 
     @Override

@@ -98,7 +98,7 @@ class FieldMoney /*implements org.bukkit.configuration.serialization.Configurati
 
     @Override
     public int hashCode() {
-        return Objects.hash(currency, amount);
+        return Objects.hash(currency, amount, doesNotCount);
     }
 
     @Override
@@ -107,6 +107,7 @@ class FieldMoney /*implements org.bukkit.configuration.serialization.Configurati
         if (!(obj instanceof FieldMoney that)) return false;
 
         return Objects.equals(this.currency, that.currency)
+                && Objects.equals(this.doesNotCount, that.doesNotCount)
                 && Math.abs(this.amount - that.amount) < 0.0001F;
     }
 }

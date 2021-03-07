@@ -14,7 +14,7 @@ public @interface Scan {
 
     //TODO rename this to 'SerializationMethod' or sth? That's clashes with DeserializationMethod (which has values VALUE_OF, DESERIALIZE and MAP_CONSTRUCTOR) tho.
 
-    Type value() default Type.FIELDS;
+    Type value() default Type.FIELDS;   //TODO default to AUTO_DETECT whenever I implement that.
 
     public enum Type {
 

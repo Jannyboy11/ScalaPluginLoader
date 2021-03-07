@@ -258,7 +258,7 @@
             <version>${asmVersion}</version>
         </dependency>
 
-<!--        &lt;!&ndash; for debugging only &ndash;&gt;-->
+        <!-- for debugging only -->
 <!--        <dependency>-->
 <!--            <groupId>org.ow2.asm</groupId>-->
 <!--            <artifactId>asm-util</artifactId>-->
