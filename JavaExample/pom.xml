@@ -5,7 +5,7 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.13.10-SNAPSHOT</version>
+        <version>0.13.11-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -23,7 +23,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <release>15</release>
+                    <release>16</release>
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                         <arg>-parameters</arg>
@@ -80,7 +80,7 @@
                     <dependency>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm</artifactId>
-                        <version>8.0.1</version>
+                        <version>9.1</version>
                     </dependency>
                 </dependencies>
             </plugin>

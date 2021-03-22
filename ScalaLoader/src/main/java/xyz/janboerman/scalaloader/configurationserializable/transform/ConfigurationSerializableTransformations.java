@@ -104,7 +104,7 @@ public class ConfigurationSerializableTransformations {
     //TODO and Ideally, these types are only registered ONCE per scala version!
 
     //TODO I can achieve this by transforming the classes from the scala standard lib themselves and add ConfigurationSerializable as an interface
-    //TODO one other possiblity is to generate wrapper classes!
+    //TODO one other possibility is to generate wrapper classes!
     //TODO but the most portable solution would be to generate the wrapping-and unwrapping code at the use-site.
 
     //TODO should these scala standard library classes be registered using an alias that includes the scala version string (not minor version)! (in order to disambiguate!)
@@ -113,7 +113,7 @@ public class ConfigurationSerializableTransformations {
     //TODO actually, *maybe* the best solution to do this is to *not* do it so that I won't run into these extra problems! (like java modules don't have support for versions!)
     //TODO but not registering scala stdlib classes and generating the transformation bytecode as use-site would still work, so I'm going with that solution when the time comes!
 
-    //also do not forget about 'immutable' java types such as BigDecimal, BigInteger, UUID TODO and maybe enums?
+    //TODO also do not forget about 'immutable' java types such as BigDecimal, BigInteger, UUID TODO and maybe enums?
     //TODO I don't think I can detect whether a class is an enum without loading it if it is not in the same jar file
 
     private ConfigurationSerializableTransformations() {}
@@ -131,7 +131,7 @@ public class ConfigurationSerializableTransformations {
 
         ClassVisitor combinedTransformer = classWriter;
         combinedTransformer = new DelegateTransformer(combinedTransformer, localResult);
-        combinedTransformer = new SerializableTransformer(combinedTransformer, localResult);
+        combinedTransformer = new SerializableTransformer(combinedTransformer, localResult, pluginClassLoader);
 
         new ClassReader(clazz).accept(combinedTransformer, 0);
 

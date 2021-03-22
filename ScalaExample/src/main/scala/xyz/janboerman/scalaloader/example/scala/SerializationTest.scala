@@ -102,7 +102,7 @@ object Maybe {
 
     def test(): Unit = {
         val console = ExamplePlugin.getServer.getConsoleSender
-        console.sendMessage(s"${ChatColor.YELLOW}Test ${ChatColor.RESET}mabye.equals(deserialize(serialize(maybe))")
+        console.sendMessage(s"${ChatColor.YELLOW}Test ${ChatColor.RESET}maybe.equals(deserialize(serialize(maybe))")
 
         val justHello = Maybe("Hello")
         val nothing = Maybe(null)

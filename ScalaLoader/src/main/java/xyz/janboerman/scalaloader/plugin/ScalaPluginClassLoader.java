@@ -442,6 +442,9 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         classBytes = platform.transform(path, classBytes, this);
                     } catch (Throwable throwable) {
                         getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "Server implementation could not transform class: " + path, throwable);
+                        //the reason we don't give up here is we do still want to load the class even though bukkit could not transform it.
+                        //this most likely happened because its version of the ASM api is not up to date with recent java language features.
+                        //it is very possible that the class that used a recent java language feature (e.g. sealed types) does not need the Material rewrite treatment.
                     }
 
 

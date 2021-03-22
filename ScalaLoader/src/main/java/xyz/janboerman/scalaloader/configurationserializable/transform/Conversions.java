@@ -8,29 +8,38 @@ import static xyz.janboerman.scalaloader.bytecode.AsmConstants.*;
 import xyz.janboerman.scalaloader.bytecode.*;
 import xyz.janboerman.scalaloader.compat.Compat;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
+import xyz.janboerman.scalaloader.util.Pair;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 class Conversions {
 
     private Conversions() {}
 
-    //TODO get rid of localVariableIndex, start label and end label?
-
-    static void toSerializedType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
+    static void toSerializedType(ClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalVariableTable localVariables, OperandStack operandStack) {
 
         TypeSignature typeSignature = signature == null ? TypeSignature.ofDescriptor(descriptor) : TypeSignature.ofDescriptor(signature);
 
         //detect arrays
         if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
             //convert array to java.util.List.
-            arrayToSerializedType(methodVisitor, typeSignature, operandStack, localVariables, localVariables.frameSize());
+            arrayToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
             return;
-        } //else if (collection types)
+        } else if (isJavaUtilCollection(typeSignature, pluginClassLoader)) {
+            //TODO implement conversion of elements of java.util.List and java.util.Set.
+            //TODO do this by calling the ArrayList or LinkedHashSet no-args constructor,
+            //TODO iterating over the collection and converting the element, and finally calling ArrayList#add(Object) or LinkedHashSet#add(Object)
 
-        //TODO implement conversion of elements of java.util.List, java.util.Set and java.util.Map later.
+            //TODO when deserializing, we need to make sure we call the right constructor (for List that's going to be ArrayList and for Set that's going to be LinkedHashSet)
+        }
+
+        //TODO implement java.util.Map-converions later.
         //TODO look at their signature!
         //TODO the generated code is quite similar to the array-code!
 
@@ -128,7 +137,7 @@ class Conversions {
 
     }
 
-    private static void arrayToSerializedType(MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable, int localVariableIndex) {
+    private static void arrayToSerializedType(ClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
 
         assert TypeSignature.ARRAY.equals(arrayTypeSignature.getTypeName()) : "not an array";
         final TypeSignature componentTypeSignature = arrayTypeSignature.getTypeArgument(0);
@@ -137,6 +146,7 @@ class Conversions {
         final TypeSignature serializedComponentTypeSignature = serializedType(componentTypeSignature);
         final Type serializedComponentType = Type.getType(serializedComponentTypeSignature.toDescriptor());
 
+        int localVariableIndex = localVariableTable.frameSize();
         final Label start = new Label();
         final Label end = new Label();
         methodVisitor.visitLabel(start);
@@ -199,7 +209,7 @@ class Conversions {
         final Label bodyStart = new Label();
         final Label bodyEnd = new Label();
         methodVisitor.visitLabel(bodyStart);
-        toSerializedType(methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localVariableIndex, bodyStart, bodyEnd, localVariableTable, operandStack);
+        toSerializedType(pluginClassLoader, methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localVariableTable, operandStack);
         methodVisitor.visitLabel(bodyEnd);
         final LocalVariable element = new LocalVariable("element", serializedComponentTypeSignature.toDescriptor(), serializedComponentTypeSignature.toSignature(), jumpBackTarget, endOfLoopTarget, elementIndex);
         localVariableTable.add(element);
@@ -262,17 +272,22 @@ class Conversions {
     }
 
 
-    static void toLiveType(MethodVisitor methodVisitor, String descriptor, String signature, int localVariableIndex, Label start, Label end, LocalVariableTable localVariables, OperandStack operandStack) {
+    static void toLiveType(ClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalVariableTable localVariables, OperandStack operandStack) {
 
         final TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
 
         if (!typeSignature.getTypeArguments().isEmpty()) {
             if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
                 //generate code for transforming arrays to lists and their elements
-                arrayToLiveType(methodVisitor, typeSignature, operandStack, localVariables, localVariables.frameSize());
+                arrayToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
                 return;
             } else {
                 //TODO generate code converting elements of collections and maps
+                //TODO reconstruction of Maps, Sets and Lists should be done using the no-args constructor of the class used,
+                //TODO can actively check this by calling java.lang.Class#isInterface() and java.lang.Class#getConstructor() (without parameter types)
+
+                //TODO or, if one of the interfaces was used, LinkedHashMap, LinkedHashSet and ArrayList should be used.
+                //TODO if [Ordered/Sorted][Set/Map] was used, then Tree[Set/Map] should be used.
             }
         }
 
@@ -445,7 +460,7 @@ class Conversions {
         }
     }
 
-    private static void arrayToLiveType(MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable, int localVariableIndex) {
+    private static void arrayToLiveType(ClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
 
         assert TypeSignature.ARRAY.equals(arrayTypeSignature.getTypeName()) : "not an array";
 
@@ -454,6 +469,7 @@ class Conversions {
         final Type componentType = Type.getType(componentTypeSignature.toDescriptor());
         final TypeSignature listTypeSignature = serializedType(arrayTypeSignature);
 
+        int localVariableIndex = localVariableTable.frameSize();
         final Label start = new Label();
         final Label end = new Label();
         methodVisitor.visitLabel(start);
@@ -505,7 +521,7 @@ class Conversions {
         //convert
         final Label bodyStart = new Label(), bodyEnd = new Label();
         methodVisitor.visitLabel(bodyStart);
-        toLiveType(methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localVariableIndex, bodyStart, bodyEnd, localVariableTable, operandStack);                           //[..., array, index, element]
+        toLiveType(pluginClassLoader, methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localVariableTable, operandStack);   //[..., array, index, element]
         methodVisitor.visitLabel(bodyEnd);
         //store in the array (that we loaded earlier before list.get)
         methodVisitor.visitInsn(componentType.getOpcode(IASTORE));                      operandStack.pop(3);                                                    //[...]
@@ -581,5 +597,117 @@ class Conversions {
     //TODO ACTUALLY - I think it's probably better to generate that bytecode in the classfile itself! (in case of nested arrays!)
     //TODO arrays of enums?
     //TODO arrays of other configurationserializable types
+
+
+    private static String collectionClassTypeName(String collectionTypeName) {
+        switch (collectionTypeName) {
+            //lists
+            case "java/util/AbstractCollection":
+            case "java/util/AbstractList":
+            case "java/util/List":
+                return "java/util/ArrayList";
+
+            //queues and deques
+            case "java/util/concurrent/BlockingDeque":
+                return "java/util/concurrent/LinkedBlockingDeque";
+            case "java/util/concurrent/TransferQueue":
+                return "java/util/concurrent/LinkedTransferQueue";
+            case "java/util/concurrent/BlockingQueue":
+                return "java/util/concurrent/ArrayBlockingQueue";
+            case "java/util/AbstractQueue":
+                return "java/util/concurrent/ConcurrentLinkedQueue";
+            case "java/util/Deque":
+                return "java/util/ArrayDeque";
+            case "java/util/Queue":
+                return "java/util/LinkedList";
+            //sets
+            case "java/util/SortedSet":
+            case "java/util/OrderedSet":
+                return "java/util/TreeSet";
+            case "java/util/Set":
+            case "java/util/AbstractSet":
+                return "java/util/LinkedHashSet";
+            case "java/util/EnumSet":
+                assert false : "can't call collectionClassTypeName for EnumSet";
+                return null;
+
+            default:
+                return collectionTypeName;
+        }
+    }
+
+    private static enum TestEnum {
+        FOO, BAR;
+    }
+
+    private static void testEnumSet() {
+        java.util.EnumSet.noneOf(TestEnum.class);
+    }
+
+
+
+    private static Map<Pair<String, ClassLoader>, Class<?>> knownCollectionClasses;
+
+    private static boolean isJavaUtilCollection(TypeSignature typeSignature, ClassLoader pluginClassLoader) {
+        if (knownCollectionClasses == null) knownCollectionClasses = new HashMap<>();
+        final Pair<String, ClassLoader> pair = new Pair<>(typeSignature.getTypeName(), pluginClassLoader);
+        if (knownCollectionClasses.containsKey(pair)) return true;
+
+        String typeName = typeSignature.getTypeName();
+        String jvmClassName = typeName.replace('/', '.');
+        try {
+            Class<?> clazz = Class.forName(jvmClassName, false, pluginClassLoader);
+            Set<Class<?>> interfaces = new HashSet<>(Compat.setOf(clazz.getInterfaces()));
+            boolean foundMoreInterfaces = true;
+            boolean foundJavaUtilCollection = interfaces.contains(java.util.Collection.class);
+            while (foundMoreInterfaces && !foundJavaUtilCollection) {
+                Set<Class<?>> newInterfaces = Compat.setOf(clazz.getInterfaces());
+                if (newInterfaces.contains(java.util.Collection.class)) {
+                    knownCollectionClasses.put(pair, clazz);
+                    return true;
+                }
+                foundMoreInterfaces = interfaces.addAll(newInterfaces);
+            }
+        } catch (ClassNotFoundException tooBad) {
+        }
+
+        //fallback
+        switch (typeName) {
+            case "java/util/Collection":
+            case "java/util/AbstractCollection":
+            case "java/util/AbstractList":
+            case "java/util/AbstractQueue":
+            case "java/util/AbstractSequentialList":
+            case "java/util/AbstractSet":
+            case "java/util/concurrent/ArrayBlockingQueue":
+            case "java/util/ArrayDeque":
+            case "java/util/ArrayList":
+            case "java/util/concurrent/ConcurrentHashMap$KeySetView":
+            case "java/util/concurrent/ConcurrentLinkedDeque":
+            case "java/util/concurrent/ConcurrentLinkedQueue":
+            case "java/util/concurrent/ConcurrentSkipListSet":
+            case "java/util/concurrent/CopyOnWriteArrayList":
+            case "java/util/concurrent/CopyOnWriteArraySet":
+            case "java/util/concurrent/DelayQueue":
+            case "java/util/EnumSet":
+            case "java/util/HashSet":
+            case "java/util/concurrent/LinkedBlockingDeque":
+            case "java/util/concurrent/LinkedBlockingQueue":
+            case "java/util/LinkedHashSet":
+            case "java/util/LinkedList":
+            case "java/util/concurrent/LinkedTransferQueue":
+            case "java/util/concurrent/PriorityBlockingQueue":
+            case "java/util/PriorityQueue":
+            case "java/util/Stack":
+            case "java/util/concurrent/SynchronousQueue":
+            case "java/util/TreeSet":
+            case "java/util/Vector":
+                return true;
+                //this is not fool-proof: the collection interface could be implemented in the plugin itself
+                //or in a third-party library. Maybe I could add something that addresses this later.
+            default:
+                return false;
+        }
+    }
 
 }

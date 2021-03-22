@@ -227,7 +227,7 @@ public final class ScalaPluginDescription {
                 command.getPermission().ifPresent(permission -> currentCommand.put("permission", permission));
                 command.getPermissionMessage().ifPresent(permissionMessage -> currentCommand.put("permission-message", permissionMessage));
                 Collection<String> aliases = command.getAliases();
-                if (!aliases.isEmpty()) currentCommand.put("aliases", new ArrayList<>(aliases));
+                if (!aliases.isEmpty()) currentCommand.put("aliases", Compat.listCopy(aliases));
 
                 commandsMap.put(command.getName(), currentCommand);
             }
@@ -254,7 +254,7 @@ public final class ScalaPluginDescription {
     }
 
     //recursively traverses the permissions to create a permission map. The map includes the permission properties (not the permission name)
-    private Map<String, Object> createPermissionMap(Permission permission, PermissionDefault parentDefault) {
+    private static Map<String, Object> createPermissionMap(Permission permission, PermissionDefault parentDefault) {
         Map<String, Object> currentPermission = new HashMap<>();
 
         permission.getDescription().ifPresent(description -> currentPermission.put("description", description));

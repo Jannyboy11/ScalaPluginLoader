@@ -15,14 +15,15 @@ import java.util.stream.Collectors;
 public final class TypeSignature {
 
     public static final String ARRAY = "array";
+    private static final TypeSignature OBJECT_TYPE_SIGNATURE = new TypeSignature("java/lang/Object", Compat.emptyList());
 
     private final String typeName;
     private final List<TypeSignature> typeArguments;
 
     public TypeSignature(String typeName, List<TypeSignature> typeArguments) {
-        assert typeName != null;
-        assert typeArguments != null;
-        assert implies(ARRAY.equals(typeName), typeArguments.size() == 1);
+        assert typeName != null : "type name cannot be null";
+        assert typeArguments != null : "type arguments cannot be null";
+        assert implies(ARRAY.equals(typeName), typeArguments.size() == 1) : "array type signature must have exactly one type argument";
 
         this.typeName = typeName;
         this.typeArguments = typeArguments;
@@ -31,6 +32,8 @@ public final class TypeSignature {
     public static TypeSignature ofDescriptor(String descriptor) {
         if (descriptor.startsWith("[")) {
             return new TypeSignature(ARRAY, Compat.singletonList(ofDescriptor(descriptor.substring(1))));
+        } else if (descriptor.startsWith("T")) {
+            return OBJECT_TYPE_SIGNATURE;
         } else {
             return new TypeSignature(Type.getType(descriptor).getInternalName(), Compat.emptyList());
         }
@@ -44,9 +47,13 @@ public final class TypeSignature {
     }
 
     private static TypeSignature toTypeSignature(MySignatureVisitor mySignatureVisitor) {
-        String name = mySignatureVisitor.rawTypeName;
-        List<TypeSignature> typeArguments = mySignatureVisitor.typeArgs.stream().map(TypeSignature::toTypeSignature).collect(Collectors.toList());
-        return new TypeSignature(name, typeArguments);
+        if ("java/lang/Object".equals(mySignatureVisitor.rawTypeName)) {
+            return OBJECT_TYPE_SIGNATURE;
+        } else {
+            String name = mySignatureVisitor.rawTypeName;
+            List<TypeSignature> typeArguments = mySignatureVisitor.typeArgs.stream().map(TypeSignature::toTypeSignature).collect(Collectors.toList());
+            return new TypeSignature(name, typeArguments);
+        }
     }
 
     /**
@@ -140,7 +147,7 @@ public final class TypeSignature {
 
     @Override
     public String toString() {
-        return "TypeSignature(typeName=" + getTypeName() + ", paramTypes=" + getTypeArguments() + ")";
+        return "TypeSignature(typeName=" + getTypeName() + ", typeArguments=" + getTypeArguments() + ")";
     }
 
     //TypeSignature = visitBaseType | visitTypeVariable | visitArrayType | ( visitClassType visitTypeArgument* ( visitInnerClassType visitTypeArgument* )* visitEnd ) )
@@ -163,6 +170,9 @@ public final class TypeSignature {
 
         @Override
         public void visitTypeVariable(String name) {
+            //this can happen for example in a field that has the same type T as the type parameter of the class.
+            rawTypeName = "java/lang/Object";   //best effort.
+
             super.visitTypeVariable(name);
         }
 
@@ -207,7 +217,7 @@ public final class TypeSignature {
 
         @Override
         public void visitEnd() {
-            assert this.rawTypeName != null;
+            assert this.rawTypeName != null : "end of type signature visitor, didn't set a type name";
 
             super.visitEnd();
         }

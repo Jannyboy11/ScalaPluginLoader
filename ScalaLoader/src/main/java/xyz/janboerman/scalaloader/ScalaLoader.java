@@ -13,6 +13,7 @@ import org.bukkit.plugin.SimplePluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.bstats.bukkit.Metrics;
+import org.bstats.charts.DrilldownPie;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -151,7 +152,7 @@ public final class ScalaLoader extends JavaPlugin {
         //initialize bStats
         final int pluginId = 9150;
         Metrics metrics = new Metrics(this, pluginId);
-        metrics.addCustomChart(new Metrics.DrilldownPie("declared_scala_version", () -> {
+        metrics.addCustomChart(new DrilldownPie("declared_scala_version", () -> {
             Map<String /*compat-release version*/, Map<String /*actual version*/, Integer /*amount*/>> stats = new HashMap<>();
 
             for (ScalaPlugin scalaPlugin : ScalaPluginLoader.getInstance().getScalaPlugins()) {

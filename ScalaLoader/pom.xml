@@ -5,7 +5,7 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.13.10-SNAPSHOT</version>
+        <version>0.13.11-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -45,16 +45,17 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>compile-java11</id>
                         <phase>compile</phase>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <mkdir dir="${java11.build.outputDirectory}" />
                                 <javac srcdir="${java11.sourceDirectory}" destdir="${java11.build.outputDirectory}"
                                        classpath="${project.build.outputDirectory}" includeantruntime="false" />
-                            </tasks>
+                            </target>
                         </configuration>
                         <goals>
                             <goal>run</goal>
@@ -130,7 +131,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <version>3.3.0-SNAPSHOT</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -227,11 +228,7 @@
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
         </repository>
-        <!-- bStats repo -->
-        <repository>
-            <id>CodeMC</id>
-            <url>https://repo.codemc.org/repository/maven-public</url>
-        </repository>
+        <!-- CodeMC repo no longer necessary becase bStats now lives on Maven Central! -->
     </repositories>
 
     <dependencies>
@@ -251,7 +248,7 @@
             <version>${asmVersion}</version>
         </dependency>
 
-        <!-- needed for renaming(remapping) part of the event bytecode transformations -->
+        <!-- needed for the renaming(remapping) part of the event bytecode transformations -->
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-commons</artifactId>
@@ -282,7 +279,7 @@
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
-            <version>1.8</version>
+            <version>2.2.1</version>
             <scope>compile</scope>
         </dependency>
 
