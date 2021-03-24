@@ -1,5 +1,7 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
+import xyz.janboerman.scalaloader.bytecode.Called;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.util.Collections;
@@ -7,6 +9,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+/**
+ * Represents array types.
+ *
+ * @see ParameterType
+ * @see RuntimeConversions
+ */
 public class ArrayParameterType extends ParameterType {
 
     private final ParameterType componentType;
@@ -18,18 +26,40 @@ public class ArrayParameterType extends ParameterType {
         this.varArgs = varArgs;
     }
 
+    /**
+     * The same as {@link #from(ParameterType, boolean)}, but includes annotation information.
+     * @param annotations the annotations present on this parameter
+     * @param componentType the component type of the array type
+     * @param varArgs whether this array type was declared as var-args
+     * @return a new ArrayParameterType
+     */
     public static ArrayParameterType from(Set<? extends Annotation> annotations, ParameterType componentType, boolean varArgs) {
         return new ArrayParameterType(annotations, componentType, varArgs);
     }
 
+    /**
+     * Construct a new ArrayParameterType
+     * @param componentType the component type of the array type
+     * @param varArgs whether this array type was declared as var-args
+     * @return a new ArrayParameterType
+     */
+    @Called
     public static ArrayParameterType from(ParameterType componentType, boolean varArgs) {
         return from(Collections.emptySet(), componentType, varArgs);
     }
 
+    /**
+     * Get the component type of this array type.
+     * @return the component type
+     */
     public ParameterType getComponentType() {
         return componentType;
     }
 
+    /**
+     * Whether this array parameter type uses the varargs notation (Foo... foos)
+     * @return true if this parameter uses the varargs notation, otherwise false
+     */
     public boolean isVarArgs() {
         return varArgs;
     }

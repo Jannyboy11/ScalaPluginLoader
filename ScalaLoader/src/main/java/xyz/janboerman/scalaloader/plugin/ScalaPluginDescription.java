@@ -80,7 +80,7 @@ public final class ScalaPluginDescription {
     }
 
     public ScalaPluginDescription authors(String... authors) {
-        this.authors = Arrays.asList(authors);
+        this.authors = Compat.listOf(authors);
         return this;
     }
 
@@ -400,7 +400,7 @@ public final class ScalaPluginDescription {
         }
 
         public Collection<Permission> getChildren() {
-            return children == null ? Collections.emptySet() : Collections.unmodifiableSet(children);
+            return children == null ? Compat.emptySet() : Collections.unmodifiableSet(children);
         }
 
         @Override

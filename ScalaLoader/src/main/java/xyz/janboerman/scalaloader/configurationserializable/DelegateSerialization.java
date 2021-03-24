@@ -5,26 +5,61 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * <p>
+ *     Dual of {@link ConfigurationSerializable}.
+ * </p>
+ * <p>
+ *     While the {literal @}ConfigurationSerializable interface is great for generating the serialization code for proeduct types,
+ *     this annotation is great for sum types. Simply slap this annotation on top of your sealed trait, class or interface
+ *     and a deserialization method will be generated for it!
+ * </p>
+ * <p>
+ *     Note that you should still annotate the subclasses with {@link ConfigurationSerializable}, or implement
+ *     {@link org.bukkit.configuration.serialization.ConfigurationSerializable} manually.
+ * </p>
+ * @see ConfigurationSerializable
+ */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
 public @interface DelegateSerialization {
+
+    // This is implemented in two separate stages divided over 7 classes
+    //  1. LocalScanner & LocalScanResult & DelegateTransformer
+    //      --> Transforms the class annotated with @DelegateSerialization,
+    //          generate deserialize method that load the variant from the map and calls ConfigurationSerialization.getClassByAlias
+    //          and then ConfigurationSerialization.deserializeObject and then finishes with a cast to the supertype.
+    //  2. GlobalScanner & GlobalScanResult & AddVariantTransformer & PluginTransformer
+    //      --> AddVariantTransformer transforms the subclasses, modifies its serialize method to include the variant in the map
+    //      --> PluginTransformer makes sure that the top class is registered with bukkit's ConfigurationSerialization too. (just like for @ConfigurationSerializable)
+    //
+    // We don't generate the @ConfigurationSerializable annotation on subclasses because they themselves might be sum types too!
+
     //see xyz.janboerman.scalaloader.example.scala.Maybe for example use!
 
-    //for sum types, list all the cases here!
-    // TODO in the future, when java adopts sealed types, we can generate this list if it's empty :)
-    // TODO we can already add the listed classes as nest members to the nest of the host.
-    // TODO the "nest host" is the class that has the DelegateDeserialization annotation
+    /**
+     * The list of allowed subclasses. You can leave this empty if your type is already sealed at the jvm level
+     * and has a permitted-subclasses attribute.
+     * @return the list of subclasses of the top type.
+     */
     Class<?>[] value() default {};
 
+    /**
+     * With what alias should the top type have?
+     * @return the alias
+     */
     String as() default "";
 
-    InjectionPoint registerAt() default InjectionPoint.PLUGIN_ONENABLE;                 //TODO if (sub)classes in the value() array don't define an injectionpoint, then use this one.
+    /**
+     * At what point should the top type be registered with Bukkit's {@link org.bukkit.configuration.serialization.ConfigurationSerialization}?
+     * @return the injection point
+     */
+    InjectionPoint registerAt() default InjectionPoint.PLUGIN_ONENABLE;
 
-    DeserializationMethod constructUsing() default DeserializationMethod.DESERIALIZE;   //TODO if (sub)classes in the value() array don't define a deserializationmethod, then use this one.
-
-    //TODO classes that have this annotation should still get the ConfigurationSerializable interface (and they should still be registered!)
-    //TODO it should be noted that this annotation can be put on traits (which could be compiled to either interfaces or classes)
-    //TODO since interfaces can have static methods, it is no problem to generate a public static SomeTrait deserialize(Map<String, Object> map) method.
-    //TODO its implementation will need to keep which subclass was used in the map.
+    /**
+     * Which deserialization method? Note that using {@link DeserializationMethod#MAP_CONSTRUCTOR} is disallowed for sum types!
+     * @return the deserialization method
+     */
+    DeserializationMethod constructUsing() default DeserializationMethod.DESERIALIZE;
 
 }

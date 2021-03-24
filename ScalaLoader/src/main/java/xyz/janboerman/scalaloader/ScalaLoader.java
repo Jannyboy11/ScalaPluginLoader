@@ -121,9 +121,6 @@ public final class ScalaLoader extends JavaPlugin {
         } else {
             //couldn't replace the JavaPluginLoader - just register it 'normally' here.
             getServer().getPluginManager().registerInterface(ScalaPluginLoader.class);
-
-            //TODO why not call getServer().getPluginManager().loadPlugins(scalaPluginsFolder); here?
-            //TODO store the returned Plugin[] in a field, which can then be used in our onEnable()
         }
     }
 
@@ -135,7 +132,6 @@ public final class ScalaLoader extends JavaPlugin {
             //Plugin#onLoad states that onLoad of all plugins is called before onEnable is called of any other plugin.
             //..which is false in this case because ScalaLoader's onEnable is called before the onLoads of all ScalaPlugins.
 
-            //TODO get from a field?
             Plugin[] plugins = getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
             //now while we are at it, let's enable them too.
             for (Plugin plugin : plugins) {
@@ -144,8 +140,6 @@ public final class ScalaLoader extends JavaPlugin {
 
             //don't re-register the JavaPluginLoader because we cannot know for sure we got loaded by it.
             //we delegate all JavaPlugin-related stuff to the loader of ScalaLoader anyway.
-            //TODO why can't I do this? --> getServer().getPluginManager().registerInterface(getPluginLoader().getClass());
-            //TODO (also note that I still need to override the ".jar" file association with the instance)
         }
 
 
@@ -254,52 +248,24 @@ public final class ScalaLoader extends JavaPlugin {
                 ReadableByteChannel rbc = null;
                 FileOutputStream fos = null;
 
+                //download standard library
                 try {
                     URL scalaLibraryUrl = new URL(scalaVersion.getScalaLibraryUrl());
-                    rbc = Channels.newChannel(scalaLibraryUrl.openStream());
-                    fos = new FileOutputStream(scalaLibraryFile);
-                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-
+                    downloadFile(scalaLibraryUrl, scalaLibraryFile);
                 } catch (MalformedURLException e) {
                     throw new ScalaPluginLoaderException("Invalid Scala library url: " + scalaVersion.getScalaLibraryUrl(), e);
                 } catch (IOException e) {
                     throw new ScalaPluginLoaderException("Could not open or close channel", e);
-                } finally {
-                    if (fos != null) {
-                        try {
-                            fos.flush();
-                            fos.close();
-                        } catch (IOException ignored) {}
-                    }
-                    if (rbc != null) {
-                        try {
-                            rbc.close();
-                        } catch (IOException ignored) {}
-                    }
                 }
 
-                //Duplicate code but Java doesn't allow nested methods. So I'm not going to bother.
+                //download reflection library
                 try {
                     URL scalaReflectUrl = new URL(scalaVersion.getScalaReflectUrl());
-                    rbc = Channels.newChannel(scalaReflectUrl.openStream());
-                    fos = new FileOutputStream(scalaReflectFile);
-                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                    downloadFile(scalaReflectUrl, scalaReflectFile);
                 } catch (MalformedURLException e) {
                     throw new ScalaPluginLoaderException("Invalid Scala reflect url: " + scalaVersion.getScalaReflectUrl(), e);
                 } catch (IOException e) {
                     throw new ScalaPluginLoaderException("Could not open or close channel", e);
-                } finally {
-                    if (fos != null) {
-                        try {
-                            fos.flush();
-                            fos.close();
-                        } catch (IOException ignored) {}
-                    }
-                    if (rbc != null) {
-                        try {
-                            rbc.close();
-                        } catch (IOException ignored) {}
-                    }
                 }
 
                 jarFiles = new File[] {scalaLibraryFile, scalaReflectFile};
@@ -323,6 +289,20 @@ public final class ScalaLoader extends JavaPlugin {
         scalaLibraryClassLoaders.put(scalaVersion.getScalaVersion(), scalaLibraryLoader);
         return scalaLibraryLoader;
     }
+
+    private static void downloadFile(URL inputResourceLocation, File outputFile) throws IOException {
+        ReadableByteChannel rbc = null;
+        FileOutputStream fos = null;
+        try {
+            rbc = Channels.newChannel(inputResourceLocation.openStream());
+            fos = new FileOutputStream(outputFile);
+            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        } finally {
+            if (rbc != null) try { rbc.close(); } catch (IOException e) { e.printStackTrace(); }
+            if (fos != null) try { fos.close(); } catch (IOException e) { e.printStackTrace(); }
+        }
+    }
+
 
     /**
      * Add new versions of Scala to ScalaLoader's config.

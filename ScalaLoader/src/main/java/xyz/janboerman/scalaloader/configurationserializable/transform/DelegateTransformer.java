@@ -78,6 +78,7 @@ public class DelegateTransformer extends ClassVisitor {
                 public void visitEnum(String name, String descriptor, String value) {
                     if (CONSTRUCTUSING_NAME.equals(name) && SCALALOADER_DESERIALIZATIONMETHOD_DESCRIPTOR.equals(descriptor)) {
                         constructUsing = DeserializationMethod.valueOf(value);
+                        assert constructUsing != DeserializationMethod.MAP_CONSTRUCTOR : "attempted to set DeserializationMethod MAP_CONSTRUCTOR for sum types!";
                     } else if (REGISTERAT_NAME.equals(name) && SCALALOADER_INJECTIONPOINT_DESCRIPTOR.equals(descriptor)) {
                         registerAt = InjectionPoint.valueOf(value);
                     }
@@ -113,8 +114,6 @@ public class DelegateTransformer extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String methodName, String methodDescriptor, String methodSignature, String[] exceptions) {
-        MethodVisitor superVisitor = super.visitMethod(access, methodName, methodDescriptor, methodSignature, exceptions);
-
         if (scanResult.annotatedByDelegateSerialization) {
             boolean isStatic = (access & ACC_STATIC) == ACC_STATIC;
 
@@ -135,7 +134,7 @@ public class DelegateTransformer extends ClassVisitor {
 
                 if (registerAt == InjectionPoint.CLASS_INITIALIZER) {
 
-                    return new MethodVisitor(ASM_API, superVisitor) {
+                    return new MethodVisitor(ASM_API, super.visitMethod(access, methodName, methodDescriptor, methodSignature, exceptions)) {
                         @Override
                         public void visitCode() {
                             //call registerWithConfigurationSerialization$()
@@ -147,7 +146,7 @@ public class DelegateTransformer extends ClassVisitor {
             }
         }
 
-        return superVisitor;
+        return super.visitMethod(access, methodName, methodDescriptor, methodSignature, exceptions);
     }
 
 
@@ -178,6 +177,12 @@ public class DelegateTransformer extends ClassVisitor {
             }
 
             if (generateDeserializationMethod) {
+                //strategy:
+                //  1. load the variant (subclass) from the map (as a string)
+                //  2. get the corresponding class from bukkit's ConfigurationSerialization
+                //  3. call ConfigurationSerialization.deserializeObject using the acquired class
+                //  4. cast to make sure we are in fact a super type
+
                 MethodVisitor methodVisitor = visitMethod(ACC_PUBLIC | ACC_STATIC, deserializeMethodName, deserializationDescriptor(classDescriptor), deserializationSignature(classDescriptor), null);
                 methodVisitor.visitParameter("map", ACC_FINAL);
                 methodVisitor.visitCode();

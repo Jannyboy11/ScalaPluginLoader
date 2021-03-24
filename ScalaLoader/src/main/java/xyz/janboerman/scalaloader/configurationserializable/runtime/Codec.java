@@ -1,9 +1,28 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
+/**
+ * A converter that converts objects from their live form to their serialized form and vice versa.
+ * When a codec is registered, the ParameterType should match the LIVE type of this Codec.
+ * 
+ * @param <LIVE> the type of the object as it's used within the plugin, should be matched by the ParameterType this codec is registered with.
+ * @param <SERIALIZED> the type of the object in its serialized form.
+ *
+ * @see RuntimeConversions
+ */
 public interface Codec<LIVE, SERIALIZED> {
 
-    public SERIALIZED serialize(LIVE value);
+    /**
+     * Converts a live value to its serialized form.
+     * @param liveValue the live value
+     * @return an object that contains the same information in a different form
+     */
+    public SERIALIZED serialize(LIVE liveValue);
 
-    public LIVE deserialize(SERIALIZED serialized);
+    /**
+     * Converts a serialized value back into its live form.
+     * @param serializedValue the serialized value
+     * @return an object that contains the same information in a different form
+     */
+    public LIVE deserialize(SERIALIZED serializedValue);
 
 }

@@ -116,6 +116,13 @@ public class GlobalScanner extends ClassVisitor {
     }
 
     @Override
+    public void visitPermittedSubclass(String permittedSubclass) {
+        //permittedSubclass uses the internal-name naming scheme
+        if (result.sumAlternatives == null) result.sumAlternatives = new HashSet<>(2);
+        result.sumAlternatives.add(Type.getObjectType(permittedSubclass));
+    }
+
+    @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
         if ("MODULE$".equals(name) && (access & ACC_STATIC) == ACC_STATIC && classDescriptor.equals(descriptor)) {
             hasModule$ = true;
@@ -128,9 +135,14 @@ public class GlobalScanner extends ClassVisitor {
     public void visitEnd() {
         if (result.scanType == Scan.Type.SINGLETON_OBJECT && !hasModule$) {
             result.annotatedByConfigurationSerializable = false; //override! don't generate serialization methods for companion classes of singleton objects!
+            result.annotatedByDelegateSerialization = false;
 
             //this is necessary so that the plugin's onEnable won't try to call $regsiterWithConfigurationSerialization() for example.
             //see PluginTransformer.java
+        } else if (result.scanType != Scan.Type.SINGLETON_OBJECT && hasModule$) {
+            //vice versa it also true that scan types other than SINGLETON_OBJECT can't be used for object singletons! :)
+            result.annotatedByConfigurationSerializable = false;
+            result.annotatedByDelegateSerialization = false;
         }
     }
 }

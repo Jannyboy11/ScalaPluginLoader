@@ -51,8 +51,6 @@ public class AddVariantTransformer extends ClassVisitor {
         if (SCALALOADER_CONFIGURATIONSERIALIZABLE_DESCRIPTOR.equals(descriptor)) {
 
             return new AnnotationVisitor(ASM_API, superVisitor) {
-                boolean setAlias = false;
-
                 @Override
                 public void visit(String name, Object value) {
                     if (AS_NAME.equals(name)) {

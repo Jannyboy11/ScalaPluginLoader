@@ -43,8 +43,8 @@ public class ConfigurationSerializableTransformations {
     static final String SCALALOADER_DELEGATESERIALIZATION_DESCRIPTOR = Type.getDescriptor(DelegateSerialization.class);
     static final String SCALALOADER_SCAN_DESCRIPTOR = Type.getDescriptor(Scan.class);
     static final String SCALALAODER_SCANTYPE_DESCRIPTOR = Type.getDescriptor(Scan.Type.class);
-    static final String SCALALOADER_PROPERTYINCLUDE_DESCRIPTOR = Type.getDescriptor(Scan.IncludeProperty.class);
-    static final String SCALALOADER_PROPERTYEXCLUDE_DESCRIPTOR = Type.getDescriptor(Scan.ExcludeProperty.class);
+    static final String SCALALOADER_INCLUDEPROPERTY_DESCRIPTOR = Type.getDescriptor(Scan.IncludeProperty.class);
+    static final String SCALALOADER_EXCLUDEPROPERTY_DESCRIPTOR = Type.getDescriptor(Scan.ExcludeProperty.class);
     static final String SCALALOADER_INJECTIONPOINT_DESCRIPTOR = Type.getDescriptor(InjectionPoint.class);
     static final String SCALALOADER_DESERIALIZATIONMETHOD_DESCRIPTOR = Type.getDescriptor(DeserializationMethod.class);
 

@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
+import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.compat.Compat;
 
 import java.lang.annotation.Annotation;
@@ -22,6 +23,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+/**
+ * Represents a plain type.
+ * When registering a Codec, this type should correspond to the LIVE type of a {@link Codec}
+ *
+ * @see RuntimeConversions
+ */
 public class ParameterType {
 
     private final Set<? extends Annotation> annotations; //already unmodifiable :)
@@ -35,10 +42,18 @@ public class ParameterType {
         this.rawType = rawType;
     }
 
+    /**
+     * Get the raw type
+     * @return
+     */
     public Class<?> getRawType() {
         return rawType;
     }
 
+    /**
+     * Get the annotations present with this parameter type.
+     * @return the annotations
+     */
     public Set<? extends Annotation> getAnnotations() {
         return annotations;
     }
@@ -62,10 +77,22 @@ public class ParameterType {
         return lazyAnnotations;
     }
 
+    /**
+     * Get the annotation of a given annotation type.
+     * @param annotationClass the annotation type
+     * @param <A> the annotation type
+     * @return the annotation, or null if this type is not annotated with an annotation of the given annotation type
+     */
     public <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
         return annotationClass.cast(getAnnotationsMap().get(annotationClass));
     }
 
+    /**
+     * Construct the ParameterType that includes annotation information.
+     * @param annotations the annotations
+     * @param type the {@link Class}
+     * @return a new ParameterType
+     */
     public static ParameterType from(Set<? extends Annotation> annotations, Type type) {
         if (type instanceof Class) {
             Class<?> clazz = (Class<?>) type;
@@ -106,10 +133,21 @@ public class ParameterType {
         }
     }
 
+    /**
+     * Construct a ParameterType from a {@link Class}.
+     * @param type the type in terms of Java's reflection api.
+     * @return a new ParameterType
+     */
+    @Called
     public static ParameterType from(Type type) {
         return from(Compat.emptySet(), type);
     }
 
+    /**
+     * Construct a ParameterType from a Parameter.
+     * @param parameter the type in terms of Java's reflection api.
+     * @return a new ParameterType
+     */
     public static ParameterType from(Parameter parameter) {
         if (parameter.isVarArgs()) {
             AnnotatedArrayType annotatedArrayType = (AnnotatedArrayType) parameter.getAnnotatedType();
@@ -119,6 +157,11 @@ public class ParameterType {
         }
     }
 
+    /**
+     * Construct a ParameterType from an AnnotatedType
+     * @param type the type in terms of Java's reflection api.
+     * @return a new ParameterType
+     */
     public static ParameterType from(AnnotatedType type) {
         if (type instanceof AnnotatedArrayType) {
             return from((AnnotatedArrayType) type, false);

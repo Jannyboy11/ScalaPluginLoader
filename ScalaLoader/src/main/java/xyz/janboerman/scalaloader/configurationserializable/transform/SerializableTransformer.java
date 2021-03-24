@@ -51,10 +51,11 @@ class SerializableTransformer extends ClassVisitor {
     private final Map<MethodHeader, List<String> /*parameter names (may be empty!)*/> applyHeaders = new HashMap<>(0);
     private final List<MethodHeader> unapplyHeaders = new ArrayList<>(0);
 
+    private final Scan.Type scanType;
     private String serializableAs;  //default value is the empty string which is checked in its own special way
-    private DeserializationMethod constructUsing = DESERIALIZE;         //same as the default in the annotation
+    /** @see #constructUsing() */
+    private DeserializationMethod constructUsing = null;
     private InjectionPoint registerAt = InjectionPoint.PLUGIN_ONENABLE; //same as the default in the annotation
-    private Scan.Type scanType = Scan.Type.FIELDS;                      //same as the default in the annotation
 
     private final Map<String /*property*/, MethodHeader> propertyGetters = new LinkedHashMap<>();
     private final Map<String /*property*/, MethodHeader> propertySetters = new LinkedHashMap<>();
@@ -64,6 +65,27 @@ class SerializableTransformer extends ClassVisitor {
         super(ASM_API, classVisitor);
         this.result = scanResult;
         this.pluginClassLoader = pluginClassLoader;
+        this.scanType = scanResult.scanType;
+
+        assert scanType != null && scanType != AUTO_DETECT : "unknown scan type";
+    }
+
+    private DeserializationMethod constructUsing() {
+        if (constructUsing == null) {
+            assert scanType != null && scanType != AUTO_DETECT : "unknown scan type";
+
+            switch (scanType) {
+                case FIELDS:
+                case GETTER_SETTER_METHODS:
+                    constructUsing = MAP_CONSTRUCTOR;
+                    break;
+                default:
+                    constructUsing = DESERIALIZE;
+                    break;
+            }
+        }
+
+        return constructUsing;
     }
 
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
@@ -117,24 +139,6 @@ class SerializableTransformer extends ClassVisitor {
                 }
 
                 @Override
-                public AnnotationVisitor visitAnnotation(String name, String descriptor) {
-                    AnnotationVisitor superVisitor = super.visitAnnotation(name, descriptor);
-                    if (SCAN_NAME.equals(name) && SCALALOADER_SCAN_DESCRIPTOR.equals(descriptor)) {
-                        return new AnnotationVisitor(ASM_API, superVisitor) {
-                            @Override
-                            public void visitEnum(String name, String descriptor, String value) {
-                                if ("value".equals(name) && SCALALAODER_SCANTYPE_DESCRIPTOR.equals(descriptor)) {
-                                    scanType = Scan.Type.valueOf(value);
-                                }
-
-                                super.visitEnum(name, descriptor, value);
-                            }
-                        };
-                    }
-                    return superVisitor;
-                }
-
-                @Override
                 public void visitEnd() {
                     super.visitEnd();
                     if (setAlias && !result.annotatedBySerializableAs) { //generate @SerialiableAs(<the alias>) if it wasn't present
@@ -181,7 +185,7 @@ class SerializableTransformer extends ClassVisitor {
                     public AnnotationVisitor visitAnnotation(String annDescriptor, boolean visible) {
                         AnnotationVisitor superVisitor = super.visitAnnotation(annDescriptor, visible);
 
-                        if (SCALALOADER_PROPERTYINCLUDE_DESCRIPTOR.equals(annDescriptor)) {
+                        if (SCALALOADER_INCLUDEPROPERTY_DESCRIPTOR.equals(annDescriptor)) {
                             include = true;
                             return new AnnotationVisitor(ASM_API, superVisitor) {
                                 @Override
@@ -192,7 +196,7 @@ class SerializableTransformer extends ClassVisitor {
                                     super.visit(name, value);
                                 }
                             };
-                        } else if (SCALALOADER_PROPERTYEXCLUDE_DESCRIPTOR.equals(annDescriptor)) {
+                        } else if (SCALALOADER_EXCLUDEPROPERTY_DESCRIPTOR.equals(annDescriptor)) {
                             exclude = true;
                             property = null;
                             return superVisitor;
@@ -301,7 +305,7 @@ class SerializableTransformer extends ClassVisitor {
 
                     @Override
                     public AnnotationVisitor visitAnnotation(String annDescriptor, boolean visible) {
-                        if (SCALALOADER_PROPERTYINCLUDE_DESCRIPTOR.equals(annDescriptor)) {
+                        if (SCALALOADER_INCLUDEPROPERTY_DESCRIPTOR.equals(annDescriptor)) {
                             return new AnnotationVisitor(ASM_API, super.visitAnnotation(annDescriptor, visible)) {
                                 String propertyKey = methodName;
                                 boolean adaptBeanOrScalaConventions = true;
@@ -764,7 +768,7 @@ class SerializableTransformer extends ClassVisitor {
 
                 if (scanType == FIELDS || scanType == GETTER_SETTER_METHODS) {
                     //only generate the nullary constructor if we are using FIELDS or METHODS
-                    if (!alreadyHasNullaryConstructor) {
+                    if (!alreadyHasNullaryConstructor) {    //TODO only do this if we deserialize using valueOf(Map) or deserialize(Map)
                         //generate private nullary constructor that just calls super();
                         //this might fail at runtime if the superclass has no accessible nullary constructor
                         // TODO test this and catch the exception at classload time so that we can provide a more useful error message!
@@ -787,20 +791,21 @@ class SerializableTransformer extends ClassVisitor {
                     final MethodVisitor methodVisitor;
                     final boolean thisFirstThenMap;
                     final Label label0 = new Label();
-                    switch (constructUsing) {
+                    switch (constructUsing()) {
                         case MAP_CONSTRUCTOR:
                             thisFirstThenMap = true;
                             methodVisitor = this.visitMethod(ACC_PUBLIC, CONSTRUCTOR_NAME, DESERIALIZATION_CONSTRUCTOR_DESCRIPTOR, DESERIALIZATION_CONSTRUCTOR_SIGNATURE, null);
                             methodVisitor.visitCode();
                             //"this" is already in the local variable table. we only need to call the nullary constructor.
                             methodVisitor.visitLabel(label0);
+                            //TODO remove this. we don't actually need to call the this() constructor from the body of the this(Map<String, Object>) constructor.
                             methodVisitor.visitVarInsn(ALOAD, 0);           operandStack.push(Type.getType(classDescriptor));
                             methodVisitor.visitMethodInsn(INVOKESPECIAL, className, "<init>", "()V", false);    operandStack.pop();
                             break;
                         case DESERIALIZE:
                         case VALUE_OF:
                             thisFirstThenMap = false;
-                            methodVisitor = this.visitMethod(ACC_PUBLIC | ACC_STATIC, constructUsing == VALUE_OF ? VALUEOF_NAME : DESERIALIZE_NAME, deserializationDescriptor(classDescriptor), deserializationSignature(classDescriptor), null);
+                            methodVisitor = this.visitMethod(ACC_PUBLIC | ACC_STATIC, constructUsing() == VALUE_OF ? VALUEOF_NAME : DESERIALIZE_NAME, deserializationDescriptor(classDescriptor), deserializationSignature(classDescriptor), null);
                             methodVisitor.visitCode();
                             //put the value of this() in the local variable table
                             methodVisitor.visitLabel(label0);
@@ -812,7 +817,7 @@ class SerializableTransformer extends ClassVisitor {
                         default:
                             throw new RuntimeException("Unreachable, got constructUsing "
                                     + DeserializationMethod.class.getSimpleName() + "."
-                                    + constructUsing.name());
+                                    + constructUsing().name());
                     }
 
                     final Label veryLastLabel = new Label();
@@ -824,7 +829,6 @@ class SerializableTransformer extends ClassVisitor {
 
                     final Label label1 = new Label();
                     methodVisitor.visitLabel(label1);
-                    Label lastLabel = label1;
 
                     if (scanType == Scan.Type.FIELDS) {
                         for (Entry<String, FieldDeclaration> entry : propertyFields.entrySet()) {
@@ -840,8 +844,6 @@ class SerializableTransformer extends ClassVisitor {
                             toLiveType(pluginClassLoader, methodVisitor, field.descriptor, field.signature, localVariableTable, operandStack);
                             methodVisitor.visitFieldInsn(PUTFIELD, className, field.name, field.descriptor);                                operandStack.pop(2);
                             methodVisitor.visitLabel(newLabel);
-
-                            lastLabel = newLabel;
                         }
 
                     } else if (scanType == Scan.Type.GETTER_SETTER_METHODS) {
@@ -867,8 +869,6 @@ class SerializableTransformer extends ClassVisitor {
                                 methodVisitor.visitInsn(POP);                           operandStack.pop();
                             }
                             methodVisitor.visitLabel(newLabel);
-
-                            lastLabel = newLabel;
                         }
 
                     }
@@ -906,7 +906,7 @@ class SerializableTransformer extends ClassVisitor {
                     final String constructorDescriptor = stringJoiner.toString();
                     final int recordWidth = propertyFields.size();
 
-                    switch (constructUsing) {
+                    switch (constructUsing()) {
                         case MAP_CONSTRUCTOR:
                             methodVisitor = this.visitMethod(ACC_PUBLIC, CONSTRUCTOR_NAME, DESERIALIZATION_CONSTRUCTOR_DESCRIPTOR, DESERIALIZATION_CONSTRUCTOR_SIGNATURE, null);
                             methodVisitor.visitCode();
@@ -949,7 +949,7 @@ class SerializableTransformer extends ClassVisitor {
                             break;
                         case DESERIALIZE:
                         case VALUE_OF:
-                            methodVisitor = this.visitMethod(ACC_PUBLIC | ACC_STATIC, constructUsing == VALUE_OF ? VALUEOF_NAME : DESERIALIZE_NAME, deserializationDescriptor(classDescriptor), deserializationSignature(classDescriptor), null);
+                            methodVisitor = this.visitMethod(ACC_PUBLIC | ACC_STATIC, constructUsing() == VALUE_OF ? VALUEOF_NAME : DESERIALIZE_NAME, deserializationDescriptor(classDescriptor), deserializationSignature(classDescriptor), null);
                             methodVisitor.visitCode();
                             methodVisitor.visitLabel(label0);
 
@@ -999,7 +999,7 @@ class SerializableTransformer extends ClassVisitor {
                         default:
                             throw new RuntimeException("Unreachable, got constructUsing "
                                     + DeserializationMethod.class.getSimpleName() + "."
-                                    + constructUsing.name());
+                                    + constructUsing().name());
                     }
                 }
 
@@ -1007,13 +1007,13 @@ class SerializableTransformer extends ClassVisitor {
                     //implements deserialize/valueOf by calling apply
                     //unapply can have the following return types: boolean, Option<java.lang.Object>, Option<Tuple2<Object,Object>>, Option<Tuple3<Object,Object,Object>>, ...
 
-                    switch (constructUsing) {
+                    switch (constructUsing()) {
                         case MAP_CONSTRUCTOR:
                             throw new ConfigurationSerializableError("Can't construct using " + MAP_CONSTRUCTOR.name() + " for scan type " + CASE_CLASS.name() + ".");
 
                         case VALUE_OF:
                         case DESERIALIZE:
-                            String theMethodName = constructUsing == VALUE_OF ? "valueOf" : "deserialize";
+                            String theMethodName = constructUsing() == VALUE_OF ? "valueOf" : "deserialize";
 
                             final Label endLabel = new Label();
 
@@ -1082,7 +1082,7 @@ class SerializableTransformer extends ClassVisitor {
                     //if we would also generate this code in the companion class, then the GETSTATIC call will result in a NoSuchFieldError.
 
                     String deserializationMethodName;
-                    switch (constructUsing) {
+                    switch (constructUsing()) {
                         case MAP_CONSTRUCTOR:
                             throw new ConfigurationSerializableError("Can't generate a deserialization constructor for singleton objects, it would violate the object model!");
 
@@ -1095,7 +1095,7 @@ class SerializableTransformer extends ClassVisitor {
                         default:
                             throw new RuntimeException("Unreachable, got constructUsing "
                                     + DeserializationMethod.class.getSimpleName() + "."
-                                    + constructUsing.name());
+                                    + constructUsing().name());
                     }
 
                     MethodVisitor methodVisitor = visitMethod(ACC_PUBLIC | ACC_STATIC, deserializationMethodName, deserializationDescriptor(classDescriptor), deserializationSignature(classDescriptor), null);
@@ -1116,13 +1116,13 @@ class SerializableTransformer extends ClassVisitor {
                     //just call <UserClass>.valueOf(name)!
                     //this case is so simple that we don't need the LocalVariableTable or OperandStack helpers!
 
-                    switch (constructUsing) {
+                    switch (constructUsing()) {
                         case MAP_CONSTRUCTOR:
                             throw new ConfigurationSerializableError("Can't construct using " + MAP_CONSTRUCTOR.name() + " for scan type " + ENUM.name() + ".");
 
                         case VALUE_OF:
                         case DESERIALIZE:
-                            final String theMethodName = constructUsing == VALUE_OF ? "valueOf" : "deserialize";
+                            final String theMethodName = constructUsing() == VALUE_OF ? "valueOf" : "deserialize";
 
                             MethodVisitor methodVisitor = visitMethod(ACC_PUBLIC | ACC_STATIC, theMethodName, deserializationDescriptor(classDescriptor), deserializationSignature(classDescriptor), null);
                             methodVisitor.visitCode();

@@ -13,6 +13,7 @@ import org.objectweb.asm.*;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
 //import xyz.janboerman.scalaloader.bytecode.AsmConstants;
+import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.transform.*;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
@@ -39,6 +40,7 @@ import java.util.logging.Level;
  * ClassLoader that loads {@link ScalaPlugin}s.
  * The {@link ScalaPluginLoader} will create instances per scala plugin.
  */
+@Called
 public class ScalaPluginClassLoader extends URLClassLoader {
 
     private enum Platform {
@@ -260,9 +262,18 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         }
 
         try {
+            if (name.startsWith("xyz.janboerman.scalaloader")) {
+                if (name.startsWith("xyz.janboerman.scalaloader.bytecode")
+                        || name.startsWith("xyz.janboerman.scalaloader.configurationserializable.transform")
+                        || name.startsWith("xyz.janboerman.scalaloader.event.transform")
+                        || name.equals("xyz.janboerman.scalaloader.compat.Compat")
+                        || name.startsWith("xyz.janboerman.scalaloader.util")
+                ) throw new ClassNotFoundException("Can't access internal class: " + name);
+            }
+
             //the parent classloader has access to:
             //  - scala library classes
-            //  - javaplugins
+            //  - javaplugins (including ScalaLoader itself)
             //  - server classes (bukkit, craftbukkit, nms, and server-included libraries)
 
             clazz = getParent().loadClass(name);
@@ -319,7 +330,13 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "ConfigurationSerializable class " + name + " is not valid", configSerError);
                     }
 
-                    //apply transformations that were registered by other classes (also used by configuration serialization)
+                    //apply transformations that were registered by other classes
+                    //
+                    // This is used by the configuration-serializable framework to let the serializable classes be registered at bukkit's ConfigurationSerialization.
+                    // Extra calls in methods in the plugin's main class are therefore added.
+                    // Extra transformers are also registered for sum type serialization.
+                    // They run on the subclasses so that their 'variant' is added to the Map<String, Object>
+                    //
                     {
                         ClassWriter classWriter = new ClassWriter(0) {
                             @Override

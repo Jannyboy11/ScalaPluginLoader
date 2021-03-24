@@ -16,6 +16,20 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * <p>
+ *     This class servers as a fallback for the configuration serialization framework.
+ *     Generated serialize and deserializion methods may emit calls to {@link #serialize(Object, ParameterType, ScalaPluginClassLoader)}
+ *     and {@link #deserialize(Object, ParameterType, ScalaPluginClassLoader)} if at classload-time it could not be established how an object should be (de)serialized.
+ * </p>
+ * <p>
+ *     To adjust the runtime serialization and deserialization behaviour, you can register a {@link Codec}
+ * </p>
+ *
+ * @see #registerCodec(ScalaPluginClassLoader, Class, Codec)
+ * @see {@link xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable}
+ * @see Codec
+ */
 public class RuntimeConversions {
 
     private static final Map<ScalaPluginClassLoader, Registrations> registrations = new HashMap<>();
@@ -23,17 +37,38 @@ public class RuntimeConversions {
     private RuntimeConversions() {
     }
 
-
+    /**
+     * Register a codec that will be used by {@link #serialize(Object, ParameterType, ScalaPluginClassLoader)} and {@link #deserialize(Object, ParameterType, ScalaPluginClassLoader)}.
+     * @param pluginClassLoader the classloader of your ScalaPlugin
+     * @param type the live type of the objects the codec should work with
+     * @param codec the serializer and deserializer
+     * @return true if the codec was registered, otherwise false
+     */
     public static boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, ParameterType type, Codec<?, ?> codec) {
         Objects.requireNonNull(pluginClassLoader, "plugin classloader cannot be null!");
         return registrations.computeIfAbsent(pluginClassLoader, Registrations::new).register(type, codec);
     }
 
+    /**
+     * Register a codec that will be used by {@link #serialize(Object, ParameterType, ScalaPluginClassLoader)} and {@link #deserialize(Object, ParameterType, ScalaPluginClassLoader)}.
+     * @param pluginClassLoader the classloader of your ScalaPlugin
+     * @param whenToUse a predicate that will be tested once an object is serialized or deserialized
+     * @param codecFactory a generator for a codec that is called once the predicate test succeeds.
+     * @return true if the codec factory was registered, otherwise false
+     */
     public static boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, Predicate<? super ParameterType> whenToUse, Function<? super ParameterType, ? extends Codec<?, ?>> codecFactory) {
         Objects.requireNonNull(pluginClassLoader, "plugin classloader cannot be null!");
         return registrations.computeIfAbsent(pluginClassLoader, Registrations::new).register(whenToUse, codecFactory);
     }
 
+    /**
+     * Register a codec that will be used by {@link #serialize(Object, ParameterType, ScalaPluginClassLoader)} and {@link #deserialize(Object, ParameterType, ScalaPluginClassLoader)}.
+     * @param pluginClassLoader the classloader of your ScalaPlugin
+     * @param clazz the live type of objects your codec should work with
+     * @param codec the codec
+     * @param <T> the type of the objects in their live form.
+     * @return true if the codec was registered, otherwise false
+     */
     public static <T> boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, Class<T> clazz, Codec<T, ?> codec) {
         return registerCodec(pluginClassLoader, ParameterType.from(clazz), codec);
     }
@@ -48,6 +83,14 @@ public class RuntimeConversions {
 
     // ==================== serialize ====================
 
+    /**
+     * This method will be called by configuration serializable types for which ScalaLoader does not know how to handle them out of the box.
+     * You can register a {@link Codec} using {@link #registerCodec(ScalaPluginClassLoader, ParameterType, Codec)} or its overloads so you can specify the behaviour at runtime.
+     * @param live the object that is going to be serialized
+     * @param type the type of the live object
+     * @param plugin the classloader of your plugin
+     * @return the object in its serialized form
+     */
     @Called
     public static Object serialize(Object live, ParameterType type, ScalaPluginClassLoader plugin) {
         Class<?> rawType = type.getRawType();
@@ -105,6 +148,7 @@ public class RuntimeConversions {
         }
 
         //last try: just hope that SnakeYAML (which is an implementation detail technically) does the right thing
+        //TODO log a warning that no codec was registered yet?
         return live;
     }
 
@@ -216,6 +260,14 @@ public class RuntimeConversions {
 
     // ==================== deserialize ====================
 
+    /**
+     * This method will be called by configuration serializable types for which ScalaLoader does not know how to handle them out of the box.
+     * You can register a {@link Codec} using {@link #registerCodec(ScalaPluginClassLoader, ParameterType, Codec)} or its overloads so you can specify the behaviour at runtime.
+     * @param serialized the object that is going to be deserialized
+     * @param type the type of the live object
+     * @param plugin the classloader of your plugin
+     * @return object in its live form
+     */
     @Called
     public static Object deserialize(Object serialized, ParameterType type, ScalaPluginClassLoader plugin) {
         Class<?> rawType = type.getRawType();
@@ -272,6 +324,7 @@ public class RuntimeConversions {
         }
 
         //last try: just hope that SnakeYAML (which is an implementation detail technically) does the right thing
+        //TODO log a warning that no codec was registered yet?
         return serialized;
     }
 
@@ -416,7 +469,7 @@ public class RuntimeConversions {
                 if (predicate.test(parameterType)) return Maybe.just(codecFactory.apply(parameterType).serialize(live));
             }
 
-            throw new IllegalStateException("No codec found for type " + parameterType + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec.");
+            return Maybe.nothing();
         }
 
         private Maybe<Object> deserialize(ParameterType parameterType, Object serialized) {
