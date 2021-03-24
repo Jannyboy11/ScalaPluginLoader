@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public final class TypeSignature {
 
     private static final String ARRAY = "array";

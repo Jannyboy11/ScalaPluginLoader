@@ -5,6 +5,9 @@ import static xyz.janboerman.scalaloader.event.transform.EventTransformations.*;
 
 import org.objectweb.asm.*;
 
+/**
+ * This class is NOT part of the public API!
+ */
 class CancellableTransformer extends ClassVisitor {
 
     private final ScanResult scanResult;

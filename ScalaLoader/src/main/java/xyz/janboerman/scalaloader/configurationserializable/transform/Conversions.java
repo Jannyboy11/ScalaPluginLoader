@@ -15,6 +15,9 @@ import xyz.janboerman.scalaloader.util.Pair;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * This class is NOT part of the public API!
+ */
 class Conversions {
 
     private Conversions() {}

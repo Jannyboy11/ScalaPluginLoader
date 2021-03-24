@@ -15,6 +15,9 @@ import xyz.janboerman.scalaloader.configurationserializable.Scan.ExcludeProperty
 import xyz.janboerman.scalaloader.configurationserializable.Scan.IncludeProperty;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 
+/**
+ * This class is NOT part of the public API!
+ */
 class LocalScanner extends ClassVisitor {
 
     private final LocalScanResult result = new LocalScanResult();

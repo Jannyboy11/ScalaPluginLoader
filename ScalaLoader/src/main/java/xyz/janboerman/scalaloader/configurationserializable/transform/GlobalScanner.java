@@ -14,6 +14,9 @@ import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import xyz.janboerman.scalaloader.configurationserializable.Scan;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class GlobalScanner extends ClassVisitor {
 
     private final GlobalScanResult result = new GlobalScanResult();

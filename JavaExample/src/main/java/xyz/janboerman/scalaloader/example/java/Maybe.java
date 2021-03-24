@@ -91,8 +91,8 @@ public sealed interface Maybe<T> permits Maybe.Just, Maybe.Nothing {
     }
 
     //implement ConfigurationSerializable explicitly because Scan.Type.SINGLETON_OBJECT only works for Scala objects!
-//I might add more scan types in the future, but I am not going to care for now.
-//the whole point of using ScalaLoader is that you are writing Scala anyway!
+    //I might add more scan types in the future, but I am not going to care for now.
+    //the whole point of using ScalaLoader is that you are writing Scala anyway!
     public static final class Nothing<T> implements Maybe<T>, org.bukkit.configuration.serialization.ConfigurationSerializable {
 
         private static final Nothing<?> INSTANCE = new Nothing<>();

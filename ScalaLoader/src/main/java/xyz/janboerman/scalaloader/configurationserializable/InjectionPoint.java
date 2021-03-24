@@ -6,12 +6,13 @@ package xyz.janboerman.scalaloader.configurationserializable;
  *      So you don't have to do this yourself.
  * </p>
  * <p>
- *     If {@link ConfigurationSerializable#as()} is specified, then the framework will generate a call to
- *     {@link org.bukkit.configuration.serialization.ConfigurationSerialization#registerClass(Class, String)},
+ *     If {@link ConfigurationSerializable#as()} or {@link DelegateSerialization#as()} is specified, then the framework will generate
+ *     a call to {@link org.bukkit.configuration.serialization.ConfigurationSerialization#registerClass(Class, String)},
  *     otherwise {@link org.bukkit.configuration.serialization.ConfigurationSerialization#registerClass(Class)}.
  * </p>
  *
  * @see ConfigurationSerializable
+ * @see DelegateSerialization
  */
 public enum InjectionPoint {
     /**

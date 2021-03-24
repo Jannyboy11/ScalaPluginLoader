@@ -28,6 +28,9 @@ import static org.objectweb.asm.Opcodes.*;
 
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 
+/**
+ * This class is NOT part of the public API!
+ */
 class SerializableTransformer extends ClassVisitor {
 
     private final LocalScanResult result;
@@ -768,7 +771,7 @@ class SerializableTransformer extends ClassVisitor {
 
                 if (scanType == FIELDS || scanType == GETTER_SETTER_METHODS) {
                     //only generate the nullary constructor if we are using FIELDS or METHODS
-                    if (!alreadyHasNullaryConstructor) {    //TODO only do this if we deserialize using valueOf(Map) or deserialize(Map)
+                    if (!alreadyHasNullaryConstructor) {
                         //generate private nullary constructor that just calls super();
                         //this might fail at runtime if the superclass has no accessible nullary constructor
                         // TODO test this and catch the exception at classload time so that we can provide a more useful error message!
@@ -798,7 +801,8 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitCode();
                             //"this" is already in the local variable table. we only need to call the nullary constructor.
                             methodVisitor.visitLabel(label0);
-                            //TODO remove this. we don't actually need to call the this() constructor from the body of the this(Map<String, Object>) constructor.
+                            // Even though we use the Map-constructor, we either need to call the this() constructor, or super() constructor in the Map-constructor body.
+                            // I opted for the this() constructor, since it may already be present, and if not we just call the generated one, which in turn calls super()
                             methodVisitor.visitVarInsn(ALOAD, 0);           operandStack.push(Type.getType(classDescriptor));
                             methodVisitor.visitMethodInsn(INVOKESPECIAL, className, "<init>", "()V", false);    operandStack.pop();
                             break;

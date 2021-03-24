@@ -12,7 +12,10 @@ import xyz.janboerman.scalaloader.configurationserializable.DeserializationMetho
 import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 
-public class DelegateTransformer extends ClassVisitor {
+/**
+ * This class is NOT part of the public API!
+ */
+class DelegateTransformer extends ClassVisitor {
 
     private final LocalScanResult scanResult;
 

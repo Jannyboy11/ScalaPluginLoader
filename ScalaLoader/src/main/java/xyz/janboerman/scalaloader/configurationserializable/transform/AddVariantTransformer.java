@@ -11,6 +11,9 @@ import xyz.janboerman.scalaloader.compat.Compat;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 import xyz.janboerman.scalaloader.plugin.TransformerRegistry;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class AddVariantTransformer extends ClassVisitor {
 
     private String className;           //e.g.  com/example/Foo

@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  *     Dual of {@link ConfigurationSerializable}.
  * </p>
  * <p>
- *     While the {literal @}ConfigurationSerializable interface is great for generating the serialization code for proeduct types,
+ *     While the {@literal @}ConfigurationSerializable interface is great for generating the serialization code for product types,
  *     this annotation is great for sum types. Simply slap this annotation on top of your sealed trait, class or interface
  *     and a deserialization method will be generated for it!
  * </p>
@@ -33,9 +33,7 @@ public @interface DelegateSerialization {
     //      --> AddVariantTransformer transforms the subclasses, modifies its serialize method to include the variant in the map
     //      --> PluginTransformer makes sure that the top class is registered with bukkit's ConfigurationSerialization too. (just like for @ConfigurationSerializable)
     //
-    // We don't generate the @ConfigurationSerializable annotation on subclasses because they themselves might be sum types too!
-
-    //see xyz.janboerman.scalaloader.example.scala.Maybe for example use!
+    // We don't generate the @ConfigurationSerializable annotation on subclasses because they themselves might be sum types too! //TODO test that that actually works well.
 
     /**
      * The list of allowed subclasses. You can leave this empty if your type is already sealed at the jvm level

@@ -4,6 +4,9 @@ import org.objectweb.asm.signature.SignatureVisitor;
 
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.ASM_API;
 
+/**
+ * This class is NOT part of the public API!
+ */
 class UnapplyParamCounter extends SignatureVisitor {
 
     private int count = 0;

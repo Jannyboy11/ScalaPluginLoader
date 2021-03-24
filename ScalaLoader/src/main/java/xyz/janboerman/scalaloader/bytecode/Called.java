@@ -21,7 +21,7 @@ import java.lang.reflect.Type;
  * @see RuntimeConversions#serialize(Object, ParameterType, ScalaPluginClassLoader)
  * @see RuntimeConversions#deserialize(Object, ParameterType, ScalaPluginClassLoader)
  * @see EventBus#callEvent(Event)
- * @see EventBus#registerEvent(Class, Listener, EventPriority, EventExecutor, Plugin);
+ * @see EventBus#registerEvent(Class, Listener, EventPriority, EventExecutor, Plugin)
  * @see EventBus#registerEvent(Class, Listener, EventPriority, EventExecutor, Plugin, boolean)
  * @see ParameterType#from(Type)
  * @see ArrayParameterType#from(ParameterType, boolean)

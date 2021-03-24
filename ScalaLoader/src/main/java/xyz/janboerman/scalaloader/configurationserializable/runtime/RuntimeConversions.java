@@ -27,7 +27,7 @@ import java.util.function.Predicate;
  * </p>
  *
  * @see #registerCodec(ScalaPluginClassLoader, Class, Codec)
- * @see {@link xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable}
+ * @see xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable
  * @see Codec
  */
 public class RuntimeConversions {

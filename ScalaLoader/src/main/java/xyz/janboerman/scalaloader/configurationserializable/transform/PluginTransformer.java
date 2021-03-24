@@ -8,6 +8,9 @@ import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 import xyz.janboerman.scalaloader.plugin.TransformerRegistry;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class PluginTransformer extends ClassVisitor {
 
     private final InjectionPoint injectionPoint;
