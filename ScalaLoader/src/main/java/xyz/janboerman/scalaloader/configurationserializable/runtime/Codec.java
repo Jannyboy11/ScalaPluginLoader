@@ -1,9 +1,9 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
-public interface Codec<T> {
+public interface Codec<LIVE, SERIALIZED> {
 
-    public Object serialize(T value);
+    public SERIALIZED serialize(LIVE value);
 
-    public T deserialize(Object serialized);
+    public LIVE deserialize(SERIALIZED serialized);
 
 }

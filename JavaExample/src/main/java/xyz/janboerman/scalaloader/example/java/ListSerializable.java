@@ -74,12 +74,12 @@ public class ListSerializable /*implements ConfigurationSerializable*/ {
     //generated!
 //    @Override
 //    public Map<String, Object> serialize() {
-//        return Map.of("longs", longs.stream().map(longg -> longg.toString()).collect(Collectors.toList()));
+//        ...
 //    }
 
     //generated!
 //    public static ListSerializable deserialize(Map<String, Object> map) {
-//        return new ListSerializable(((List<String>) map.get("longs")).stream().map(Long::parseLong).collect(Collectors.toList()));
+//        ...
 //    }
 
     @Override

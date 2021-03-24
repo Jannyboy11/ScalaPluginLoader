@@ -24,17 +24,17 @@ public class RuntimeConversions {
     }
 
 
-    public static boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, ParameterType type, Codec<?> codec) {
+    public static boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, ParameterType type, Codec<?, ?> codec) {
         Objects.requireNonNull(pluginClassLoader, "plugin classloader cannot be null!");
         return registrations.computeIfAbsent(pluginClassLoader, Registrations::new).register(type, codec);
     }
 
-    public static boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, Predicate<? super ParameterType> whenToUse, Function<? super ParameterType, ? extends Codec<?>> codecFactory) {
+    public static boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, Predicate<? super ParameterType> whenToUse, Function<? super ParameterType, ? extends Codec<?, ?>> codecFactory) {
         Objects.requireNonNull(pluginClassLoader, "plugin classloader cannot be null!");
         return registrations.computeIfAbsent(pluginClassLoader, Registrations::new).register(whenToUse, codecFactory);
     }
 
-    public static <T> boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, Class<T> clazz, Codec<T> codec) {
+    public static <T> boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, Class<T> clazz, Codec<T, ?> codec) {
         return registerCodec(pluginClassLoader, ParameterType.from(clazz), codec);
     }
 
@@ -391,18 +391,18 @@ public class RuntimeConversions {
     private static class Registrations {
         private final ScalaPluginClassLoader classLoader;
 
-        private final Map<ParameterType, Codec<?>> absoluteCodecs = new HashMap<>();
-        private final Map<Predicate<? super ParameterType>, Function<? super ParameterType, ? extends Codec<?>>> bestEffortCodecs = new LinkedHashMap<>();
+        private final Map<ParameterType, Codec<?, ?>> absoluteCodecs = new HashMap<>();
+        private final Map<Predicate<? super ParameterType>, Function<? super ParameterType, ? extends Codec<?, ?>>> bestEffortCodecs = new LinkedHashMap<>();
 
         private Registrations(ScalaPluginClassLoader classLoader) {
             this.classLoader = classLoader;
         }
 
-        private boolean register(ParameterType type, Codec<?> codec) {
+        private boolean register(ParameterType type, Codec<?, ?> codec) {
             return absoluteCodecs.putIfAbsent(type, codec) == null;
         }
 
-        private boolean register(Predicate<? super ParameterType> type, Function<? super ParameterType, ? extends Codec<?>> codecFactory) {
+        private boolean register(Predicate<? super ParameterType> type, Function<? super ParameterType, ? extends Codec<?, ?>> codecFactory) {
             return bestEffortCodecs.putIfAbsent(type, codecFactory) == null;
         }
 
@@ -410,7 +410,7 @@ public class RuntimeConversions {
             Codec codec = absoluteCodecs.get(parameterType);
             if (codec != null) return Maybe.just(codec.serialize(live));
 
-            for (Map.Entry<Predicate<? super ParameterType>, Function<? super ParameterType, ? extends Codec<?>>> entry : bestEffortCodecs.entrySet()) {
+            for (Map.Entry<Predicate<? super ParameterType>, Function<? super ParameterType, ? extends Codec<?, ?>>> entry : bestEffortCodecs.entrySet()) {
                 Predicate<? super ParameterType> predicate = entry.getKey();
                 Function<? super ParameterType, ? extends Codec> codecFactory = entry.getValue();
                 if (predicate.test(parameterType)) return Maybe.just(codecFactory.apply(parameterType).serialize(live));
@@ -423,7 +423,7 @@ public class RuntimeConversions {
             Codec codec = absoluteCodecs.get(parameterType);
             if (codec != null) return Maybe.just(codec.deserialize(serialized));
 
-            for (Map.Entry<Predicate<? super ParameterType>, Function<? super ParameterType, ? extends Codec<?>>> entry : bestEffortCodecs.entrySet()) {
+            for (Map.Entry<Predicate<? super ParameterType>, Function<? super ParameterType, ? extends Codec<?, ?>>> entry : bestEffortCodecs.entrySet()) {
                 Predicate<? super ParameterType> predicate = entry.getKey();
                 Function<? super ParameterType, ? extends Codec> codecFactory = entry.getValue();
                 if (predicate.test(parameterType)) return Maybe.just(codecFactory.apply(parameterType).deserialize(serialized));
