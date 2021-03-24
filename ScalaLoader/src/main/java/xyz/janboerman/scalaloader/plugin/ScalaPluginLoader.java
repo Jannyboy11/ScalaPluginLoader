@@ -11,6 +11,7 @@ import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions;
 import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariantTransformer;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanResult;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanner;
@@ -493,14 +494,17 @@ public class ScalaPluginLoader implements PluginLoader {
             scalaPlugin.onDisable();
             scalaPlugin.setEnabled(false);
 
-            //unload shared classes
+            //get the classloader
             ScalaPluginClassLoader scalaPluginClassLoader = scalaPlugin.getClassLoader();
+            //de-register codecs
+            RuntimeConversions.clearCodecs(scalaPluginClassLoader);
+            //unload shared classes
             String scalaVersion = scalaPluginClassLoader.getScalaVersion();
             Map<String, Class<?>> classes = sharedScalaPluginClasses.get(scalaVersion);
             if (classes != null) {
                 scalaPluginClassLoader.getClasses().forEach((className, clazz) -> {
                     classes.remove(className, clazz);
-                    //TODO will bukkit ever get a proper pluginloader api? https://hub.spigotmc.org/jira/browse/SPIGOT-4255
+                    //will bukkit ever get a proper pluginloader api? https://hub.spigotmc.org/jira/browse/SPIGOT-4255
                     //scalaPluginClassLoader.removeFromJavaPluginLoaderScope(className);
                 });
                 if (classes.isEmpty()) {
@@ -632,7 +636,7 @@ public class ScalaPluginLoader implements PluginLoader {
      * @return the plugin's instance.
      * @throws ScalaPluginLoaderException when a plugin instance could not be created for the given class
      */
-    private <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
+    private static <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
         //TODO change this logic:
         //TODO If there is a static final field with name MODULE$ with the same type as the class itself AND the name ends with a '$' character, then it must be a singleton object!
         //TODO this seems very scala-compiler-implementation-detail dependent. I hope this will still work in Scala 3.

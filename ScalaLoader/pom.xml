@@ -5,7 +5,7 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.13.11-SNAPSHOT</version>
+        <version>0.13.12-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,7 +13,7 @@
 
     <properties>
         <asmVersion>9.1</asmVersion>
-        <junitVersion>5.6.2</junitVersion>
+        <junitVersion>5.7.1</junitVersion>
 
         <java11.sourceDirectory>${project.basedir}/src/main/java11</java11.sourceDirectory>
         <java11.build.outputDirectory>${project.build.directory}/classes-java11</java11.build.outputDirectory>
@@ -255,7 +255,7 @@
             <version>${asmVersion}</version>
         </dependency>
 
-        <!-- for debugging only -->
+<!--        &lt;!&ndash; for debugging only &ndash;&gt;-->
 <!--        <dependency>-->
 <!--            <groupId>org.ow2.asm</groupId>-->
 <!--            <artifactId>asm-util</artifactId>-->

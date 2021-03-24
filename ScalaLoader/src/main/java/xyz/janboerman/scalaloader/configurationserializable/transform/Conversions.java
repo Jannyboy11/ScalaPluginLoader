@@ -7,41 +7,38 @@ import static org.objectweb.asm.Opcodes.*;
 import static xyz.janboerman.scalaloader.bytecode.AsmConstants.*;
 import xyz.janboerman.scalaloader.bytecode.*;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
+import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.util.Pair;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 class Conversions {
 
     private Conversions() {}
 
-    static void toSerializedType(ClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalVariableTable localVariables, OperandStack operandStack) {
+    static void toSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalVariableTable localVariables, OperandStack operandStack) {
 
-        TypeSignature typeSignature = signature == null ? TypeSignature.ofDescriptor(descriptor) : TypeSignature.ofDescriptor(signature);
+        final TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
 
         //detect arrays
-        if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
-            //convert array to java.util.List.
-            arrayToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
-            return;
-        } else if (isJavaUtilCollection(typeSignature, pluginClassLoader)) {
-            //TODO implement conversion of elements of java.util.List and java.util.Set.
-            //TODO do this by calling the ArrayList or LinkedHashSet no-args constructor,
-            //TODO iterating over the collection and converting the element, and finally calling ArrayList#add(Object) or LinkedHashSet#add(Object)
+        if (typeSignature.hasTypeArguments()) {
+            if (typeSignature.isArray()) {
+                //convert array to java.util.List.
+                arrayToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                return;
+            } else if (isJavaUtilCollection(typeSignature, pluginClassLoader)) {
+                //convert collection to ArrayList or LinkedHashSet
+                collectionToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                return;
+            }
+            /*TODO else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
 
-            //TODO when deserializing, we need to make sure we call the right constructor (for List that's going to be ArrayList and for Set that's going to be LinkedHashSet)
+            }*/
+            //TODO else if (isScalaCollection(typeSignature, pluginClassLoader))
         }
-
-        //TODO implement java.util.Map-converions later.
-        //TODO look at their signature!
-        //TODO the generated code is quite similar to the array-code!
 
         //TODO just like conversion for arrays, implement conversion for scala collection types (both mutable and immutable) (including: tuples, Option, Either, Try)
 
@@ -75,71 +72,88 @@ class Conversions {
 
             //boxed primitives
             case "Ljava/lang/Byte;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Byte");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Byte", "intValue", "()I", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
                 operandStack.replaceTop(Type.INT_TYPE);
                 operandStack.replaceTop(Integer_TYPE);
                 break;
             case "Ljava/lang/Short;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Short");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Short", "intValue", "()I", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
                 operandStack.replaceTop(Type.INT_TYPE);
                 operandStack.replaceTop(Integer_TYPE);
                 break;
             case "Ljava/lang/Integer;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");
                 break;
             case "Ljava/lang/Long;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Long");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Long", "toString", "()Ljava/lang/String;", false);
                 operandStack.replaceTop(STRING_TYPE);
                 break;
             case "Ljava/lang/Float":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Float");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Float", "doubleValue", "()D", false);
                 methodVisitor.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
                 operandStack.replaceTop(Type.DOUBLE_TYPE);
                 operandStack.replaceTop(Double_TYPE);
                 break;
             case "Ljava/lang/Double;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Double");
                 break;
             case "Ljava/lang/Character;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Character");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Character", "toString", "()Ljava/lang/String;", false);
                 operandStack.replaceTop(STRING_TYPE);
                 break;
             case "Ljava/lang/Boolean;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
                 break;
 
-            //other reference types
-            //String, List, Set and Map are a no-op (just like Integer, Boolean and Double)
-            //the same holds for any type that implements ConfigurationSerializable
-
+            //built-ins
             case "Ljava/math/BigInteger;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/math/BigInteger");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/math/BigInteger", "toString", "()Ljava/lang/String;", false);
                 operandStack.replaceTop(STRING_TYPE);
                 break;
             case "Ljava/math/BigDecimal;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/math/BigDecimal");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/math/BigDecimal", "toString", "()Ljava/lang/String;", false);
                 operandStack.replaceTop(STRING_TYPE);
                 break;
             case "Ljava/util/UUID;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/util/UUID");
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/util/UUID", "toString", "()Ljava/lang/String;", false);
                 operandStack.replaceTop(STRING_TYPE);
                 break;
+            //TODO java.util.Date maybe? anything else?
 
-            //in any other case: assume the type is ConfigurationSerializable and just no-op!
+            //unsupported type - attempt runtime conversion!
             default:
-                //TODO insert a cast?
-                //TODO should not be necessary, we are serializing, not deserializing.
+                //a java/lang/Object is already on top of the stack
+                //which is nice because it is also the first argument of RuntimeConversions#serialize
+                // :D
+                genParameterType(methodVisitor, typeSignature, operandStack, localVariables);
+                genScalaPluginClassLoader(methodVisitor, pluginClassLoader, operandStack, localVariables);
+                methodVisitor.visitMethodInsn(INVOKESTATIC,
+                        Type.getType(RuntimeConversions.class).getInternalName(),
+                        "serialize",
+                        "(" + OBJECT_TYPE.getDescriptor()
+                                + Type.getType(ParameterType.class).getDescriptor()
+                                + Type.getType(ScalaPluginClassLoader.class).getDescriptor()
+                                + ")" + OBJECT_TYPE.getDescriptor(),
+                        false);
+                operandStack.replaceTop(3, OBJECT_TYPE);
                 break;
-
-
-            //TODO something like Date, DateFormat, Instant, LocalDateTime, other Time-api related things?
-            //TODO Locale, CharSet?
         }
 
     }
 
-    private static void arrayToSerializedType(ClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void arrayToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
 
-        assert TypeSignature.ARRAY.equals(arrayTypeSignature.getTypeName()) : "not an array";
+        assert arrayTypeSignature.isArray() : "not an array";
         final TypeSignature componentTypeSignature = arrayTypeSignature.getTypeArgument(0);
         final Type arrayType = Type.getType(arrayTypeSignature.toDescriptor());
         final Type arrayComponentType = Type.getType(componentTypeSignature.toDescriptor());
@@ -237,11 +251,109 @@ class Conversions {
         localVariableTable.removeFramesFromIndex(arrayIndex);
     }
 
+    private static void collectionToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+        final String rawTypeName = typeSignature.getTypeName();
+        final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
+        int localVariableIndex = localVariableTable.frameSize();
+
+        //serializing is a lot easier than deserializing.
+        //if it's a set, we just need to create a LinkedHashSet,
+        //otherwise we just create an ArrayList.
+        //and we convert the elements!
+
+        final Label startLabel = new Label();
+        final Label endLabel = new Label();
+
+        //store the existing collection in a local variable
+        methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Collection");                                                                             operandStack.replaceTop(Type.getType(Collection.class));
+        final int oldCollectionIndex = localVariableIndex++;
+        final LocalVariable oldCollection = new LocalVariable("liveCollection", "Ljava/util/Collection;", null, startLabel, endLabel, oldCollectionIndex);
+        methodVisitor.visitVarInsn(ASTORE, oldCollectionIndex);                     localVariableTable.add(oldCollection);                              operandStack.pop();
+        methodVisitor.visitLabel(startLabel);
+
+        //store the new collection in a local variable
+        switch (rawTypeName) {
+            //set interfaces
+            case "java/util/Set":
+            case "java/util/NavigableSet":
+            case "java/util/SortedSet":
+            //set classes
+            case "java/util/AbstractSet":
+            case "java/util/concurrent/ConcurrentHashMap$KeySetView":
+            case "java/util/concurrent/ConcurrentSkipListSet":
+            case "java/util/concurrent/CopyOnWriteArraySet":
+            case "java/util/EnumSet":
+            case "java/util/HashSet":
+            case "java/util/LinkedHashSet":
+            case "java/util/TreeSet":
+                methodVisitor.visitTypeInsn(NEW, "java/util/LinkedHashMap");                                                                        operandStack.push(Type.getType(LinkedHashMap.class));
+                methodVisitor.visitInsn(DUP);                                                                                                           operandStack.push(Type.getType(LinkedHashMap.class));
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/LinkedHashMap", "<init>", "()V", false);        operandStack.pop();
+                break;
+            //if it's not a set, then use a List.
+            default:
+                methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");                                                                            operandStack.push(Type.getType(ArrayList.class));
+                methodVisitor.visitInsn(DUP);                                                                                                           operandStack.push(Type.getType(ArrayList.class));
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "()V", false);            operandStack.pop();
+                break;
+        }
+
+        final Label newCollectionLabel = new Label();
+        final int newCollectionIndex = localVariableIndex++;
+        final LocalVariable newCollection = new LocalVariable("serializedCollection", "Ljava/util/Collection;", null, newCollectionLabel, endLabel, newCollectionIndex);
+        methodVisitor.visitVarInsn(ASTORE, newCollectionIndex);                     localVariableTable.add(newCollection);                              operandStack.pop();
+        methodVisitor.visitLabel(newCollectionLabel);
+
+        //get the iterator
+        final Label iteratorLabel = new Label();
+        methodVisitor.visitVarInsn(ALOAD, oldCollectionIndex);                                                                                          operandStack.push(Type.getType(Collection.class));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "iterator", "()Ljava/util/Iterator;", true);      operandStack.replaceTop(Type.getType(Iterator.class));
+        final int iteratorIndex = localVariableIndex++;
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex);
+        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                          localVariableTable.add(iterator);                                   operandStack.pop();
+        methodVisitor.visitLabel(iteratorLabel);
+
+        final Label jumpBackTarget = iteratorLabel, endLoopLabel = new Label();
+        final Object[] localsFrame = localVariableTable.frame();
+        final Object[] stackFrame = operandStack.frame();
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //get the iterator, call hasNext()
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                                                                               operandStack.push(Type.getType(Iterator.class));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "hasNext", "()Z", true);                   operandStack.replaceTop(Type.BOOLEAN_TYPE);
+        methodVisitor.visitJumpInsn(IFEQ, endLoopLabel);    /*IFEQ branches if the value on the stack is 0 (false) !!*/                                 operandStack.pop();
+        //load the new collection so that we can sore later
+        methodVisitor.visitVarInsn(ALOAD, newCollectionIndex);                                                                                          operandStack.push(Type.getType(Collection.class));
+        //call iterator.next()
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                                                                               operandStack.push(Type.getType(Iterator.class));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);             operandStack.replaceTop(OBJECT_TYPE);
+        //convert element
+        toSerializedType(pluginClassLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localVariableTable, operandStack);
+        //store in the new collection
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "add", "(Ljava/lang/Object;)Z", true);       operandStack.replaceTop(2, Type.BOOLEAN_TYPE);
+        methodVisitor.visitInsn(POP);                       /*discard boolean result of Collection#add(Object) !*/                                      operandStack.pop();
+        //jump back
+        methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
+
+        //end of loop
+        methodVisitor.visitLabel(endLoopLabel);
+        localVariableTable.removeFramesFromIndex(localVariableIndex);
+        assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
+        assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //load the result
+        methodVisitor.visitVarInsn(ALOAD, newCollectionIndex);                                                                                          operandStack.push(Type.getType(Collection.class));
+        methodVisitor.visitLabel(endLabel);                                         localVariableTable.removeFramesFromIndex(oldCollectionIndex);
+    }
+
+
+
     private static TypeSignature serializedType(TypeSignature liveType) {
         String internalName = liveType.getTypeName();
         List<TypeSignature> typeArguments = liveType.getTypeArguments();
 
-        if (TypeSignature.ARRAY.equals(internalName))
+        if (liveType.isArray())
             return new TypeSignature("java/util/List", typeArguments.stream()
                     .map(Conversions::serializedType)
                     .collect(Collectors.toList()));
@@ -272,23 +384,21 @@ class Conversions {
     }
 
 
-    static void toLiveType(ClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalVariableTable localVariables, OperandStack operandStack) {
+    // ==================================================================================================================================================================
+
+    static void toLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalVariableTable localVariables, OperandStack operandStack) {
 
         final TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
 
-        if (!typeSignature.getTypeArguments().isEmpty()) {
-            if (TypeSignature.ARRAY.equals(typeSignature.getTypeName())) {
+        if (typeSignature.hasTypeArguments()) {
+            if (typeSignature.isArray()) {
                 //generate code for transforming arrays to lists and their elements
                 arrayToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
                 return;
-            } else {
-                //TODO generate code converting elements of collections and maps
-                //TODO reconstruction of Maps, Sets and Lists should be done using the no-args constructor of the class used,
-                //TODO can actively check this by calling java.lang.Class#isInterface() and java.lang.Class#getConstructor() (without parameter types)
-
-                //TODO or, if one of the interfaces was used, LinkedHashMap, LinkedHashSet and ArrayList should be used.
-                //TODO if [Ordered/Sorted][Set/Map] was used, then Tree[Set/Map] should be used.
-            }
+            } else if (isJavaUtilCollection(typeSignature, pluginClassLoader)) {
+                collectionToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                return;
+            } //TODO else if Map
         }
 
 
@@ -437,32 +547,34 @@ class Conversions {
                 operandStack.replaceTop(STRING_TYPE);
                 break;
 
-            //TODO convert elements
-            case "Ljava/util/List;":
-                methodVisitor.visitTypeInsn(CHECKCAST, "java/util/List");
-                operandStack.replaceTop(LIST_TYPE);
-                break;
-            case "Ljava/util/Set;":
-                methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Set");
-                operandStack.replaceTop(SET_TYPE);
-                break;
+            //TODO remove this too when bytecode transformation for Maps is implemented.
             case "Ljava/util/Map;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Map");
                 operandStack.push(MAP_TYPE);
                 break;
 
             default:
-                //assume ConfigurationSerializable, just cast.
-                Type type = Type.getType(descriptor);
-                methodVisitor.visitTypeInsn(CHECKCAST, type.getInternalName());
-                operandStack.replaceTop(type);
+                //a serialized java/lang/Object is already on top of the stack
+                genParameterType(methodVisitor, typeSignature, operandStack, localVariables);
+                genScalaPluginClassLoader(methodVisitor, pluginClassLoader, operandStack, localVariables);
+                methodVisitor.visitMethodInsn(INVOKESTATIC,
+                        Type.getType(RuntimeConversions.class).getInternalName(),
+                        "deserialize",
+                        "(" + OBJECT_TYPE.getDescriptor()
+                                + Type.getType(ParameterType.class).getDescriptor()
+                                + Type.getType(ScalaPluginClassLoader.class).getDescriptor()
+                                + ")" + OBJECT_TYPE.getDescriptor(),
+                        false);
+                operandStack.replaceTop(3, OBJECT_TYPE);
+                //now, just cast.
+                methodVisitor.visitTypeInsn(CHECKCAST, typeSignature.internalName());
                 break;
         }
     }
 
-    private static void arrayToLiveType(ClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void arrayToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
 
-        assert TypeSignature.ARRAY.equals(arrayTypeSignature.getTypeName()) : "not an array";
+        assert arrayTypeSignature.isArray() : "not an array";
 
         final TypeSignature componentTypeSignature = arrayTypeSignature.getTypeArgument(0);
         final Type arrayType = Type.getType(arrayTypeSignature.toDescriptor());
@@ -559,6 +671,127 @@ class Conversions {
     }
 
 
+    private static void collectionToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+        final String collectionTypeName = typeSignature.getTypeName();
+
+        //determine implementation class for the live type.
+        final String implementationClassName;
+        switch (collectionTypeName) {
+            //known interfaces
+            case "java/util/concurrent/BlockingDeque":
+                implementationClassName = "java/util/concurrent/LinkedBlockingDeque";
+                break;
+            case "java/util/concurrent/TransferQueue":
+                implementationClassName = "java/util/concurrent/LinkedTransferQueue";
+                break;
+            case "java/util/concurrent/BlockingQueue":
+                implementationClassName = "java/util/concurrent/LinkedBlockingQueue";
+                break;
+            case "java/util/Deque":
+                implementationClassName = "java/util/ArrayDeque";
+                break;
+            case "java/util/Queue":
+                implementationClassName = "java/util/LinkedList";
+                break;
+            case "java/util/SortedSet":
+            case "java/util/NavigableSet":
+                implementationClassName = "java/util/TreeSet";
+                break;
+            case "java/util/Set":
+                implementationClassName = "java/util/LinkedHashSet";
+                break;
+            case "java/util/List":
+            case "java/util/Collection":
+                implementationClassName = "java/util/ArrayList";
+                break;
+
+            //it is probably was a class already.
+            default:
+                implementationClassName = collectionTypeName;
+                break;
+        }
+
+        //now, let's generate some code!
+
+        final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
+
+        //assert that we have a collection indeed.
+        methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Collection");                                                                                                 operandStack.replaceTop(Type.getType(Collection.class));
+        int localVariableIndex = localVariableTable.frameSize();
+        final Label startLabel = new Label();
+        final Label endLabel = new Label();
+
+        //store it in a local variable
+        final int serializedCollectionIndex = localVariableIndex++;
+        final LocalVariable serializedCollection = new LocalVariable("serializedCollection", "Ljava/util/Collection;", null, startLabel, endLabel, serializedCollectionIndex);
+        methodVisitor.visitVarInsn(ASTORE, serializedCollectionIndex);                                                  localVariableTable.add(serializedCollection);       operandStack.pop();
+
+        final Label liveCollectionLabel = new Label();
+        methodVisitor.visitLabel(liveCollectionLabel);
+
+        //instantiate the new collection.
+        if ("java/util/EnumSet".equals(implementationClassName)) {
+            //special-case EnumSet because has no nullary constructor.
+            methodVisitor.visitLdcInsn(Type.getType(elementTypeSignature.toDescriptor()));                                                                                      operandStack.push(Type.getType(Class.class));
+            methodVisitor.visitMethodInsn(INVOKESTATIC, "java/util/EnumSet", "noneOf", "(Ljava/langClass;)Ljava/util/EnumSet;", false);     operandStack.replaceTop(Type.getType(EnumSet.class));
+        } else {
+            //call nullary constructor (this may fail at runtime with a NoSuchMethodDefError) //TODO generate try-catch code?
+            methodVisitor.visitTypeInsn(NEW, implementationClassName);                                                                                                          operandStack.push(Type.getObjectType(collectionTypeName));
+            methodVisitor.visitInsn(DUP);                                                                                                                                       operandStack.push(Type.getObjectType(collectionTypeName));
+            methodVisitor.visitMethodInsn(INVOKESPECIAL, implementationClassName, "<init>", "()V", false);                                          operandStack.pop();
+        }
+        //store it in a local variable
+        final int liveCollectionIndex = localVariableIndex++;
+        final LocalVariable liveCollection = new LocalVariable("liveCollection", typeSignature.toDescriptor(), typeSignature.toSignature(), liveCollectionLabel, endLabel, liveCollectionIndex);
+        methodVisitor.visitVarInsn(ASTORE, liveCollectionIndex);                                                        localVariableTable.add(liveCollection);                 operandStack.pop();
+
+        final Label iteratorLabel = new Label();
+        methodVisitor.visitLabel(iteratorLabel);
+
+        //let's get the iterator and store it
+        methodVisitor.visitVarInsn(ALOAD, serializedCollectionIndex);                                                                                                           operandStack.push(Type.getType(Collection.class));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "iterator", "()Ljava/util/Iterator;", true);                     operandStack.replaceTop(Type.getType(Iterator.class));
+        final int iteratorIndex = localVariableIndex++;
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex);
+        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                                                              localVariableTable.add(iterator);                       operandStack.pop();
+
+        //loop body!
+        final Label jumpBackTarget = new Label();
+        final Label endOfLoopLabel = new Label();
+        final Object[] localsFrame = localVariableTable.frame();
+        final Object[] stackFrame = operandStack.frame();
+
+        methodVisitor.visitLabel(jumpBackTarget);
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //load the iterator, call hasNext(), call next(), convert
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                                               operandStack.push(Type.getType(Iterator.class));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "hasNext", "()Z", true);   operandStack.replaceTop(Type.BOOLEAN_TYPE);
+        methodVisitor.visitJumpInsn(IFEQ, endOfLoopLabel);                                                              operandStack.pop();
+        //prepare live collection so that we can add the element later
+        methodVisitor.visitVarInsn(ALOAD, liveCollectionIndex);                                                         operandStack.push(Type.getObjectType(collectionTypeName));
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                                               operandStack.push(Type.getType(Iterator.class));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(OBJECT_TYPE);
+        toLiveType(pluginClassLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localVariableTable, operandStack);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "add", "(Ljava/lang/Object;)Z", true);       operandStack.replaceTop(2, Type.BOOLEAN_TYPE);
+        methodVisitor.visitInsn(POP);   /*get rid of da boolean*/                                                       operandStack.pop();
+        methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
+
+        //end of loop
+        localVariableTable.removeFramesFromIndex(localVariableIndex);
+        assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
+        assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
+        methodVisitor.visitLabel(endOfLoopLabel);
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //load the result
+        methodVisitor.visitVarInsn(ALOAD, liveCollectionIndex);                                                         operandStack.push(Type.getObjectType(collectionTypeName));
+        methodVisitor.visitLabel(endLabel);                                             localVariableTable.removeFramesFromIndex(serializedCollectionIndex);
+    }
+
+
+    // ==================================================================================================================================================================
+
     static String boxedType(String type) {
         switch (type) {
             case "B": return javaLangByte_TYPE;
@@ -591,89 +824,25 @@ class Conversions {
         return descriptor;
     }
 
-    //TODO arrays of boxed primitives
-    //TODO arrays of other reference types that I want to support out of the box:
-    //TODO BigInteger, BigDecimal, String and UUID
-    //TODO ACTUALLY - I think it's probably better to generate that bytecode in the classfile itself! (in case of nested arrays!)
-    //TODO arrays of enums?
-    //TODO arrays of other configurationserializable types
-
-
-    private static String collectionClassTypeName(String collectionTypeName) {
-        switch (collectionTypeName) {
-            //lists
-            case "java/util/AbstractCollection":
-            case "java/util/AbstractList":
-            case "java/util/List":
-                return "java/util/ArrayList";
-
-            //queues and deques
-            case "java/util/concurrent/BlockingDeque":
-                return "java/util/concurrent/LinkedBlockingDeque";
-            case "java/util/concurrent/TransferQueue":
-                return "java/util/concurrent/LinkedTransferQueue";
-            case "java/util/concurrent/BlockingQueue":
-                return "java/util/concurrent/ArrayBlockingQueue";
-            case "java/util/AbstractQueue":
-                return "java/util/concurrent/ConcurrentLinkedQueue";
-            case "java/util/Deque":
-                return "java/util/ArrayDeque";
-            case "java/util/Queue":
-                return "java/util/LinkedList";
-            //sets
-            case "java/util/SortedSet":
-            case "java/util/OrderedSet":
-                return "java/util/TreeSet";
-            case "java/util/Set":
-            case "java/util/AbstractSet":
-                return "java/util/LinkedHashSet";
-            case "java/util/EnumSet":
-                assert false : "can't call collectionClassTypeName for EnumSet";
-                return null;
-
-            default:
-                return collectionTypeName;
-        }
-    }
-
-    private static enum TestEnum {
-        FOO, BAR;
-    }
-
-    private static void testEnumSet() {
-        java.util.EnumSet.noneOf(TestEnum.class);
-    }
-
-
 
     private static Map<Pair<String, ClassLoader>, Class<?>> knownCollectionClasses;
-
     private static boolean isJavaUtilCollection(TypeSignature typeSignature, ClassLoader pluginClassLoader) {
-        if (knownCollectionClasses == null) knownCollectionClasses = new HashMap<>();
-        final Pair<String, ClassLoader> pair = new Pair<>(typeSignature.getTypeName(), pluginClassLoader);
-        if (knownCollectionClasses.containsKey(pair)) return true;
 
-        String typeName = typeSignature.getTypeName();
-        String jvmClassName = typeName.replace('/', '.');
-        try {
-            Class<?> clazz = Class.forName(jvmClassName, false, pluginClassLoader);
-            Set<Class<?>> interfaces = new HashSet<>(Compat.setOf(clazz.getInterfaces()));
-            boolean foundMoreInterfaces = true;
-            boolean foundJavaUtilCollection = interfaces.contains(java.util.Collection.class);
-            while (foundMoreInterfaces && !foundJavaUtilCollection) {
-                Set<Class<?>> newInterfaces = Compat.setOf(clazz.getInterfaces());
-                if (newInterfaces.contains(java.util.Collection.class)) {
-                    knownCollectionClasses.put(pair, clazz);
-                    return true;
-                }
-                foundMoreInterfaces = interfaces.addAll(newInterfaces);
-            }
-        } catch (ClassNotFoundException tooBad) {
-        }
+        final String typeName = typeSignature.getTypeName();
 
-        //fallback
+        //java standard library
         switch (typeName) {
+            //interfaces
             case "java/util/Collection":
+            case "java/util/concurrent/BlockingQueue":
+            case "java/util/Deque":
+            case "java/util/List":
+            case "java/util/NavigableSet":
+            case "java/util/Queue":
+            case "java/util/Set":
+            case "java/util/SortedSet":
+            case "java/util/concurrent/TransferQueue":
+            //classes
             case "java/util/AbstractCollection":
             case "java/util/AbstractList":
             case "java/util/AbstractQueue":
@@ -703,10 +872,82 @@ class Conversions {
             case "java/util/TreeSet":
             case "java/util/Vector":
                 return true;
-                //this is not fool-proof: the collection interface could be implemented in the plugin itself
-                //or in a third-party library. Maybe I could add something that addresses this later.
-            default:
-                return false;
+        }
+
+        //fallback - try to classload the collection class and check whether it is assignable to java.util.Collection.
+        if (knownCollectionClasses == null) knownCollectionClasses = new HashMap<>();
+        final Pair<String, ClassLoader> pair = new Pair<>(typeSignature.getTypeName(), pluginClassLoader);
+        if (knownCollectionClasses.containsKey(pair)) return true;
+
+        String jvmClassName = typeName.replace('/', '.');
+        try {
+            Class<?> clazz = Class.forName(jvmClassName, false, pluginClassLoader);
+            if (Collection.class.isAssignableFrom(clazz)) return true;
+        } catch (ClassNotFoundException tooBad) {
+            //plugin's jar contained a class that referred to a class that couldn't be found by its classloader.
+            NoClassDefFoundError error = new NoClassDefFoundError(jvmClassName);
+            error.addSuppressed(tooBad);
+            throw error;
+        }
+
+        //if we reached this point, there is no hope.
+        return false;
+    }
+
+
+    // ==================================================================================================================================================================
+
+    private static void genScalaPluginClassLoader(MethodVisitor methodVisitor, ScalaPluginClassLoader plugin, OperandStack operandStack, LocalVariableTable localVariableTable) {
+        String main = plugin.getMainClassName();
+        Type mainType = Type.getType("L" + main.replace('.', '/') + ";");
+
+        methodVisitor.visitLdcInsn(mainType);                                                                                                                   operandStack.push(Type.getType(Class.class));
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader", "()Ljava/lang/ClassLoader;", false);      operandStack.replaceTop(Type.getType(ClassLoader.class));
+        methodVisitor.visitTypeInsn(CHECKCAST, "xyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader");                                                     operandStack.replaceTop(Type.getType(ScalaPluginClassLoader.class));
+    }
+
+    private static void genParameterType(MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+        //include annotations? would need to make typeSignature contain annotations in that case.
+
+        if (typeSignature.isArray()) {
+            //gen component conversion
+            genParameterType(methodVisitor, typeSignature.getTypeArgument(0), operandStack, localVariableTable);
+            //load 'false' (not var-args)
+            methodVisitor.visitInsn(ICONST_0);                                                                                  operandStack.push(Type.BOOLEAN_TYPE);
+            //invoke
+            methodVisitor.visitMethodInsn(INVOKESTATIC,
+                    "xyz/janboerman/scalaloader/configurationserializable/runtime/ArrayParameterType",
+                    "from",
+                    "(Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Z)Lxyz/janboerman/scalaloader/configurationserializable/runtime/ArrayParameterType;",
+                    false);                                                                                                 operandStack.replaceTop(2, Type.getType(ArrayParameterType.class));
+        } else if (typeSignature.hasTypeArguments()) {
+            //load raw type
+            methodVisitor.visitLdcInsn(Type.getObjectType(typeSignature.internalName()));                                       operandStack.push(Type.getType(Class.class));
+            //load type arguments
+            methodVisitor.visitIntInsn(BIPUSH, typeSignature.countTypeArguments());                                             operandStack.push(Type.INT_TYPE);
+            methodVisitor.visitTypeInsn(ANEWARRAY, "xyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType");   operandStack.replaceTop(Type.getType(ParameterType[].class));
+            for (int i = 0; i < typeSignature.countTypeArguments(); i++) {
+                methodVisitor.visitInsn(DUP);                                                                                   operandStack.push(Type.getType(ParameterType[].class));
+                TypeSignature typeArgument = typeSignature.getTypeArgument(i);
+                methodVisitor.visitIntInsn(BIPUSH, i);                                                                          operandStack.push(Type.INT_TYPE);
+                genParameterType(methodVisitor, typeArgument, operandStack, localVariableTable);
+                methodVisitor.visitInsn(AASTORE);                                                                               operandStack.pop(2);
+            }
+            //invoke
+            methodVisitor.visitMethodInsn(INVOKESTATIC,
+                    "xyz/janboerman/scalaloader/configurationserializable/runtime/ParameterizedParameterType",
+                    "from",
+                    "(Ljava/lang/Class;[Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;)Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterizedParameterType;",
+                    false);                                                                                                 operandStack.replaceTop(2, Type.getType(ParameterizedParameterType.class));
+        } else {
+            //load raw type
+            methodVisitor.visitLdcInsn(Type.getObjectType(typeSignature.internalName()));                                       operandStack.push(Type.getType(Class.class));
+            //invoke
+            methodVisitor.visitMethodInsn(INVOKESTATIC,
+                    "xyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType",
+                    "from",
+                    "(Ljava/lang/reflect/Type;)Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;",
+                    false);                                                                                             operandStack.replaceTop(Type.getType(ParameterType.class));
         }
     }
 

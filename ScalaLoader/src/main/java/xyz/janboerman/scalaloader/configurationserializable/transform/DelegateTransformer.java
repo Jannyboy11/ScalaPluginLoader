@@ -17,7 +17,7 @@ public class DelegateTransformer extends ClassVisitor {
     private final LocalScanResult scanResult;
 
     private String className;       //uses slashes, not dots:                   foo/bar/SomeClass
-    private String classDescriptor; //uses the norminal descriptor notation:    Lfoo/bar/SomeClass;
+    private String classDescriptor; //uses the nominal descriptor notation:     Lfoo/bar/SomeClass;
     private String superType;       //uses slashes:                             java/lang/Object
     private String classSignature;  //includes generics                         Lfoo/bar/Seq<Lfoo/bar/Quz;>;
     private boolean classIsInterface;

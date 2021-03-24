@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public final class TypeSignature {
 
-    public static final String ARRAY = "array";
+    private static final String ARRAY = "array";
     private static final TypeSignature OBJECT_TYPE_SIGNATURE = new TypeSignature("java/lang/Object", Compat.emptyList());
 
     private final String typeName;
@@ -27,6 +27,14 @@ public final class TypeSignature {
 
         this.typeName = typeName;
         this.typeArguments = typeArguments;
+    }
+
+    public boolean isArray() {
+        return ARRAY.equals(getTypeName());
+    }
+
+    public boolean hasTypeArguments() {
+        return !getTypeArguments().isEmpty();
     }
 
     public static TypeSignature ofDescriptor(String descriptor) {
@@ -80,6 +88,10 @@ public final class TypeSignature {
      */
     public List<TypeSignature> getTypeArguments() {
         return Collections.unmodifiableList(typeArguments);
+    }
+
+    public int countTypeArguments() {
+        return typeArguments.size();
     }
 
     public TypeSignature getTypeArgument(int index) {

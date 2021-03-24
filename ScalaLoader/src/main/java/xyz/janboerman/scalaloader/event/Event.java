@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.event;
 
 import org.bukkit.Server;
+import xyz.janboerman.scalaloader.bytecode.Replaced;
 import xyz.janboerman.scalaloader.event.transform.EventError;
 
 /**
@@ -51,6 +52,7 @@ import xyz.janboerman.scalaloader.event.transform.EventError;
  * @see Cancellable
  * @see EventBus
  */
+@Replaced
 public abstract class Event {
 
     /**
@@ -58,6 +60,7 @@ public abstract class Event {
      * @implNote can only be used by ScalaPlugins!
      * @param asynchronous true if the event is asynchronous, false if the event is executed in the server thread.
      */
+    @Replaced
     public Event(boolean asynchronous) {
         throw new EventError("Cannot extend " + Event.class.getName() + " from within a JavaPlugin");
     }
@@ -66,6 +69,7 @@ public abstract class Event {
      * Construct an event that is executed in the server thread.
      * @implNote can only be used by ScalaPlugins!
      */
+    @Replaced
     public Event() {
         throw new EventError("Cannot extend " + Event.class.getName() + " from within a JavaPlugin");
     }
@@ -77,6 +81,7 @@ public abstract class Event {
      * @see Server#isPrimaryThread()
      * @see org.bukkit.scheduler.BukkitScheduler
      */
+    @Replaced
     public boolean isAsynchronous() {
         throw new EventError("Somehow " + getClass().getName() + " was not transformed to a subclass of org.bukkit.event.Event. This is a bug in ScalaLoader!");
     }
@@ -85,6 +90,7 @@ public abstract class Event {
      * Get the event's name. The default implementation returns the name of the class of the event.
      * @return the name of the event
      */
+    @Replaced
     public String getEventName() {
         throw new EventError("Somehow " + getClass().getName() + " was not transformed to a subclass of org.bukkit.event.Event. This is a bug in ScalaLoader!");
     }

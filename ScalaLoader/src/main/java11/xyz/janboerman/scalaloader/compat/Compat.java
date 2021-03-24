@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
 import java.util.jar.JarFile;
 import java.util.zip.ZipFile;
 
@@ -50,6 +51,10 @@ public class Compat {
 
     public static <T> Set<T> emptySet() {
         return Set.of();
+    }
+
+    public static <K, V> Map<K, V> emptyMap() {
+        return Map.of();
     }
 
     public static String stringRepeat(String base, int repeat) {

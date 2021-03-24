@@ -12,6 +12,7 @@ import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import xyz.janboerman.scalaloader.configurationserializable.Scan;
 import xyz.janboerman.scalaloader.configurationserializable.Scan.ExcludeProperty;
 import xyz.janboerman.scalaloader.configurationserializable.Scan.IncludeProperty;
+import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.util.Pair;
 
 import static xyz.janboerman.scalaloader.configurationserializable.DeserializationMethod.*;
@@ -30,10 +31,10 @@ import static xyz.janboerman.scalaloader.configurationserializable.transform.Con
 class SerializableTransformer extends ClassVisitor {
 
     private final LocalScanResult result;
-    private final ClassLoader pluginClassLoader;
+    private final ScalaPluginClassLoader pluginClassLoader;
 
     private String className;       //uses slashes, not dots:                   foo/bar/SomeClass
-    private String classDescriptor; //uses the norminal descriptor notation:    Lfoo/bar/SomeClass;
+    private String classDescriptor; //uses the nominal descriptor notation:     Lfoo/bar/SomeClass;
     private String superType;       //uses slashes:                             java/lang/Object
     private String classSignature;  //includes generics                         Lfoo/bar/Seq<Lfoo/bar/Quz;>;
     private boolean classIsInterface;
@@ -59,7 +60,7 @@ class SerializableTransformer extends ClassVisitor {
     private final Map<String /*property*/, MethodHeader> propertySetters = new LinkedHashMap<>();
     private final Map<String /*property*/, FieldDeclaration> propertyFields = new LinkedHashMap<>();
 
-    SerializableTransformer(ClassVisitor classVisitor, LocalScanResult scanResult, ClassLoader pluginClassLoader) {
+    SerializableTransformer(ClassVisitor classVisitor, LocalScanResult scanResult, ScalaPluginClassLoader pluginClassLoader) {
         super(ASM_API, classVisitor);
         this.result = scanResult;
         this.pluginClassLoader = pluginClassLoader;
@@ -167,60 +168,58 @@ class SerializableTransformer extends ClassVisitor {
         }
 
         if (result.annotatedByConfigurationSerializable && (access & ACC_STATIC) == 0 && (access & ACC_TRANSIENT) == 0) {
-            //TODO only do this for ScanTypes FIELDS and RECORD.
-            return new FieldVisitor(ASM_API, super.visitField(access, fieldName, fieldDescriptor, fieldSignature, value)) {
-                String property = fieldName;
-                boolean include;
-                boolean exclude;
+            if (scanType == FIELDS || scanType == RECORD) {
 
-                @Override
-                public AnnotationVisitor visitAnnotation(String annDescriptor, boolean visible) {
-                    AnnotationVisitor superVisitor = super.visitAnnotation(annDescriptor, visible);
+                final int finalAccess = scanType == FIELDS ? (access & ~ACC_FINAL) : access;
 
-                    if (SCALALOADER_PROPERTYINCLUDE_DESCRIPTOR.equals(annDescriptor)) {
-                        include = true;
-                        return new AnnotationVisitor(ASM_API, superVisitor) {
-                            @Override
-                            public void visit(String name, Object value) {
-                                if ("value".equals(name)) {
-                                    property = (String) value;
+                return new FieldVisitor(ASM_API, super.visitField(finalAccess, fieldName, fieldDescriptor, fieldSignature, value)) {
+                    String property = fieldName;
+                    boolean include;
+                    boolean exclude;
+
+                    @Override
+                    public AnnotationVisitor visitAnnotation(String annDescriptor, boolean visible) {
+                        AnnotationVisitor superVisitor = super.visitAnnotation(annDescriptor, visible);
+
+                        if (SCALALOADER_PROPERTYINCLUDE_DESCRIPTOR.equals(annDescriptor)) {
+                            include = true;
+                            return new AnnotationVisitor(ASM_API, superVisitor) {
+                                @Override
+                                public void visit(String name, Object value) {
+                                    if ("value".equals(name)) {
+                                        property = (String) value;
+                                    }
+                                    super.visit(name, value);
                                 }
-                                super.visit(name, value);
-                            }
-                        };
+                            };
+                        } else if (SCALALOADER_PROPERTYEXCLUDE_DESCRIPTOR.equals(annDescriptor)) {
+                            exclude = true;
+                            property = null;
+                            return superVisitor;
+                        } else {
+                            return superVisitor;
+                        }
                     }
 
-                    else if (SCALALOADER_PROPERTYEXCLUDE_DESCRIPTOR.equals(annDescriptor)) {
-                        exclude = true;
-                        property = null;
-                        return superVisitor;
+                    @Override
+                    public void visitEnd() {
+                        if (include && exclude) {
+                            throw new ConfigurationSerializableError("Can't annotate field " + fieldName + " with both "
+                                    + "@" + IncludeProperty.class.getSimpleName() + " and "
+                                    + "@" + ExcludeProperty.class.getSimpleName() + ", please remove one of the two!");
+                        }
+                        if (property != null) {
+                            FieldDeclaration existingFieldDeclaration = propertyFields.put(property, new FieldDeclaration(finalAccess, fieldName, fieldDescriptor, fieldSignature));
+                            if (existingFieldDeclaration != null)
+                                throw new ConfigurationSerializableError("Duplicate field for property: " + property);
+                        }
+                        super.visitEnd();
                     }
-
-                    else {
-                        return superVisitor;
-                    }
-                }
-
-                @Override
-                public void visitEnd() {
-                    if (include && exclude) {
-                        throw new ConfigurationSerializableError("Can't annotate field " + fieldName + " with both "
-                            + "@" + IncludeProperty.class.getSimpleName() + " and "
-                            + "@" + ExcludeProperty.class.getSimpleName() + ", please remove one of the two!");
-                    }
-                    if (property != null) {
-                        FieldDeclaration existingFieldDeclaration = propertyFields.put(property, new FieldDeclaration(access, fieldName, fieldDescriptor, fieldSignature));
-                        if (existingFieldDeclaration != null)
-                            throw new ConfigurationSerializableError("Duplicate field for property: " + property);
-                    }
-                    super.visitEnd();
-                }
-            };
+                };
+            }
         }
 
-        else {
-            return super.visitField(access, fieldName, fieldDescriptor, fieldSignature, value);
-        }
+        return super.visitField(access, fieldName, fieldDescriptor, fieldSignature, value);
     }
 
     @Override

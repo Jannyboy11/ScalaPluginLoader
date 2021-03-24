@@ -5,6 +5,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.bytecode.Replaced;
 import xyz.janboerman.scalaloader.event.transform.EventError;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
@@ -42,6 +44,7 @@ public class EventBus {
      * @return true if the event is allowed to happen, otherwise false
      * @apiNote if the event does not implement {@link Cancellable}, true is always returned.
      */
+    @Called
     public boolean callEvent(org.bukkit.event.Event event) {
         pluginManager.callEvent(event);
         if (event instanceof Cancellable) {
@@ -62,6 +65,7 @@ public class EventBus {
      * @apiNote if the event does not implement {@link xyz.janboerman.scalaloader.event.Cancellable} or {@link Cancellable}, true is always returned.
      * @throws RuntimeException if the type of the passed argument is not a subtype of {@link Event} or {@link org.bukkit.event.Event}.
      */
+    @Replaced
     public boolean callEvent(Object event) {
         if (event instanceof org.bukkit.event.Event) {
             return callEvent((org.bukkit.event.Event) event);
@@ -91,6 +95,7 @@ public class EventBus {
      * @param plugin the Plugin
      * @param ignoreCancelled whether to ignore cancelled events (false == don't ignore == handle cancelled events too)
      */
+    @Called
     public void registerEvent(Class<? extends org.bukkit.event.Event> event, Listener listener, EventPriority priority, org.bukkit.plugin.EventExecutor executor, Plugin plugin, boolean ignoreCancelled) {
         pluginManager.registerEvent(event, listener, priority, executor, plugin, ignoreCancelled);
     }
@@ -109,6 +114,7 @@ public class EventBus {
      * @param <E> the event type
      * @param <L> the listener type
      */
+    @Replaced
     public <L extends Listener, E extends Event> void registerEvent(Class<E> event, L listener, EventPriority priority, EventExecutor<L, E> executor, Plugin plugin, boolean ignoreCancelled) {
         if (executor instanceof org.bukkit.plugin.EventExecutor) {
             registerEvent((Class<? extends org.bukkit.event.Event>) (Class<?>) event, listener, priority, (org.bukkit.plugin.EventExecutor) executor, plugin, ignoreCancelled);
@@ -126,6 +132,7 @@ public class EventBus {
      * @param executor the event executor
      * @param plugin the plugin
      */
+    @Called
     public void registerEvent(Class<? extends org.bukkit.event.Event> event, Listener listener, EventPriority priority, org.bukkit.plugin.EventExecutor executor, Plugin plugin) {
         pluginManager.registerEvent(event, listener, priority, executor, plugin);
     }
@@ -143,6 +150,7 @@ public class EventBus {
      * @param <E> the event type
      * @param <L> the listener type
      */
+    @Replaced
     public <L extends Listener, E extends Event> void registerEvent(Class<E> event, L listener, EventPriority priority, EventExecutor<L, E> executor, Plugin plugin) {
         if (executor instanceof org.bukkit.plugin.EventExecutor) {
             registerEvent((Class<? extends org.bukkit.event.Event>) (Class<?>) event, listener, priority, (org.bukkit.plugin.EventExecutor) executor, plugin);

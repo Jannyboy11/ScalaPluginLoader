@@ -201,16 +201,6 @@ public final class ScalaLoader extends JavaPlugin {
         }
     }
 
-    //TODO how will I inject scala library classes into the javaplugin's PluginClassLoaders?
-    //TODO maybe I should relocate them after all ;o
-    //TODO I think I will relocate them - but just for the javaplugins (I don't actually have to rewrite the scala library class bytes)
-    //TODO I just need to change the 'name' of the class as the key in the map. I hope.
-    //TODO JavaPlugins that get loaded by the ScalaPluginLoader will need actual class bytes transformations though.
-    //TODO Or - I just use a custom JavaPluginLoader which has access to the ScalaLibraryClassLoaders, and can use those as parent classloaders
-    //TODO Just calling addURLs using reflection won't work, I think
-    //TODO What if I create a 'fake' PluginClassLoader and add it to the JavaPluginLoader that uses the ScalaPluginClassLoader as a parent? :)
-    //TODO I can make use of JavaPlugin's initializing constructor that takes a non-PluginClassLoader class loader.
-
     private boolean downloadScalaJarFiles() {
         return getConfig().getBoolean("load-libraries-from-disk", true);
     }

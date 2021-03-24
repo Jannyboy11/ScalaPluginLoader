@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.event;
 
 import org.bukkit.event.Listener;
+import xyz.janboerman.scalaloader.bytecode.Replaced;
 
 /**
  * An event executor. Can be implemented using a lambda expression in your ScalaPlugin.
@@ -38,6 +39,7 @@ import org.bukkit.event.Listener;
  * @see EventBus
  */
 @FunctionalInterface
+@Replaced
 public interface EventExecutor<L extends Listener, E extends Event> {
 
     /**
@@ -45,6 +47,7 @@ public interface EventExecutor<L extends Listener, E extends Event> {
      * @param listener the listener
      * @param event the event
      */
+    @Replaced
     public void execute(L listener, E event);
 
 }

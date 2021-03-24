@@ -1,5 +1,7 @@
 package xyz.janboerman.scalaloader.event;
 
+import xyz.janboerman.scalaloader.bytecode.Replaced;
+
 /**
  * Alternative to {@link org.bukkit.event.Cancellable} that aims to reduce boilerplate.
  * If your event implements this interface instead, the ScalaPluginClassLoader will inject the following three members:
@@ -15,6 +17,7 @@ package xyz.janboerman.scalaloader.event;
  *
  * @see org.bukkit.event.Cancellable
  */
+@Replaced
 public interface Cancellable {
     /**
      * Tests whether this event is cancelled.
@@ -22,6 +25,7 @@ public interface Cancellable {
      * @return true if the event is cancelled, otherwise false
      * @implNote if you override this method, you must also override {@link #setCancelled(boolean)}
      */
+    @Replaced
     public default boolean isCancelled() {
         throw new UnsupportedOperationException("This method should have been overridden by the event class: " + getClass().getName());
     }
@@ -32,6 +36,7 @@ public interface Cancellable {
      * @param cancel true if the event should be cancelled, false if the event is allowed to happen
      * @implNote if you override this method, you must also override {@link #isCancelled()}
      */
+    @Replaced
     public default void setCancelled(boolean cancel) {
         throw new UnsupportedOperationException("This method should have been overridden by the event class: " + getClass().getName());
     }
@@ -51,6 +56,6 @@ Which gets me thinking.. would it be possible to support Mixin?! :O (Yes i'm tal
 That should not be necessary once Scala 3 is released and I have a TASTy definition of this trait tho.
 I could then include that in the jar of ScalaLoader so it's available for all dotty-compiled Scala plugins.
 This could be done with ASM's ClassVisitor#visitAttribute
-But I thought I read something about Scala 2.13 also supporting TASTy //TODO check this.
+But Scala 2.13.5 already includes a TASTy reader so I might not even need to wait for Scala 3.
 https://github.com/lampepfl/dotty/blob/master/library/src/scala/tasty/Reflection.scala
  */

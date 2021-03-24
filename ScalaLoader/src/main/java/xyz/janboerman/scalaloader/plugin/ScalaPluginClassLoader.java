@@ -219,6 +219,14 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     }
 
     /**
+     * Get the name of the main class of the plugin.
+     * @return the fully qualified name
+     */
+    public String getMainClassName() {
+        return mainClassName;
+    }
+
+    /**
      * <p>
      *  Tries to load a class with the given name using the following search priorities:
      * </p>
@@ -352,7 +360,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 //
 //                        @Override
 //                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-//                            if ("xyz/janboerman/scalaloader/example/java/ArraySerializable".equals(name)) {
+//                            if ("xyz/janboerman/scalaloader/example/java/ListSerializable".equals(name)) {
 //                                debug = true;
 //                            }
 //
@@ -452,7 +460,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     int dotIndex = name.lastIndexOf('.');
                     if (dotIndex != -1) {
                         String packageName = name.substring(0, dotIndex);
-                        //TODO use getDefinedPackage in Java11+
+                        //use getDefinedPackage in Java11+
                         if (getPackage(packageName) == null) {
                             try {
                                 Manifest manifest = jarFile.getManifest();

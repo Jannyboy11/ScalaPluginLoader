@@ -2,9 +2,9 @@ package xyz.janboerman.scalaloader.example.java;
 
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
-import org.bukkit.configuration.serialization.SerializableAs;
+//import org.bukkit.configuration.serialization.ConfigurationSerializable;
+//import org.bukkit.configuration.serialization.ConfigurationSerialization;
+//import org.bukkit.configuration.serialization.SerializableAs;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
 import static xyz.janboerman.scalaloader.example.java.ExamplePlugin.assertionsEnabled;
 
 class ListSerializationTest {
@@ -39,7 +40,7 @@ class ListSerializationTest {
 
     void test() {
         plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "Test " + ChatColor.RESET + "deserialize(serialize(listserializable)).equals(listserializable)");
-        ConfigurationSerialization.registerClass(ListSerializable.class, "ListSerializable");
+        //ConfigurationSerialization.registerClass(ListSerializable.class, "ListSerializable");
 
         ListSerializable listSerializable = new ListSerializable(List.of(4L, 5L));
         YamlConfiguration yamlConfiguration = new YamlConfiguration();
@@ -59,28 +60,27 @@ class ListSerializationTest {
     }
 }
 
-@SerializableAs("ListSerializable")
-public class ListSerializable implements ConfigurationSerializable {
+//@SerializableAs("ListSerializable")
+@ConfigurationSerializable(as = "ListSerializable")
+public class ListSerializable /*implements ConfigurationSerializable*/ {
 
     private final List<Long> longs;
     private final List<List<Float>[]> listOfArrayOfListOfFloat = List.of();
-
-    ListSerializable() {
-        longs = List.of(1L, 2L, 3L);
-    }
 
     ListSerializable(List<Long> longs) {
         this.longs = longs;
     }
 
-    @Override
-    public Map<String, Object> serialize() {
-        return Map.of("longs", longs.stream().map(longg -> longg.toString()).collect(Collectors.toList()));
-    }
+    //generated!
+//    @Override
+//    public Map<String, Object> serialize() {
+//        return Map.of("longs", longs.stream().map(longg -> longg.toString()).collect(Collectors.toList()));
+//    }
 
-    public static ListSerializable deserialize(Map<String, Object> map) {
-        return new ListSerializable(((List<String>) map.get("longs")).stream().map(Long::parseLong).collect(Collectors.toList()));
-    }
+    //generated!
+//    public static ListSerializable deserialize(Map<String, Object> map) {
+//        return new ListSerializable(((List<String>) map.get("longs")).stream().map(Long::parseLong).collect(Collectors.toList()));
+//    }
 
     @Override
     public boolean equals(Object o) {

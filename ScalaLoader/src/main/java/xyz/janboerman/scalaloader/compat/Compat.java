@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.jar.JarFile;
@@ -65,6 +66,10 @@ public class Compat {
 
     public static <T> Set<T> emptySet() {
         return Collections.emptySet();
+    }
+
+    public static <K, V> Map<K, V> emptyMap() {
+        return Collections.emptyMap();
     }
 
     public static String stringRepeat(String base, int repeat) {
