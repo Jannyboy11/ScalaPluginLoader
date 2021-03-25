@@ -64,6 +64,8 @@ class SerializableTransformer extends ClassVisitor {
     private final Map<String /*property*/, MethodHeader> propertySetters = new LinkedHashMap<>();
     private final Map<String /*property*/, FieldDeclaration> propertyFields = new LinkedHashMap<>();
 
+    private final Set<FieldDeclaration> allInstanceFields = new HashSet<>();
+
     SerializableTransformer(ClassVisitor classVisitor, LocalScanResult scanResult, ScalaPluginClassLoader pluginClassLoader) {
         super(ASM_API, classVisitor);
         this.result = scanResult;
@@ -174,10 +176,14 @@ class SerializableTransformer extends ClassVisitor {
             alreadyHasModule$ = true;
         }
 
+        if ((access & ACC_STATIC) == 0) {
+            allInstanceFields.add(new FieldDeclaration(access, fieldName, fieldDescriptor, fieldSignature));
+        }
+
         if (result.annotatedByConfigurationSerializable && (access & ACC_STATIC) == 0 && (access & ACC_TRANSIENT) == 0) {
             if (scanType == FIELDS || scanType == RECORD) {
 
-                final int finalAccess = scanType == FIELDS ? (access & ~ACC_FINAL) : access;
+                final int finalAccess = scanType == FIELDS ? (access & ~ACC_FINAL) : access;    //make all instance fields non-final! (this is needed for the generated nullary constructor!)
 
                 return new FieldVisitor(ASM_API, super.visitField(finalAccess, fieldName, fieldDescriptor, fieldSignature, value)) {
                     String property = fieldName;
@@ -781,12 +787,29 @@ class SerializableTransformer extends ClassVisitor {
                         methodVisitor.visitVarInsn(ALOAD, 0);
                         methodVisitor.visitMethodInsn(INVOKESPECIAL, superType, "<init>", "()V", false);
                         Label label1 = new Label();
+                        int category = 0;
+                        for (FieldDeclaration instanceField : allInstanceFields) {
+                            methodVisitor.visitVarInsn(ALOAD, 0);   //load 'this'
+                            //load a constant based on the type of the field
+                            switch (instanceField.descriptor) {
+                                case "B":   methodVisitor.visitInsn(ICONST_0);      methodVisitor.visitInsn(I2B);       category = Math.max(category, 1);   break;
+                                case "S":   methodVisitor.visitInsn(ICONST_0);      methodVisitor.visitInsn(I2S);       category = Math.max(category, 1);   break;
+                                case "C":   methodVisitor.visitInsn(ICONST_0);      methodVisitor.visitInsn(I2C);       category = Math.max(category, 1);   break;
+                                case "I":
+                                case "Z":   methodVisitor.visitInsn(ICONST_0);      category = Math.max(category, 1);   break;
+                                case "J":   methodVisitor.visitInsn(LCONST_0);      category = Math.max(category, 2);   break;
+                                case "F":   methodVisitor.visitInsn(FCONST_0);      category = Math.max(category, 1);   break;
+                                case "D":   methodVisitor.visitInsn(DCONST_0);      category = Math.max(category, 2);   break;
+                                default:    methodVisitor.visitInsn(ACONST_NULL);   category = Math.max(category, 1);   break;
+                            }
+                            methodVisitor.visitFieldInsn(PUTFIELD, className, instanceField.name, instanceField.descriptor);
+                        }
                         methodVisitor.visitLabel(label1);
                         methodVisitor.visitInsn(RETURN);
                         Label label2 = new Label();
                         methodVisitor.visitLabel(label2);
                         methodVisitor.visitLocalVariable("this", classDescriptor, classSignature, label0, label2, 0);
-                        methodVisitor.visitMaxs(1, 1);
+                        methodVisitor.visitMaxs(1/*this*/ + category/*field*/, 1/*this*/);
                         methodVisitor.visitEnd();
                     }
 

@@ -35,7 +35,7 @@ public class ExamplePlugin extends ScalaPlugin {
     private static ExamplePlugin instance; //static abuse let's go!
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.14.1-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.14.2-SNAPSHOT").addHardDepend("ScalaExample"));
         instance = this;
     }
 
@@ -63,8 +63,9 @@ public class ExamplePlugin extends ScalaPlugin {
 
         new Money(this).test();                 //checks whether basic bytecode transformations worked correctly
         new ArraySerializationTest(this).test();    //checks whether arrays get converted properly into lists and back
-        new ListSerializationTest(this).test();
-        Maybe.test(this);
+        new ListSerializationTest(this).test();     //check whether list elements get converted properly
+        Maybe.test(this);                           //checks whether @DelegateSerializtion works correctly
+        MapSerializable.test(this);                 //checks whether map elements get converted properly
         //testDeserializedTypes();    //check which types we get back after one round trip of live->serialized->live
     }
 

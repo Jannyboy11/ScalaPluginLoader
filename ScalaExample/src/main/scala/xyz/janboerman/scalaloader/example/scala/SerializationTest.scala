@@ -134,10 +134,6 @@ object Maybe {
 //    }
 }
 
-//TODO should 'as' be allowed in DelegateSerialization?
-//TODO should it distribute amongst the children?
-//TODO or should it just not be present in the @DelegateSerialization thing?
-
 @DelegateSerialization(value = Array(classOf[Just[_]], classOf[NoValue.type]), as = "Maybe")
 sealed trait Maybe[+T] {
    //if we would define serialize() here, it wouldn't ever by called anyway because subclasses override it!

@@ -59,12 +59,16 @@ public class ConfigurationSerializableTransformations {
     static final String MAP_PUTALL_DESCRIPTOR = "(Ljava/util/Map;)V";
     static final String HASHMAP_NAME = "java/util/HashMap";
     static final String HASHMAP_DESCRIPTOR = "Ljava/util/HashMap;";
+    static final String SET_NAME = "java/util/Set";
+    static final String ITERATOR_NAME = "java/util/Iterator";
+    static final String MAP$ENTRY_NAME = "java/util/Map$Entry";
 
     static final String OPTION_NAME = "scala/Option";
     static final String OPTION_DESCRIPTOR = "Lscala/Option;";
 
     static final Type MAP_TYPE = Type.getType(Map.class);
     static final Type HASHMAP_TYPE = Type.getType(HashMap.class);
+    static final Type LINKEDHASHMAP_TYPE = Type.getType(LinkedHashMap.class);
     static final Type STRING_TYPE = Type.getType(String.class);
     static final Type OBJECT_TYPE = Type.getType(Object.class);
     static final Type BOOLEAN_TYPE = Type.BOOLEAN_TYPE;
@@ -72,6 +76,8 @@ public class ConfigurationSerializableTransformations {
     static final Type LIST_TYPE = Type.getType(List.class);
     static final Type ARRAYLIST_TYPE = Type.getType(ArrayList.class);
     static final Type SET_TYPE = Type.getType(Set.class);
+    static final Type ITERATOR_TYPE = Type.getType(Iterator.class);
+    static final Type MAP$ENTRY_TYPE = Type.getType(Map.Entry.class);
     static final Type BIGINTEGER_TYPE = Type.getType(BigInteger.class);
     static final Type BIGDECIMAL_TYPE = Type.getType(BigDecimal.class);
     static final Type UUID_TYPE = Type.getType(UUID.class);
@@ -107,7 +113,7 @@ public class ConfigurationSerializableTransformations {
 
     private ConfigurationSerializableTransformations() {}
 
-
+    //TODO javadoc this!
     public static byte[] transform(byte[] clazz, ScalaPluginClassLoader pluginClassLoader) throws ConfigurationSerializableError {
         LocalScanResult localResult = new LocalScanner().scan(new ClassReader(clazz));
 

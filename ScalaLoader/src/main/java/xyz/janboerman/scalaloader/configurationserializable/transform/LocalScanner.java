@@ -24,6 +24,7 @@ class LocalScanner extends ClassVisitor {
 
     private String className;
     private String classDescriptor;
+    private boolean classIsInterface;
     private boolean hasModule$;
     private Scan.Type scanType;
     private boolean isEnum;
@@ -56,6 +57,10 @@ class LocalScanner extends ClassVisitor {
             else scanType = Scan.Type.FIELDS;
         }
 
+        if (result.annotatedByConfigurationSerializable && classIsInterface && (scanType != Scan.Type.CASE_CLASS && scanType != Scan.Type.SINGLETON_OBJECT)) {
+            throw new ConfigurationSerializableError("Can't use @ConfigurationSerializable on interfaces that are not singletons and non-case classes!");
+        }
+
         result.scanType = scanType;
         return result;
     }
@@ -64,6 +69,7 @@ class LocalScanner extends ClassVisitor {
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         this.className = name;
         this.classDescriptor = 'L' + name + ';';
+        this.classIsInterface = (access & ACC_INTERFACE) == ACC_INTERFACE;
         this.isEnum = (access & ACC_ENUM) == ACC_ENUM;
         this.isRecord = (access & ACC_RECORD) == ACC_RECORD;
 
@@ -122,7 +128,9 @@ class LocalScanner extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-        if ("MODULE$".equals(name) && (access & ACC_STATIC) == ACC_STATIC && classDescriptor.equals(descriptor)) {
+        boolean isStatic = (access & ACC_STATIC) == ACC_STATIC;
+
+        if ("MODULE$".equals(name) && isStatic && classDescriptor.equals(descriptor)) {
             hasModule$ = true;
         }
 
@@ -133,9 +141,15 @@ class LocalScanner extends ClassVisitor {
             @Override
             public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
                 if (SCALALOADER_INCLUDEPROPERTY_DESCRIPTOR.equals(descriptor)) {
+                    if (isStatic)
+                        throw new ConfigurationSerializableError("Can't use @" + IncludeProperty.class.getSimpleName() + " on static fields.");
+
                     fieldProperties = true;
                     include = true;
                 } else if (SCALALOADER_EXCLUDEPROPERTY_DESCRIPTOR.equals(descriptor)) {
+                    if (isStatic)
+                        throw new ConfigurationSerializableError("Can't use @" + ExcludeProperty.class.getSimpleName() + " on static fields.");
+
                     fieldProperties = true;
                     exclude = true;
                 }
@@ -155,8 +169,10 @@ class LocalScanner extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        boolean isStatic = (access & ACC_STATIC) == ACC_STATIC;
         String returnTypeName = Type.getReturnType(descriptor).getInternalName();
-        if ("apply".equals(name) && (access & ACC_STATIC) == ACC_STATIC && (access & ACC_PUBLIC) == ACC_PUBLIC && className.equals(returnTypeName)) {
+
+        if ("apply".equals(name) && isStatic && (access & ACC_PUBLIC) == ACC_PUBLIC && className.equals(returnTypeName)) {
             hasStaticApply = true;
             applyParamCount = Type.getArgumentTypes(descriptor).length;
         }
@@ -179,6 +195,9 @@ class LocalScanner extends ClassVisitor {
             @Override
             public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
                 if (SCALALOADER_INCLUDEPROPERTY_DESCRIPTOR.equals(descriptor)) {
+                    if (isStatic)
+                        throw new ConfigurationSerializableError("Can't use @" + IncludeProperty.class.getSimpleName() + " on static methods.");
+
                     methodProperties = true;
                 } //can't have @ExcludeProperty because that annotation is only has target type Fields!
 

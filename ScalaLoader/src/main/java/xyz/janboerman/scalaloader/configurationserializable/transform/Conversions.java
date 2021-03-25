@@ -36,14 +36,19 @@ class Conversions {
                 //convert collection to ArrayList or LinkedHashSet
                 collectionToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
                 return;
+            } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
+                mapToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                return;
             }
-            /*TODO else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
+            /*TODO else if (isScalaCollection(typeSignature, pluginClassLoader)) {
+                //TODO this needs to support both mutable and immutable collections!
+            }*/
+            /*TODO else if (isScalaMap(typeSignature, pluginClassLoader)) {
 
             }*/
-            //TODO else if (isScalaCollection(typeSignature, pluginClassLoader))
         }
 
-        //TODO just like conversion for arrays, implement conversion for scala collection types (both mutable and immutable) (including: tuples, Option, Either, Try)
+        //TODO just like conversion for arrays (including: tuples, Option, Either, Try)
 
         switch (descriptor) {
             //primitives
@@ -90,6 +95,7 @@ class Conversions {
                 break;
             case "Ljava/lang/Integer;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");
+                operandStack.replaceTop(Integer_TYPE);
                 break;
             case "Ljava/lang/Long;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Long");
@@ -114,6 +120,16 @@ class Conversions {
             case "Ljava/lang/Boolean;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
                 break;
+            case "Ljava/lang/Void;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Void");
+                operandStack.replaceTop(Void_TYPE);
+                break;
+
+            //supported reference types
+            case "Ljava/lang/String;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
+                operandStack.replaceTop(STRING_TYPE);
+                break;
 
             //built-ins
             case "Ljava/math/BigInteger;":
@@ -133,7 +149,7 @@ class Conversions {
                 break;
             //TODO java.util.Date maybe? anything else?
 
-            //unsupported type - attempt runtime conversion!
+            //unsupported type - attempt runtime serialization!
             default:
                 //a java/lang/Object is already on top of the stack
                 //which is nice because it is also the first argument of RuntimeConversions#serialize
@@ -289,11 +305,11 @@ class Conversions {
             case "java/util/HashSet":
             case "java/util/LinkedHashSet":
             case "java/util/TreeSet":
-                methodVisitor.visitTypeInsn(NEW, "java/util/LinkedHashMap");                                                                        operandStack.push(Type.getType(LinkedHashMap.class));
+                methodVisitor.visitTypeInsn(NEW, "java/util/LinkedHashSet");                                                                        operandStack.push(Type.getType(LinkedHashMap.class));
                 methodVisitor.visitInsn(DUP);                                                                                                           operandStack.push(Type.getType(LinkedHashMap.class));
-                methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/LinkedHashMap", "<init>", "()V", false);        operandStack.pop();
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/LinkedHashSet", "<init>", "()V", false);        operandStack.pop();
                 break;
-            //if it's not a set, then use a List.
+            //if it's not a Set, then use a List.
             default:
                 methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");                                                                            operandStack.push(Type.getType(ArrayList.class));
                 methodVisitor.visitInsn(DUP);                                                                                                           operandStack.push(Type.getType(ArrayList.class));
@@ -316,7 +332,7 @@ class Conversions {
         methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                          localVariableTable.add(iterator);                                   operandStack.pop();
         methodVisitor.visitLabel(iteratorLabel);
 
-        final Label jumpBackTarget = iteratorLabel, endLoopLabel = new Label();
+        final Label jumpBackTarget = iteratorLabel, endLoopLabel = new Label();     //jumpBackTarget label is already visited!
         final Object[] localsFrame = localVariableTable.frame();
         final Object[] stackFrame = operandStack.frame();
         methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
@@ -350,6 +366,102 @@ class Conversions {
         methodVisitor.visitLabel(endLabel);                                         localVariableTable.removeFramesFromIndex(oldCollectionIndex);
     }
 
+    private static void mapToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+        final String rawTypeName = typeSignature.getTypeName();
+
+        final TypeSignature keyTypeSignature = typeSignature.getTypeArgument(0);
+        final TypeSignature valueTypeSignature = typeSignature.getTypeArgument(1);
+        int localVariableIndex = localVariableTable.frameSize();
+        final Type keyType = Type.getObjectType(keyTypeSignature.internalName());
+        final Type valueType = Type.getObjectType(valueTypeSignature.internalName());
+
+        //strategy: just create a new LinkedHashMap and convert the elements!
+
+        final Label startLabel = new Label(), endLabel = new Label();
+
+        //store the existing map in a local variable
+        methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Map");                operandStack.replaceTop(MAP_TYPE);
+        final int oldMapIndex = localVariableIndex++;
+        final LocalVariable oldMap = new LocalVariable("liveMap", "Ljava/util/Map;", null, startLabel, endLabel, oldMapIndex);
+        localVariableTable.add(oldMap);
+        methodVisitor.visitVarInsn(ASTORE, oldMapIndex);                            operandStack.pop();
+        methodVisitor.visitLabel(startLabel);
+
+        //create the new LinkedHashmap and store it in a local variable
+        final Label newMapLabel = new Label();
+        methodVisitor.visitTypeInsn(NEW, "java/util/LinkedHashMap");            operandStack.push(LINKEDHASHMAP_TYPE);
+        methodVisitor.visitInsn(DUP);                                               operandStack.push(LINKEDHASHMAP_TYPE);
+        methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/LinkedHashMap", "<init>", "()V", false);      operandStack.pop();
+        final int newMapIndex = localVariableIndex++;
+        final LocalVariable newMap = new LocalVariable("serializedMap", "Ljava/util/Map;", null, newMapLabel, endLabel, newMapIndex);
+        localVariableTable.add(newMap);
+        methodVisitor.visitVarInsn(ASTORE, newMapIndex);                            operandStack.pop();
+        methodVisitor.visitLabel(newMapLabel);
+
+        //get the entry set iterator
+        final Label iteratorLabel = new Label();
+        methodVisitor.visitVarInsn(ALOAD, oldMapIndex);                             operandStack.push(MAP_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, "entrySet", "()Ljava/util/Set;", true);    operandStack.replaceTop(SET_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, SET_NAME, "iterator", "()Ljava/util/Iterator;", true);       operandStack.replaceTop(ITERATOR_TYPE);
+        final int iteratorIndex = localVariableIndex++;
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex);
+        localVariableTable.add(iterator);
+        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                          operandStack.pop();
+        methodVisitor.visitLabel(iteratorLabel);
+
+        //prepare for loop
+        final Label jumpBackTarget = iteratorLabel, endLoopLabel = new Label();     //jumpBackTarget label is already visited!
+        final Object[] localsFrame = localVariableTable.frame();
+        final Object[] stackFrame = operandStack.frame();
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //get the iterator, call hasNext
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                                                                               operandStack.push(Type.getType(Iterator.class));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "hasNext", "()Z", true);                   operandStack.replaceTop(Type.BOOLEAN_TYPE);
+        methodVisitor.visitJumpInsn(IFEQ, endLoopLabel);    /*IFEQ branches if the value on the stack is 0 (false) !!*/                                 operandStack.pop();
+        //load the iterator, call iterator.next(), cast to Map.Entry
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                           operandStack.push(ITERATOR_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(OBJECT_TYPE);
+        methodVisitor.visitTypeInsn(CHECKCAST, MAP$ENTRY_NAME);                     operandStack.replaceTop(MAP$ENTRY_TYPE);
+        //store the entry in a new local variable
+        final Label entryLabel = new Label();
+        final int entryIndex = localVariableIndex++;
+        final LocalVariable entry = new LocalVariable("entry", "Ljava/util/Map$Entry;", null, jumpBackTarget, endLoopLabel, entryIndex);
+        localVariableTable.add(entry);
+        methodVisitor.visitVarInsn(ASTORE, entryIndex);                             operandStack.pop();
+        methodVisitor.visitLabel(entryLabel);
+
+        //resultMap.put(serialize(entry.getKey()), serialize(entry.getValue()));
+        //load resultMap
+        methodVisitor.visitVarInsn(ALOAD, newMapIndex);                             operandStack.push(MAP_TYPE);
+        //serialize(entry(getKey())
+        methodVisitor.visitVarInsn(ALOAD, entryIndex);                              operandStack.push(MAP$ENTRY_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP$ENTRY_NAME, "getKey", "()Ljava/lang/Object;", true);     operandStack.replaceTop(OBJECT_TYPE);
+        methodVisitor.visitTypeInsn(CHECKCAST, keyTypeSignature.internalName());    operandStack.replaceTop(keyType);
+        toSerializedType(pluginClassLoader, methodVisitor, keyTypeSignature.toDescriptor(), keyTypeSignature.toSignature(), localVariableTable, operandStack);
+        //serialize(entry(getValue())
+        methodVisitor.visitVarInsn(ALOAD, entryIndex);                              operandStack.push(MAP$ENTRY_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP$ENTRY_NAME, "getValue", "()Ljava/lang/Object;", true);   operandStack.replaceTop(OBJECT_TYPE);
+        methodVisitor.visitTypeInsn(CHECKCAST, valueTypeSignature.internalName());  operandStack.replaceTop(valueType);
+        toSerializedType(pluginClassLoader, methodVisitor, valueTypeSignature.toDescriptor(), valueTypeSignature.toSignature(), localVariableTable, operandStack);
+        //call resultMap.put
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);           operandStack.replaceTop(3, OBJECT_TYPE);
+        methodVisitor.visitInsn(POP);   /*pop the result from resultMap.put (which is the old value for the key)*/      operandStack.pop();
+        //go back to loop start.
+        methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
+
+        //end of loop
+        methodVisitor.visitLabel(endLoopLabel);
+        localVariableTable.removeFramesFromIndex(entryIndex);
+        assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
+        assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //load the map containing the serialized keys and values
+        methodVisitor.visitVarInsn(ALOAD, newMapIndex);                             operandStack.push(MAP_TYPE);
+        localVariableTable.removeFramesFromIndex(oldMapIndex);
+        methodVisitor.visitLabel(endLabel);
+    }
 
 
     private static TypeSignature serializedType(TypeSignature liveType) {
@@ -401,9 +513,15 @@ class Conversions {
             } else if (isJavaUtilCollection(typeSignature, pluginClassLoader)) {
                 collectionToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
                 return;
-            } //TODO else if Map
+            } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
+                mapToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                return;
+            }
+            //TODO else if Scala collection
+            //TODO else if Scala Map
         }
 
+        //TODO other Scala types (Option, Either, Tuples)
 
         switch (descriptor) {
             //primitives
@@ -511,6 +629,16 @@ class Conversions {
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
                 operandStack.replaceTop(Boolean_TYPE);
                 break;
+            case "Ljava/lang/Void;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Void");
+                operandStack.replaceTop(Void_TYPE);
+                break;
+
+            //supported reference types
+            case "Ljava/lang/String;":
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
+                operandStack.replaceTop(STRING_TYPE);
+                break;
 
             //non-supported reference types
             case "Ljava/math/BigInteger;":
@@ -544,18 +672,7 @@ class Conversions {
                 operandStack.replaceTop(UUID_TYPE);
                 break;
 
-            //supported reference types
-            case "Ljava/lang/String;":
-                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/String");
-                operandStack.replaceTop(STRING_TYPE);
-                break;
-
-            //TODO remove this too when bytecode transformation for Maps is implemented.
-            case "Ljava/util/Map;":
-                methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Map");
-                operandStack.push(MAP_TYPE);
-                break;
-
+            //unsupported type - attempt runtime deserialization
             default:
                 //a serialized java/lang/Object is already on top of the stack
                 genParameterType(methodVisitor, typeSignature, operandStack, localVariables);
@@ -708,7 +825,7 @@ class Conversions {
                 implementationClassName = "java/util/ArrayList";
                 break;
 
-            //it is probably was a class already.
+            //it probably was a class already.
             default:
                 implementationClassName = collectionTypeName;
                 break;
@@ -723,6 +840,7 @@ class Conversions {
         int localVariableIndex = localVariableTable.frameSize();
         final Label startLabel = new Label();
         final Label endLabel = new Label();
+        methodVisitor.visitLabel(startLabel);
 
         //store it in a local variable
         final int serializedCollectionIndex = localVariableIndex++;
@@ -789,7 +907,136 @@ class Conversions {
 
         //load the result
         methodVisitor.visitVarInsn(ALOAD, liveCollectionIndex);                                                         operandStack.push(Type.getObjectType(collectionTypeName));
-        methodVisitor.visitLabel(endLabel);                                             localVariableTable.removeFramesFromIndex(serializedCollectionIndex);
+        methodVisitor.visitLabel(endLabel);                                             localVariableTable.removeFramesFromIndex(serializedCollectionIndex);    //the lowest index that we generated!
+    }
+
+    private static void mapToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+
+        final String mapTypeName = typeSignature.getTypeName();
+
+        //determine implementation class for the live type
+        final String implementationClassName;
+        switch (mapTypeName) {
+            //known interfaces
+            case "java/util/Map":
+                implementationClassName = "java/util/LinkedHashMap";
+                break;
+            case "java/util/concurrent/ConcurrentMap":
+                implementationClassName = "java/util/concurrent/ConcurrentHashMap";
+                break;
+            case "java/util/concurrent/ConcurrentNavigableMap":
+                implementationClassName = "java/util/concurrent/ConcurrentSkipListMap";
+                break;
+            case "java/util/NavigableMap":
+            case "java/util/SortedMap":
+                implementationClassName = "java/util/TreeMap";
+                break;
+
+            //it probably was a class already.
+            default:
+                implementationClassName = mapTypeName;
+                break;
+        }
+
+        //now, let's generate some code!
+
+        final TypeSignature keyTypeSignature = typeSignature.getTypeArgument(0);
+        final TypeSignature valueTypeSignature = typeSignature.getTypeArgument(1);
+        final Type keyType = Type.getObjectType(keyTypeSignature.internalName());
+        final Type valueType = Type.getObjectType(valueTypeSignature.internalName());
+
+        //assert that we have a map indeed.
+        methodVisitor.visitTypeInsn(CHECKCAST, MAP_NAME);                   operandStack.replaceTop(MAP_TYPE);
+        int localVariableIndex = localVariableTable.frameSize();
+        final Label startlabel = new Label();
+        final Label endLabel = new Label();
+        methodVisitor.visitLabel(startlabel);
+
+        //store it in a local variable
+        final int serializedMapIndex = localVariableIndex++;
+        final LocalVariable serializedMap = new LocalVariable("serializedMap", MAP_DESCRIPTOR, null, startlabel, endLabel, serializedMapIndex);
+        localVariableTable.add(serializedMap);
+        methodVisitor.visitVarInsn(ASTORE, serializedMapIndex);             operandStack.pop();
+
+        //create the live map
+        final Label liveMapLabel = new Label();
+        methodVisitor.visitLabel(liveMapLabel);
+        if ("java/util/EnumMap".equals(implementationClassName)) {
+            //call the constructor that takes the enum class parameter
+            methodVisitor.visitTypeInsn(NEW, "java/util/EnumMap");      operandStack.push(Type.getType(EnumMap.class));
+            methodVisitor.visitInsn(DUP);                                   operandStack.push(Type.getType(EnumMap.class));
+            methodVisitor.visitLdcInsn(keyType); /*assume key type is enum*/    operandStack.push(keyType);
+            methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/EnumMap", "<init>", "(Ljava/lang/Class;)V", false);      operandStack.pop(2);
+        } else {
+            //call the nullary constructor
+            methodVisitor.visitTypeInsn(NEW, implementationClassName);      operandStack.push(Type.getObjectType(implementationClassName));
+            methodVisitor.visitInsn(DUP);                                   operandStack.push(Type.getObjectType(implementationClassName));
+            methodVisitor.visitMethodInsn(INVOKESPECIAL, implementationClassName, "<init>", "()V", false);                          operandStack.pop();
+        }
+        //store it in a local variable
+        final int liveMapIndex = localVariableIndex++;
+        final LocalVariable liveMap = new LocalVariable("liveMap", "L" + implementationClassName + ";", null, liveMapLabel, endLabel, liveMapIndex);
+        localVariableTable.add(liveMap);
+        methodVisitor.visitVarInsn(ASTORE, liveMapIndex);                   operandStack.pop();
+
+        //get the iterator and store it in a local variable
+        final Label iteratorLabel = new Label();
+        methodVisitor.visitLabel(iteratorLabel);
+        methodVisitor.visitVarInsn(ALOAD, serializedMapIndex);              operandStack.push(MAP_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, "entrySet", "()Ljava/util/Set;", true);    operandStack.replaceTop(SET_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, SET_NAME, "iterator", "()Ljava/util/Iterator;", true);       operandStack.replaceTop(ITERATOR_TYPE);
+        final int iteratorIndex = localVariableIndex++;
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex);
+        localVariableTable.add(iterator);
+        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                  operandStack.pop();
+
+        //loop body!
+        final Label jumpBackTarget = new Label();
+        final Label endOfLoopLabel = new Label();
+        final Object[] localsFrame = localVariableTable.frame();
+        final Object[] stackFrame = operandStack.frame();
+
+        methodVisitor.visitLabel(jumpBackTarget);
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //load the iterator, call hasNext and if false jump to the loop end
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);               operandStack.push(ITERATOR_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "hasNext", "()Z", true);       operandStack.replaceTop(Type.BOOLEAN_TYPE);
+        methodVisitor.visitJumpInsn(IFEQ, endOfLoopLabel);              operandStack.pop();
+        //call iterator.next, cast to Map.Entry and store it in a local variable
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);               operandStack.push(ITERATOR_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(OBJECT_TYPE);
+        methodVisitor.visitTypeInsn(CHECKCAST, MAP$ENTRY_NAME);         operandStack.replaceTop(MAP$ENTRY_TYPE);
+        final int entryIndex = localVariableIndex++;
+        final LocalVariable entry = new LocalVariable("entry", "Ljava/util/Map$Entry;", null, jumpBackTarget, endOfLoopLabel, entryIndex);
+        localVariableTable.add(entry);
+        methodVisitor.visitVarInsn(ASTORE, entryIndex);                 operandStack.pop();
+        //prepare live map so that we can call .put on it later!
+        methodVisitor.visitVarInsn(ALOAD, liveMapIndex);                operandStack.push(MAP_TYPE);
+        //deserialize(entry.getKey())
+        methodVisitor.visitVarInsn(ALOAD, entryIndex);                  operandStack.push(MAP$ENTRY_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP$ENTRY_NAME, "getKey", "()Ljava/lang/Object;", true);    operandStack.replaceTop(OBJECT_TYPE);
+        toLiveType(pluginClassLoader, methodVisitor, keyTypeSignature.toDescriptor(), keyTypeSignature.toSignature(), localVariableTable, operandStack);
+        //deserialize(entry.getValue())
+        methodVisitor.visitVarInsn(ALOAD, entryIndex);                  operandStack.push(MAP$ENTRY_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP$ENTRY_NAME, "getValue", "()Ljava/lang/Object;", true);       operandStack.replaceTop(OBJECT_TYPE);
+        toLiveType(pluginClassLoader, methodVisitor, valueTypeSignature.toDescriptor(), valueTypeSignature.toSignature(), localVariableTable, operandStack);
+        //call liveMap.put
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);                           operandStack.replaceTop(3, OBJECT_TYPE);
+        methodVisitor.visitInsn(POP);   /*get rid of the old value in the map*/     operandStack.pop();
+        methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
+
+        //end of loop
+        localVariableTable.removeFramesFromIndex(entryIndex);
+        assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
+        assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
+        methodVisitor.visitLabel(endOfLoopLabel);
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //load the result
+        methodVisitor.visitVarInsn(ALOAD, liveMapIndex);                operandStack.push(Type.getObjectType(implementationClassName));
+        methodVisitor.visitLabel(endLabel);
+        localVariableTable.removeFramesFromIndex(serializedMapIndex);   //the lowest index that we generated!
     }
 
 
@@ -826,6 +1073,8 @@ class Conversions {
 
         return descriptor;
     }
+
+    // ==================================================================================================================================================================
 
 
     private static Map<Pair<String, ClassLoader>, Class<?>> knownCollectionClasses;
@@ -879,13 +1128,16 @@ class Conversions {
 
         //fallback - try to classload the collection class and check whether it is assignable to java.util.Collection.
         if (knownCollectionClasses == null) knownCollectionClasses = new HashMap<>();
-        final Pair<String, ClassLoader> pair = new Pair<>(typeSignature.getTypeName(), pluginClassLoader);
+        final Pair<String, ClassLoader> pair = new Pair<>(typeName, pluginClassLoader);
         if (knownCollectionClasses.containsKey(pair)) return true;
 
         String jvmClassName = typeName.replace('/', '.');
         try {
             Class<?> clazz = Class.forName(jvmClassName, false, pluginClassLoader);
-            if (Collection.class.isAssignableFrom(clazz)) return true;
+            if (Collection.class.isAssignableFrom(clazz)) {
+                knownCollectionClasses.put(pair, clazz);
+                return true;
+            }
         } catch (ClassNotFoundException tooBad) {
             //plugin's jar contained a class that referred to a class that couldn't be found by its classloader.
             NoClassDefFoundError error = new NoClassDefFoundError(jvmClassName);
@@ -893,7 +1145,58 @@ class Conversions {
             throw error;
         }
 
-        //if we reached this point, there is no hope.
+        //if we reached this point, there is no more hope.
+        return false;
+    }
+
+
+    private static Map<Pair<String, ClassLoader>, Class<?>> knownMapClasses;
+    private static boolean isJavaUtilMap(TypeSignature typeSignature, ClassLoader pluginClassLoader) {
+
+        final String typeName = typeSignature.getTypeName();
+
+        switch (typeName) {
+            //interfaces
+            case "java/util/Map":
+            case "java/util/concurrent/ConcurrentMap":
+            case "java/util/concurrent/ConcurrentNavigableMap":
+            case "java/util/NavigableMap":
+            case "java/util/SortedMap":
+            //classes
+            case "java/util/AbstractMap":
+            case "java/util/concurrent/ConcurrentHashMap":
+            case "java/util/concurrent/ConcurrentSkipListMap":
+            case "java/util/EnumMap":
+            case "java/util/HashMap":
+            case "java/util/Hashtable":
+            case "java/util/IdentityHashMap":
+            case "java/util/LinkedHashMap":
+            case "java/util/Properties":
+            case "java/util/TreeMap":
+            case "java/util/WeakHashMap":
+                return true;
+        }
+
+        //fallback, try to classload the map class and check whether it is assignable to java.util.Map.
+        if (knownMapClasses == null) knownMapClasses = new HashMap<>();
+        final Pair<String, ClassLoader> pair = new Pair<>(typeName, pluginClassLoader);
+        if (knownMapClasses.containsKey(pair)) return true;
+
+        String jvmClassName = typeName.replace('/', '.');
+        try {
+            Class<?> clazz = Class.forName(jvmClassName, false, pluginClassLoader);
+            if (Map.class.isAssignableFrom(clazz)) {
+                knownMapClasses.put(pair, clazz);
+                return true;
+            }
+        } catch (ClassNotFoundException tooBad) {
+            //plugin's jar contained a class that referred to a class that couldn't be found by its classloader.
+            NoClassDefFoundError error = new NoClassDefFoundError(jvmClassName);
+            error.addSuppressed(tooBad);
+            throw error;
+        }
+
+        //if we reached this point, there is no more hope.
         return false;
     }
 
@@ -955,3 +1258,52 @@ class Conversions {
     }
 
 }
+
+        /*
+        SOURCE CODE:
+        private static void main(String[] args) {
+            Map<String, String> map = Collections.emptyMap();
+            for (Entry<String, String> entry : map.entrySet()) {
+
+            }
+        }
+        BYTE CODE:
+        */
+//        private static void main(java.lang.String[]);
+//        descriptor: ([Ljava/lang/String;)V
+//        flags: (0x000a) ACC_PRIVATE, ACC_STATIC
+//        Code:
+//        stack=1, locals=4, args_size=1
+//        0: invokestatic  #7                  // Method java/util/Collections.emptyMap:()Ljava/util/Map;
+//        3: astore_1
+//        4: aload_1
+//        5: invokeinterface #13,  1           // InterfaceMethod java/util/Map.entrySet:()Ljava/util/Set;
+//        10: invokeinterface #19,  1           // InterfaceMethod java/util/Set.iterator:()Ljava/util/Iterator;
+//        15: astore_2
+//        16: aload_2
+//        17: invokeinterface #25,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z
+//        22: ifeq          38
+//        25: aload_2
+//        26: invokeinterface #31,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+//        31: checkcast     #35                 // class java/util/Map$Entry
+//        34: astore_3
+//        35: goto          16
+//        38: return
+//                LineNumberTable:
+//        line 10: 0
+//        line 11: 4
+//        line 13: 35
+//        line 14: 38
+//        LocalVariableTable:
+//        Start  Length  Slot  Name   Signature
+//        0      39     0  args   [Ljava/lang/String;
+//        4      35     1   map   Ljava/util/Map;
+//        LocalVariableTypeTable:
+//        Start  Length  Slot  Name   Signature
+//        4      35     1   map   Ljava/util/Map<Ljava/lang/String;Ljava/lang/String;>;
+//        StackMapTable: number_of_entries = 2
+//        frame_type = 253 /* append */
+//        offset_delta = 16
+//        locals = [ class java/util/Map, class java/util/Iterator ]
+//        frame_type = 250 /* chop */
+//        offset_delta = 21

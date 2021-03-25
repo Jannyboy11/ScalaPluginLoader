@@ -10,9 +10,9 @@ import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
 //import org.objectweb.asm.tree.analysis.*;
 //import org.objectweb.asm.util.*;
+//import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
-//import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.transform.*;
@@ -313,9 +313,6 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                 try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
                     byte[] classBytes = Compat.readAllBytes(inputStream);
 
-                    //TODO make it possible for TransformerRegistry to apply early transformations, before the event, configurationserialization transformations apply.
-                    //TODO I may want to use this for sum types to generate the @ConfigurationSerialization annotation once Scan.Type.AUTO_DETECT is implemented!
-
                     //apply event bytecode transformations
                     try {
                         classBytes = EventTransformations.transform(classBytes, this);
@@ -377,7 +374,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 //
 //                        @Override
 //                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-//                            if ("xyz/janboerman/scalaloader/example/java/ListSerializable".equals(name)) {
+//                            if ("xyz/janboerman/scalaloader/example/java/MapSerializable".equals(name)) {
 //                                debug = true;
 //                            }
 //

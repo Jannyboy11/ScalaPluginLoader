@@ -11,6 +11,11 @@ import xyz.janboerman.scalaloader.compat.Compat;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 import xyz.janboerman.scalaloader.plugin.TransformerRegistry;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * This class is NOT part of the public API!
  */
@@ -20,7 +25,11 @@ public class AddVariantTransformer extends ClassVisitor {
     private String classDescriptor;     //e.g.  Lcom/example/Foo;
     private String classSignature;      //e.g.  Lcom/example/Foo<L/com/example/Bar;>;
     private String alias;               //e.g.  "com.example.Foo" or "Foo"
+    private boolean isInterface;
+    private String superClassName;      //e.g.  com/example/Quz
+    private Set<String> notSerializableInterfaces;
 
+    private boolean hasSerialize;
     private int lastLevel = -1;
 
     AddVariantTransformer(ClassVisitor delegate) {
@@ -43,6 +52,17 @@ public class AddVariantTransformer extends ClassVisitor {
         this.classDescriptor = 'L' + name + ';';
         this.classSignature = signature;
         this.alias = name.replace('/', '.');
+        this.superClassName = superName;
+        this.isInterface = (access & ACC_INTERFACE) == ACC_INTERFACE;
+
+        if (interfaces == null) {
+            this.notSerializableInterfaces = Compat.emptySet();
+        } else {
+            this.notSerializableInterfaces = new HashSet<>(2);
+            Collections.addAll(this.notSerializableInterfaces, interfaces);
+            this.notSerializableInterfaces.remove(BUKKIT_CONFIGURATIONSERIALIZABLE_NAME);
+            this.notSerializableInterfaces.remove("java/io/Serializable");
+        }
 
         super.visit(version, access, name, signature, superName, interfaces);
     }
@@ -97,6 +117,7 @@ public class AddVariantTransformer extends ClassVisitor {
         //detect the serialize() method and rename it, put a dollar in front.
         //note that there may already be a dollar in front, because of previous transformations!
         if ((access & ACC_STATIC) == 0 && SERIALIZE_DESCRIPTOR.equals(descriptor) && name.endsWith(SERIALIZE_NAME)) {
+            hasSerialize = true;
 
             String prefix = name.substring(0, name.length() - SERIALIZE_NAME.length());
             String dollarPrefix = Compat.stringRepeat("$", prefix.length());
@@ -148,7 +169,18 @@ public class AddVariantTransformer extends ClassVisitor {
             //map.putAll(this.$serialize());
             methodVisitor.visitVarInsn(ALOAD, 1);   //load the map
             methodVisitor.visitVarInsn(ALOAD, 0);   //load 'this'
-            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, className, '$' + SERIALIZE_NAME, SERIALIZE_DESCRIPTOR, false); //call this.$serialize()
+            if (hasSerialize) {
+                //the serialize method was transformed, call the transformed method.
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, className, '$' + SERIALIZE_NAME, SERIALIZE_DESCRIPTOR, isInterface); //call this.$serialize()
+            } else if (!"java/lang/Object".equals(superClassName)) {
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, superClassName, SERIALIZE_NAME, SERIALIZE_DESCRIPTOR, false);  //call super.serialize()
+            } else if (!notSerializableInterfaces.isEmpty()) {
+                //best effort, if there is only one super interface, then call the serialize method on that interface
+                String theInterface = notSerializableInterfaces.iterator().next();
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, theInterface, SERIALIZE_NAME, SERIALIZE_DESCRIPTOR, true);   //call superInterface.serialize()
+            } else {
+                throw new ConfigurationSerializableError("Could not generate a call to this.serialize(). Make sure the class has got a serialize() method! Did you forget the @ConfigurationSerializable annotation?");
+            }
             methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUTALL_NAME, MAP_PUTALL_DESCRIPTOR, true);
             //no need to POP because putAll returns void!
             final Label previousSerializeInvokedAndStoredLabel = new Label();
