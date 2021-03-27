@@ -6,7 +6,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
 import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
@@ -23,16 +22,13 @@ import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 import xyz.janboerman.scalaloader.plugin.description.DescriptionScanner;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -294,17 +290,8 @@ public class ScalaPluginLoader implements PluginLoader {
                             server, pluginYamlData, file, apiVersion, mainClass, transformerRegistry);
             sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getScalaVersion(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 
-            //create our plugin
-            Class<? extends ScalaPlugin> pluginMainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClass, true, scalaPluginClassLoader);
-            //sadly this can't be postponed to #loadPlugin(File), because the plugin's constructor constructs part of the description
-            //that's used by the PluginDescriptionFile that we need to return
-
-            ScalaPlugin plugin;
-            try {
-                 plugin = createPluginInstance(pluginMainClass);
-            } catch (ScalaPluginLoaderException e) {
-                throw new InvalidDescriptionException(e, "Couldn't create/get plugin instance for main class " + mainClass);
-            }
+            //get the ScalaPlugin from the class loader!
+            ScalaPlugin plugin = scalaPluginClassLoader.getPlugin();
 
             if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
                 throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());
@@ -412,7 +399,7 @@ public class ScalaPluginLoader implements PluginLoader {
                 .map(DescriptionScanner::getClassName)
                 .map(className -> {
                     try {
-                        return Class.forName(className, true, scalaPlugin.getClassLoader());
+                        return Class.forName(className, false, scalaPlugin.getClassLoader());
                     } catch (ClassNotFoundException | NoClassDefFoundError e) {
                         e.printStackTrace();
                         return null;
@@ -624,61 +611,6 @@ public class ScalaPluginLoader implements PluginLoader {
         return beforeLastDot1.equals(beforeLastDot2);
 
         //we don't care what comes after the last dot because those versions are compatible
-    }
-
-
-    /**
-     * Tries to get the plugin instance from the scala plugin class.
-     * This method is able to get the static instances from scala `object`s,
-     * as well as it is able to create plugins using their public NoArgsConstructors.
-     * @param clazz the plugin class
-     * @param <P> the plugin type
-     * @return the plugin's instance.
-     * @throws ScalaPluginLoaderException when a plugin instance could not be created for the given class
-     */
-    private static <P extends ScalaPlugin> P createPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
-        //TODO change this logic:
-        //TODO If there is a static final field with name MODULE$ with the same type as the class itself AND the name ends with a '$' character, then it must be a singleton object!
-        //TODO this seems very scala-compiler-implementation-detail dependent. I hope this will still work in Scala 3.
-        //TODO how to make this more robust?
-
-        if (clazz.getName().endsWith("$")) {
-            //we found a scala singleton object.
-            //the instance is already present in the MODULE$ field when this class is loaded.
-
-            try {
-                Field field = clazz.getDeclaredField("MODULE$");
-                //TODO assert that it is public, static and final
-
-                Object pluginInstance = field.get(null);
-
-                return clazz.cast(pluginInstance);
-            } catch (NoSuchFieldException e) {
-                throw new ScalaPluginLoaderException("Static field MODULE$ not found in class " + clazz.getName(), e);
-            } catch (IllegalAccessException e) {
-                throw new ScalaPluginLoaderException("Couldn't access static field MODULE$ in class " + clazz.getName(), e);
-            }
-
-        } else {
-            //we found are a regular class.
-            //it should have a public zero-argument constructor
-
-            try {
-                Constructor<?> ctr = clazz.getConstructor();
-                Object pluginInstance = ctr.newInstance();
-
-                return clazz.cast(pluginInstance);
-            } catch (IllegalAccessException e) {
-                throw new ScalaPluginLoaderException("Could not access the NoArgsConstructor of " + clazz.getName() + ", please make it public", e);
-            } catch (InvocationTargetException e) {
-                throw new ScalaPluginLoaderException("Error instantiating class " + clazz.getName() + ", its constructor threw something at us", e);
-            } catch (NoSuchMethodException e) {
-                throw new ScalaPluginLoaderException("Could not find NoArgsConstructor in class " + clazz.getName(), e);
-            } catch (InstantiationException e) {
-                throw new ScalaPluginLoaderException("Could not instantiate class " + clazz.getName(), e);
-            }
-        }
-
     }
 
 }

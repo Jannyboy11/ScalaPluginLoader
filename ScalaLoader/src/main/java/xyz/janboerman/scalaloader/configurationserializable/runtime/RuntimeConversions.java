@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
 
 /**
  * <p>
@@ -28,6 +29,7 @@ import java.util.function.Predicate;
  *
  * @see #registerCodec(ScalaPluginClassLoader, Class, Codec)
  * @see xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable
+ * @see xyz.janboerman.scalaloader.configurationserializable.DelegateSerialization
  * @see Codec
  */
 public class RuntimeConversions {
@@ -88,11 +90,11 @@ public class RuntimeConversions {
      * You can register a {@link Codec} using {@link #registerCodec(ScalaPluginClassLoader, ParameterType, Codec)} or its overloads so you can specify the behaviour at runtime.
      * @param live the object that is going to be serialized
      * @param type the type of the live object
-     * @param plugin the classloader of your plugin
+     * @param pluginClassLoader the classloader of your plugin
      * @return the object in its serialized form
      */
     @Called
-    public static Object serialize(Object live, ParameterType type, ScalaPluginClassLoader plugin) {
+    public static Object serialize(Object live, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
         Class<?> rawType = type.getRawType();
         assert rawType.isInstance(live) : "live object is not an instance of " + type;
 
@@ -133,22 +135,40 @@ public class RuntimeConversions {
 
         //collections
         else if (type instanceof ArrayParameterType) {
-            return serializeArray(live, (ArrayParameterType) type, plugin);
+            return serializeArray(live, (ArrayParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && live instanceof Collection) {
-            return serializeCollection(live, (ParameterizedParameterType) type, plugin);
+            return serializeCollection(live, (ParameterizedParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && live instanceof Map) {
-            return serializeMap(live, (ParameterizedParameterType) type, plugin);
+            return serializeMap(live, (ParameterizedParameterType) type, pluginClassLoader);
         }
 
         //fallback
-        Registrations registrations = RuntimeConversions.registrations.get(plugin);
+        Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);
         if (registrations != null) {
             Maybe<Object> maybe = registrations.serialize(type, live);
-            if (maybe.isPresent()) return maybe.get();
+            if (maybe.isPresent()) {
+                Object serializedInstance = maybe.get();
+                if (!(serializedInstance instanceof ConfigurationSerializable)
+                        && !(serializedInstance instanceof String)
+                        && !(serializedInstance instanceof Integer)
+                        && !(serializedInstance instanceof Double)
+                        && !(serializedInstance instanceof Boolean)
+                        && !(serializedInstance instanceof List)
+                        && !(serializedInstance instanceof Map)
+                        && !(serializedInstance instanceof Set)) {
+                    Logger logger = pluginClassLoader.getPlugin().getLogger();
+                    logger.warning("Serialized type " + serializedInstance.getClass().getName() + " is not supported out of the box by Bukkit's configuration serialization api.");
+                    logger.warning("Please let your Codec serialize to a type that implements org.bukkit.configuration.serialization.ConfigurationSerializable,");
+                    logger.warning("or one of the supported types out of Java's standard library:");
+                    logger.warning("java.lang.String, java.lang.Integer, java.lang.Double, java.lang.Boolean, java.util.List, java.util.Set or java.util.Map");
+                }
+                return serializedInstance;
+            }
         }
 
+        pluginClassLoader.getPlugin().getLogger()
+                .warning("No Codec found for " + live.getClass().getName() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
         //last try: just hope that SnakeYAML (which is an implementation detail technically) does the right thing
-        //TODO log a warning that no codec was registered yet?
         return live;
     }
 
@@ -265,11 +285,11 @@ public class RuntimeConversions {
      * You can register a {@link Codec} using {@link #registerCodec(ScalaPluginClassLoader, ParameterType, Codec)} or its overloads so you can specify the behaviour at runtime.
      * @param serialized the object that is going to be deserialized
      * @param type the type of the live object
-     * @param plugin the classloader of your plugin
+     * @param pluginClassLoader the classloader of your plugin
      * @return object in its live form
      */
     @Called
-    public static Object deserialize(Object serialized, ParameterType type, ScalaPluginClassLoader plugin) {
+    public static Object deserialize(Object serialized, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
         Class<?> rawType = type.getRawType();
 
         //out-of-the-box supported
@@ -309,22 +329,23 @@ public class RuntimeConversions {
 
         //collections
         else if (type instanceof ArrayParameterType) {
-            return deserializeArray((List<?>) serialized, (ArrayParameterType) type, plugin);
+            return deserializeArray((List<?>) serialized, (ArrayParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && Collection.class.isAssignableFrom(type.getRawType())) {
-            return deserializeCollection((Collection<?>) serialized, (ParameterizedParameterType) type, plugin);
+            return deserializeCollection((Collection<?>) serialized, (ParameterizedParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && Map.class.isAssignableFrom(type.getRawType())) {
-            return deserializeMap((Map<?, ?>) serialized, (ParameterizedParameterType) type, plugin);
+            return deserializeMap((Map<?, ?>) serialized, (ParameterizedParameterType) type, pluginClassLoader);
         }
 
         //fallback
-        Registrations registrations = RuntimeConversions.registrations.get(plugin);
+        Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);
         if (registrations != null) {
             Maybe<Object> maybe = registrations.deserialize(type, serialized);
             if (maybe.isPresent()) return maybe.get();
         }
 
+        pluginClassLoader.getPlugin().getLogger()
+                .warning("No Codec found for " + type.toString() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
         //last try: just hope that SnakeYAML (which is an implementation detail technically) does the right thing
-        //TODO log a warning that no codec was registered yet?
         return serialized;
     }
 
@@ -379,7 +400,7 @@ public class RuntimeConversions {
                     Constructor<?> nullaryConstructor = rawType.getConstructor(new Class[0]);
                     resultCollection = (Collection<Object>) nullaryConstructor.newInstance();
                 } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                    ConfigurationSerializableError error = new ConfigurationSerializableError("Could not instantiate an instance of " + rawType.getName() + ".");
+                    ConfigurationSerializableError error = new ConfigurationSerializableError("Could not instantiate an instance of " + rawType.getName() + ". It has no public constructor with zero arguments.");
                     error.addSuppressed(e);
                     throw error;
                 }
@@ -420,7 +441,7 @@ public class RuntimeConversions {
                     Constructor<?> nullaryConstructor = rawType.getConstructor(new Class[0]);
                     resultMap = (Map<Object, Object>) nullaryConstructor.newInstance();
                 } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                    ConfigurationSerializableError error = new ConfigurationSerializableError("Could not instantiate an instance of " + rawType.getName() + ".");
+                    ConfigurationSerializableError error = new ConfigurationSerializableError("Could not instantiate an instance of " + rawType.getName() + ". It has no public constructor with zero arguments.");
                     error.addSuppressed(e);
                     throw error;
                 }

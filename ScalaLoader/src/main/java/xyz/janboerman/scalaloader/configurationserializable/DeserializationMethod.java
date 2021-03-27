@@ -38,6 +38,8 @@ public enum DeserializationMethod {
      *         }
      *     </code>
      * </pre>
+     * 
+     * Note that you can't use this value with {@link DelegateSerialization}.
      */
     MAP_CONSTRUCTOR,
 }

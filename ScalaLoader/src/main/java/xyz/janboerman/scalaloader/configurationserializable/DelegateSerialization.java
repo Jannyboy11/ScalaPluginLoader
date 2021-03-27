@@ -19,6 +19,7 @@ import java.lang.annotation.Target;
  *     {@link org.bukkit.configuration.serialization.ConfigurationSerializable} manually.
  * </p>
  * @see ConfigurationSerializable
+ * @see xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)

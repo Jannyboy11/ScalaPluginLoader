@@ -5,7 +5,9 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime;
  * When a codec is registered, the ParameterType should match the LIVE type of this Codec.
  * 
  * @param <LIVE> the type of the object as it's used within the plugin, should be matched by the ParameterType this codec is registered with.
- * @param <SERIALIZED> the type of the object in its serialized form.
+ * @param <SERIALIZED> the type of the object in its serialized form. This type must either implement {@link org.bukkit.configuration.serialization.ConfigurationSerializable},
+ *                    or be one of {@link java.lang.Integer}, {@link java.lang.Double}, {@link java.lang.Boolean}, {@link java.lang.String},
+ *                    {@link java.util.List}, {@link java.util.Set}, {@link java.util.Map}.
  *
  * @see RuntimeConversions
  */

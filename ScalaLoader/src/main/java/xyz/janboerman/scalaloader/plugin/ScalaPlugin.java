@@ -438,4 +438,27 @@ public abstract class ScalaPlugin implements Plugin {
     public String toString() {
         return getName();
     }
+
+    /**
+     * Get the ScalaPlugin's instance given its class.
+     * @param pluginClass the class of the ScalaPlugin
+     * @param <P> the type of the plugin
+     * @return the ScalaPlugin
+     * @throws IllegalArgumentException if the class is not a subtype of {@link ScalaPlugin}
+     * @throws ClassCastException if the plugin's instance is not of type pluginClass
+     * @throws IllegalStateException when called from a plugin's constructor or initializer
+     */
+    protected static <P extends ScalaPlugin> P getPlugin(Class<P> pluginClass) {
+        ClassLoader classLoader = pluginClass.getClassLoader();
+        if (classLoader instanceof ScalaPluginClassLoader) {
+            ScalaPlugin plugin = ((ScalaPluginClassLoader) classLoader).getPlugin();
+            if (plugin != null) {
+                return pluginClass.cast(plugin);
+            } else {
+                throw new IllegalStateException("Can't call " + ScalaPlugin.class.getName() + ".getPlugin(java.lang.Class) from your plugin's constructor or initializer.");
+            }
+        } else {
+            throw new IllegalArgumentException(pluginClass.getName() + " is not a subclass of " + ScalaPlugin.class.getName() + "!");
+        }
+    }
 }
