@@ -9,6 +9,7 @@ class ScanResult {
     String className;
     boolean extendsScalaLoaderEvent;
     boolean implementsScalaLoaderCancellable;
+    boolean implementsScalaLoaderEventExecutor;
     String staticHandlerListFieldName;
     boolean hasGetHandlers;
     boolean hasGetHandlerList;

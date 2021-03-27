@@ -340,7 +340,10 @@ public class RuntimeConversions {
         Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);
         if (registrations != null) {
             Maybe<Object> maybe = registrations.deserialize(type, serialized);
-            if (maybe.isPresent()) return maybe.get();
+            if (maybe.isPresent()) {
+                Object live = maybe.get();
+                return live;
+            }
         }
 
         pluginClassLoader.getPlugin().getLogger()

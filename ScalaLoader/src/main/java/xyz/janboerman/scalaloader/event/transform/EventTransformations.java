@@ -102,9 +102,12 @@ public class EventTransformations {
         };
 
         ClassVisitor combinedTransformer = classWriter;
-        combinedTransformer = new EventTransformer(eventResult, combinedTransformer);
-        combinedTransformer = new CancellableTransformer(eventResult, combinedTransformer);
-        combinedTransformer = new EventExecutorTransformer(combinedTransformer);
+        if (eventResult.extendsScalaLoaderEvent)
+            combinedTransformer = new EventTransformer(eventResult, combinedTransformer);
+        if (eventResult.implementsScalaLoaderCancellable)
+            combinedTransformer = new CancellableTransformer(eventResult, combinedTransformer);
+        if (eventResult.implementsScalaLoaderEventExecutor)
+            combinedTransformer = new EventExecutorTransformer(combinedTransformer);
         combinedTransformer = new EventBusUserTransformer(combinedTransformer);
         combinedTransformer = new EventUserTransformer(combinedTransformer);
 

@@ -32,15 +32,12 @@ public class ExamplePlugin extends ScalaPlugin {
 
     private final Random random = new Random();
 
-    private static ExamplePlugin instance; //static abuse let's go!
-
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.14.2-SNAPSHOT").addHardDepend("ScalaExample"));
-        instance = this;
+        super(new ScalaPluginDescription("JavaExample", "0.14.3-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     public static ExamplePlugin getInstance() {
-        return instance;
+        return ScalaPlugin.getPlugin(ExamplePlugin.class);
     }
 
     @Override

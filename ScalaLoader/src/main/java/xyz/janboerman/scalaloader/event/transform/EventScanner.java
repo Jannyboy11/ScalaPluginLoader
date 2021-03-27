@@ -38,9 +38,11 @@ class EventScanner extends ClassVisitor {
 
         //replace scalaloader-cancellable by bukkit-cancellable
         for (int i = 0; i < interfaces.length; ++i) {
-            if (SCALALOADER_CANCELLABLE_NAME.equals(interfaces[i])) {
+            String interfaze = interfaces[i];
+            if (SCALALOADER_CANCELLABLE_NAME.equals(interfaze)) {
                 result.implementsScalaLoaderCancellable = true;
-                break;
+            } else if (SCALALOADER_EVENTEXECUTOR_NAME.equals(interfaze)){
+                result.implementsScalaLoaderEventExecutor = true;
             }
         }
     }

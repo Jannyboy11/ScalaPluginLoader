@@ -116,6 +116,7 @@ public class ConfigurationSerializableTransformations {
     //TODO javadoc this!
     public static byte[] transform(byte[] clazz, ScalaPluginClassLoader pluginClassLoader) throws ConfigurationSerializableError {
         LocalScanResult localResult = new LocalScanner().scan(new ClassReader(clazz));
+        if (!localResult.annotatedByConfigurationSerializable && !localResult.annotatedByDelegateSerialization) return clazz;
 
         ClassWriter classWriter = new ClassWriter(0) {
             @Override
@@ -125,8 +126,10 @@ public class ConfigurationSerializableTransformations {
         };
 
         ClassVisitor combinedTransformer = classWriter;
-        combinedTransformer = new DelegateTransformer(combinedTransformer, localResult);
-        combinedTransformer = new SerializableTransformer(combinedTransformer, localResult, pluginClassLoader);
+        if (localResult.annotatedByDelegateSerialization)
+            combinedTransformer = new DelegateTransformer(combinedTransformer, localResult);
+        if (localResult.annotatedByConfigurationSerializable)
+            combinedTransformer = new SerializableTransformer(combinedTransformer, localResult, pluginClassLoader);
 
         new ClassReader(clazz).accept(combinedTransformer, 0);
 

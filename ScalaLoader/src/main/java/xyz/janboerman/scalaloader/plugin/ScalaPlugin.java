@@ -458,7 +458,7 @@ public abstract class ScalaPlugin implements Plugin {
                 throw new IllegalStateException("Can't call " + ScalaPlugin.class.getName() + ".getPlugin(java.lang.Class) from your plugin's constructor or initializer.");
             }
         } else {
-            throw new IllegalArgumentException(pluginClass.getName() + " is not a subclass of " + ScalaPlugin.class.getName() + "!");
+            throw new IllegalArgumentException(pluginClass.getName() + " is not loaded by a " + ScalaPluginClassLoader.class.getName() + ". Is it even a ScalaPlugin?");
         }
     }
 }
