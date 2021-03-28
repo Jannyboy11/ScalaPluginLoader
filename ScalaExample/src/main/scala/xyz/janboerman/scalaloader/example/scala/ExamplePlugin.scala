@@ -66,7 +66,7 @@ object ExamplePlugin
 
     private def checkMaterials(): Unit = {
         val console = getServer.getConsoleSender
-        console.sendMessage(s"${ChatColor.YELLOW} Test that a ScalaPlugin does not find both legacy and modern materials")
+        console.sendMessage(s"${ChatColor.YELLOW}Test that a ScalaPlugin does not find both legacy and modern materials")
 
         val materials = Material.values()
         var foundModern: Boolean = false
