@@ -1,6 +1,6 @@
 package xyz.janboerman.scalaloader.example.scala
 
-import org.bukkit.Material
+import org.bukkit.{ChatColor, Material}
 import org.bukkit.command.{Command, CommandSender}
 import org.bukkit.event.{EventPriority, Listener}
 import org.bukkit.permissions.PermissionDefault
@@ -11,7 +11,7 @@ import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, Sc
 @Scala(version = ScalaVersion.v2_13_5)
 @Api(ApiVersion.v1_16)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.14.3-SNAPSHOT")
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.14.4-SNAPSHOT")
         .addCommand(new SPCommand("foo") permission "scalaexample.foo")
         .addCommand(new SPCommand("home") permission "scalaexample.home" usage "/home set|tp")
         .permissions(new SPPermission("scalaexample.home") permissionDefault PermissionDefault.TRUE)) {
@@ -65,6 +65,9 @@ object ExamplePlugin
     }
 
     private def checkMaterials(): Unit = {
+        val console = getServer.getConsoleSender
+        console.sendMessage(s"${ChatColor.YELLOW} Test that a ScalaPlugin does not find both legacy and modern materials")
+
         val materials = Material.values()
         var foundModern: Boolean = false
         var foundLegacy: Boolean = false
@@ -80,11 +83,14 @@ object ExamplePlugin
             }
         }
 
-        getLogger.info(s"Found legacy material?: $foundLegacy, modern material?: $foundModern")
-        if (foundModern == foundLegacy)
-            getLogger.info("This is a pluginloader bug!")
-        else
-            getLogger.info("Materials work as intended!")
+        assert(foundModern != foundLegacy, "Found both modern and legacy materials, this is a pluginloader bug!")
+        if (assertionsEnabled()) {
+            console.sendMessage(s"${ChatColor.GREEN}Test passed!")
+        } else if (foundModern != foundLegacy) {
+            console.sendMessage(s"${ChatColor.GREEN}Materials work as intended!")
+        } else {
+            console.sendMessage(s"${ChatColor.RED}Test failed, both legacy and modern materials were found!")
+        }
     }
 
     private[scala] def assertionsEnabled(): Boolean = {

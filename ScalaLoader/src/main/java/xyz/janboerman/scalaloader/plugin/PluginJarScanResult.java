@@ -7,7 +7,7 @@ import java.util.Map;
 class PluginJarScanResult {
 
     DescriptionScanner mainClassCandidate;
-    Map<String, Object> extraYaml;
+    Map<String, Object> pluginYaml;
     boolean isJavaPluginExplicitly;
     TransformerRegistry transformerRegistry;
 

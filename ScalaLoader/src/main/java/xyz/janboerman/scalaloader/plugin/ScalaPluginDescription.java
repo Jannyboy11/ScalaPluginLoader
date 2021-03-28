@@ -120,7 +120,8 @@ public final class ScalaPluginDescription {
     }
 
     public ScalaPluginDescription hardDepend(String... dependencies) {
-        this.hardDependencies = new LinkedHashSet<>(Arrays.asList(dependencies));
+        this.hardDependencies.clear();
+        Collections.addAll(this.hardDependencies, dependencies);
         return this;
     }
 
@@ -134,7 +135,8 @@ public final class ScalaPluginDescription {
     }
 
     public ScalaPluginDescription softDepend(String... dependencies) {
-        this.softDependencies = new LinkedHashSet<>(Arrays.asList(dependencies));
+        this.softDependencies.clear();
+        Collections.addAll(this.softDependencies, dependencies);
         return this;
     }
 
@@ -148,7 +150,8 @@ public final class ScalaPluginDescription {
     }
 
     public ScalaPluginDescription loadBefore(String... inverseDependencies) {
-        this.inverseDependencies = new LinkedHashSet<>(Arrays.asList(inverseDependencies));
+        this.inverseDependencies.clear();
+        Collections.addAll(this.inverseDependencies, inverseDependencies);
         return this;
     }
 
@@ -157,7 +160,7 @@ public final class ScalaPluginDescription {
         return this;
     }
 
-    public Set<String> getInverseDependences() {
+    public Set<String> getInverseDependencies() {
         return Collections.unmodifiableSet(inverseDependencies);
     }
 
@@ -171,7 +174,8 @@ public final class ScalaPluginDescription {
     }
 
     public ScalaPluginDescription commands(Command... commands) {
-        this.commands = new LinkedHashSet<>(Arrays.asList(commands));
+        this.commands.clear();
+        Collections.addAll(this.commands, commands);
         return this;
     }
 
@@ -185,7 +189,8 @@ public final class ScalaPluginDescription {
     }
 
     public ScalaPluginDescription permissions(Permission... permissions) {
-        this.permissions = new LinkedHashSet<>(Arrays.asList(permissions));
+        this.permissions.clear();
+        Collections.addAll(this.permissions, permissions);
         return this;
     }
 

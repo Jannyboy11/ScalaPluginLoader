@@ -18,7 +18,9 @@ import org.bstats.charts.DrilldownPie;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
@@ -95,6 +97,7 @@ public final class ScalaLoader extends JavaPlugin {
         }
     }
 
+
     public File getScalaPluginsFolder() {
         return scalaPluginsFolder;
     }
@@ -113,14 +116,13 @@ public final class ScalaLoader extends JavaPlugin {
         if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
             getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
 
-            //re-register the JavaPluginLoader again.
-            //this should avoid the ScalaPluginLoader trying to load JavaPlugins
-            for (Pattern pattern : weFoundTheJavaPluginLoader.getPluginFileFilters()) {
-                pluginLoaderMap.put(pattern, weFoundTheJavaPluginLoader);
-            }
+            //don't re-register the JavaPluginLoader again.
+            //doing so would break hot-reloading of ScalaPlugins
         } else {
             //couldn't replace the JavaPluginLoader - just register it 'normally' here.
             getServer().getPluginManager().registerInterface(ScalaPluginLoader.class);
+            //if we would call getServer().getPluginManager().loadPlugins(scalaPluginsFolder); here then ScalaPlugins wouldn't ever be able to depend on JavaPlugins.
+            //because the JavaPlugin in question might not have been loaded yet by the JavaPluginLoader.
         }
     }
 
@@ -137,11 +139,20 @@ public final class ScalaLoader extends JavaPlugin {
             for (Plugin plugin : plugins) {
                 getServer().getPluginManager().enablePlugin(plugin);
             }
-
-            //don't re-register the JavaPluginLoader because we cannot know for sure we got loaded by it.
-            //we delegate all JavaPlugin-related stuff to the loader of ScalaLoader anyway.
         }
 
+        //link register plugin dependencies (can't add ScalaLoader to the hardDepend of ScalaPlugin because the plugin manager will not know yet that ScalaLoader actually exists...)
+        try {
+            SimplePluginManager pluginManager = (SimplePluginManager) getServer().getPluginManager();
+            Field dependencyGraphField = pluginManager.getClass().getDeclaredField("dependencyGraph");
+            dependencyGraphField.setAccessible(true);
+            Object dependencyGraph = dependencyGraphField.get(pluginManager);
+            Method putEdge = dependencyGraph.getClass().getMethod("putEdge", Object.class, Object.class);
+            for (ScalaPlugin scalaPlugin : ScalaPluginLoader.getInstance().getScalaPlugins()) {
+                putEdge.invoke(dependencyGraph, scalaPlugin.getName(), this.getName());
+            }
+        } catch (Throwable iGiveUp) {
+        }
 
         //initialize bStats
         final int pluginId = 9150;
