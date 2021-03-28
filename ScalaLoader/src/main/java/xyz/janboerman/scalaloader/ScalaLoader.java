@@ -141,19 +141,6 @@ public final class ScalaLoader extends JavaPlugin {
             }
         }
 
-        //link register plugin dependencies (can't add ScalaLoader to the hardDepend of ScalaPlugin because the plugin manager will not know yet that ScalaLoader actually exists...)
-        try {
-            SimplePluginManager pluginManager = (SimplePluginManager) getServer().getPluginManager();
-            Field dependencyGraphField = pluginManager.getClass().getDeclaredField("dependencyGraph");
-            dependencyGraphField.setAccessible(true);
-            Object dependencyGraph = dependencyGraphField.get(pluginManager);
-            Method putEdge = dependencyGraph.getClass().getMethod("putEdge", Object.class, Object.class);
-            for (ScalaPlugin scalaPlugin : ScalaPluginLoader.getInstance().getScalaPlugins()) {
-                putEdge.invoke(dependencyGraph, scalaPlugin.getName(), this.getName());
-            }
-        } catch (Throwable iGiveUp) {
-        }
-
         //initialize bStats
         final int pluginId = 9150;
         Metrics metrics = new Metrics(this, pluginId);

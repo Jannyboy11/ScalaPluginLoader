@@ -31,7 +31,7 @@ public final class ScalaPluginDescription {
     private String website;
     private PluginLoadOrder loadOrder;
     private LinkedHashSet<String> hardDependencies = new LinkedHashSet<>();
-    private LinkedHashSet<String> softDependencies = new LinkedHashSet<>();
+    private LinkedHashSet<String> softDependencies = new LinkedHashSet<>(); { addSoftDepend("ScalaLoader"); }
     private LinkedHashSet<String> inverseDependencies = new LinkedHashSet<>();
     private PermissionDefault permissionDefault = PERMISSION_DEFAULT;
 
@@ -136,6 +136,7 @@ public final class ScalaPluginDescription {
 
     public ScalaPluginDescription softDepend(String... dependencies) {
         this.softDependencies.clear();
+        this.softDependencies.add("ScalaLoader");
         Collections.addAll(this.softDependencies, dependencies);
         return this;
     }
