@@ -33,7 +33,7 @@ public class ExamplePlugin extends ScalaPlugin {
     private final Random random = new Random();
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.14.4-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.14.5-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     public static ExamplePlugin getInstance() {

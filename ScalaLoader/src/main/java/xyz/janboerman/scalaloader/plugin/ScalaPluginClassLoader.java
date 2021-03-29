@@ -260,9 +260,19 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     @Override
     public Class<?> loadClass(final String name) throws ClassNotFoundException {
         //load order:
+        //  0.  scala standard lib (if applicable)
         //  1.  the plugin's jar
         //  2.  other scalaplugins
-        //  3.  scala standard lib, javaplugins, Bukkit/NMS classes (parent)
+        //  3.  javaplugins, Bukkit/NMS classes (parent)
+
+        if (name.startsWith("scala.")) {
+            //short-circuit scala standard library classes
+            //we do this because if PDM is used, we don't want to load the scala standard library classes from PDM.
+            try {
+                return getParent().loadClass(name);
+            } catch (ClassNotFoundException ignored) {
+            }
+        }
 
         ClassNotFoundException fallback = new ClassNotFoundException(name);
         Class<?> clazz;
@@ -748,6 +758,22 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | ClassCastException ignored) {
         }
         return scalaLoaderClassLoaderParallelCapable;
+    }
+
+    /**
+     * <p>
+     *     Adds a url to this classloader. This will allow more classes to be found that the plugin can then depend on.
+     * </p>
+     * <p>
+     *     Only use this if you know that you are doing!
+     * </p>
+     *
+     * @apiNote Be sure to call this in the constructor or initializer of your plugin, and don't use the dependency before that point or else you will get a {@link NoClassDefFoundError}
+     * @apiNote This method will become deprecated one ScalaLoader gets its own dependency framework.
+     * @param url the location of the dependency
+     */
+    public final void addUrl(URL url) {
+        super.addURL(url);
     }
 
 }

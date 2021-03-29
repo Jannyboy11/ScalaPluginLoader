@@ -33,11 +33,11 @@ public enum ScalaVersion {
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.11%2Fscala-reflect-2.12.11.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.11%2Fscala-library-2.12.11.jar"
     ),
-    v1_12_12(true,
+    v2_12_12(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.12%2Fscala-reflect-2.12.12.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.12%2Fscala-library-2.12.12.jar"
     ),
-    v1_12_13(true,
+    v2_12_13(true,
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.12.13%2Fscala-reflect-2.12.13.jar",
             "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.12.13%2Fscala-library-2.12.13.jar"
     ),

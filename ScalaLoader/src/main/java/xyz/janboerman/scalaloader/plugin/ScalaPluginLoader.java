@@ -175,7 +175,7 @@ public class ScalaPluginLoader implements PluginLoader {
         JarFile jarFile = Compat.jarFile(file);
 
 
-        {   //Shortcut: check whether the Plugin extends JavaPlugin
+        {   //short-circuit: check whether the Plugin extends JavaPlugin
             JarEntry pluginYmlEntry = jarFile.getJarEntry("plugin.yml");
             //If it contains a main class and it doesn't extend ScalaPlugin directly we should try to delegate to the JavaPluginLoader
             //If it doesn't contain a main class then we add the 'fields' of the plugin yaml to the ScalaPluginDescription.

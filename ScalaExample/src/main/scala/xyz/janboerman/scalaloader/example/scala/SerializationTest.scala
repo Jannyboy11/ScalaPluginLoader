@@ -7,6 +7,8 @@ import org.bukkit.configuration.file.YamlConfiguration
 import xyz.janboerman.scalaloader.configurationserializable.Scan.IncludeProperty
 import xyz.janboerman.scalaloader.configurationserializable.{ConfigurationSerializable, DelegateSerialization, Scan}
 
+import scala.collection.mutable
+
 object SerializationTest {
 
     private val dataFolder = ExamplePlugin.getDataFolder;
@@ -184,4 +186,104 @@ case object NoValue extends Maybe[scala.Nothing] {
 //        val map = new java.util.HashMap[String, AnyRef]()
 //        map
 //    }
+}
+
+//@ConfigurationSerializable
+class ImmutableCollectionTest {
+    import scala.collection.immutable._
+
+    private val cons: ::[String] = ::("foo", Nil)
+    private val nil: Nil.type = Nil;
+    private val list: List[Long] = List(0L, 1L, 2L)
+    private val seq: Seq[Byte] = Seq(127.asInstanceOf[Byte])
+    private val arraySeq: ArraySeq[Boolean] = ArraySeq(false, true)
+    private val bitSet: BitSet = BitSet(0x0, 0x1, 0x2, 0x4)
+    private val hashMap: HashMap[Short, Float] = HashMap(5.asInstanceOf[Short] -> 5F)
+    private val hashSet: HashSet[String] = HashSet("hello", "world")
+    private val indexedSeq: IndexedSeq[Double] = IndexedSeq(0D, 1D, 2D, 3D)
+    private val intMap: IntMap[String] = IntMap(5 -> "bar", 6 -> "quz")
+    private val lazyList: LazyList[Char] = LazyList('a', 'b', 'c')
+    private val linearSeq: LinearSeq[Int] = LinearSeq(42, 43, 44)
+    private val listSet: ListSet[Int] = ListSet(1, 2, 3)
+    private val longMap: LongMap[Long] = LongMap(0L -> 1L, 1L -> 2L, 2L -> 3L)
+    private val map: Map[Int, String] = Map(0 -> "scala", 1 -> "is", 2 -> "cool")
+    private val numericRange: NumericRange[Long] = NumericRange.apply(0L, 10L, 1L)
+    private val queue: Queue[String] = Queue("6", "7", "8")
+    private val range: Range = Range.inclusive(0, 10)
+    private val seqMap: SeqMap[Int, Float] = SeqMap(1 -> 1F, 2 -> 2F)
+    private val set: Set[Int] = Set(5, 6, 7, 8, 9)
+    private val sortedMap: SortedMap[Int, Double] = SortedMap(3 -> 3D, 4 -> 4D)
+    private val sortedSet: SortedSet[String] = SortedSet("the", "meaning", "of", "life")
+    private val treeMap: TreeMap[String, Boolean] = TreeMap("is" -> false, "42" -> true)
+    private val treeSeqMap: TreeSeqMap[Char, Int] = TreeSeqMap('x' -> 24, 'y' -> 25, 'z' -> 26)
+    private val treeSet: TreeSet[String] = TreeSet("java", "is", "also", "cool")
+    private val vector: Vector[Int] = Vector(10, 11, 12)
+    private val vectorMap: VectorMap[Int, String] = VectorMap(51 -> "51")
+    private val wrappedString: WrappedString = new WrappedString("Hello, World!")
+
+}
+
+class MutableCollectionTest {
+    import scala.collection.mutable._
+
+    private val arrayBuffer: ArrayBuffer[String] = new ArrayBuffer();
+    private val arrayDeque: ArrayDeque[String] = new ArrayDeque();
+    private val arraySeq: ArraySeq[String] = new ArraySeq.ofRef[String](Array[String]())   //there are 'overloads' for all primitive types and unit
+    private val bitSet: BitSet = new BitSet();
+    private val buffer: Buffer[String] = new ArrayBuffer()
+    private val collisionProofHashMap: CollisionProofHashMap[String, String] = new mutable.CollisionProofHashMap()
+    private val hashMap: HashMap[String, String] = new HashMap()
+    private val hashSet: HashSet[String] = new HashSet()
+    private val linkedHashMap: LinkedHashMap[String, String] = new LinkedHashMap()
+    private val linkedHashSet: LinkedHashSet[String] = new LinkedHashSet()
+    private val listBuffer: ListBuffer[String] = new ListBuffer()
+    private val longMap: LongMap[String] = new LongMap()
+    private val map: Map[String, String] = new HashMap()
+    private val priorityQueue: PriorityQueue[String] = new PriorityQueue[String]()
+    private val queue: Queue[String] = new Queue()
+    private val seq: Seq[String] = new ListBuffer[String]
+    private val seqMap: SeqMap[String, String] = new LinkedHashMap()
+    private val set: Set[String] = new LinkedHashSet[String]()
+    private val sortedMap: SortedMap[String, String] = new TreeMap()
+    private val sortedSet: SortedSet[String] = new TreeSet()
+    private val stack: Stack[String] = new Stack()
+    private val treeMap: TreeMap[String, String] = new TreeMap()
+    private val treeSet: TreeSet[String] = new TreeSet()
+    private val unrolledBuffer: UnrolledBuffer[String] = new UnrolledBuffer()
+    private val weakHashMap: WeakHashMap[String, String] = new WeakHashMap()
+
+}
+
+class OtherTest {
+
+    private val some: Some[String] = Some("Hi!")
+    private val none: None.type = None
+    private val left: Either[String, String] = Left("Hello!")
+    private val right: Either[String, String] = Right("World!")
+    private val unit: Unit = ()
+    private val NULL: Null = null;
+    private val tuple1 = new Tuple1("a")
+    private val tuple2 = new Tuple2("a", "b")
+    private val tuple3 = new Tuple3("a", "b", "c")
+    private val tuple4 = new Tuple4("a", "b", "c", "d")
+    private val tuple5 = new Tuple5("a", "b", "c", "d", "e")
+    private val tuple6 = new Tuple6("a", "b", "c", "d", "e", "f")
+    private val tuple7 = new Tuple7("a", "b", "c", "d", "e", "f", "g")
+    private val tuple8 = new Tuple8("a", "b", "c", "d", "e", "f", "g", "h")
+    private val tuple9 = new Tuple9("a", "b", "c", "d", "e", "f", "g", "h", "i")
+    private val tuple10 = new Tuple10("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
+    private val tuple11 = new Tuple11("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+    private val tuple12 = new Tuple12("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l")
+    private val tuple13 = new Tuple13("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m")
+    private val tuple14 = new Tuple14("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n")
+    private val tuple15 = new Tuple15("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o")
+    private val tuple16 = new Tuple16("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p")
+    private val tuple17 = new Tuple17("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q")
+    private val tuple18 = new Tuple18("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r")
+    private val tuple19 = new Tuple19("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s")
+    private val tuple20 = new Tuple20("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t")
+    private val tuple21 = new Tuple21("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u")
+    private val tuple22 = new Tuple22("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v")
+
+
 }
