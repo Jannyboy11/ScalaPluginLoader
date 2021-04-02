@@ -11,7 +11,7 @@ public enum DeserializationMethod {
      * Causes the framework to generate:
      * <pre>
      *     <code>
-     *         public static MyClass deserialize(Map&ltString, Object&gt) {
+     *         public static MyClass deserialize(Map&lt;String, Object&gt;) {
      *             ...
      *         }
      *     </code>
@@ -22,7 +22,7 @@ public enum DeserializationMethod {
      * Causes the framework to generate:
      * <pre>
      *     <code>
-     *         public static MyClass valueOf(Map&ltString, Object&gt) {
+     *         public static MyClass valueOf(Map&lt;String, Object&gt;) {
      *             ...
      *         }
      *     </code>
@@ -33,7 +33,7 @@ public enum DeserializationMethod {
      * Causes the framework to generate:
      * <pre>
      *     <code>
-     *         public MyClass(Map&ltString, Object&gt) {
+     *         public MyClass(Map&lt;String, Object&gt;) {
      *             ...
      *         }
      *     </code>

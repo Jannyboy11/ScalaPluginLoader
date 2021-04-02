@@ -30,13 +30,13 @@ public final class ScalaPluginDescription {
     private String prefix;
     private String website;
     private PluginLoadOrder loadOrder;
-    private LinkedHashSet<String> hardDependencies = new LinkedHashSet<>();
-    private LinkedHashSet<String> softDependencies = new LinkedHashSet<>(); { addSoftDepend("ScalaLoader"); }
-    private LinkedHashSet<String> inverseDependencies = new LinkedHashSet<>();
+    private final LinkedHashSet<String> hardDependencies = new LinkedHashSet<>();
+    private final LinkedHashSet<String> softDependencies = new LinkedHashSet<>(); { addSoftDepend("ScalaLoader"); }
+    private final LinkedHashSet<String> inverseDependencies = new LinkedHashSet<>();
     private PermissionDefault permissionDefault = PERMISSION_DEFAULT;
 
-    private LinkedHashSet<Command> commands = new LinkedHashSet<>();
-    private LinkedHashSet<Permission> permissions = new LinkedHashSet<>();
+    private final LinkedHashSet<Command> commands = new LinkedHashSet<>();
+    private final LinkedHashSet<Permission> permissions = new LinkedHashSet<>();
 
     //TODO awareness?? use a list of string? list of object is probably better
     

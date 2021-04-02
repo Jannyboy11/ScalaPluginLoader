@@ -4,16 +4,14 @@ package xyz.janboerman.scalaloader.plugin;
 //import net.glowstone.util.GlowUnsafeValues;
 import org.bukkit.Server;
 import org.bukkit.UnsafeValues;
-import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
-//import org.objectweb.asm.tree.analysis.*;
 //import org.objectweb.asm.util.*;
+//import org.objectweb.asm.tree.analysis.*;
 //import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
-import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.transform.*;
@@ -267,7 +265,8 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
         if (name.startsWith("scala.")) {
             //short-circuit scala standard library classes
-            //we do this because if PDM is used, we don't want to load the scala standard library classes from PDM.
+            //we do this because if some plugin or library (such as PDM) adds the scala library to this classloader using #addUrl(URL),
+            //then we still want to use the scala library that is loaded by the parent classloader
             try {
                 return getParent().loadClass(name);
             } catch (ClassNotFoundException ignored) {
@@ -393,13 +392,13 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     }
 
 //                    ClassReader debugReader = new ClassReader(classBytes);
-//                    TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out));
+//                    TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, new ASMifier(), new PrintWriter(System.out));
 //                    ClassVisitor debugVisitor = new ClassVisitor(AsmConstants.ASM_API, traceClassVisitor) {
 //                        private boolean debug = false;
 //
 //                        @Override
 //                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-//                            if ("xyz/janboerman/scalaloader/example/java/MapSerializable".equals(name)) {
+//                            if ("xyz/janboerman/scalaloader/example/scala/ImmutableCollectionTest".equals(name)) {
 //                                debug = true;
 //                            }
 //
@@ -683,7 +682,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         PluginLoader likelyJavaPluginLoader = pluginLoader.getJavaPluginLoader();
         //loop the plugin(class)loader hierarchy until we find a JavaPluginLoader?
         //this seems impossible to do properly because bukkit provides no api to go PluginLoader to the providing Plugin.
-        //best we can do is hardcode checks for common plugin loaders - the JavaPluginLoader and the ScalaPluginLoader (and maybe an EtaPluginLoader in the future? :))
+        //best we can do is hardcode checks for common plugin loaders - the JavaPluginLoader and the ScalaPluginLoader, possibly Steenooo's KotlinPluginLoader
         //I don't think it's worth the effort because I don't see custom PluginLoader implementations becoming a common thing in the bukkit development space.
 
         if (likelyJavaPluginLoader instanceof JavaPluginLoader) {
@@ -703,13 +702,12 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             };
 
             //Are JavaPlugins' PluginClassLoaders parallel capable?
-            ScalaLoader scalaLoader = pluginLoader.getScalaLoader();
             if (javaPluginClassLoaderParallelCapable()) {
                 //If JavaPlugins' classloader are parallel capable, just run the action, no matter what thread we are on.
                 setClass.run();
             } else {
                 //If not, schedule the action to be run in the main thread.
-                scalaLoader.runInMainThread(setClass);
+                pluginLoader.getScalaLoader().runInMainThread(setClass);
             }
         }
     }
@@ -765,13 +763,15 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      *     Adds a url to this classloader. This will allow more classes to be found that the plugin can then depend on.
      * </p>
      * <p>
-     *     Only use this if you know that you are doing!
+     *     <b>Only use this if you know that you are doing!!!</b>
      * </p>
      *
      * @apiNote Be sure to call this in the constructor or initializer of your plugin, and don't use the dependency before that point or else you will get a {@link NoClassDefFoundError}
-     * @apiNote This method will become deprecated one ScalaLoader gets its own dependency framework.
+     * @apiNote This method will become deprecated once ScalaLoader gets its own dependency framework
+     *
      * @param url the location of the dependency
      */
+    //in the future when the dependency api is added, annotate this with @Deprecated and @Replaced and redirect calls at class-load time
     public final void addUrl(URL url) {
         super.addURL(url);
     }

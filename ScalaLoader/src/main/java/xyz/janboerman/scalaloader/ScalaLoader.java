@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.NumericRange;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
@@ -184,6 +185,7 @@ public final class ScalaLoader extends JavaPlugin {
     }
 
     private void configure() {
+        //ScalaLoader config stuff
         saveDefaultConfig();
         ConfigurationSerialization.registerClass(PluginScalaVersion.class, "ScalaVersion");
         FileConfiguration config = getConfig();
@@ -191,6 +193,9 @@ public final class ScalaLoader extends JavaPlugin {
             getConfig().set("scala-versions", Arrays.stream(ScalaVersion.values()).map(PluginScalaVersion::fromScalaVersion).collect(Collectors.toList()));
             saveConfig();
         }
+
+        //ScalaPlugin config stuff
+        NumericRange.registerWithConfigurationSerialization();
     }
 
     private boolean downloadScalaJarFiles() {

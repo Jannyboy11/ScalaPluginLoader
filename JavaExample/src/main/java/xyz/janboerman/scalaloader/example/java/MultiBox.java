@@ -38,8 +38,8 @@ public class MultiBox implements ConfigurationSerializable {
     private BigDecimal bigDecimal = new BigDecimal("0");            // ===> java.lang.Double
 
     private String string = new String("string");               // ===> java.lang.String
-//    private UUID uuid = new UUID(0L, 0L);
-//    private HelloWorld hw = HelloWorld.FOO;
+    private UUID uuid = new UUID(0L, 0L);
+    private HelloWorld hw = HelloWorld.FOO;
 
     private int[] intArray = new int[] { 0 };                           // ===> java.util.ArrayList
     private int[] emptyIntArray = new int[0];                           // ===> java.util.ArrayList
@@ -82,8 +82,8 @@ public class MultiBox implements ConfigurationSerializable {
                 entry("BigDecimal", bigDecimal),
 
                 entry("String", string),
-//                entry("UUID", uuid),
-//                entry("HelloWorld enum", hw),
+                entry("UUID", uuid),
+                entry("HelloWorld enum", hw),
 
                 entry("empty int array", emptyIntArray),
                 entry("empty string array", emptyStringArray),

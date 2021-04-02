@@ -7,9 +7,7 @@ import org.bukkit.configuration.file.YamlConfiguration
 import xyz.janboerman.scalaloader.configurationserializable.Scan.IncludeProperty
 import xyz.janboerman.scalaloader.configurationserializable.{ConfigurationSerializable, DelegateSerialization, Scan}
 
-import scala.collection.mutable
-
-object SerializationTest {
+object SerializationMethodsTest {
 
     private val dataFolder = ExamplePlugin.getDataFolder;
     dataFolder.mkdirs();
@@ -188,40 +186,198 @@ case object NoValue extends Maybe[scala.Nothing] {
 //    }
 }
 
+
+object ScalaTypesSerializationTest {
+
+    def test(): Unit = {
+        //TODO turns out the scala compiler does not output correct signatures in the bytecode.
+        //TODO all type arguments that are primitives seem to be of type java/lang/Object.
+        //TODO that is very unfortunate. In order to get the type parameter info we need to analyze the pickles in the bytecode. hurray!
+        //TODO by that I mean the @ScalaSignature annotation and the ScalaSig attribute.
+        //TODO the ScalaInlineInfo attribute can probably be ignored.
+        //TODO For Scala 3 this effort will need to be re-done.. because of the compiler no longer outputting pickles, but it outputs TASTy instead.
+        //TODO thanks Scala! (not!)
+        //TODO I think a good starting point is to look at how scalap does this!
+        val immutableCollectionTest = new ImmutableCollectionTest()
+        val mutableCollectionTest = new MutableCollectionTest()
+        val otherTest = new OtherScalaTypesTest()
+
+        //TODO on a different thought: could a Scala 3 compiler plugin work to get this type information?
+        //TODO I may not have to generate bytecode at class-load time at all in that case, but just transform the AST in the plugin compiler phase!
+    }
+
+}
+
+
 //@ConfigurationSerializable
 class ImmutableCollectionTest {
     import scala.collection.immutable._
+    import scala.collection.JavaConverters
+    import xyz.janboerman.scalaloader.configurationserializable.runtime.{NumericRange => SLRange}
 
-    private val cons: ::[String] = ::("foo", Nil)
-    private val nil: Nil.type = Nil;
-    private val list: List[Long] = List(0L, 1L, 2L)
-    private val seq: Seq[Byte] = Seq(127.asInstanceOf[Byte])
-    private val arraySeq: ArraySeq[Boolean] = ArraySeq(false, true)
-    private val bitSet: BitSet = BitSet(0x0, 0x1, 0x2, 0x4)
-    private val hashMap: HashMap[Short, Float] = HashMap(5.asInstanceOf[Short] -> 5F)
-    private val hashSet: HashSet[String] = HashSet("hello", "world")
-    private val indexedSeq: IndexedSeq[Double] = IndexedSeq(0D, 1D, 2D, 3D)
-    private val intMap: IntMap[String] = IntMap(5 -> "bar", 6 -> "quz")
-    private val lazyList: LazyList[Char] = LazyList('a', 'b', 'c')
-    private val linearSeq: LinearSeq[Int] = LinearSeq(42, 43, 44)
-    private val listSet: ListSet[Int] = ListSet(1, 2, 3)
-    private val longMap: LongMap[Long] = LongMap(0L -> 1L, 1L -> 2L, 2L -> 3L)
-    private val map: Map[Int, String] = Map(0 -> "scala", 1 -> "is", 2 -> "cool")
-    private val numericRange: NumericRange[Long] = NumericRange.apply(0L, 10L, 1L)
-    private val queue: Queue[String] = Queue("6", "7", "8")
-    private val range: Range = Range.inclusive(0, 10)
-    private val seqMap: SeqMap[Int, Float] = SeqMap(1 -> 1F, 2 -> 2F)
-    private val set: Set[Int] = Set(5, 6, 7, 8, 9)
-    private val sortedMap: SortedMap[Int, Double] = SortedMap(3 -> 3D, 4 -> 4D)
-    private val sortedSet: SortedSet[String] = SortedSet("the", "meaning", "of", "life")
-    private val treeMap: TreeMap[String, Boolean] = TreeMap("is" -> false, "42" -> true)
-    private val treeSeqMap: TreeSeqMap[Char, Int] = TreeSeqMap('x' -> 24, 'y' -> 25, 'z' -> 26)
-    private val treeSet: TreeSet[String] = TreeSet("java", "is", "also", "cool")
-    private val vector: Vector[Int] = Vector(10, 11, 12)
-    private val vectorMap: VectorMap[Int, String] = VectorMap(51 -> "51")
-    private val wrappedString: WrappedString = new WrappedString("Hello, World!")
+    private var list: List[Long] = List(0L, 1L, 2L)
+    private var seq: Seq[Byte] = Seq(127.asInstanceOf[Byte])
+    private var arraySeq: ArraySeq[Boolean] = ArraySeq(false, true)
+    private var bitSet: BitSet = BitSet(0x0, 0x1, 0x2, 0x4)
+    private var hashMap: HashMap[Short, Float] = HashMap(5.asInstanceOf[Short] -> 5F)
+    private var hashSet: HashSet[String] = HashSet("hello", "world")
+    private var indexedSeq: IndexedSeq[Double] = IndexedSeq(0D, 1D, 2D, 3D)
+    private var intMap: IntMap[String] = IntMap(5 -> "bar", 6 -> "quz")
+    private var lazyList: LazyList[Char] = LazyList('a', 'b', 'c')
+    private var linearSeq: LinearSeq[Int] = LinearSeq(42, 43, 44)
+    private var listSet: ListSet[Int] = ListSet(1, 2, 3)
+    private var longMap: LongMap[Long] = LongMap(0L -> 1L, 1L -> 2L, 2L -> 3L)
+    private var map: Map[Int, String] = Map(0 -> "scala", 1 -> "is", 2 -> "cool")
+    private var numericRange: NumericRange[Long] = NumericRange.apply(0L, 10L, 1L)
+    private var queue: Queue[String] = Queue("6", "7", "8")
+    private var range: Range = Range.inclusive(0, 10)
+    private var seqMap: SeqMap[Int, Float] = SeqMap(1 -> 1F, 2 -> 2F)
+    private var set: Set[Int] = Set(5, 6, 7, 8, 9)
+    private var sortedMap: SortedMap[Int, Double] = SortedMap(3 -> 3D, 4 -> 4D)
+    private var sortedSet: SortedSet[String] = SortedSet("the", "meaning", "of", "life")
+    private var treeMap: TreeMap[String, Boolean] = TreeMap("is" -> false, "42" -> true)
+    private var treeSeqMap: TreeSeqMap[Char, Int] = TreeSeqMap('x' -> 24, 'y' -> 25, 'z' -> 26)
+    private var treeSet: TreeSet[String] = TreeSet("java", "is", "also", "cool")
+    private var vector: Vector[Int] = Vector(10, 11, 12)
+    private var vectorMap: VectorMap[Int, String] = VectorMap(51 -> "51")
+    private var wrappedString: WrappedString = new WrappedString("Hello, World!")
 
+    def serialize(): java.util.Map[String, AnyRef] = {
+        val result = new java.util.LinkedHashMap[String, AnyRef]()
+
+        //TODO this is going to be fun. depending on the version of Scala used by the plugin,
+        //TODO I need to pick the right conversion method. Thanks Scala! (not!)
+        //TODO I will probably need a MajorScalaRelease enum or something. not sure what I'm going to call it. ScalaSeries? ScalaMajorRelease? ScalaRelease?
+
+        //TODO also convert the elements!
+        result.put("list", JavaConverters.asJava(list))
+        result.put("seq", JavaConverters.asJava(seq))
+        result.put("arraySeq", JavaConverters.asJava(arraySeq))
+        result.put("bitSet", JavaConverters.asJava(bitSet))
+        result.put("hashMap", JavaConverters.asJava(hashMap))
+        result.put("hashSet", JavaConverters.asJava(hashSet))
+        result.put("indexedSeq", JavaConverters.asJava(indexedSeq))
+        result.put("intMap", JavaConverters.asJava(intMap))
+        result.put("lazyList", JavaConverters.asJava(lazyList))
+        result.put("linearSeq", JavaConverters.asJava(linearSeq))
+        result.put("listSet", JavaConverters.asJava(listSet))
+        result.put("longMap", JavaConverters.asJava(longMap))
+        result.put("map", JavaConverters.asJava(map))
+        result.put("numericRange", new SLRange.OfLong(numericRange.start, numericRange.step, numericRange.end, numericRange.isInclusive))
+        result.put("queue", JavaConverters.asJava(queue))
+        result.put("range", new SLRange.OfInteger(range.start, range.step, range.end, range.isInclusive))
+        result.put("seqMap", JavaConverters.asJava(seqMap))
+        result.put("set", JavaConverters.asJava(set));
+        result.put("sortedMap", JavaConverters.asJava(sortedMap))
+        result.put("sortedSet", JavaConverters.asJava(sortedSet))
+        result.put("treeMap", JavaConverters.asJava(treeMap))
+        result.put("treeSeqMap", JavaConverters.asJava(treeSeqMap))
+        result.put("treeSet", JavaConverters.asJava(treeSet))
+        result.put("vector", JavaConverters.asJava(vector))
+        result.put("vectorMap", JavaConverters.asJava(vectorMap))
+        result.put("wrappedString", wrappedString.toString())
+
+        result
+    }
 }
+
+object ImmutableCollectionTest {
+    import scala.collection.immutable._
+    import scala.collection.JavaConverters
+    import xyz.janboerman.scalaloader.configurationserializable.runtime.{NumericRange => SLRange}
+
+    def deserialize(map: java.util.Map[String, AnyRef]): ImmutableCollectionTest = {
+        val res = new ImmutableCollectionTest()
+
+        val list = map.get("list").asInstanceOf[java.util.List[Long]]
+        res.list = List.from(JavaConverters.asScala(list))
+
+        val seq = map.get("seq").asInstanceOf[java.util.List[Byte]]
+        res.seq = Seq.from(JavaConverters.asScala(seq))
+
+        val arraySeq = map.get("arraySeq").asInstanceOf[java.util.List[Boolean]]
+        res.arraySeq = ArraySeq.from(JavaConverters.asScala(arraySeq))
+
+        val bitSet = map.get("bitSet").asInstanceOf[java.util.Set[Int]]
+        res.bitSet = BitSet.fromSpecific(JavaConverters.asScala(bitSet))
+
+        val hashMap = map.get("hashMap").asInstanceOf[java.util.Map[Short, Float]]
+        res.hashMap = HashMap.from(JavaConverters.asScala(hashMap))
+
+        val hashSet = map.get("hashSet").asInstanceOf[java.util.Set[String]]
+        res.hashSet = HashSet.from(JavaConverters.asScala(hashSet))
+
+        val indexedSeq = map.get("indexedSeq").asInstanceOf[java.util.List[Double]]
+        res.indexedSeq = IndexedSeq.from(JavaConverters.asScala(indexedSeq))
+
+        val intMap = map.get("intMap").asInstanceOf[java.util.Map[Int, String]]
+        res.intMap = IntMap.from(JavaConverters.asScala(intMap))
+
+        val lazyList = map.get("lazyList").asInstanceOf[java.util.List[Char]]
+        res.lazyList = LazyList.from(JavaConverters.asScala(lazyList))
+
+        val linearSeq = map.get("linearSeq").asInstanceOf[java.util.List[Int]]
+        res.linearSeq = LinearSeq.from(JavaConverters.asScala(linearSeq))
+
+        val listSet = map.get("listSet").asInstanceOf[java.util.Set[Int]]
+        res.listSet = ListSet.from(JavaConverters.asScala(listSet))
+
+        val longMap = map.get("longMap").asInstanceOf[java.util.Map[Long, Long]]
+        res.longMap = LongMap.from(JavaConverters.asScala(longMap))
+
+        val m = map.get("map").asInstanceOf[java.util.Map[Int, String]]
+        res.map = Map.from(JavaConverters.asScala(m))
+
+        val numericRange = map.get("numericRange").asInstanceOf[SLRange[java.lang.Long]]
+        res.numericRange = if (numericRange.isInclusive)
+            NumericRange.inclusive(numericRange.getStart, numericRange.getEnd, numericRange.getStep)
+        else
+            NumericRange.apply(numericRange.getStart, numericRange.getEnd, numericRange.getStep)
+
+        val queue = map.get("queue").asInstanceOf[java.util.List[String]]
+        res.queue = Queue.from(JavaConverters.asScala(queue))
+
+        val range = map.get("range").asInstanceOf[SLRange[java.lang.Integer]]
+        res.range = if (range.isInclusive)
+            Range.inclusive(range.getStart, range.getEnd, range.getStep)
+        else
+            Range.apply(range.getStart, range.getEnd, range.getStep)
+
+        val seqMap = map.get("seqMap").asInstanceOf[java.util.Map[Int, Float]]
+        res.seqMap = SeqMap.from(JavaConverters.asScala(seqMap))
+
+        val set = map.get("set").asInstanceOf[java.util.Set[Int]]
+        res.set = Set.from(JavaConverters.asScala(set))
+
+        val sortedMap = map.get("sortedMap").asInstanceOf[java.util.Map[Int, Double]]
+        res.sortedMap = SortedMap.from(JavaConverters.asScala(sortedMap))
+
+        val sortedSet = map.get("sortedSet").asInstanceOf[java.util.Set[String]]
+        res.sortedSet = SortedSet.from(JavaConverters.asScala(sortedSet))
+
+        val treeMap = map.get("treeMap").asInstanceOf[java.util.Map[String, Boolean]]
+        res.treeMap = TreeMap.from(JavaConverters.asScala(treeMap))
+
+        val treeSeqMap = map.get("treeSeqMap").asInstanceOf[java.util.Map[Char, Int]]
+        res.treeSeqMap = TreeSeqMap.from(JavaConverters.asScala(treeSeqMap))
+
+        val treeSet = map.get("treeSet").asInstanceOf[java.util.Set[String]]
+        res.treeSet = TreeSet.from(JavaConverters.asScala(treeSet))
+
+        val vector = map.get("vector").asInstanceOf[java.util.List[Int]]
+        res.vector = Vector.from(JavaConverters.asScala(vector))
+
+        val vectorMap = map.get("vectorMap").asInstanceOf[java.util.Map[Int, String]]
+        res.vectorMap = VectorMap.from(JavaConverters.asScala(vectorMap))
+
+        val wrappedString = map.get("wrappedString").asInstanceOf[String]
+        res.wrappedString = new WrappedString(wrappedString)
+
+        res
+    }
+}
+
+
 
 class MutableCollectionTest {
     import scala.collection.mutable._
@@ -231,7 +387,7 @@ class MutableCollectionTest {
     private val arraySeq: ArraySeq[String] = new ArraySeq.ofRef[String](Array[String]())   //there are 'overloads' for all primitive types and unit
     private val bitSet: BitSet = new BitSet();
     private val buffer: Buffer[String] = new ArrayBuffer()
-    private val collisionProofHashMap: CollisionProofHashMap[String, String] = new mutable.CollisionProofHashMap()
+    private val collisionProofHashMap: CollisionProofHashMap[String, String] = new CollisionProofHashMap()
     private val hashMap: HashMap[String, String] = new HashMap()
     private val hashSet: HashSet[String] = new HashSet()
     private val linkedHashMap: LinkedHashMap[String, String] = new LinkedHashMap()
@@ -254,14 +410,28 @@ class MutableCollectionTest {
 
 }
 
-class OtherTest {
+class OtherScalaTypesTest {
+    import scala.runtime._
+    import scala.math._
 
-    private val some: Some[String] = Some("Hi!")
-    private val none: None.type = None
+    private val some: Option[String] = Some("Hi!")
+    private val none: Option[String] = None
     private val left: Either[String, String] = Left("Hello!")
     private val right: Either[String, String] = Right("World!")
     private val unit: Unit = ()
     private val NULL: Null = null;
+
+    private val richByte: RichByte = new RichByte(0.asInstanceOf[Byte])
+    private val richShort: RichShort = new RichShort(0.asInstanceOf[Short])
+    private val richInt: RichInt = new RichInt(0)
+    private val richLong: RichLong = new RichLong(0L)
+    private val richFloat: RichFloat = new RichFloat(0F)
+    private val richDouble: RichDouble = new RichDouble(0D)
+    private val richBoolean: RichBoolean = new RichBoolean(true)
+    private val richChar: RichChar = new RichChar('a')
+    private val bigInt: BigInt = new BigInt(new java.math.BigInteger("0"))
+    private val bigDecimal : BigDecimal = new BigDecimal(new java.math.BigDecimal("0"))
+
     private val tuple1 = new Tuple1("a")
     private val tuple2 = new Tuple2("a", "b")
     private val tuple3 = new Tuple3("a", "b", "c")

@@ -13,4 +13,6 @@ ScalaLoader/target/*
 .project
 .classpath
 
+#Miscellaneous
 stager_feedback.txt
+*.log

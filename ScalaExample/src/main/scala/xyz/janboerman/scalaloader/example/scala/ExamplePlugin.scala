@@ -42,7 +42,8 @@ object ExamplePlugin
 
         listConfigs()
         checkMaterials()
-        SerializationTest.test()
+        SerializationMethodsTest.test()
+        ScalaTypesSerializationTest.test()
     }
 
     override def onDisable(): Unit = {

@@ -44,7 +44,7 @@ public class ParameterType {
 
     /**
      * Get the raw type
-     * @return
+     * @return the raw type
      */
     public Class<?> getRawType() {
         return rawType;

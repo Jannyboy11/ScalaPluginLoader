@@ -63,8 +63,8 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCo
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion, Api, ApiVersion}
 
-@Scala(version = ScalaVersion.v2_12_6)
-@Api(ApiVersion.v1_15)
+@Scala(version = ScalaVersion.v2_13_5)
+@Api(ApiVersion.v1_16)
 object ExamplePlugin
     extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "1.0")
         .commands(new SPCommand("foo")
@@ -151,7 +151,7 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 ##### SBT
 ```scala
 resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.14.4" % "provided"
+libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.14.6" % "provided"
 ```
 
 ##### Maven
@@ -164,7 +164,7 @@ libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader"
 <dependency>
     <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.14.4</version>
+    <version>v0.14.6</version>
     <scope>provided</scope>
 </dependency>
 ```
