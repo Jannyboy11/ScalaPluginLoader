@@ -9,6 +9,7 @@ import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
+import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions;
 import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariantTransformer;
@@ -34,8 +35,8 @@ import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ScalaPluginLoader implements PluginLoader {
@@ -48,9 +49,10 @@ public class ScalaPluginLoader implements PluginLoader {
 
     private static final Pattern[] pluginFileFilters = new Pattern[] { Pattern.compile("\\.jar$"), };
 
-    //Map<ScalaVersion, Map<ClassName, Class<?>>>
-    private final ConcurrentMap<String, ConcurrentMap<String, Class<?>>> sharedScalaPluginClasses = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, CopyOnWriteArrayList<ScalaPluginClassLoader>> sharedScalaPluginClassLoaders = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ScalaRelease, ConcurrentMap<String, Class<?>>> sharedScalaPluginClasses = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ScalaRelease, CopyOnWriteArrayList<ScalaPluginClassLoader>> sharedScalaPluginClassLoaders = new ConcurrentHashMap<>();
+    private final ScalaCompatMap scalaCompatMap = new ScalaCompatMap();
+    private final Map<File, PluginJarScanResult> preScannedPluginJars = new HashMap<>();
 
     private final Map<String, ScalaPlugin> scalaPlugins = new HashMap<>();
     private final Map<Path, ScalaPlugin> scalaPluginsByAbsolutePath = new HashMap<>();
@@ -58,8 +60,8 @@ public class ScalaPluginLoader implements PluginLoader {
 
     private final EventBus eventBus;
 
-    private final Comparator<DescriptionScanner> descriptionComparator;
-    {
+    private static final Comparator<DescriptionScanner> descriptionComparator;
+    static {
         //filled optionals are smaller then empty optionals.
         Comparator<Optional<?>> optionalComparator = Comparator.comparing(optional -> !optional.isPresent());
         //smaller package hierarchy = smaller string
@@ -72,9 +74,6 @@ public class ScalaPluginLoader implements PluginLoader {
                 .thenComparing(DescriptionScanner::getClassName, packageComparator /* less deeply nested class = better candidate*/)
                 .thenComparing(DescriptionScanner::getClassName /* fallback - just compare the class name strings */));
     }
-
-    private final ScalaCompatMap scalaCompatMap = new ScalaCompatMap();
-    private final Map<File, PluginJarScanResult> preScannedPluginJars = new HashMap<>();
 
     @SuppressWarnings("deprecation")
     public ScalaPluginLoader(ScalaLoader scalaLoader) {
@@ -105,6 +104,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
         //pre-scan plugins so that scala-versions can be detected BEFORE the main classes are instantiated!
         //this is just a best-effort thing because the PluginManager may load plugins at arbitrary points in time.
+        //TODO I don't think this is necessary anymore when plugins aren't instantiated anymore when their 'description' is read.
 
         File pluginsFolder = getScalaLoader().getScalaPluginsFolder();
         if (pluginsFolder.exists()) {
@@ -165,10 +165,11 @@ public class ScalaPluginLoader implements PluginLoader {
     }
 
 
-    private PluginJarScanResult scanJar(File file) throws IOException {
+    private static PluginJarScanResult scanJar(File file) throws IOException {
         PluginJarScanResult result = new PluginJarScanResult();
 
-        getScalaLoader().getLogger().info("Reading ScalaPlugin file: " + file.getName() + "..");
+        Logger logger = getInstance().getScalaLoader().getLogger();
+        logger.info("Reading ScalaPlugin file: " + file.getName() + "..");
 
         Map<String, Object> pluginYamlData = null;
 
@@ -220,7 +221,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
                     //Emit a warning when the class does extend ScalaPlugin, but does not have de @Scala or @CustomScala annotation
                     if (descriptionScanner.extendsScalaPlugin() && !descriptionScanner.getScalaVersion().isPresent()) {
-                        getScalaLoader().getLogger().warning("Class " + jarEntry.getName() + " extends ScalaPlugin but does not have the @Scala or @CustomScala annotation.");
+                        logger.warning("Class " + jarEntry.getName() + " extends ScalaPlugin but does not have the @Scala or @CustomScala annotation.");
                         //this is just a soft warning and not a hard error because this class itself may be subclassed by the actual main class
                     }
 
@@ -292,7 +293,7 @@ public class ScalaPluginLoader implements PluginLoader {
             ScalaPluginClassLoader scalaPluginClassLoader =
                     new ScalaPluginClassLoader(this, new URL[]{ file.toURI().toURL() }, scalaLibraryClassLoader,
                             server, pluginYamlData, file, apiVersion, mainClass, transformerRegistry);
-            sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getScalaVersion(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
+            sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getCompatRelease(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 
             //get the ScalaPlugin from the class loader!
             ScalaPlugin plugin = scalaPluginClassLoader.getPlugin();
@@ -302,6 +303,7 @@ public class ScalaPluginLoader implements PluginLoader {
             }
 
             //be sure to cache the plugin - later in #loadPlugin(File) we just return the cached instance!
+            //TODO this is actually a work-around that should not be needed anymore once plugin-loading is refactored
             scalaPluginsByAbsolutePath.put(path.toAbsolutePath(), plugin);
 
             //it is so stupid bukkit doesn't let me extend PluginDescriptionFile.
@@ -310,6 +312,9 @@ public class ScalaPluginLoader implements PluginLoader {
             //Ideally I would use ScalaPluginDescription.toPluginDescriptionFile().
             //but the ScalaPluginDescription requires a live ScalaPlugin instance (for now)
             //So I need to give up on this idea, or analyze the bytecode (that is going to be hard o.0)
+            //TODO when I implement the library loading api, implement plugin-loading in such a way that a ScalaPlugin instance does not have to be created
+            //TODO for getting the ScalaPluginDescription.
+            //TODO make sure that currently-compiled plugins can still load (possibly with the help of some extra bytecode transformations!)
 
         } catch (ClassNotFoundException e) {
             throw new InvalidDescriptionException(e, "The main class of your plugin could not be found!");
@@ -413,11 +418,11 @@ public class ScalaPluginLoader implements PluginLoader {
      * Loads all classes in the ScalaPlugin's jar file.
      * @param scalaPlugin the ScalaPlugin
      *
-     * @deprecated This method pollutes the JavaPluginLoader with scala-version-specific classes.
-     *             Use {@link #openUpToJavaPlugin(ScalaPlugin, JavaPlugin)} instead.
-     *             ForRemoval because as of January 2020 this method is inherently broken.
-     *             The PluginClassLoader used to load JavaPlugins will now try to explicitly cast the ClassLoader
-     *             of classes in the JavaPluginLoader's classes cache to PluginClassLoader - resulting in a ClassCastException.
+     * @deprecated Use {@link #openUpToJavaPlugin(ScalaPlugin, JavaPlugin)} instead.
+     *             This method used to inject classes from the ScalaPlugin into the 'global' JavaPluginLoader scope,
+     *             so that JavaPlugins could find classes from the ScalaPlugin.
+     *             But since it no longer does that, it has no use to call this method anymore.
+     *             This method will be removed in a future version!
      */
     @Deprecated
     public void forceLoadAllClasses(ScalaPlugin scalaPlugin) {
@@ -488,8 +493,8 @@ public class ScalaPluginLoader implements PluginLoader {
             //de-register codecs
             RuntimeConversions.clearCodecs(scalaPluginClassLoader);
             //unload shared classes
-            String scalaVersion = scalaPluginClassLoader.getScalaVersion();
-            Map<String, Class<?>> classes = sharedScalaPluginClasses.get(scalaVersion);
+            ScalaRelease scalaCompatRelease = scalaPluginClassLoader.getScalaRelease();
+            Map<String, Class<?>> classes = sharedScalaPluginClasses.get(scalaCompatRelease);
             if (classes != null) {
                 scalaPluginClassLoader.getClasses().forEach((className, clazz) -> {
                     classes.remove(className, clazz);
@@ -497,15 +502,15 @@ public class ScalaPluginLoader implements PluginLoader {
                     //scalaPluginClassLoader.removeFromJavaPluginLoaderScope(className);
                 });
                 if (classes.isEmpty()) {
-                    sharedScalaPluginClasses.remove(scalaVersion);
+                    sharedScalaPluginClasses.remove(scalaCompatRelease);
                 }
             }
 
-            CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaVersion);
+            CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaCompatRelease);
             if (classLoaders != null) {
                 classLoaders.remove(scalaPluginClassLoader);
                 //noinspection SuspiciousMethodCalls - Thank IntelliJ but this is how you do an atomic removeIfEmpty.
-                sharedScalaPluginClassLoaders.remove(scalaVersion, Collections.emptyList());
+                sharedScalaPluginClassLoaders.remove(scalaCompatRelease, Compat.emptyList());
             }
 
             try {
@@ -539,23 +544,38 @@ public class ScalaPluginLoader implements PluginLoader {
      * @param className the name of the class
      * @param clazz the class
      * @return whether the class was added to the cache of this plugin loader
+     * @deprecated use {@link #addClassGlobally(ScalaRelease, String, Class)} instead
      */
+    @Deprecated
     public boolean addClassGlobally(String scalaVersion, String className, Class<?> clazz) {
+        return addClassGlobally(ScalaRelease.fromScalaVersion(scalaVersion), className, clazz);
+    }
+
+    /**
+     * Make a class visible for all {@link ScalaPlugin}s with a binary compatible version of Scala.
+     * @implNote scala standard library classes are immediately rejected.
+     *
+     * @param scalaCompat the compability version of Scala
+     * @param className the name of the class
+     * @param clazz the class
+     * @return true if the class was added to the cache of this plugin loader, otherwise false
+     */
+    public boolean addClassGlobally(ScalaRelease scalaCompat, String className, Class<?> clazz) {
         if (clazz.getClassLoader() instanceof ScalaLibraryClassLoader) return false;
 
-        return cacheClass(scalaVersion, className, clazz) == null;
+        return cacheClass(scalaCompat, className, clazz) == null;
     }
 
     /**
      * Caches a class, making it accessible to {@link ScalaPlugin}s using a certain version of Scala.
-     * @param scalaVersion the Scala version
+     * @param scalaRelease the compatilibity-release version of Scala
      * @param className the name of the class
      * @param clazz the class
      * @return a the class that was cached before, using the same scala version and the same class name, or null if no such class was cached
      */
-    private Class<?> cacheClass(String scalaVersion, String className, Class<?> clazz) {
+    private Class<?> cacheClass(ScalaRelease scalaRelease, String className, Class<?> clazz) {
         return sharedScalaPluginClasses
-                .computeIfAbsent(scalaVersion, version -> new ConcurrentHashMap<>())
+                .computeIfAbsent(scalaRelease, version -> new ConcurrentHashMap<>())
                 .putIfAbsent(className, clazz);
     }
 
@@ -563,56 +583,34 @@ public class ScalaPluginLoader implements PluginLoader {
      * Finds classes from {@link ScalaPlugin}s. This method can possibly be called by multiple threads concurrently
      * since {@link ScalaPluginClassLoader}s are parallel capable.
      *
-     * @param scalaVersion the Scala version the plugin uses
+     * @param scalaCompatRelease the Scala version the plugin uses
      * @param className the name of the class
      * @return the class object, if a class with the given name exists, and is binary compatible with the given Scala version
      * @throws ClassNotFoundException if no scala plugin has a class with the given name, or the Scala version is incompatible
      */
-    Class<?> getScalaPluginClass(final String scalaVersion, final String className) throws ClassNotFoundException {
+    protected Class<?> getScalaPluginClass(final ScalaRelease scalaCompatRelease, final String className) throws ClassNotFoundException {
         //try load from 'global' cache
-        Map<String, Class<?>> scalaPluginClasses = sharedScalaPluginClasses.get(scalaVersion);
+        Map<String, Class<?>> scalaPluginClasses = sharedScalaPluginClasses.get(scalaCompatRelease);
         Class<?> found = scalaPluginClasses == null ? null : scalaPluginClasses.get(className);
         if (found != null) return found;
 
         //try load from classloaders - check all scala plugins that use compatible versions of scala.
-        CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.entrySet().parallelStream()
-                .filter(e -> checkCompat(scalaVersion, e.getKey()))
-                .flatMap(e -> e.getValue().parallelStream())
-                .collect(Collectors.toCollection(CopyOnWriteArrayList::new));
+        CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaCompatRelease);
+        if (classLoaders != null) {
+            for (ScalaPluginClassLoader scalaPluginClassLoader : classLoaders) {
+                try {
+                    found = scalaPluginClassLoader.findClass(className, false);
+                    //ScalaPluginLoader#findClass calls ScalaPluginLoader#addClassGlobally, but we might race against other threads.
+                    Class<?> classLoadedByOtherThread = cacheClass(scalaCompatRelease, className, found);
+                    if (classLoadedByOtherThread != null) found = classLoadedByOtherThread;
 
-        for (ScalaPluginClassLoader scalaPluginClassLoader : classLoaders) {
-            try {
-                found = scalaPluginClassLoader.findClass(className, false);
-                //ScalaPluginLoader#findClass calls ScalaPluginLoader#addClassGlobally, but we might race against other threads.
-                Class<?> classLoadedByOtherThread = cacheClass(scalaVersion, className, found);
-                if (classLoadedByOtherThread != null) found = classLoadedByOtherThread;
-
-                return found;
-            } catch (ClassNotFoundException justContinueOn) {
+                    return found;
+                } catch (ClassNotFoundException justContinueOn) {
+                }
             }
         }
 
         throw new ClassNotFoundException("Couldn't find class " + className + " in any of the loaded ScalaPlugins.");
-    }
-
-    private static boolean checkCompat(final String ownVersion, final String otherVersion) {
-        //TODO special-case Scala 2.13.x and Scala 3.0.0
-        //TODO do we still need this/does this need to be changed now that we have the ScalaCompatMap?
-
-        //TODO I think we no longer need to iterate over all ScalaPluginClassLoaders and apply a filter
-        //TODO it can probably just be done with a map lookup.
-
-        int indexOfDot = ownVersion.lastIndexOf('.');
-        if (indexOfDot == -1) return ownVersion.equals(otherVersion);
-
-        int otherIndexOfDot = otherVersion.lastIndexOf('.');
-        if (otherIndexOfDot != indexOfDot) return false;
-
-        String beforeLastDot1 = ownVersion.substring(0, indexOfDot);
-        String beforeLastDot2 = otherVersion.substring(0, indexOfDot);
-        return beforeLastDot1.equals(beforeLastDot2);
-
-        //we don't care what comes after the last dot because those versions are compatible
     }
 
 }

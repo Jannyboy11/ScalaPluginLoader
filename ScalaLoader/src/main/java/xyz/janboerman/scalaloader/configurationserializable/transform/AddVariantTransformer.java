@@ -173,7 +173,7 @@ public class AddVariantTransformer extends ClassVisitor {
                 //the serialize method was transformed, call the transformed method.
                 methodVisitor.visitMethodInsn(INVOKESPECIAL, className, '$' + SERIALIZE_NAME, SERIALIZE_DESCRIPTOR, isInterface); //call this.$serialize()
             } else if (!"java/lang/Object".equals(superClassName)) {
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, superClassName, SERIALIZE_NAME, SERIALIZE_DESCRIPTOR, false);  //call super.serialize()
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, superClassName, SERIALIZE_NAME, SERIALIZE_DESCRIPTOR, false);  //call super.serialize()
             } else if (!notSerializableInterfaces.isEmpty()) {
                 //best effort, if there is only one super interface, then call the serialize method on that interface
                 String theInterface = notSerializableInterfaces.iterator().next();
@@ -191,7 +191,7 @@ public class AddVariantTransformer extends ClassVisitor {
             methodVisitor.visitLdcInsn(VARIANT_NAME);   //load "$variant"
             methodVisitor.visitLdcInsn(alias);          //load "com.example.Foo" or "Foo"
             methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);
-            methodVisitor.visitInsn(POP);   //discord there result of Map.put
+            methodVisitor.visitInsn(POP);   //discard there result of Map.put
             final Label variantStoredLabel = new Label();
             methodVisitor.visitLabel(variantStoredLabel);
 

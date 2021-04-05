@@ -4,7 +4,6 @@ import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.compat.Compat;
 
 import java.lang.annotation.Annotation;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -47,7 +46,7 @@ public class ParameterizedParameterType extends ParameterType {
      */
     @Called
     public static ParameterizedParameterType from(Class<?> rawType, ParameterType... typeParameters) {
-        return from(Collections.emptySet(), rawType, typeParameters);
+        return from(Compat.emptySet(), rawType, typeParameters);
     }
 
     /**

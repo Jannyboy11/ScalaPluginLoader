@@ -1259,4 +1259,37 @@ class Conversions {
 
 }
 
-//TODO Scala collection converions
+class ScalaConversions {
+
+    private ScalaConversions() {
+    }
+
+    //immutable collections
+
+    static void serializeImmList(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
+        final String scalaCompatVersion = classLoader.getScalaRelease().getCompatVersion();
+        switch (scalaCompatVersion) {
+            case "2.12":
+                methodVisitor.visitMethodInsn(INVOKESTATIC, "scala/collection/JavaConverters", "asJava", "(Lscala/collection/Seq;)Ljava/util/List;", false);
+                //TODO operand stack, TODO element conversion?
+                break;
+            case "2.13":
+            case "3.0":
+                methodVisitor.visitMethodInsn(INVOKESTATIC, "scala/jdk/javaapi/CollectionConverters", "asJava", "(Lscala/collection/Seq;)Ljava/util/List;", false);
+                break;
+            default:
+                //TODO default that uses manual conversion using a while-loop?
+
+                //TODO better to just do this anyway since the elements themselves need to be converted too?
+                break;
+        }
+    }
+
+    static void deserializeImmList(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
+
+    }
+
+    //mutable collections
+
+    //other standard datatypes
+}

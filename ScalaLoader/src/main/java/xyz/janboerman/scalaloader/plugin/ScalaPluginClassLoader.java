@@ -9,9 +9,9 @@ import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
 //import org.objectweb.asm.util.*;
-//import org.objectweb.asm.tree.analysis.*;
 //import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
+import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.transform.*;
@@ -52,11 +52,11 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             private boolean attempted = false;
 
             @Override
-            protected byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
+            protected byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
                 if (!attempted) {
                     attempted = true;
                     MethodHandles.Lookup lookup = MethodHandles.lookup();
-                    Server craftServer = currentPluginClassLoader.getServer();
+                    Server craftServer = pluginClassLoader.getServer();
                     try {
                         Class<?> commodoreClass = Class.forName(
                                 craftServer.getClass().getPackage().getName() + ".util.Commodore"); //use getClass().getPackageName() in Java11+
@@ -69,7 +69,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                 }
 
                 if (commodoreConvert != null) {
-                    boolean isModern = currentPluginClassLoader.getApiVersion() != ApiVersion.LEGACY;
+                    boolean isModern = pluginClassLoader.getApiVersion() != ApiVersion.LEGACY;
                     classBytes = (byte[]) commodoreConvert.invoke(classBytes, isModern);
                 }
 
@@ -118,6 +118,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     }
 
     private final String scalaVersion;
+    private final ScalaRelease scalaRelease;
     private final ScalaPluginLoader pluginLoader;
     private final Server server;
     private final Map<String, Object> extraPluginYaml;
@@ -157,6 +158,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
         this.pluginLoader = pluginLoader;
         this.scalaVersion = parent.getScalaVersion();
+        this.scalaRelease = ScalaRelease.fromScalaVersion(scalaVersion);
 
         this.server = server;
         this.extraPluginYaml = extraPluginYaml;
@@ -191,6 +193,14 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      */
     public String getScalaVersion() {
         return scalaVersion;
+    }
+
+    /**
+     * Get the compatibility-release version of Scala used by the plugin.
+     * @return the compatibility release
+     */
+    public ScalaRelease getScalaRelease() {
+        return scalaRelease;
     }
 
     /**
@@ -392,13 +402,16 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     }
 
 //                    ClassReader debugReader = new ClassReader(classBytes);
-//                    TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, new ASMifier(), new PrintWriter(System.out));
+//                    TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out));
 //                    ClassVisitor debugVisitor = new ClassVisitor(AsmConstants.ASM_API, traceClassVisitor) {
 //                        private boolean debug = false;
 //
 //                        @Override
 //                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-//                            if ("xyz/janboerman/scalaloader/example/scala/ImmutableCollectionTest".equals(name)) {
+//                            if ("xyz/janboerman/scalaloader/example/scala/ImmutableCollectionTest".equals(name)
+//                                    || "xyz/janboerman/scalaloader/example/scala/ImmutableCollectionTest$".equals(name)
+//                                    || "xyz/janboerman/scalaloader/example/scala/MutableCollectionTest".equals(name)
+//                                    || "xyz/janboerman/scalaloader/example/scala/MutableCollectionTest$".equals(name)) {
 //                                debug = true;
 //                            }
 //
@@ -538,7 +551,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         //search in other ScalaPlugins
         if (found == null && searchInScalaPluginLoader) {
             try {
-                found = pluginLoader.getScalaPluginClass(getScalaVersion(), name); /*Do I want this here? not in the loadClass method?*/
+                found = pluginLoader.getScalaPluginClass(getScalaRelease(), name); /*Do I want this here? not in the loadClass method?*/
             } catch (ClassNotFoundException e) { /*ignored - continue onwards*/ }
         }
 
@@ -549,7 +562,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         final Class<?> loadedConcurrently = classes.putIfAbsent(name, found);
         if (loadedConcurrently == null) {
             //if we find this class for the first time
-            if (pluginLoader.addClassGlobally(getScalaVersion(), name, found)) {
+            if (pluginLoader.addClassGlobally(getScalaRelease(), name, found)) {
                 //TODO will bukkit ever get a proper pluginloader api? https://hub.spigotmc.org/jira/browse/SPIGOT-4255
                 //injectIntoJavaPluginLoaderScope(name, found);
             }

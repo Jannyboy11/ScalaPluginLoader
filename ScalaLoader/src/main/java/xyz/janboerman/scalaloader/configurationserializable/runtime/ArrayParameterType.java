@@ -1,10 +1,10 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
 import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.compat.Compat;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -45,7 +45,7 @@ public class ArrayParameterType extends ParameterType {
      */
     @Called
     public static ArrayParameterType from(ParameterType componentType, boolean varArgs) {
-        return from(Collections.emptySet(), componentType, varArgs);
+        return from(Compat.emptySet(), componentType, varArgs);
     }
 
     /**

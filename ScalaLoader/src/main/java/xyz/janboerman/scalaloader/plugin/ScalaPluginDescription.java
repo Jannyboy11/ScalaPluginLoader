@@ -33,12 +33,15 @@ public final class ScalaPluginDescription {
     private final LinkedHashSet<String> hardDependencies = new LinkedHashSet<>();
     private final LinkedHashSet<String> softDependencies = new LinkedHashSet<>(); { addSoftDepend("ScalaLoader"); }
     private final LinkedHashSet<String> inverseDependencies = new LinkedHashSet<>();
+    private final LinkedHashSet<String> provides = new LinkedHashSet<>();
     private PermissionDefault permissionDefault = PERMISSION_DEFAULT;
 
     private final LinkedHashSet<Command> commands = new LinkedHashSet<>();
     private final LinkedHashSet<Permission> permissions = new LinkedHashSet<>();
 
-    //TODO awareness?? use a list of string? list of object is probably better
+    //TODO awareness?? use a List<PluginAwareness> ??
+    //TODO idea: use awareness for Scala version!! That would only work if the Yaml instance from PluginDescriptionFile was accessible.
+    //TODO see: https://hub.spigotmc.org/jira/browse/SPIGOT-6410
     
     public ScalaPluginDescription(String pluginName, String pluginVersion) {
         this.pluginName = Objects.requireNonNull(pluginName, "Plugin name cannot be null!");
@@ -46,15 +49,15 @@ public final class ScalaPluginDescription {
     }
 
 
-    void setApiVersion(String bukkitApiVersion) {
+    protected void setApiVersion(String bukkitApiVersion) {
         this.apiVersion = bukkitApiVersion;
     }
 
-    void setMain(String mainClass) {
+    protected void setMain(String mainClass) {
         this.main = mainClass;
     }
 
-    void addYaml(Map<String, Object> yaml) {
+    protected void addYaml(Map<String, Object> yaml) {
         this.addYaml = yaml;
     }
 
@@ -165,6 +168,21 @@ public final class ScalaPluginDescription {
         return Collections.unmodifiableSet(inverseDependencies);
     }
 
+    public ScalaPluginDescription provides(String... pluginApis) {
+        this.provides.clear();
+        Collections.addAll(this.provides, pluginApis);
+        return this;
+    }
+
+    public ScalaPluginDescription addProvides(String pluginApi) {
+        this.provides.add(pluginApi);
+        return this;
+    }
+
+    public Set<String> getProvides() {
+        return Collections.unmodifiableSet(provides);
+    }
+
     public ScalaPluginDescription permissionDefault(PermissionDefault permissionDefault) {
         this.permissionDefault = permissionDefault;
         return this;
@@ -219,11 +237,12 @@ public final class ScalaPluginDescription {
         if (prefix != null) pluginData.put("prefix", prefix);
         if (apiVersion != null) pluginData.put("api-version", apiVersion);
         if (loadOrder != null) pluginData.put("load", loadOrder.name());
-        if (hardDependencies != null && !hardDependencies.isEmpty()) pluginData.put("depend", Compat.listCopy(hardDependencies));
-        if (softDependencies != null && !softDependencies.isEmpty()) pluginData.put("softdepend", Compat.listCopy(softDependencies));
-        if (inverseDependencies != null && !inverseDependencies.isEmpty()) pluginData.put("loadbefore", Compat.listCopy(inverseDependencies));
         if (permissionDefault != null) pluginData.put("default-permission", permissionDefault.name());
-        if (commands != null && !commands.isEmpty()) {
+        if (!hardDependencies.isEmpty()) pluginData.put("depend", Compat.listCopy(hardDependencies));
+        if (!softDependencies.isEmpty()) pluginData.put("softdepend", Compat.listCopy(softDependencies));
+        if (!inverseDependencies.isEmpty()) pluginData.put("loadbefore", Compat.listCopy(inverseDependencies));
+        if (!provides.isEmpty()) pluginData.put("provides", Compat.listCopy(provides));
+        if (!commands.isEmpty()) {
             Map<String, Map<String, Object>> commandsMap = new HashMap<>();
             for (Command command : getCommands()) {
                 Map<String, Object> currentCommand = new HashMap<>();
@@ -239,7 +258,7 @@ public final class ScalaPluginDescription {
             }
             pluginData.put("commands", commandsMap);
         }
-        if (permissions != null && !permissions.isEmpty()) {
+        if (!permissions.isEmpty()) {
             Map<String, Map<String, Object>> permissionsMap = new HashMap<>();
             for (Permission permission : getPermissions()) {
                 Map<String, Object> currentPermission = createPermissionMap(permission, getPermissionDefault());
@@ -336,7 +355,7 @@ public final class ScalaPluginDescription {
         }
 
         public Collection<String> getAliases() {
-            return aliases == null ? Collections.emptyList() : Collections.unmodifiableSet(aliases);
+            return aliases == null ? Compat.emptyList() : Collections.unmodifiableSet(aliases);
         }
 
         public Optional<String> getPermission() {

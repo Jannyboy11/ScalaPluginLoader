@@ -114,13 +114,13 @@ public class PluginTransformer extends ClassVisitor {
         //if the injection point method did not exist, then create it!
         MethodVisitor methodVisitor = null;
         if (injectionPoint == InjectionPoint.PLUGIN_ONENABLE && !hasOnEnable) {
-            methodVisitor = visitMethod(ACC_PUBLIC, "onEnable", "()V", null, null);
+            methodVisitor = super.visitMethod(ACC_PUBLIC, "onEnable", "()V", null, null);
         } else if (injectionPoint == InjectionPoint.PLUGIN_ONLOAD && !hasOnLoad) {
-            methodVisitor = visitMethod(ACC_PUBLIC, "onLoad", "()V", null, null);
+            methodVisitor = super.visitMethod(ACC_PUBLIC, "onLoad", "()V", null, null);
         } else if (injectionPoint == InjectionPoint.PLUGIN_CONSTRUCTOR && !hasConstructor) {
-            methodVisitor = visitMethod(ACC_PUBLIC, CONSTRUCTOR_NAME, "()V", null, null);
+            methodVisitor = super.visitMethod(ACC_PUBLIC, CONSTRUCTOR_NAME, "()V", null, null);
         } else if (injectionPoint == InjectionPoint.PLUGIN_CLASS_INTIALIZER && !hasClassInitializer) {
-            methodVisitor = visitMethod(ACC_PUBLIC | ACC_STATIC, CLASS_INIT_NAME, "()V", null, null);
+            methodVisitor = super.visitMethod(ACC_PUBLIC | ACC_STATIC, CLASS_INIT_NAME, "()V", null, null);
         }
 
         if (methodVisitor != null) {

@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
+import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 import xyz.janboerman.scalaloader.plugin.description.Scala;
@@ -109,6 +110,14 @@ public abstract class ScalaPlugin implements Plugin {
      */
     public final String getScalaVersion() {
         return getClassLoader().getScalaVersion();
+    }
+
+    /**
+     * Get the compatibility-release version of Scala used by this plugin.
+     * @return the compatibility release
+     */
+    public final ScalaRelease getScalaRelease() {
+        return getClassLoader().getScalaRelease();
     }
 
     /**

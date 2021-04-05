@@ -1,5 +1,7 @@
 package xyz.janboerman.scalaloader.plugin;
 
+import org.bukkit.Server;
+
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -15,7 +17,10 @@ class ScalaPluginLogger extends Logger {
     ScalaPluginLogger(ScalaPlugin scalaPlugin) {
         super(scalaPlugin.getClass().getCanonicalName(), null);
         this.logPrefix = "[" + scalaPlugin.getScalaDescription().getPrefix() + "] ";
-        setParent(scalaPlugin.getServer().getLogger());
+        Server server = scalaPlugin.getServer();
+        if (server != null) {   //IntelliJ's got it wrong here because ScalaPlugin#getServer() can in fact return null in rare circumstances!
+            setParent(server.getLogger());
+        }
         setLevel(Level.ALL);
     }
 

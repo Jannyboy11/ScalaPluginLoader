@@ -200,7 +200,12 @@ object ScalaTypesSerializationTest {
         //TODO I think a good starting point is to look at how scalap does this!
         val immutableCollectionTest = new ImmutableCollectionTest()
         val mutableCollectionTest = new MutableCollectionTest()
+        val concurrentCollectionTest = new ConcurrentCollectionTest()
         val otherTest = new OtherScalaTypesTest()
+
+        java.lang.Class.forName("xyz.janboerman.scalaloader.example.scala.ImmutableCollectionTest$")
+        java.lang.Class.forName("xyz.janboerman.scalaloader.example.scala.MutableCollectionTest$")
+
 
         //TODO on a different thought: could a Scala 3 compiler plugin work to get this type information?
         //TODO I may not have to generate bytecode at class-load time at all in that case, but just transform the AST in the plugin compiler phase!
@@ -381,32 +386,69 @@ object ImmutableCollectionTest {
 
 class MutableCollectionTest {
     import scala.collection.mutable._
+    import scala.jdk.CollectionConverters._
 
-    private val arrayBuffer: ArrayBuffer[String] = new ArrayBuffer();
-    private val arrayDeque: ArrayDeque[String] = new ArrayDeque();
-    private val arraySeq: ArraySeq[String] = new ArraySeq.ofRef[String](Array[String]())   //there are 'overloads' for all primitive types and unit
-    private val bitSet: BitSet = new BitSet();
-    private val buffer: Buffer[String] = new ArrayBuffer()
-    private val collisionProofHashMap: CollisionProofHashMap[String, String] = new CollisionProofHashMap()
-    private val hashMap: HashMap[String, String] = new HashMap()
-    private val hashSet: HashSet[String] = new HashSet()
-    private val linkedHashMap: LinkedHashMap[String, String] = new LinkedHashMap()
-    private val linkedHashSet: LinkedHashSet[String] = new LinkedHashSet()
-    private val listBuffer: ListBuffer[String] = new ListBuffer()
-    private val longMap: LongMap[String] = new LongMap()
-    private val map: Map[String, String] = new HashMap()
-    private val priorityQueue: PriorityQueue[String] = new PriorityQueue[String]()
-    private val queue: Queue[String] = new Queue()
-    private val seq: Seq[String] = new ListBuffer[String]
-    private val seqMap: SeqMap[String, String] = new LinkedHashMap()
-    private val set: Set[String] = new LinkedHashSet[String]()
-    private val sortedMap: SortedMap[String, String] = new TreeMap()
-    private val sortedSet: SortedSet[String] = new TreeSet()
-    private val stack: Stack[String] = new Stack()
-    private val treeMap: TreeMap[String, String] = new TreeMap()
-    private val treeSet: TreeSet[String] = new TreeSet()
-    private val unrolledBuffer: UnrolledBuffer[String] = new UnrolledBuffer()
-    private val weakHashMap: WeakHashMap[String, String] = new WeakHashMap()
+    private var arrayBuffer: ArrayBuffer[String] = new ArrayBuffer();
+    private var arrayDeque: ArrayDeque[String] = new ArrayDeque();
+    private var arraySeq: ArraySeq[String] = new ArraySeq.ofRef[String](Array[String]())   //there are 'overloads' for all primitive types and unit
+    private var bitSet: BitSet = new BitSet();
+    private var buffer: Buffer[String] = new ArrayBuffer()
+    private var collisionProofHashMap: CollisionProofHashMap[String, String] = new CollisionProofHashMap()
+    private var hashMap: HashMap[String, String] = new HashMap()
+    private var hashSet: HashSet[String] = new HashSet()
+    private var linkedHashMap: LinkedHashMap[String, String] = new LinkedHashMap()
+    private var linkedHashSet: LinkedHashSet[String] = new LinkedHashSet()
+    private var listBuffer: ListBuffer[String] = new ListBuffer()
+    private var longMap: LongMap[String] = new LongMap()
+    private var map: Map[String, String] = new HashMap()
+    private var priorityQueue: PriorityQueue[String] = new PriorityQueue[String]()
+    private var queue: Queue[String] = new Queue()
+    private var seq: Seq[String] = new ListBuffer[String]
+    private var seqMap: SeqMap[String, String] = new LinkedHashMap()
+    private var set: Set[String] = new LinkedHashSet[String]()
+    private var sortedMap: SortedMap[String, String] = new TreeMap()
+    private var sortedSet: SortedSet[String] = new TreeSet()
+    private var stack: Stack[String] = new Stack()
+    private var treeMap: TreeMap[String, String] = new TreeMap()
+    private var treeSet: TreeSet[String] = new TreeSet()
+    private var unrolledBuffer: UnrolledBuffer[String] = new UnrolledBuffer()
+    private var weakHashMap: WeakHashMap[String, String] = new WeakHashMap()
+
+    def serialize(): java.util.Map[String, AnyRef] = {
+        val map = new java.util.HashMap[String, AnyRef]()
+
+        //which of the two ways of doing this would be more stable?
+        //I guess the java-api way, because extensions might get implemented differently at some point in dotty.
+        map.put("arrayBuffer", arrayBuffer.asJava)
+        map.put("arrayDeque", scala.jdk.javaapi.CollectionConverters.asJava(arrayDeque))
+
+        map
+    }
+}
+
+object MutableCollectionTest {
+    import scala.collection.mutable._
+    import scala.jdk.CollectionConverters._
+
+    def deserialize(map: java.util.Map[String, AnyRef]): MutableCollectionTest = {
+        val result = new MutableCollectionTest()
+
+        val arrayBuffer = map.get("arrayBuffer").asInstanceOf[java.util.List[String]]
+        result.arrayBuffer = ArrayBuffer.from(arrayBuffer.asScala)
+
+        val arrayDeque = map.get("arrayDeque").asInstanceOf[java.util.List[String]]
+        result.arrayDeque = ArrayDeque.from(scala.jdk.javaapi.CollectionConverters.asScala(arrayDeque))
+
+        result
+    }
+
+}
+
+class ConcurrentCollectionTest {
+    import scala.collection.concurrent.{Map, TrieMap}
+
+    val concurrentMap = new TrieMap[String, String]()
+    val trieMap = new TrieMap[String, String]()
 
 }
 
@@ -454,6 +496,5 @@ class OtherScalaTypesTest {
     private val tuple20 = new Tuple20("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t")
     private val tuple21 = new Tuple21("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u")
     private val tuple22 = new Tuple22("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v")
-
 
 }

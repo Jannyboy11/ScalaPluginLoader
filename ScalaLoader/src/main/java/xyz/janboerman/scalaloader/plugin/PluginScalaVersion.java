@@ -2,6 +2,7 @@ package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
+import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 
 import java.util.HashMap;
@@ -39,6 +40,9 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
         return scalaReflectUrl;
     }
 
+    public ScalaRelease getCompatRelease() {
+        return ScalaRelease.fromScalaVersion(getScalaVersion());
+    }
 
     @Override
     public boolean equals(Object other) {

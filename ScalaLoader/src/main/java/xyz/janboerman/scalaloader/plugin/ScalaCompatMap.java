@@ -1,5 +1,7 @@
 package xyz.janboerman.scalaloader.plugin;
 
+import xyz.janboerman.scalaloader.ScalaRelease;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -7,8 +9,8 @@ import java.util.StringJoiner;
 
 class ScalaCompatMap {
 
-    private final Map<String, PluginScalaVersion> scalaMap = new HashMap<>();               //e.g. ["2.12.11"->PluginScalaVersion("2.12.11",stdlibUrl,stdRefelectUrl)]
-    private final Map<String, String> compatReleaseToLatestVersionMap = new HashMap<>();    //e.g. ["2.12"->"2.12.11", "2.13"->"2.13.4"]
+    private final Map<ScalaRelease, String> compatReleaseToLatestVersionMap = new HashMap<>();  //e.g. ["2.12"->"2.12.11", "2.13"->"2.13.4"]
+    private final Map<String, PluginScalaVersion> scalaMap = new HashMap<>();                   //e.g. ["2.12.11"->PluginScalaVersion("2.12.11", stdLibUrl, stdReflectUrl)]
 
     ScalaCompatMap() {
     }
@@ -16,7 +18,7 @@ class ScalaCompatMap {
     void add(PluginScalaVersion scalaVersion) {
         final String versionString = scalaVersion.getScalaVersion();
         scalaMap.putIfAbsent(versionString, scalaVersion);
-        final String compatVersion = compatVersion(versionString);
+        final ScalaRelease compatVersion = scalaVersion.getCompatRelease();
         compatReleaseToLatestVersionMap.compute(compatVersion, (cv, latest) -> {
             if (latest == null || latest.compareTo(versionString) < 0) return versionString;
             return latest;
@@ -25,7 +27,7 @@ class ScalaCompatMap {
         //special-case for the transition to scala 3
         if (versionString.startsWith("3.0.")) {
             //if we detect that scala 3.0.x is present, then mark it as highest compatible version for scala 2.13.x
-            compatReleaseToLatestVersionMap.put("2.13", versionString);
+            compatReleaseToLatestVersionMap.put(ScalaRelease.SCALA_2_13, versionString);
             //3.1 won't be backwards compatible anymore with 2.13.x (by the looks of current developments)
         }
     }
@@ -37,7 +39,7 @@ class ScalaCompatMap {
      */
     PluginScalaVersion getLatestVersion(final PluginScalaVersion scalaVersion) {
         final String versionString = scalaVersion.getScalaVersion();
-        final String compatVersion = compatVersion(versionString);
+        final ScalaRelease compatVersion = scalaVersion.getCompatRelease();
 
         String latestVersion = compatReleaseToLatestVersionMap.get(compatVersion);
         if (latestVersion == null) {
@@ -54,31 +56,14 @@ class ScalaCompatMap {
         return latest;
     }
 
-    /**
-     * Strips the patch version from a semantic version string. e.g. "2.12.2"->"2.12".
-     *
-     * @param scalaVersion the semantic version
-     * @return the compatibility version
-     */
-    private static String compatVersion(String scalaVersion) {
-        String compatVersion;
-        int lastDot = scalaVersion.lastIndexOf('.');
-        if (lastDot != -1) {
-            compatVersion = scalaVersion.substring(0, lastDot);
-        } else {
-            compatVersion = scalaVersion;
-        }
-        return compatVersion;
-    }
-
     @Override
     public String toString() {
         final StringJoiner sj = new StringJoiner(", ", "[", "]");
-        for (Entry<String, String> compatLatestEntry : compatReleaseToLatestVersionMap.entrySet()) {
-            final String compatVersion = compatLatestEntry.getKey();
+        for (Entry<ScalaRelease, String> compatLatestEntry : compatReleaseToLatestVersionMap.entrySet()) {
+            final ScalaRelease compatVersion = compatLatestEntry.getKey();
             final String latestVersionForCompat = compatLatestEntry.getValue();
             final PluginScalaVersion latestScalaVersion = scalaMap.get(latestVersionForCompat);
-            sj.add(compatVersion + "->" + latestScalaVersion);
+            sj.add(compatVersion.getCompatVersion() + "->" + latestScalaVersion);
         }
         return sj.toString();
     }
