@@ -47,15 +47,15 @@ public final class ScalaRelease {
     public static ScalaRelease fromScalaVersion(String scalaVersion) {
         Objects.requireNonNull(scalaVersion, "scalaVersion cannot be null!");
 
-        if (scalaVersion.startsWith("2.11")) {
+        if (scalaVersion.startsWith("2.11.")) {
             return SCALA_2_11;
-        } else if (scalaVersion.startsWith("2.12")) {
+        } else if (scalaVersion.startsWith("2.12.")) {
             return SCALA_2_12;
-        } else if (scalaVersion.startsWith("2.13")) {
+        } else if (scalaVersion.startsWith("2.13.")) {
             return SCALA_2_13;
-        } else if (scalaVersion.startsWith("3.0")) {
+        } else if (scalaVersion.startsWith("3.0.")) {
             return SCALA_3_0;
-        } else if (scalaVersion.startsWith("3.1")) {
+        } else if (scalaVersion.startsWith("3.1.")) {
             return SCALA_3_1;
         }
 

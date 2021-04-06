@@ -150,14 +150,7 @@ public final class ScalaLoader extends JavaPlugin {
 
             for (ScalaPlugin scalaPlugin : ScalaPluginLoader.getInstance().getScalaPlugins()) {
                 String scalaVersion = scalaPlugin.getDeclaredScalaVersion();
-                String compatVersion;
-
-                int lastDot = scalaVersion.lastIndexOf('.');
-                if (lastDot != -1) {
-                    compatVersion = "Scala " + scalaVersion.substring(0, lastDot);
-                } else {
-                    compatVersion = "unknown";
-                }
+                String compatVersion = ScalaRelease.fromScalaVersion(scalaVersion).getCompatVersion();
 
                 stats.computeIfAbsent(compatVersion, k -> new HashMap<>())
                         .compute(scalaVersion, (v, amount) -> amount == null ? 1 : amount + 1);
