@@ -1619,5 +1619,5 @@ class ScalaConversions {
     //other standard datatypes
 
     //TODO helper method for getting Order instances on the operand stack!
-    
+
 }

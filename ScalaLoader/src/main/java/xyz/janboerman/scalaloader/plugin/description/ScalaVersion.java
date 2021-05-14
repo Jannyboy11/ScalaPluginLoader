@@ -38,7 +38,7 @@ public enum ScalaVersion {
     }
 
     private static String mavenCentralSearchScalaReflect(String scalaVersion) {
-        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-reflect/" + scalaVersion + "/scala-library-" + scalaVersion + ".jar";
+        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-reflect/" + scalaVersion + "/scala-reflect-" + scalaVersion + ".jar";
     }
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
