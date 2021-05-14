@@ -32,6 +32,8 @@ class EventUserTransformer extends ClassRemapper {
         super(ASM_API, delegate, new SimpleRemapper(MAPPINGS));
         //no need to transform the signature of EventExecutor, because method resolution is purely descriptor-based!
         //see: https://docs.oracle.com/javase/specs/jvms/se13/html/jvms-5.html#jvms-5.4.3.3
+        //it is kind of weird though to have types in the signature not match types in the descriptor,
+        //but apparently that is not illegal.
     }
 
 }

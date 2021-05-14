@@ -11,7 +11,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that the class annotated with this annotation will not be used by ScalaPlugins.
+ * Indicates that the class annotated with this annotation will not be used by ScalaPlugins as a result of bytecode transformation.
  * Calls to methods annotated with this method will be replaced by calls to different methods.
  * For classes, a different class will be used.
  *

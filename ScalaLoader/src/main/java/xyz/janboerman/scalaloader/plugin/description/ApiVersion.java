@@ -11,8 +11,8 @@ import org.bukkit.Bukkit;
  */
 public enum ApiVersion {
 
-    //I probably don't want to create a 1.7 compatability layer xD
-    /** Signals that ScalaPlugin was based on Bukkit 1.12.2 or earlier */
+    //I probably don't want to create a 1.7 compatibility layer xD
+    /** Signals that the ScalaPlugin was based on Bukkit 1.12.2 or earlier */
     LEGACY(null),
     /** Signals that the ScalaPlugin was created for Bukkit 1.13 */
     v1_13("1.13"),
@@ -55,6 +55,10 @@ public enum ApiVersion {
         this.versionString = versionString;
     }
 
+    /**
+     * Return the value for the api-version key.
+     * @return the api-version string, or null if this ApiVersion is {@link #LEGACY}.
+     */
     public String getVersionString() {
         return versionString;
     }

@@ -424,7 +424,6 @@ public abstract class ScalaPlugin implements Plugin {
     @Override
     public boolean equals(Object other) {
         if (other == this) return true;
-        if (other == null) return false;
         if (!(other instanceof Plugin)) return false;
         Plugin that = (Plugin) other;
         return Objects.equals(this.getName(), that.getName());

@@ -142,6 +142,9 @@ public class RuntimeConversions {
             return serializeMap(live, (ParameterizedParameterType) type, pluginClassLoader);
         }
 
+        //TODO scala built-ins
+        //TODO scala collections
+
         //fallback
         Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);
         if (registrations != null) {
@@ -335,6 +338,9 @@ public class RuntimeConversions {
         } else if (type instanceof ParameterizedParameterType && Map.class.isAssignableFrom(type.getRawType())) {
             return deserializeMap((Map<?, ?>) serialized, (ParameterizedParameterType) type, pluginClassLoader);
         }
+
+        //TODO scala built-ins
+        //TODO scala collections
 
         //fallback
         Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);

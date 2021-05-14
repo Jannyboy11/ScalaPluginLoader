@@ -206,6 +206,23 @@ object ScalaTypesSerializationTest {
         java.lang.Class.forName("xyz.janboerman.scalaloader.example.scala.ImmutableCollectionTest$")
         java.lang.Class.forName("xyz.janboerman.scalaloader.example.scala.MutableCollectionTest$")
 
+        import scala.reflect.ClassTag
+        implicitly[ClassTag[Byte]]
+        implicitly[ClassTag[Short]]
+        implicitly[ClassTag[Int]]
+        implicitly[ClassTag[Long]]
+        implicitly[ClassTag[Float]]
+        implicitly[ClassTag[Double]]
+        implicitly[ClassTag[Char]]
+        implicitly[ClassTag[Boolean]]
+        implicitly[ClassTag[Unit]]
+        implicitly[ClassTag[Nothing]]
+        implicitly[ClassTag[Null]]
+        implicitly[ClassTag[Any]]
+        implicitly[ClassTag[AnyRef]]
+        implicitly[ClassTag[AnyVal]]
+        implicitly[ClassTag[java.lang.Object]]
+        implicitly[ClassTag[java.lang.String]]
 
         //TODO on a different thought: could a Scala 3 compiler plugin work to get this type information?
         //TODO I may not have to generate bytecode at class-load time at all in that case, but just transform the AST in the plugin compiler phase!
@@ -252,35 +269,44 @@ class ImmutableCollectionTest {
 
         //TODO this is going to be fun. depending on the version of Scala used by the plugin,
         //TODO I need to pick the right conversion method. Thanks Scala! (not!)
-        //TODO I will probably need a MajorScalaRelease enum or something. not sure what I'm going to call it. ScalaSeries? ScalaMajorRelease? ScalaRelease?
+        //TODO I could make use of ScalaRelease?
 
-        //TODO also convert the elements!
-        result.put("list", JavaConverters.asJava(list))
-        result.put("seq", JavaConverters.asJava(seq))
-        result.put("arraySeq", JavaConverters.asJava(arraySeq))
-        result.put("bitSet", JavaConverters.asJava(bitSet))
-        result.put("hashMap", JavaConverters.asJava(hashMap))
-        result.put("hashSet", JavaConverters.asJava(hashSet))
-        result.put("indexedSeq", JavaConverters.asJava(indexedSeq))
-        result.put("intMap", JavaConverters.asJava(intMap))
-        result.put("lazyList", JavaConverters.asJava(lazyList))
-        result.put("linearSeq", JavaConverters.asJava(linearSeq))
-        result.put("listSet", JavaConverters.asJava(listSet))
-        result.put("longMap", JavaConverters.asJava(longMap))
-        result.put("map", JavaConverters.asJava(map))
-        result.put("numericRange", new SLRange.OfLong(numericRange.start, numericRange.step, numericRange.end, numericRange.isInclusive))
-        result.put("queue", JavaConverters.asJava(queue))
-        result.put("range", new SLRange.OfInteger(range.start, range.step, range.end, range.isInclusive))
-        result.put("seqMap", JavaConverters.asJava(seqMap))
-        result.put("set", JavaConverters.asJava(set));
-        result.put("sortedMap", JavaConverters.asJava(sortedMap))
-        result.put("sortedSet", JavaConverters.asJava(sortedSet))
-        result.put("treeMap", JavaConverters.asJava(treeMap))
-        result.put("treeSeqMap", JavaConverters.asJava(treeSeqMap))
-        result.put("treeSet", JavaConverters.asJava(treeSet))
-        result.put("vector", JavaConverters.asJava(vector))
-        result.put("vectorMap", JavaConverters.asJava(vectorMap))
-        result.put("wrappedString", wrappedString.toString())
+        //use a java.util.LinkedHashSet if the scala collection type is known to be a Set
+
+        val javaList = new java.util.ArrayList[Long]()
+        val listIterator: Iterator[Long] = list.iterator
+        while (listIterator.hasNext) {
+            javaList.add(/*serialize(*/listIterator.next()/*)*/)
+        }
+
+        result.put("list", javaList)
+
+
+//        result.put("seq", JavaConverters.asJava(seq))
+//        result.put("arraySeq", JavaConverters.asJava(arraySeq))
+//        result.put("bitSet", JavaConverters.asJava(bitSet))
+//        result.put("hashMap", JavaConverters.asJava(hashMap))
+//        result.put("hashSet", JavaConverters.asJava(hashSet))
+//        result.put("indexedSeq", JavaConverters.asJava(indexedSeq))
+//        result.put("intMap", JavaConverters.asJava(intMap))
+//        result.put("lazyList", JavaConverters.asJava(lazyList))
+//        result.put("linearSeq", JavaConverters.asJava(linearSeq))
+//        result.put("listSet", JavaConverters.asJava(listSet))
+//        result.put("longMap", JavaConverters.asJava(longMap))
+//        result.put("map", JavaConverters.asJava(map))
+//        result.put("numericRange", new SLRange.OfLong(numericRange.start, numericRange.step, numericRange.end, numericRange.isInclusive))
+//        result.put("queue", JavaConverters.asJava(queue))
+//        result.put("range", new SLRange.OfInteger(range.start, range.step, range.end, range.isInclusive))
+//        result.put("seqMap", JavaConverters.asJava(seqMap))
+//        result.put("set", JavaConverters.asJava(set));
+//        result.put("sortedMap", JavaConverters.asJava(sortedMap))
+//        result.put("sortedSet", JavaConverters.asJava(sortedSet))
+//        result.put("treeMap", JavaConverters.asJava(treeMap))
+//        result.put("treeSeqMap", JavaConverters.asJava(treeSeqMap))
+//        result.put("treeSet", JavaConverters.asJava(treeSet))
+//        result.put("vector", JavaConverters.asJava(vector))
+//        result.put("vectorMap", JavaConverters.asJava(vectorMap))
+//        result.put("wrappedString", wrappedString.toString())
 
         result
     }
@@ -295,88 +321,120 @@ object ImmutableCollectionTest {
         val res = new ImmutableCollectionTest()
 
         val list = map.get("list").asInstanceOf[java.util.List[Long]]
-        res.list = List.from(JavaConverters.asScala(list))
+        val scalaListBuilder = List.newBuilder[Long]
+        val javaListIterator = list.iterator()
+        while (javaListIterator.hasNext) {
+            scalaListBuilder.addOne(/*serialize(*/javaListIterator.next()/*)*/)
+        }
+        res.list = scalaListBuilder.result()
 
-        val seq = map.get("seq").asInstanceOf[java.util.List[Byte]]
-        res.seq = Seq.from(JavaConverters.asScala(seq))
+        //TODO scala.collection.immutable.ArraySeq$.newBuilder[T] requires an implicit ClassTag[T]
+        //TODO create this ClassTag from the first type argument from the TypeSignature!
+        //TODO should be doable given this api! https://www.scala-lang.org/api/2.12.13/scala/reflect/ClassTag$.html
+        //TODO it seems to be quite stable too: https://www.scala-lang.org/api/2.13.5/scala/reflect/ClassTag$.html
+        //TODO unchanged in Scala 3 :)        : https://dotty.epfl.ch/api/scala/reflect/ClassTag$.html
 
         val arraySeq = map.get("arraySeq").asInstanceOf[java.util.List[Boolean]]
-        res.arraySeq = ArraySeq.from(JavaConverters.asScala(arraySeq))
+        val scalaArraySeqBuilder = ArraySeq.newBuilder[Boolean]
+        /*
+        GETSTATIC scala/collection/immutable/ArraySeq$.MODULE$ : Lscala/collection/immutable/ArraySeq$;
+        GETSTATIC scala/reflect/ClassTag$.MODULE$ : Lscala/reflect/ClassTag$;
+        INVOKEVIRTUAL scala/reflect/ClassTag$.Boolean ()Lscala/reflect/ManifestFactory$BooleanManifest;
+        INVOKEVIRTUAL scala/collection/immutable/ArraySeq$.newBuilder (Lscala/reflect/ClassTag;)Lscala/collection/mutable/Builder;
 
-        val bitSet = map.get("bitSet").asInstanceOf[java.util.Set[Int]]
-        res.bitSet = BitSet.fromSpecific(JavaConverters.asScala(bitSet))
+        TODO what is the type descriptor for the other primitives? what is it for references? I should probably just special-case all of the special cases..
+        TODO that includes all primitives, scala.Null, scala.Nothing, scala.Any, scala.AnyRef, scala.AnyVal, scala.Unit and java.lang.Object
+         */
+        val javaArraySeqIterator = arraySeq.iterator()
+        while (javaArraySeqIterator.hasNext) {
+            scalaArraySeqBuilder.addOne(/*serialize(*/javaArraySeqIterator.next()/*)*/)
+        }
+        res.arraySeq = scalaArraySeqBuilder.result()
 
-        val hashMap = map.get("hashMap").asInstanceOf[java.util.Map[Short, Float]]
-        res.hashMap = HashMap.from(JavaConverters.asScala(hashMap))
 
-        val hashSet = map.get("hashSet").asInstanceOf[java.util.Set[String]]
-        res.hashSet = HashSet.from(JavaConverters.asScala(hashSet))
-
-        val indexedSeq = map.get("indexedSeq").asInstanceOf[java.util.List[Double]]
-        res.indexedSeq = IndexedSeq.from(JavaConverters.asScala(indexedSeq))
-
-        val intMap = map.get("intMap").asInstanceOf[java.util.Map[Int, String]]
-        res.intMap = IntMap.from(JavaConverters.asScala(intMap))
-
-        val lazyList = map.get("lazyList").asInstanceOf[java.util.List[Char]]
-        res.lazyList = LazyList.from(JavaConverters.asScala(lazyList))
-
-        val linearSeq = map.get("linearSeq").asInstanceOf[java.util.List[Int]]
-        res.linearSeq = LinearSeq.from(JavaConverters.asScala(linearSeq))
-
-        val listSet = map.get("listSet").asInstanceOf[java.util.Set[Int]]
-        res.listSet = ListSet.from(JavaConverters.asScala(listSet))
-
-        val longMap = map.get("longMap").asInstanceOf[java.util.Map[Long, Long]]
-        res.longMap = LongMap.from(JavaConverters.asScala(longMap))
-
-        val m = map.get("map").asInstanceOf[java.util.Map[Int, String]]
-        res.map = Map.from(JavaConverters.asScala(m))
-
-        val numericRange = map.get("numericRange").asInstanceOf[SLRange[java.lang.Long]]
-        res.numericRange = if (numericRange.isInclusive)
-            NumericRange.inclusive(numericRange.getStart, numericRange.getEnd, numericRange.getStep)
-        else
-            NumericRange.apply(numericRange.getStart, numericRange.getEnd, numericRange.getStep)
-
-        val queue = map.get("queue").asInstanceOf[java.util.List[String]]
-        res.queue = Queue.from(JavaConverters.asScala(queue))
-
-        val range = map.get("range").asInstanceOf[SLRange[java.lang.Integer]]
-        res.range = if (range.isInclusive)
-            Range.inclusive(range.getStart, range.getEnd, range.getStep)
-        else
-            Range.apply(range.getStart, range.getEnd, range.getStep)
-
-        val seqMap = map.get("seqMap").asInstanceOf[java.util.Map[Int, Float]]
-        res.seqMap = SeqMap.from(JavaConverters.asScala(seqMap))
-
-        val set = map.get("set").asInstanceOf[java.util.Set[Int]]
-        res.set = Set.from(JavaConverters.asScala(set))
-
-        val sortedMap = map.get("sortedMap").asInstanceOf[java.util.Map[Int, Double]]
-        res.sortedMap = SortedMap.from(JavaConverters.asScala(sortedMap))
-
-        val sortedSet = map.get("sortedSet").asInstanceOf[java.util.Set[String]]
-        res.sortedSet = SortedSet.from(JavaConverters.asScala(sortedSet))
-
-        val treeMap = map.get("treeMap").asInstanceOf[java.util.Map[String, Boolean]]
-        res.treeMap = TreeMap.from(JavaConverters.asScala(treeMap))
-
-        val treeSeqMap = map.get("treeSeqMap").asInstanceOf[java.util.Map[Char, Int]]
-        res.treeSeqMap = TreeSeqMap.from(JavaConverters.asScala(treeSeqMap))
-
-        val treeSet = map.get("treeSet").asInstanceOf[java.util.Set[String]]
-        res.treeSet = TreeSet.from(JavaConverters.asScala(treeSet))
-
-        val vector = map.get("vector").asInstanceOf[java.util.List[Int]]
-        res.vector = Vector.from(JavaConverters.asScala(vector))
-
-        val vectorMap = map.get("vectorMap").asInstanceOf[java.util.Map[Int, String]]
-        res.vectorMap = VectorMap.from(JavaConverters.asScala(vectorMap))
-
-        val wrappedString = map.get("wrappedString").asInstanceOf[String]
-        res.wrappedString = new WrappedString(wrappedString)
+//        val list = map.get("list").asInstanceOf[java.util.List[Long]]
+//        res.list = List.from(JavaConverters.asScala(list))
+//
+//        val seq = map.get("seq").asInstanceOf[java.util.List[Byte]]
+//        res.seq = Seq.from(JavaConverters.asScala(seq))
+//
+//        val arraySeq = map.get("arraySeq").asInstanceOf[java.util.List[Boolean]]
+//        res.arraySeq = ArraySeq.from(JavaConverters.asScala(arraySeq))
+//
+//        val bitSet = map.get("bitSet").asInstanceOf[java.util.Set[Int]]
+//        res.bitSet = BitSet.fromSpecific(JavaConverters.asScala(bitSet))
+//
+//        val hashMap = map.get("hashMap").asInstanceOf[java.util.Map[Short, Float]]
+//        res.hashMap = HashMap.from(JavaConverters.asScala(hashMap))
+//
+//        val hashSet = map.get("hashSet").asInstanceOf[java.util.Set[String]]
+//        res.hashSet = HashSet.from(JavaConverters.asScala(hashSet))
+//
+//        val indexedSeq = map.get("indexedSeq").asInstanceOf[java.util.List[Double]]
+//        res.indexedSeq = IndexedSeq.from(JavaConverters.asScala(indexedSeq))
+//
+//        val intMap = map.get("intMap").asInstanceOf[java.util.Map[Int, String]]
+//        res.intMap = IntMap.from(JavaConverters.asScala(intMap))
+//
+//        val lazyList = map.get("lazyList").asInstanceOf[java.util.List[Char]]
+//        res.lazyList = LazyList.from(JavaConverters.asScala(lazyList))
+//
+//        val linearSeq = map.get("linearSeq").asInstanceOf[java.util.List[Int]]
+//        res.linearSeq = LinearSeq.from(JavaConverters.asScala(linearSeq))
+//
+//        val listSet = map.get("listSet").asInstanceOf[java.util.Set[Int]]
+//        res.listSet = ListSet.from(JavaConverters.asScala(listSet))
+//
+//        val longMap = map.get("longMap").asInstanceOf[java.util.Map[Long, Long]]
+//        res.longMap = LongMap.from(JavaConverters.asScala(longMap))
+//
+//        val m = map.get("map").asInstanceOf[java.util.Map[Int, String]]
+//        res.map = Map.from(JavaConverters.asScala(m))
+//
+//        val numericRange = map.get("numericRange").asInstanceOf[SLRange[java.lang.Long]]
+//        res.numericRange = if (numericRange.isInclusive)
+//            NumericRange.inclusive(numericRange.getStart, numericRange.getEnd, numericRange.getStep)
+//        else
+//            NumericRange.apply(numericRange.getStart, numericRange.getEnd, numericRange.getStep)
+//
+//        val queue = map.get("queue").asInstanceOf[java.util.List[String]]
+//        res.queue = Queue.from(JavaConverters.asScala(queue))
+//
+//        val range = map.get("range").asInstanceOf[SLRange[java.lang.Integer]]
+//        res.range = if (range.isInclusive)
+//            Range.inclusive(range.getStart, range.getEnd, range.getStep)
+//        else
+//            Range.apply(range.getStart, range.getEnd, range.getStep)
+//
+//        val seqMap = map.get("seqMap").asInstanceOf[java.util.Map[Int, Float]]
+//        res.seqMap = SeqMap.from(JavaConverters.asScala(seqMap))
+//
+//        val set = map.get("set").asInstanceOf[java.util.Set[Int]]
+//        res.set = Set.from(JavaConverters.asScala(set))
+//
+//        val sortedMap = map.get("sortedMap").asInstanceOf[java.util.Map[Int, Double]]
+//        res.sortedMap = SortedMap.from(JavaConverters.asScala(sortedMap))
+//
+//        val sortedSet = map.get("sortedSet").asInstanceOf[java.util.Set[String]]
+//        res.sortedSet = SortedSet.from(JavaConverters.asScala(sortedSet))
+//
+//        val treeMap = map.get("treeMap").asInstanceOf[java.util.Map[String, Boolean]]
+//        res.treeMap = TreeMap.from(JavaConverters.asScala(treeMap))
+//
+//        val treeSeqMap = map.get("treeSeqMap").asInstanceOf[java.util.Map[Char, Int]]
+//        res.treeSeqMap = TreeSeqMap.from(JavaConverters.asScala(treeSeqMap))
+//
+//        val treeSet = map.get("treeSet").asInstanceOf[java.util.Set[String]]
+//        res.treeSet = TreeSet.from(JavaConverters.asScala(treeSet))
+//
+//        val vector = map.get("vector").asInstanceOf[java.util.List[Int]]
+//        res.vector = Vector.from(JavaConverters.asScala(vector))
+//
+//        val vectorMap = map.get("vectorMap").asInstanceOf[java.util.Map[Int, String]]
+//        res.vectorMap = VectorMap.from(JavaConverters.asScala(vectorMap))
+//
+//        val wrappedString = map.get("wrappedString").asInstanceOf[String]
+//        res.wrappedString = new WrappedString(wrappedString)
 
         res
     }
@@ -387,6 +445,11 @@ object ImmutableCollectionTest {
 class MutableCollectionTest {
     import scala.collection.mutable._
     import scala.jdk.CollectionConverters._
+
+    //TODO need special cases for: ArrayBuilder, ArraySeq because they require an implicit ClassTag.
+    //TODO I could choose to 'provide' that implicit argument (which is not implicit in the bytecode),
+    //TODO or I could choose to call the constructor of the specialized subclasses directly (I think I'm going with this one!)
+
 
     private var arrayBuffer: ArrayBuffer[String] = new ArrayBuffer();
     private var arrayDeque: ArrayDeque[String] = new ArrayDeque();
@@ -417,10 +480,19 @@ class MutableCollectionTest {
     def serialize(): java.util.Map[String, AnyRef] = {
         val map = new java.util.HashMap[String, AnyRef]()
 
+        //serializing is same as for immutable collections: just use the iterator
+        val java_arrayBuffer = new java.util.ArrayList[String]()
+        val arrayBufferIterator = arrayBuffer.iterator
+        while (arrayBufferIterator.hasNext) {
+            java_arrayBuffer.add(/*serialize(*/arrayBufferIterator.next()/*)*/)
+        }
+        map.put("arrayBuffer", java_arrayBuffer)
+
+
         //which of the two ways of doing this would be more stable?
         //I guess the java-api way, because extensions might get implemented differently at some point in dotty.
-        map.put("arrayBuffer", arrayBuffer.asJava)
-        map.put("arrayDeque", scala.jdk.javaapi.CollectionConverters.asJava(arrayDeque))
+//        map.put("arrayBuffer", arrayBuffer.asJava)
+//        map.put("arrayDeque", scala.jdk.javaapi.CollectionConverters.asJava(arrayDeque))
 
         map
     }
@@ -433,11 +505,22 @@ object MutableCollectionTest {
     def deserialize(map: java.util.Map[String, AnyRef]): MutableCollectionTest = {
         val result = new MutableCollectionTest()
 
-        val arrayBuffer = map.get("arrayBuffer").asInstanceOf[java.util.List[String]]
-        result.arrayBuffer = ArrayBuffer.from(arrayBuffer.asScala)
+        val java_arrayBuffer = map.get("arrayBuffer").asInstanceOf[java.util.List[String]]
+        val arrayBufferBuilder = ArrayBuffer.newBuilder[String]
+        val javaIterator = java_arrayBuffer.iterator()
+        while (javaIterator.hasNext) {
+            arrayBufferBuilder.addOne(/*deserialize(*/javaIterator.next()/*)*/)
 
-        val arrayDeque = map.get("arrayDeque").asInstanceOf[java.util.List[String]]
-        result.arrayDeque = ArrayDeque.from(scala.jdk.javaapi.CollectionConverters.asScala(arrayDeque))
+        }
+        result.arrayBuffer = arrayBufferBuilder.result()
+
+
+
+//        val arrayBuffer = map.get("arrayBuffer").asInstanceOf[java.util.List[String]]
+//        result.arrayBuffer = ArrayBuffer.from(arrayBuffer.asScala)
+//
+//        val arrayDeque = map.get("arrayDeque").asInstanceOf[java.util.List[String]]
+//        result.arrayDeque = ArrayDeque.from(scala.jdk.javaapi.CollectionConverters.asScala(arrayDeque))
 
         result
     }

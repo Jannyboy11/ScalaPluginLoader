@@ -37,7 +37,15 @@ public final class TypeSignature {
     }
 
     public boolean hasTypeArguments() {
-        return !getTypeArguments().isEmpty();
+        return !typeArguments.isEmpty();
+    }
+
+    public boolean hasTypeArguments(int n) {
+        if (n == 1) {
+            return hasTypeArguments();
+        } else {
+            return typeArguments.size() >= n;
+        }
     }
 
     public static TypeSignature ofDescriptor(String descriptor) {

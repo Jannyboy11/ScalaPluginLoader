@@ -341,7 +341,7 @@ class Conversions {
         methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                                                                               operandStack.push(Type.getType(Iterator.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "hasNext", "()Z", true);                   operandStack.replaceTop(Type.BOOLEAN_TYPE);
         methodVisitor.visitJumpInsn(IFEQ, endLoopLabel);    /*IFEQ branches if the value on the stack is 0 (false) !!*/                                 operandStack.pop();
-        //load the new collection so that we can sore later
+        //load the new collection so that we can store later
         methodVisitor.visitVarInsn(ALOAD, newCollectionIndex);                                                                                          operandStack.push(Type.getType(Collection.class));
         //call iterator.next()
         methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                                                                               operandStack.push(Type.getType(Iterator.class));
@@ -522,6 +522,7 @@ class Conversions {
         }
 
         //TODO other Scala types (Option, Either, Tuples)
+        //TODO Scala primitive wrappers (BigInt, BigDecimal, RichInt, RichFloat, etc.)
 
         switch (descriptor) {
             //primitives
@@ -1261,35 +1262,362 @@ class Conversions {
 
 class ScalaConversions {
 
+    private static final String CLASSTAG = "scala/reflect/ClassTag";
+    private static final String CLASSTAG_COMPANION = "scala/reflect/ClassTag$";
+    private static final String CLASSTAG_DESCRIPTOR = 'L' + CLASSTAG + ';';
+    private static final String CLASSTAG_COMPANION_DESCRIPTOR = 'L' + CLASSTAG_COMPANION + ';';
+    private static final String MODULE$ = "MODULE$";
+
+    private static final String BYTE_TAG_DESCRIPTOR = "Lscala/reflect/ManifestFactory$ByteManifest;";
+    private static final String SHORT_TAG_DESCRIPTOR = "Lscala/reflect/ManifestFactory$ShortManifest;";
+    private static final String INT_TAG_DESCRIPTOR = "Lscala/reflect/ManifestFactory$IntManifest;";
+    private static final String LONG_TAG_DESCRIPTOR = "Lscala/reflect/ManifestFactory$LongManifest;";
+    private static final String FLOAT_TAG_DESCRIPTOR = "Lscala/reflect/ManifestFactory$FloatManifest;";
+    private static final String DOUBLE_TAG_DESCRIPTOR = "Lscala/reflect/ManifestFactory$DoubleManifest;";
+    private static final String CHAR_TAG_DESCRIPTOR = "Lscala/reflect/ManifestFactory$CharManifest;";
+    private static final String BOOLEAN_TAG_DESCRIPTOR = "Lscala/reflect/ManifestFactory$BooleanManifest;";
+    private static final String UNIT_TAG_DESCRIPTOR = "Lscala/reflect/ManifestFactory$UnitManifest;";
+    private static final String NOTHING_TAG_DESCRIPTOR = CLASSTAG_DESCRIPTOR;
+    private static final String NULL_TAG_DESCRIPTOR = CLASSTAG_DESCRIPTOR;
+    private static final String ANY_TAG_DESCRIPTOR = CLASSTAG_DESCRIPTOR;
+    private static final String ANYREF_TAG_DESCRIPTOR = CLASSTAG_DESCRIPTOR;
+    private static final String ANYVAL_TAG_DESCRIPTOR = CLASSTAG_DESCRIPTOR;
+    private static final String OBJECT_TAG_DESCRIPTOR = CLASSTAG_DESCRIPTOR;
+
+    private static final Type CLASSTAG_TYPE = Type.getObjectType(CLASSTAG);
+    private static final Type CLASSTAG_COMPANION_TYPE = Type.getObjectType(CLASSTAG_COMPANION);
+
+    private static final String ITERABLE = "scala/collection/Iterable";
+    private static final String ITERATOR = "scala/collection/Iterator";
+    private static final Type ITERABLE_TYPE = Type.getObjectType(ITERABLE);
+    private static final Type ITERATOR_TYPE = Type.getObjectType(ITERATOR);
+    private static final String ITERABLE_DESCRIPTOR = ITERABLE_TYPE.getDescriptor();
+    private static final String ITERATOR_DESCRIPTOR = ITERATOR_TYPE.getDescriptor();
+
+
     private ScalaConversions() {
     }
 
-    //immutable collections
-
-    static void serializeImmList(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
-        final String scalaCompatVersion = classLoader.getScalaRelease().getCompatVersion();
-        switch (scalaCompatVersion) {
-            case "2.12":
-                methodVisitor.visitMethodInsn(INVOKESTATIC, "scala/collection/JavaConverters", "asJava", "(Lscala/collection/Seq;)Ljava/util/List;", false);
-                //TODO operand stack, TODO element conversion?
+    private static final void loadClassTag(String internalName, MethodVisitor methodVisitor, OperandStack operandStack) {
+        methodVisitor.visitFieldInsn(GETSTATIC, CLASSTAG_COMPANION, MODULE$, CLASSTAG_COMPANION_DESCRIPTOR);                    operandStack.push(CLASSTAG_COMPANION_TYPE);
+        switch (internalName) {
+            case "B":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Byte", "()" + BYTE_TAG_DESCRIPTOR, false);
                 break;
-            case "2.13":
-            case "3.0":
-                methodVisitor.visitMethodInsn(INVOKESTATIC, "scala/jdk/javaapi/CollectionConverters", "asJava", "(Lscala/collection/Seq;)Ljava/util/List;", false);
+            case "S":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Short", "()" + SHORT_TAG_DESCRIPTOR, false);
+                break;
+            case "I":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Int", "()" + INT_TAG_DESCRIPTOR, false);
+                break;
+            case "J":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Long", "()" + LONG_TAG_DESCRIPTOR, false);
+                break;
+            case "F":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Float", "()" + FLOAT_TAG_DESCRIPTOR, false);
+                break;
+            case "D":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Double", "()" + DOUBLE_TAG_DESCRIPTOR, false);
+                break;
+            case "C":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Char", "()" + CHAR_TAG_DESCRIPTOR, false);
+                break;
+            case "Z":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Boolean", "()" + BOOLEAN_TAG_DESCRIPTOR, false);
+                break;
+            case "scala/Unit":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Unit", "()" + UNIT_TAG_DESCRIPTOR, false);
+                break;
+            case "scala/Nothing":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Nothing", "()" + NOTHING_TAG_DESCRIPTOR, false);
+                break;
+            case "scala/Null":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Null", "()" + NULL_TAG_DESCRIPTOR, false);
+                break;
+            case "scala/Any":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Any", "()" + ANY_TAG_DESCRIPTOR, false);
+                break;
+            case "scala/AnyRef":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "AnyRef", "()" + ANYREF_TAG_DESCRIPTOR, false);
+                break;
+            case "scala/AnyVal":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "AnyVal", "()" + ANYVAL_TAG_DESCRIPTOR, false);
+                break;
+            case "java/lang/Object":
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Object", "()" + OBJECT_TAG_DESCRIPTOR, false);
                 break;
             default:
-                //TODO default that uses manual conversion using a while-loop?
-
-                //TODO better to just do this anyway since the elements themselves need to be converted too?
+                methodVisitor.visitLdcInsn(Type.getObjectType(internalName));       operandStack.push(Type.getType(Class.class));
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "apply", "(Ljava/lang/Class;)" + CLASSTAG_DESCRIPTOR, false);
                 break;
-        }
+        }                                                                                                                       operandStack.replaceTop(CLASSTAG_TYPE);
     }
 
-    static void deserializeImmList(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    //TODO code generation for instances of scala.math.Ordering:
+    //TODO https://www.scala-lang.org/api/current/scala/math/Ordering$.html
+    //TODO if it's not one of the built-ins, try to get them from the companion object of the element type.
+    //TODO might have to load the class, scan for fields. #funzies.
+    //TODO take Scala 3 derivation into account! How does that compile to bytecode? probably an instance in the companion object.
+    //TODO take into account that instances are not necessarily vals or no-args methods, they themselves could take implicit parameters!
+    //TODO test this!
 
+    static boolean isScalaCollection(final TypeSignature typeSignature, final ClassLoader pluginClassLoader) {
+        final String typeName = typeSignature.getTypeName();
+
+        switch (typeName) {
+            //scala.collection
+            case "scala/collection/AbstractIterable":
+            case "scala/collection/AbstractSeq":
+            case "scala/collection/AbstractSet":
+            case "scala/collection/BitSet":
+            case "scala/collection/IndexedSeq":
+            case "scala/collection/Iterable":
+            case "scala/collection/IterableOnce":
+                //don't include LazyZip2, LazyZip3, LazyZip4
+            case "scala/collection/LinearSeq":
+            case "scala/collection/Seq":
+            case "scala/collection/Set":
+            case "scala/collection/SortedSet":
+
+            //scala.collection.immutable
+            case "scala/collection/immutable/AbstractSeq":
+            case "scala/collection/immutable/AbstractSet":
+            case "scala/collection/immutable/ArraySeq":
+            case "scala/collection/immutable/BitSet":
+            case "scala/collection/immutable/HashSet":
+            case "scala/collection/immutable/IndexedSeq":
+            case "scala/collection/immutable/Iterable":
+            case "scala/collection/immutable/LazyList":
+            case "scala/collection/immutable/LinearSeq":
+            case "scala/collection/immutable/List":
+            case "scala/collection/immutable/ListSet":
+            case "scala/collection/immutable/NumericRange":
+            case "scala/collection/immutable/Queue":
+            case "scala/collection/immutable/Range":
+            case "scala/collection/immutable/Seq":
+            case "scala/collection/immutable/Set":
+            case "scala/collection/immutable/SortedSet":
+            case "scala/collection/immutable/Stream": //deprecated since 2.13
+            case "scala/collection/immutable/TreeSet":
+            case "scala/collection/immutable/Vector":
+            case "scala/collection/immutable/WrappedString":
+
+            //scala.collection.mutable
+            case "scala/collection/mutable/AbstractBuffer":
+            case "scala/collection/mutable/AbstractIterable":
+            case "scala/collection/mutable/AbstractSeq":
+            case "scala/collection/mutable/AbstractSet":
+            case "scala/collection/mutable/ArrayBuffer":
+            case "scala/collection/mutable/ArrayBuilder":
+            case "scala/collection/mutable/ArrayDeque":
+            case "scala/collection/mutable/ArraySeq":
+            case "scala/collection/mutable/BitSet":
+            case "scala/collection/mutable/Buffer":
+            case "scala/collection/mutable/Builder":
+                //don't include Growable
+            case "scala/collection/mutable/HashSet":
+                //don't include ImmutableBuilder
+            case "scala/collection/mutable/IndexedBuffer":
+            case "scala/collection/mutable/IndexedSeq":
+            case "scala/collection/mutable/Iterable":
+            case "scala/collection/mutable/LinkedHashSet":
+            case "scala/collection/mutable/ListBuffer":
+            case "scala/collection/mutable/PriorityQueue":
+            case "scala/collection/mutable/Queue":
+            case "scala/collection/mutable/Seq":
+            case "scala/collection/mutable/Set":
+            case "scala/collection/mutable/SortedSet":
+            case "scala/collection/mutable/Stack":
+            case "scala/collection/mutable/StringBuilder":
+            case "scala/collection/mutable/TreeSet":
+            case "scala/collection/mutable/UnrolledBuffer":
+
+            //scala.collection.concurrent only contains maps.
+                return true;
+        }
+
+        //not one of the built-ins: try to class-load
+        try {
+            Class<?> daClass = Class.forName(typeName.replace('/', '.'), false, pluginClassLoader);
+            Class<?> seqClass = Class.forName("scala.collection.Seq", false, pluginClassLoader);
+            Class<?> setClass = Class.forName("scala.collection.Set", false, pluginClassLoader);
+            //both immutable.Seq and mutable.Seq inherit from collection.Seq, and similar for Set.
+            if (seqClass.isAssignableFrom(daClass) || setClass.isAssignableFrom(daClass)) {
+                return true;
+            }
+        } catch (ClassNotFoundException scalaPluginDoesNotDependOnScalaLibrary) {
+            //for now, just do nothing. this is unreachable.
+            //maybe in the future we allow scala plugins that don't use the standard library?
+        }
+
+        return false;
+    }
+
+    static boolean isScalaMap(final TypeSignature typeSignature, final ClassLoader pluginClassLoader) {
+        final String typeName = typeSignature.getTypeName();
+
+        switch (typeName) {
+            //scala.collection
+            case "scala/collection/AbstractMap":
+            case "scala/collection/DefaultMap":
+            case "scala/collection/Map":
+            case "scala/collection/SortedMap":
+
+            //scala.collection.immutable
+            case "scala/collection/immutable/AbstractMap":
+            case "scala/collection/immutable/HashMap":
+            case "scala/collection/immutable/IntMap":
+            case "scala/collection/immutable/ListMap":
+            case "scala/collection/immutable/LongMap":
+            case "scala/collection/immutable/Map":
+            case "scala/collection/immutable/SeqMap":
+            case "scala/collection/immutable/SortedMap":
+            case "scala/collection/immutable/TreeMap":
+            case "scala/collection/immutable/TreeSeqMap":
+            case "scala/collection/immutable/VectorMap":
+
+            //scala.collection/mutable
+            case "scala/collection/mutable/AbstractMap":
+            case "scala/collection/mutable/AnyRefMap":
+            case "scala/collection/mutable/HashMap":
+            case "scala/collection/mutable/LinkedHashMap":
+            case "scala/collection/mutable/LongMap":
+            case "scala/collection/mutable/Map":
+            case "scala/collection/mutable/MultiMap":
+            case "scala/collection/mutable/OpenHashMap":
+            case "scala/collection/mutable/SeqMap":
+            case "scala/collection/mutable/SortedMap":
+            case "scala/collection/mutable/TreeMap":
+            case "scala/collection/mutable/WeakHashMap":    //bit weird to have this case, but okay.
+
+            //scala.collection.concurrent
+            case "scala/collection/concurrent/Map":
+            case "scala/collection/concurrent/TrieMap":
+
+                return true;
+        }
+
+        //try to class-load
+        try {
+            Class<?> daClass = Class.forName(typeName.replace('/', '.'), false, pluginClassLoader);
+            Class<?> mapClass = Class.forName("scala.collection.Map", false, pluginClassLoader);
+            //both immutable.Map and mutable.Map inherit from collection.Map.
+            if (mapClass.isAssignableFrom(daClass)) {
+                return true;
+            }
+        } catch(ClassNotFoundException scalaPluginDoesNotDependOnScalaLibrary) {
+            //for now, just do nothing. this is unreachable.
+            //maybe in the future we allow scala plugins that don't use the standard library?
+        }
+
+        return false;
+    }
+
+
+
+    //immutable collections
+
+    static void serializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
+        //this is really a best effort.
+        //the standard library may evolve again in 3.1 or 3.2
+        //but for now this method is compatible the 2.12 and 2.13 (and thus 3.0) standard library
+        //I hope this will continue to work.
+
+        assert typeSignature.hasTypeArguments(1) : "trying to serialize scala collection without type arguments. Type signature = " + typeSignature;
+        final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
+
+        int localVariableIndex = localVariableTable.frameSize();
+        final Label startLabel = new Label(), endLabel = new Label();
+
+        //  scala.Iterator<E> iterator = $coll.<E>iterator();
+        final int iteratorIndex = localVariableIndex++;
+        final LocalVariable iterator = new LocalVariable("iterator", ITERATOR_DESCRIPTOR, "L" + ITERATOR_NAME + "<" + elementTypeSignature.toSignature() + ">;", startLabel, endLabel, iteratorIndex);
+        methodVisitor.visitTypeInsn(CHECKCAST, ITERABLE);               operandStack.replaceTop(ITERABLE_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, ITERABLE, "iterator", "()scala/collection/Iterator;", true);       operandStack.replaceTop(ITERATOR_TYPE);
+        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);              operandStack.pop();     localVariableTable.add(iterator);
+        methodVisitor.visitLabel(startLabel);
+
+        //  java.util.ArrayList list = new java.util.ArrayList();
+        final Label javaListLabel = new Label();
+        final int javaListIndex = localVariableIndex++;
+        final LocalVariable javaList = new LocalVariable("list", "Ljava/util/ArrayList", null, javaListLabel, endLabel, javaListIndex);
+        methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");    operandStack.push(Type.getType(ArrayList.class));
+        methodVisitor.visitInsn(DUP);                                   operandStack.push(Type.getType(ArrayList.class));
+        methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "()V", false);        operandStack.pop();
+        methodVisitor.visitVarInsn(ASTORE, javaListIndex);              operandStack.pop();     localVariableTable.add(javaList);
+        methodVisitor.visitLabel(javaListLabel);
+
+        //  while
+        final Label jumpBackTarget = javaListLabel, endLoopLabel = new Label();
+        final Object[] localsFrame = localVariableTable.frame();
+        final Object[] stackFrame = operandStack.frame();
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //      (iterator.hasNext()) {
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);               operandStack.push(ITERATOR_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, ITERATOR, "hasNext", "()Z", true);   operandStack.replaceTop(BOOLEAN_TYPE);
+        methodVisitor.visitJumpInsn(IFEQ, endLoopLabel);                operandStack.pop();
+        //          list.add(serialize(iterator.next()));
+        methodVisitor.visitVarInsn(ALOAD, javaListIndex);               operandStack.push(Type.getType(ArrayList.class));
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);               operandStack.push(ITERATOR_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, ITERATOR, "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(OBJECT_TYPE);
+        Conversions.toSerializedType(classLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localVariableTable, operandStack);
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/util/ArrayList", "add", "(Ljava/lang/Object;)Z", false);     operandStack.replaceTop(2, BOOLEAN_TYPE);
+        methodVisitor.visitInsn(POP);                                   operandStack.pop();
+        //      }
+        methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
+
+        //after loop
+        methodVisitor.visitLabel(endLoopLabel);
+        localVariableTable.removeFramesFromIndex(localVariableIndex);
+        assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
+        assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //javaList
+        methodVisitor.visitVarInsn(ALOAD, javaListIndex);
+        methodVisitor.visitLabel(endLabel);
+    }
+
+    static void deserializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
+        final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
+
+        int localVariableIndex = localVariableTable.frameSize();
+
+        final Label startLabel = new Label();
+        final Label endLabel = new Label();
+
+        //get the Iterator of the List
+        final int iteratorIndex = localVariableIndex++;
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, startLabel, endLabel, iteratorIndex);
+        methodVisitor.visitTypeInsn(CHECKCAST, "java/util/List");           operandStack.replaceTop(Type.getType(List.class));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "iterator", "()Ljava/util/Iterator;", true);   operandStack.replaceTop(Type.getType(Iterator.class));
+        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                      operandStack.pop();
+        localVariableTable.add(iterator);
+        methodVisitor.visitLabel(startLabel);
+
+        final String companion = typeSignature.getTypeName() + '$';
+        methodVisitor.visitFieldInsn(GETSTATIC, companion, MODULE$, "L" + companion + ";");     operandStack.push(Type.getObjectType(companion));
+        //TODO instantiate the new scala collection builder. (call the .newBuilder() method on the companion object of the scala collection)
+        //TODO this is different for some of the ordered collections - we need to provide an Order[X] instance!
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, companion, "newBuilder", "()Lscala/collection/mutable/Builder", false);
+
+
+
+        //TODO ^^^^^^^^^^^ might need to supply a ClassTag, or use a different class because the declared class is Abstract.
+        //TODO ^^^^^^^^^^^ might need to supply an Order[X].
+        //TODO loop through the list (using the java.util.Iterator)
+        //TODO convert the elements, append to the builder
+        //TODO call builder.result()
+        //TODO done!
+
+        methodVisitor.visitLabel(endLabel);
     }
 
     //mutable collections
 
     //other standard datatypes
+
+    //TODO helper method for getting Order instances on the operand stack!
+    
 }

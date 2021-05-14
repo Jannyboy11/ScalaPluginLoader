@@ -14,7 +14,7 @@ import xyz.janboerman.scalaloader.bytecode.Replaced;
  * <pre>
  *     <code>
  *      trait Cancellable extends org.bukkit.event.Cancellable { self: Event =>
- *          private $cancel: Boolean
+ *          private var $cancel: Boolean
  *
  *          override def isCancelled: Boolean = this.$cancel
  *          override def setCancelled(cancel: Boolean): Unit = this.$cancel = cancel;

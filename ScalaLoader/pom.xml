@@ -256,18 +256,18 @@
             <version>${asmVersion}</version>
         </dependency>
 
-<!--        &lt;!&ndash; for debugging only &ndash;&gt;-->
-<!--        <dependency>-->
-<!--            <groupId>org.ow2.asm</groupId>-->
-<!--            <artifactId>asm-util</artifactId>-->
-<!--            <version>${asmVersion}</version>-->
-<!--        </dependency>-->
-<!--        &lt;!&ndash; for debugging only &ndash;&gt;-->
-<!--        <dependency>-->
-<!--            <groupId>org.ow2.asm</groupId>-->
-<!--            <artifactId>asm-analysis</artifactId>-->
-<!--            <version>${asmVersion}</version>-->
-<!--        </dependency>-->
+        <!-- for debugging only -->
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-util</artifactId>
+            <version>${asmVersion}</version>
+        </dependency>
+        <!-- for debugging only -->
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-analysis</artifactId>
+            <version>${asmVersion}</version>
+        </dependency>
 <!--        &lt;!&ndash; for debugging only &ndash;&gt;-->
 <!--        <dependency>-->
 <!--            <groupId>org.scala-lang</groupId>-->

@@ -365,6 +365,8 @@ public class ScalaPluginLoader implements PluginLoader {
      * @param scalaPlugin the scala plugin
      * @param javaPlugin the java plugin
      */
+    //TODO deprecate this if this does not work without illegal access enabled
+    //TODO test this!
     public void openUpToJavaPlugin(ScalaPlugin scalaPlugin, JavaPlugin javaPlugin) {
         try {
             injectClassesIntoJavaPlugin(getAllClasses(scalaPlugin), javaPlugin);

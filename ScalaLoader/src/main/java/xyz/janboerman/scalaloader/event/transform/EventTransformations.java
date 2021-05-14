@@ -77,8 +77,8 @@ public class EventTransformations {
      * </p>
      * <p>
      *      4:
-     *      Every class that is using xyz.janboerman.scalaloader.event.Event or xyz.janboerman.scalaloder.event.Cancellable
-     *      will be transformed to use their Bukkit counterparts instead.
+     *      Every class that is using xyz.janboerman.scalaloader.event.Event, xyz.janboerman.scalaloder.event.Cancellable
+     *      or xyz.janboerman.scalaloader.event.EventExecutor will be transformed to use their Bukkit counterparts instead.
      * </p>
      * <p>
      *      5:
