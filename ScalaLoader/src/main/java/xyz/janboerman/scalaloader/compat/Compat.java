@@ -4,10 +4,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +73,26 @@ public class Compat {
 
     public static <K, V> Map<K, V> emptyMap() {
         return Collections.emptyMap();
+    }
+
+    public static <K, V> Map<K, V> mapCopy(Map<K, V> map) {
+        return new LinkedHashMap<>(map);
+    }
+
+    public static <K, V> Map<K, V> singletonMap(K key, V value) {
+        return Collections.singletonMap(key, value);
+    }
+
+    public static <K, V> Map<K, V> mapOf(Map.Entry<K, V>... entries) {
+        Map<K, V> map = new HashMap<>();
+        for (Map.Entry<K, V> entry : entries) {
+            map.put(entry.getKey(), entry.getValue());
+        }
+        return Collections.unmodifiableMap(map);
+    }
+
+    public static <K, V> Map.Entry<K, V> mapEntry(K key, V value) {
+        return new AbstractMap.SimpleImmutableEntry<>(key, value);
     }
 
     public static String stringRepeat(String base, int repeat) {

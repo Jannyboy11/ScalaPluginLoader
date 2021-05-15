@@ -1,6 +1,9 @@
 package xyz.janboerman.scalaloader;
 
+import java.util.Comparator;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <p>
@@ -13,7 +16,43 @@ import java.util.Objects;
  *
  * @implNote this class should not be converted into an enum because we want to support the use case of plugin authors to use unsupported and experimental versions of Scala.
  */
-public final class ScalaRelease {
+public final class ScalaRelease implements Comparable<ScalaRelease> {
+
+    private static final Comparator<String> AS_INT_COMPARATOR = Comparator.comparingInt(Integer::parseInt);
+    private static final Pattern VERSION_SCHEME = Pattern.compile("(?<epoch>\\d+)\\.(?<major>\\d+)\\.(?<minor>\\d+).*");
+    /**
+     * This comparator compares two version strings that are following the epoch.major.minor version scheme.
+     */
+    public static final Comparator<String> VERSION_COMPARATOR = (first, second) -> {
+        Matcher matcher1 = VERSION_SCHEME.matcher(first);
+        Matcher matcher2 = VERSION_SCHEME.matcher(second);
+        if (matcher1.matches() && matcher2.matches()) {
+            String epoch1 = matcher1.group("epoch");
+            String epoch2 = matcher2.group("epoch");
+            int res = AS_INT_COMPARATOR.compare(epoch1, epoch2);
+            if (res != 0) return res;
+
+            String major1 = matcher1.group("major");
+            String major2 = matcher2.group("major");
+            res = AS_INT_COMPARATOR.compare(major1, major2);
+            if (res != 0) return res;
+
+            String minor1 = matcher1.group("minor");
+            String minor2 = matcher2.group("minor");
+            res = AS_INT_COMPARATOR.compare(minor1, minor2);
+            if (res != 0) return res;
+
+            int endMinor1 = matcher1.end("minor");
+            int endMinor2 = matcher2.end("minor");
+            return first.substring(endMinor1).compareTo(second.substring(endMinor2));
+        }
+
+        else {
+            return first.compareTo(second);
+        }
+    };
+
+
     //don't enum-ize this class, because we still want to support scala releases that are not included by default!
 
     /** The Scala 2.11.x series */
@@ -103,5 +142,21 @@ public final class ScalaRelease {
     @Override
     public int hashCode() {
         return compatVersion.hashCode();
+    }
+
+    @Override
+    public int compareTo(ScalaRelease that) {
+        String[] thisVersions = this.compatVersion.split("\\.");
+        String[] thatVersions = that.compatVersion.split("\\.");
+
+        int thisEpoch = Integer.parseInt(thisVersions[0]);
+        int thatEpoch = Integer.parseInt(thatVersions[0]);
+        int res = Integer.compare(thisEpoch, thatEpoch);
+        if (res != 0) return res;
+
+        int thisMajor = Integer.parseInt(thisVersions[1]);
+        int thatMajor = Integer.parseInt(thatVersions[1]);
+        res = Integer.compare(thisMajor, thatMajor);
+        return res;
     }
 }

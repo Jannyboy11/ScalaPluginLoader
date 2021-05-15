@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.event;
 
 import xyz.janboerman.scalaloader.bytecode.Replaced;
+import xyz.janboerman.scalaloader.event.transform.EventError;
 
 /**
  * Alternative to {@link org.bukkit.event.Cancellable} that aims to reduce boilerplate.
@@ -23,7 +24,7 @@ import xyz.janboerman.scalaloader.bytecode.Replaced;
  * </pre>
  *
  * @apiNote events that implement this interface are expected to either not override any methods at all,
- *      or implement both. If only one of the two methods is overridden, an {@link xyz.janboerman.scalaloader.event.transform.EventError} is thrown by the ScalaPluginClassLoader.
+ *      or implement both. If only one of the two methods is overridden, an {@link EventError} is thrown by the ScalaPluginClassLoader.
  * @apiNote JavaPlugins must not ever define events that implement this interface.
  *
  * @see org.bukkit.event.Cancellable

@@ -90,7 +90,7 @@ public abstract class ScalaPlugin implements Plugin {
      * Otherwise use {@code scalaPlugin.getClass().getClassLoader()}.
      * @return the ScalaPluginClassLoader that loaded classes from this plugin
      */
-    protected ScalaPluginClassLoader getClassLoader() {
+    public ScalaPluginClassLoader getClassLoader() {
         return classLoader;
     }
 

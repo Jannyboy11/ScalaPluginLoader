@@ -25,15 +25,15 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 @CustomScala(@Version(value = "2.13.0",
-        scalaLibraryUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-reflect%2F2.13.0%2Fscala-reflect-2.13.0.jar",
-        scalaReflectUrl = "https://bintray.com/bintray/jcenter/download_file?file_path=org%2Fscala-lang%2Fscala-library%2F2.13.0%2Fscala-library-2.13.0.jar"))
+        scalaLibraryUrl = "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-library/2.13.0/scala-library-2.13.0.jar",
+        scalaReflectUrl = "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-reflect/2.13.0/scala-reflect-2.13.0.jar"))
 @Api(ApiVersion.v1_16)
 public class ExamplePlugin extends ScalaPlugin {
 
     private final Random random = new Random();
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.14.5-SNAPSHOT").addHardDepend("ScalaExample"));
+        super(new ScalaPluginDescription("JavaExample", "0.15.0-SNAPSHOT").addHardDepend("ScalaExample"));
     }
 
     public static ExamplePlugin getInstance() {

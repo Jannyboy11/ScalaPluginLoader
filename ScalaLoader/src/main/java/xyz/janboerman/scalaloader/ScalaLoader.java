@@ -1,10 +1,7 @@
 package xyz.janboerman.scalaloader;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Server;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.Plugin;
@@ -18,9 +15,7 @@ import org.bstats.charts.DrilldownPie;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
@@ -30,6 +25,10 @@ import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import xyz.janboerman.scalaloader.commands.DumpClass;
+import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
+import xyz.janboerman.scalaloader.commands.ResetScalaUrls;
+import xyz.janboerman.scalaloader.commands.SetDebug;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.NumericRange;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
@@ -47,6 +46,7 @@ import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 public final class ScalaLoader extends JavaPlugin {
 
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
+    private final DebugSettings debugSettings = new DebugSettings(this);
 
     private final boolean iActuallyManagedToOverrideTheDefaultJavaPluginLoader;
     private final File scalaPluginsFolder;
@@ -98,6 +98,9 @@ public final class ScalaLoader extends JavaPlugin {
         }
     }
 
+    public DebugSettings getDebugSettings() {
+        return debugSettings;
+    }
 
     public File getScalaPluginsFolder() {
         return scalaPluginsFolder;
@@ -160,6 +163,13 @@ public final class ScalaLoader extends JavaPlugin {
         }));
         //TODO track used features of the ScalaLoader plugin -> ConfigurationSerializable api?, Event api? (could make these drilldowns!)
         //TODO track popular third-party libraries (once we include a third-party library loading api) (using advanced pie!)
+
+        //ScalaLoader commands
+        getCommand("resetScalaUrls").setExecutor(new ResetScalaUrls(this));
+        getCommand("dumpClass").setExecutor(new DumpClass(this));
+        getCommand("setDebug").setExecutor(new SetDebug(getDebugSettings()));
+        getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins());
+
     }
 
     @Override
@@ -211,10 +221,13 @@ public final class ScalaLoader extends JavaPlugin {
             //load classes over the network
             getLogger().info("Loading Scala " + scalaVersion + " libraries from over the network");
             try {
-                scalaLibraryLoader = new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), new URL[]{
-                        new URL(scalaVersion.getScalaLibraryUrl()),
-                        new URL(scalaVersion.getScalaReflectUrl())
-                }, getClass().getClassLoader());
+                Map<String, String> urlMap = scalaVersion.getUrls();
+                URL[] urls = new URL[urlMap.size()];
+                int i = 0;
+                for (String url : urlMap.values()) {
+                    urls[i++] = new URL(url);
+                }
+                scalaLibraryLoader = new ScalaLibraryClassLoader(scalaVersion.getScalaVersion(), urls, getClass().getClassLoader());
             } catch (MalformedURLException e) {
                 throw new ScalaPluginLoaderException("Could not load scala libraries for version " + scalaVersion + " due to a malformed URL", e);
             }
@@ -231,50 +244,55 @@ public final class ScalaLoader extends JavaPlugin {
             if (jarFiles.length == 0) {
                 //no jar files found - download dem files
                 getLogger().info("Tried to load Scala " + scalaVersion + " libraries from disk, but they were not present. Downloading...");
-                File scalaLibraryFile = new File(versionFolder, "scala-library-" + scalaVersion + ".jar");
-                File scalaReflectFile = new File(versionFolder, "scala-reflect-" + scalaVersion + ".jar");
 
-                try {
-                    scalaLibraryFile.createNewFile();
-                    scalaReflectFile.createNewFile();
-                } catch (IOException e) {
-                    throw new ScalaPluginLoaderException("Could not create new jar files", e);
+                Map<String, String> urlMap = scalaVersion.getUrls();
+                jarFiles = new File[urlMap.size()];
+                int i = 0;
+                for (Map.Entry<String, String> entry : urlMap.entrySet()) {
+                    String key = entry.getKey();
+                    String value = entry.getValue();
+
+                    String fileName;
+                    if (key.endsWith("-url")) {
+                        fileName = key.substring(0, key.length() - 3) + scalaVersion.getScalaVersion() + ".jar";
+                    } else if (key.endsWith(".jar")) {
+                        fileName = key;
+                    } else {
+                        fileName = key + "-" + scalaVersion.getScalaVersion() + ".jar";
+                    }
+
+                    File scalaRuntimeJarFile = new File(versionFolder, fileName);
+
+                    try {
+                        scalaRuntimeJarFile.createNewFile();
+                    } catch (IOException e) {
+                        throw new ScalaPluginLoaderException("Could not create new jar file", e);
+                    }
+
+                    ReadableByteChannel rbc = null;
+                    FileOutputStream fos = null;
+
+                    try {
+                        URL url = new URL(value);
+                        downloadFile(url, scalaRuntimeJarFile);
+                    } catch (MalformedURLException e) {
+                        throw new ScalaPluginLoaderException("Invalid url for key: " + key, e);
+                    } catch (IOException e) {
+                        throw new ScalaPluginLoaderException("Could not open or close channel", e);
+                    }
+
+                    jarFiles[i++] = scalaRuntimeJarFile;
                 }
-
-                ReadableByteChannel rbc = null;
-                FileOutputStream fos = null;
-
-                //download standard library
-                try {
-                    URL scalaLibraryUrl = new URL(scalaVersion.getScalaLibraryUrl());
-                    downloadFile(scalaLibraryUrl, scalaLibraryFile);
-                } catch (MalformedURLException e) {
-                    throw new ScalaPluginLoaderException("Invalid Scala library url: " + scalaVersion.getScalaLibraryUrl(), e);
-                } catch (IOException e) {
-                    throw new ScalaPluginLoaderException("Could not open or close channel", e);
-                }
-
-                //download reflection library
-                try {
-                    URL scalaReflectUrl = new URL(scalaVersion.getScalaReflectUrl());
-                    downloadFile(scalaReflectUrl, scalaReflectFile);
-                } catch (MalformedURLException e) {
-                    throw new ScalaPluginLoaderException("Invalid Scala reflect url: " + scalaVersion.getScalaReflectUrl(), e);
-                } catch (IOException e) {
-                    throw new ScalaPluginLoaderException("Could not open or close channel", e);
-                }
-
-                jarFiles = new File[] {scalaLibraryFile, scalaReflectFile};
             }
 
-            getLogger().info("Loading Scala " + scalaVersion + " libraries from disk");
+            getLogger().info("Loading Scala " + scalaVersion.getScalaVersion() + " libraries from disk");
             //load jar files.
             URL[] urls = new URL[jarFiles.length];
             for (int i = 0; i < jarFiles.length; i++) {
                 try {
                     urls[i] = jarFiles[i].toURI().toURL();
                 } catch (MalformedURLException e) {
-                    throw new ScalaPluginLoaderException("Could not load Scala libraries for version " + scalaVersion + " due to a malformed URL", e);
+                    throw new ScalaPluginLoaderException("Could not load Scala libraries for version " + scalaVersion.getScalaVersion() + " due to a malformed URL", e);
                 }
             }
 
@@ -312,53 +330,6 @@ public final class ScalaLoader extends JavaPlugin {
         config.set("scala-versions", Compat.listCopy(scalaVersions));
         saveConfig();
         return wasAdded;
-    }
-
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        switch (command.getName()) {
-            case "resetScalaUrl":
-                if (args.length == 0) return false;
-                String version = args[0];
-                ScalaVersion scalaVersion;
-                if ("all".equals(version)) {
-                    saveScalaVersionsToConfig(Arrays.stream(ScalaVersion.values())
-                            .map(PluginScalaVersion::fromScalaVersion)
-                            .toArray(PluginScalaVersion[]::new));
-                    sender.sendMessage(ChatColor.GREEN + "All URLs for built-in scala versions were reset!");
-                } else if ((scalaVersion = ScalaVersion.fromVersionString(version)) != null) {
-                    saveScalaVersionsToConfig(PluginScalaVersion.fromScalaVersion(scalaVersion));
-                    sender.sendMessage(ChatColor.GREEN + "URLs for scala version " + scalaVersion.getVersion() + " were reset.");
-                } else {
-                    sender.sendMessage(new String[] {
-                            ChatColor.RED + "Unrecognized scala version: " + version + ".",
-                            ChatColor.RED + "Please use one of the following: " + onTabComplete(sender, command, label, new String[0]) + "."
-                    });
-                }
-
-                return true;
-        }
-
-        return false;
-    }
-
-    @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
-        switch (command.getName()) {
-            case "resetScalaUrl":
-                if (args.length == 0) {
-                    LinkedList<String> scalaVersions = Arrays.stream(ScalaVersion.values())
-                            .map(ScalaVersion::getVersion)
-                            .collect(Collectors.toCollection(LinkedList::new));
-
-                    scalaVersions.addFirst("all");
-                    return scalaVersions;
-                }
-
-                return Compat.emptyList();
-        }
-
-        return null;
     }
 
 }

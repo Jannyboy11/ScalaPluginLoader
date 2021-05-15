@@ -4,9 +4,10 @@
 
 #Maven
 target/*
-JavaExample/target/*
-ScalaExample/target/*
 ScalaLoader/target/*
+ScalaExample/target/*
+JavaExample/target/*
+Scala3Example/target/*
 
 #Eclipse
 .settings/*

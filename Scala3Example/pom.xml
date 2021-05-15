@@ -9,10 +9,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>ScalaExample</artifactId>
+    <artifactId>Scala3Example</artifactId>
 
     <properties>
-        <scala.version>2.13.5</scala.version>
+        <scala.boostrapVersion>2.13.5</scala.boostrapVersion>
+        <scala.version>3.0.0</scala.version>
     </properties>
 
     <build>
@@ -20,7 +21,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>4.4.1</version>
+                <version>4.5.1</version>
                 <configuration>
                     <recompileMode>incremental</recompileMode>
                 </configuration>
@@ -34,26 +35,6 @@
                 </executions>
             </plugin>
 
-            <!--
-            javac won't compile a module.info because the "package xyz.janboerman.scalaloader.example.scala does not exist or is empty"!
-            This is a bug because obviously it exists (albeit with only Scala sources).
-            Best we can do for now is to wait for this bug getting patched, or Scala getting support for Java modules.
-
-            This would be the module-info.java file:
-            module xyz.janboerman.scalaloader.scalaexample {
-
-                requires java.logging;
-                requires org.bukkit;
-                requires transitive scala.library;
-                requires xyz.janboerman.scalaloader;
-
-                exports xyz.janboerman.scalaloader.example.scala;
-                opens xyz.janboerman.scalaloader.example.scala to org.bukkit;
-
-            }
-
-            So for now, as a workaround, keep using an automatic module.
-            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -61,22 +42,11 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Automatic-Module-Name>xyz.janboerman.scalaloader.scalaexample</Automatic-Module-Name>
+                            <Automatic-Module-Name>xyz.janboerman.scalaloader.scala3example</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
-
-<!--            And this would be the java compiler plugin declaration-->
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-compiler-plugin</artifactId>-->
-<!--                <version>3.8.1</version>-->
-<!--                <configuration>-->
-<!--                    <release>16</release>-->
-<!--                    <compilerArgs>&#45;&#45;enable-preview</compilerArgs>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
 
         </plugins>
     </build>
@@ -92,6 +62,20 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
+            <version>${scala.boostrapVersion}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala3-library_${scala.version}-nonbootstrapped</artifactId>
+            <version>${scala.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>tasty-core_${scala.version}-nonbootstrapped</artifactId>
             <version>${scala.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -110,5 +94,6 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
 
 </project>

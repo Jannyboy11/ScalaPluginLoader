@@ -57,6 +57,22 @@ public class Compat {
         return Map.of();
     }
 
+    public static <K, V> Map<K, V> mapCopy(Map<K, V> map) {
+        return Map.copyOf(map);
+    }
+
+    public static <K, V> Map<K, V> singletonMap(K key, V value) {
+        return Map.of(key, value);
+    }
+
+    public static <K, V> Map<K, V> mapOf(Map.Entry<K, V>... entries) {
+        return Map.ofEntries(entries);
+    }
+
+    public static <K, V> Map.Entry<K, V> mapEntry(K key, V value) {
+        return Map.entry(key, value);
+    }
+
     public static String stringRepeat(String base, int repeat) {
         return base.repeat(repeat);
     }

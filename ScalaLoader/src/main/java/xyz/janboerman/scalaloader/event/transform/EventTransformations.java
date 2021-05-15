@@ -82,7 +82,7 @@ public class EventTransformations {
      * </p>
      * <p>
      *      5:
-     *      Calls to {@link xyz.janboerman.scalaloader.event.EventBus#callEvent(Object)} are replaced by calls to {@link xyz.janboerman.scalaloader.event.EventBus#callEvent(Event)}
+     *      Calls to {@link EventBus#callEvent(Object)} are replaced by calls to {@link EventBus#callEvent(Event)}
      * </p>
      *
      *

@@ -164,6 +164,15 @@ public class ScalaPluginLoader implements PluginLoader {
         return scalaPluginsView;
     }
 
+    /**
+     * Get a set class names to debug-print when they are loaded.
+     *
+     * @return the set of class names
+     */
+    Set<String> debugClassNames() {
+        return getScalaLoader().getDebugSettings().debugClassLoads();
+    }
+
 
     private static PluginJarScanResult scanJar(File file) throws IOException {
         PluginJarScanResult result = new PluginJarScanResult();

@@ -857,7 +857,7 @@ class SerializableTransformer extends ClassVisitor {
                     final Label label1 = new Label();
                     methodVisitor.visitLabel(label1);
 
-                    if (scanType == Scan.Type.FIELDS) {
+                    if (scanType == FIELDS) {
                         for (Entry<String, FieldDeclaration> entry : propertyFields.entrySet()) {
                             String propertyName = entry.getKey();
                             FieldDeclaration field = entry.getValue();
@@ -873,7 +873,7 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitLabel(newLabel);
                         }
 
-                    } else if (scanType == Scan.Type.GETTER_SETTER_METHODS) {
+                    } else if (scanType == GETTER_SETTER_METHODS) {
                         for (Entry<String, MethodHeader> entry : propertySetters.entrySet()) {
                             String propertyName = entry.getKey();
                             MethodHeader method = entry.getValue();

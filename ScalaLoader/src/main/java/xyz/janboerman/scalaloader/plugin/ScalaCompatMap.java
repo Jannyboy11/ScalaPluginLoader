@@ -20,7 +20,7 @@ class ScalaCompatMap {
         scalaMap.putIfAbsent(versionString, scalaVersion);
         final ScalaRelease compatVersion = scalaVersion.getCompatRelease();
         compatReleaseToLatestVersionMap.compute(compatVersion, (cv, latest) -> {
-            if (latest == null || latest.compareTo(versionString) < 0) return versionString;
+            if (latest == null || ScalaRelease.VERSION_COMPARATOR.compare(latest, versionString) < 0) return versionString;
             return latest;
         });
 
@@ -48,7 +48,7 @@ class ScalaCompatMap {
         }
 
         PluginScalaVersion latest = scalaMap.get(latestVersion);
-        if (latest == null || latest.getScalaVersion().compareTo(scalaVersion.getScalaVersion()) < 0) {
+        if (latest == null || ScalaRelease.VERSION_COMPARATOR.compare(latest.getScalaVersion(), scalaVersion.getScalaVersion()) < 0) {
             latest = scalaVersion;
             scalaMap.put(versionString, scalaVersion);
         }
@@ -67,4 +67,6 @@ class ScalaCompatMap {
         }
         return sj.toString();
     }
+
+
 }

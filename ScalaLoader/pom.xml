@@ -5,7 +5,7 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.14.6-SNAPSHOT</version>
+        <version>0.15.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -255,19 +255,19 @@
             <artifactId>asm-commons</artifactId>
             <version>${asmVersion}</version>
         </dependency>
-
-        <!-- for debugging only -->
+        <!-- needed for debugging commands -->
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-util</artifactId>
             <version>${asmVersion}</version>
         </dependency>
-        <!-- for debugging only -->
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-analysis</artifactId>
-            <version>${asmVersion}</version>
-        </dependency>
+
+        <!-- for very nasty debugging only -->
+<!--        <dependency>-->
+<!--            <groupId>org.ow2.asm</groupId>-->
+<!--            <artifactId>asm-analysis</artifactId>-->
+<!--            <version>${asmVersion}</version>-->
+<!--        </dependency>-->
 <!--        &lt;!&ndash; for debugging only &ndash;&gt;-->
 <!--        <dependency>-->
 <!--            <groupId>org.scala-lang</groupId>-->

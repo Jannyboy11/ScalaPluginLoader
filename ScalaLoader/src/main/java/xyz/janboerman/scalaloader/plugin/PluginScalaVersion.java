@@ -3,8 +3,10 @@ package xyz.janboerman.scalaloader.plugin;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import xyz.janboerman.scalaloader.ScalaRelease;
+import static xyz.janboerman.scalaloader.compat.Compat.*;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -12,32 +14,57 @@ import java.util.Objects;
 @SerializableAs("ScalaVersion")
 public final class PluginScalaVersion implements ConfigurationSerializable {
 
-    private final String scalaVersion;
-    private final String scalaLibraryUrl;
-    private final String scalaReflectUrl;
+    private static final String SCALA_VERSION = "scala-version";
+    public static final String SCALA2_REFLECT_URL = "scala-reflect-url";
+    public static final String SCALA2_LIBRARY_URL = "scala-library-url";
+    public static final String SCALA3_LIBRARY_URL = "scala3-library-url";
+    public static final String TASTY_CORE_URL = "tasty-core-url";
 
+    //private static final String SCALA3_STAGING_URL = "scala3-staging-url";
+    //private static final String TASTY_INSPECTOR_URL = "tasty-inspector-url";
+
+
+    private final String scalaVersion;
+    private final Map<String, String> urls;
+
+    /**
+     * @deprecated since Scala 3 there are more artifacts than just the scala standard library and the scala reflection library
+     */
+    @Deprecated
     public PluginScalaVersion(String scalaVersion, String libraryUrl, String reflectUrl) {
-        this.scalaVersion = Objects.requireNonNull(scalaVersion, "scalaVersion cannot be null!");
-        this.scalaLibraryUrl = Objects.requireNonNull(libraryUrl, "scala standard library url cannot be null!");
-        this.scalaReflectUrl = Objects.requireNonNull(reflectUrl, "scala reflection library url cannot be null!");
+        Objects.requireNonNull(scalaVersion, "scalaVersion cannot be null!");
+        Objects.requireNonNull(libraryUrl, "scala standard library url cannot be null!");
+        Objects.requireNonNull(reflectUrl, "scala reflection library url cannot be null!");
+
+        this.scalaVersion = scalaVersion;
+        this.urls = mapOf(mapEntry(SCALA2_LIBRARY_URL, libraryUrl), mapEntry(SCALA2_REFLECT_URL, reflectUrl));
     }
 
-      // not needed (yet?) as we don't relocate scala classes to per-version packages
-      // instead, we are using a classloader hierarchy
-//    static String packagePrefix(String scalaVersion) {
-//        return scalaVersion.replaceAll("\\W", "_");
-//    }
+    public PluginScalaVersion(String scalaVersion, Map<String, String> urls) {
+        Objects.requireNonNull(scalaVersion, "scalaVersion cannot be null!");
+        Objects.requireNonNull(urls, "urls cannot be null!");
+
+        this.scalaVersion = scalaVersion;
+        this.urls = mapCopy(urls);
+    }
+
 
     public String getScalaVersion() {
         return scalaVersion;
     }
 
-    public String getScalaLibraryUrl() {
-        return scalaLibraryUrl;
+    public Map<String, String> getUrls() {
+        return Collections.unmodifiableMap(urls);
     }
 
+    @Deprecated
+    public String getScalaLibraryUrl() {
+        return urls.get(SCALA2_LIBRARY_URL);
+    }
+
+    @Deprecated
     public String getScalaReflectUrl() {
-        return scalaReflectUrl;
+        return urls.get(SCALA2_REFLECT_URL);
     }
 
     public ScalaRelease getCompatRelease() {
@@ -66,24 +93,30 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
     public Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
         map.put("scala-version", getScalaVersion());
-        map.put("scala-library-url", getScalaLibraryUrl());
-        map.put("scala-reflect-url", getScalaReflectUrl());
+
+        for (Map.Entry<String, String> urlEntry : urls.entrySet()) {
+            map.put(urlEntry.getKey(), urlEntry.getValue());
+        }
 
         return map;
     }
 
     public static PluginScalaVersion deserialize(Map<String, Object> map) {
-        String scalaVersion = map.get("scala-version").toString();
-        String scalaLibraryUrl = map.get("scala-library-url").toString();
-        String scalaReflectUrl = map.get("scala-reflect-url").toString();
+        map.remove("==");   //bukkit leaks the type information in its abstraction!
 
-        return new PluginScalaVersion(scalaVersion, scalaLibraryUrl, scalaReflectUrl);
+        String scalaVersion = map.remove("scala-version").toString();
+
+        Map<String, String> urls = new HashMap<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            urls.put(entry.getKey(), entry.getValue().toString());
+        }
+
+        return new PluginScalaVersion(scalaVersion, urls);
     }
 
     public static PluginScalaVersion fromScalaVersion(ScalaVersion scalaVersion) {
         return new PluginScalaVersion(
                 scalaVersion.getVersion(),
-                scalaVersion.getScalaLibraryUrl(),
-                scalaVersion.getScalaReflectUrl());
+                scalaVersion.getUrls());
     }
 }

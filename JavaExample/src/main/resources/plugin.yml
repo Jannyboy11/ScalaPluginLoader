@@ -1,6 +1,6 @@
 name: JavaExample                                             #Ignored!
 main: xyz.janboerman.scalaloader.example.java.ExamplePlugin   #Ignored!
-version: 0.13.7-SNAPSHOT                                      #Ignored!
+version: 0.15.0-SNAPSHOT                                      #Ignored!
 api-version: 1.13
 
 commands:

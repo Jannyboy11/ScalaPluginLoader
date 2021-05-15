@@ -9,7 +9,6 @@ import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.*;
-import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.bytecode.Called;
@@ -97,8 +96,10 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     String fakeDescription = "name: Fake" + System.lineSeparator() +
                             "version: 1.0" + System.lineSeparator() +
                             "main: xyz.janboerman.scalaloader.FakePlugin" + System.lineSeparator();
-                    if (currentPluginClassLoader.getApiVersion() != ApiVersion.LEGACY) {
-                        fakeDescription += "api-version: " + currentPluginClassLoader.getApiVersion().getVersionString() + System.lineSeparator();
+                    ApiVersion apiVersion = currentPluginClassLoader.getApiVersion();
+                    if (apiVersion != ApiVersion.LEGACY) {
+                        //If api-version is not set, this will be ApiVersion.latest(). We assume all ScalaPlugins are made in the post-1.13 era.
+                        fakeDescription += "api-version: " + apiVersion.getVersionString() + System.lineSeparator();
                     }
 
                     PluginDescriptionFile pluginDescriptionFile = new PluginDescriptionFile(new StringReader(fakeDescription));
@@ -108,6 +109,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     return processed;
                 } catch (NoSuchMethodError e) {
                     //UnsafeValues#processClass does not exist, just return the original class bytes
+                    conversionMethodExists = false;
                 }
             }
 
@@ -275,8 +277,8 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         //  2.  other scalaplugins
         //  3.  javaplugins, Bukkit/NMS classes (parent)
 
-        if (name.startsWith("scala.")) {
-            //short-circuit scala standard library classes
+        if (name.startsWith("scala.") || name.startsWith("dotty.")) {
+            //short-circuit scala standard library and dotty/tasty classes.
             //we do this because if some plugin or library (such as PDM) adds the scala library to this classloader using #addUrl(URL),
             //then we still want to use the scala library that is loaded by the parent classloader
             try {
@@ -305,6 +307,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         || name.startsWith("xyz.janboerman.scalaloader.event.transform")
                         || name.startsWith("xyz.janboerman.scalaloader.compat")
                         || name.startsWith("xyz.janboerman.scalaloader.util")
+                        || name.startsWith("xyz.janboerman.scalaloader.commands")
                 ) throw new ClassNotFoundException("Can't access internal class: " + name);
             }
 
@@ -320,6 +323,11 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         }
 
         throw fallback;
+    }
+
+
+    private boolean debugClassLoad(String className) {
+        return getPluginLoader().debugClassNames().contains(className);
     }
 
     /**
@@ -404,96 +412,13 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         }
                     }
 
-                    ClassReader debugReader = new ClassReader(classBytes);
-                    TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out));
-                    ClassVisitor debugVisitor = new ClassVisitor(AsmConstants.ASM_API, traceClassVisitor) {
-                        private boolean debug = false;
-
-                        @Override
-                        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-                            if ("xyz/janboerman/scalaloader/example/scala/ScalaTypesSerializationTest$".equals(name)
-                                    || "xyz/janboerman/scalaloader/example/scala/ImmutableCollectionTest".equals(name)
-                                    || "xyz/janboerman/scalaloader/example/scala/ImmutableCollectionTest$".equals(name)
-                                    || "xyz/janboerman/scalaloader/example/scala/MutableCollectionTest".equals(name)
-                                    || "xyz/janboerman/scalaloader/example/scala/MutableCollectionTest$".equals(name)) {
-                                debug = true;
-                            }
-
-                            if (debug) super.visit(version, access, name, signature, superName, interfaces);
-                        }
-
-                        @Override
-                        public void visitSource(String source, String debug) {
-                            if (this.debug) super.visitSource(source, debug);
-                        }
-
-                        @Override
-                        public void visitNestHost(String nestHost) {
-                            if (this.debug) super.visitNestHost(nestHost);
-                        }
-
-                        @Override
-                        public void visitOuterClass(String owner, String name, String descriptor) {
-                            if (this.debug) super.visitOuterClass(owner, name, descriptor);
-                        }
-
-                        @Override
-                        public void visitAttribute(Attribute attribute) {
-                            if (this.debug) super.visitAttribute(attribute);
-                        }
-
-                        @Override
-                        public void visitNestMember(String nestMember) {
-                            if (this.debug) super.visitNestMember(nestMember);
-                        }
-
-                        @Override
-                        public void visitPermittedSubclass(String permittedSubclass) {
-                            if (this.debug) super.visitPermittedSubclass(permittedSubclass);
-                        }
-
-                        @Override
-                        public void visitInnerClass(String name, String outerName, String innerName, int access) {
-                            if (this.debug) super.visitInnerClass(name, outerName, innerName, access);
-                        }
-
-                        @Override
-                        public ModuleVisitor visitModule(String name, int access, String version) {
-                            return debug ? super.visitModule(name, access, version) : null;
-                        }
-
-                        @Override
-                        public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-                            return debug ? super.visitAnnotation(descriptor, visible) : null;
-                        }
-
-                        @Override
-                        public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-                            return debug ? super.visitTypeAnnotation(typeRef, typePath, descriptor, visible) : null;
-                        }
-
-                        @Override
-                        public RecordComponentVisitor visitRecordComponent(String name, String descriptor, String signature) {
-                            return debug ? super.visitRecordComponent(name, descriptor, signature) : null;
-                        }
-
-                        @Override
-                        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-                            return debug ? super.visitField(access, name, descriptor, signature, value) : null;
-                        }
-
-                        @Override
-                        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-                            return debug ? super.visitMethod(access, name, descriptor, signature, exceptions) : null;
-                        }
-
-                        @Override
-                        public void visitEnd() {
-                            if (debug) super.visitEnd();
-                        }
-                    };
-                    debugReader.accept(debugVisitor, 0);
-
+                    //dump the class to the log in case classloading debugging was enabled for this class
+                    if (debugClassLoad(name)) {
+                        getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] Dumping bytecode for class " + name);
+                        ClassReader debugReader = new ClassReader(classBytes);
+                        TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out));
+                        debugReader.accept(traceClassVisitor, 0);
+                    }
 
                     // Note to self 2020-11-11:
                     // If I ever get a java.lang.ClassFormatError: Invalid length 65526 in LocalVariableTable in class file com/example/MyClass

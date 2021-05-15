@@ -1,17 +1,16 @@
 package xyz.janboerman.scalaloader.plugin.description;
 
 import org.bukkit.plugin.java.JavaPlugin;
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
+import xyz.janboerman.scalaloader.plugin.description.Version.ScalaLibrary;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -21,16 +20,18 @@ public class DescriptionScanner extends ClassVisitor {
 
     private static final int ASM_API = AsmConstants.ASM_API;
 
-    private static final String SCALAPLUGIN_CLASS_NAME = ScalaPlugin.class.getName().replace('.', '/');
-    private static final String JAVAPLUGIN_CLASS_NAME = JavaPlugin.class.getName().replace('.', '/');
-    private static final String JAVA_LANG_OBJECT_CLASS_NAME = Object.class.getName().replace('.', '/');
+    private static final String SCALAPLUGIN_CLASS_NAME = Type.getInternalName(ScalaPlugin.class);
+    private static final String JAVAPLUGIN_CLASS_NAME = Type.getInternalName(JavaPlugin.class);
+    private static final String JAVA_LANG_OBJECT_CLASS_NAME = Type.getInternalName(Object.class);
 
-    private static final String SCALA_ANNOTATION_DESCRIPTOR = "L" + Scala.class.getName().replace('.', '/') + ";";
-    private static final String CUSTOMSCALA_ANNOTATION_DESCRIPTOR = "L" + CustomScala.class.getName().replace('.', '/') + ";";
-    private static final String VERSION_ANNOTATION_DESCRIPTOR = "L" + Version.class.getName().replace('.', '/') + ";";
-    private static final String API_ANNOTATION_DESCRIPTOR = "L" + Api.class.getName().replace('.', '/') + ";";
+    private static final String SCALA_ANNOTATION_DESCRIPTOR = Type.getDescriptor(Scala.class);
+    private static final String CUSTOMSCALA_ANNOTATION_DESCRIPTOR = Type.getDescriptor(CustomScala.class);
+    private static final String VERSION_ANNOTATION_DESCRIPTOR = Type.getDescriptor(Version.class);
+    private static final String API_ANNOTATION_DESCRIPTOR = Type.getDescriptor(Api.class);
+    private static final String SCALALIBRARY_ANNOTATION_DESCRIPTOR = Type.getDescriptor(ScalaLibrary.class);
 
-    private String mainClassCandidate;
+    private String asmClassName;
+    private String mainClassCandidate;  //runtime class name format. e.g.: com.mydomain.project.ProjectPlugin
     private PluginScalaVersion scalaVersion;
     private ApiVersion bukkitApiVersion;
     private boolean extendsScalaPlugin;
@@ -38,7 +39,8 @@ public class DescriptionScanner extends ClassVisitor {
     private boolean extendsJavaLangObject;
     private boolean isAbstract;
     private boolean isModule;
-    private boolean hasSuitableConstructor;
+    private boolean hasPublicNoArgsConstructor;
+    private boolean isObject;
 
     /**
      * Initialises the {@link DescriptionScanner} without reading a class file.
@@ -79,8 +81,47 @@ public class DescriptionScanner extends ClassVisitor {
                 + ",extendsJavaLangObject=" + extendsJavaLangObject
                 + ",isAbstract=" + isAbstract
                 + ",isModule=" + isModule
-                + ",hasSuitableConstructor" + hasSuitableConstructor
+                + ",hasSuitableConstructor" + hasPublicNoArgsConstructor
                 + "}";
+    }
+
+    //visit declaration
+    @Override
+    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        mainClassCandidate = (asmClassName = name).replace('/', '.');
+        isAbstract = (access & Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
+        isModule = (access & Opcodes.ACC_MODULE) == Opcodes.ACC_MODULE;
+        isObject = name.endsWith("$");
+        if (SCALAPLUGIN_CLASS_NAME.equals(superName)) {
+            extendsScalaPlugin = true;
+        } else if (JAVAPLUGIN_CLASS_NAME.equals(superName)) {
+            extendsJavaPlugin = true;
+        } else if (JAVA_LANG_OBJECT_CLASS_NAME.equals(superName)) {
+            extendsJavaLangObject = true;
+        }
+    }
+
+    //visit constructor
+    @Override
+    public MethodVisitor visitMethod(int access, java.lang.String name, java.lang.String descriptor, java.lang.String signature, java.lang.String[] exceptions) {
+        boolean isConstructor = "<init>".equals(name);
+        boolean isNoArgs = "()V".equals(descriptor);
+        boolean isPublic = (Opcodes.ACC_PUBLIC & access) == Opcodes.ACC_PUBLIC;
+        if (isConstructor && isNoArgs && isPublic) {
+            hasPublicNoArgsConstructor = true;
+        }
+
+        return null;
+    }
+
+    //visit fields
+    @Override
+    public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+        if ("MODULE$".equals(name)) {
+            isObject &= ((access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC) && descriptor.equals("L" + asmClassName + ";");
+        }
+
+        return null;
     }
 
     //visit declaration annotations
@@ -98,34 +139,6 @@ public class DescriptionScanner extends ClassVisitor {
         return null;
     }
 
-    //visit declaration
-    @Override
-    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        mainClassCandidate = name.replace('/', '.');
-        isAbstract = (access & Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
-        isModule = (access & Opcodes.ACC_MODULE) == Opcodes.ACC_MODULE;
-        if (SCALAPLUGIN_CLASS_NAME.equals(superName)) {
-            extendsScalaPlugin = true;
-        } else if (JAVAPLUGIN_CLASS_NAME.equals(superName)) {
-            extendsJavaPlugin = true;
-        } else if (JAVA_LANG_OBJECT_CLASS_NAME.equals(superName)) {
-            extendsJavaLangObject = true;
-        }
-    }
-
-    //visit constructor
-    @Override
-    public MethodVisitor visitMethod(int access, java.lang.String name, java.lang.String descriptor, java.lang.String signature, java.lang.String[] exceptions) {
-        boolean isConstructor = "<init>".equals(name);
-        boolean isNoArgs = "()V".equals(descriptor);
-        boolean isPublic = (Opcodes.ACC_PUBLIC & access) == Opcodes.ACC_PUBLIC;
-        if (isNoArgs && (isPublic || isConstructor)) { //scala singleton objects have private constructors.
-            hasSuitableConstructor = true;
-        }
-
-        return null;
-    }
-
     public boolean hasClass() {
         return !isModule;
     }
@@ -138,7 +151,7 @@ public class DescriptionScanner extends ClassVisitor {
         return Optional.ofNullable(mainClassCandidate)
                 .filter(x -> !isModule)
                 .filter(x -> getScalaVersion().isPresent())
-                .filter(x -> hasSuitableConstructor)
+                .filter(x -> hasPublicNoArgsConstructor || isObject)
                 .filter(x -> !isAbstract)
                 .filter(x -> !extendsJavaLangObject);
     }
@@ -164,7 +177,8 @@ public class DescriptionScanner extends ClassVisitor {
     // custom scala
     private class CustomScalaAnnotationVisitor extends AnnotationVisitor {
 
-        private String version, scalaLibrary, scalaReflect;
+        private String version;
+        private final Map<String, String> urls = new HashMap<>();
 
         private CustomScalaAnnotationVisitor() {
             super(ASM_API);
@@ -177,17 +191,43 @@ public class DescriptionScanner extends ClassVisitor {
                     @Override
                     public void visit(String name, Object value) {
                         switch(name) {
-                            case "value":               version         = value.toString();     break;
-                            case "scalaLibraryUrl":     scalaLibrary    = value.toString();     break;
-                            case "scalaReflectUrl":     scalaReflect    = value.toString();     break;
+                            case "value":               version = value.toString();                                         break;
+                            case "scalaLibraryUrl":     urls.put(PluginScalaVersion.SCALA2_LIBRARY_URL, value.toString());  break;
+                            case "scalaReflectUrl":     urls.put(PluginScalaVersion.SCALA2_REFLECT_URL, value.toString());  break;
                         }
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitArray(String name) {
+                        return "scalaLibs".equals(name) ? new AnnotationVisitor(ASM_API) {
+                            @Override
+                            public AnnotationVisitor visitAnnotation(String name, String descriptor) {
+                                return SCALALIBRARY_ANNOTATION_DESCRIPTOR.equals(descriptor) ? new AnnotationVisitor(ASM_API) {
+                                    String name = null;
+                                    String url = null;
+
+                                    @Override
+                                    public void visit(String name, Object value) {
+                                        if ("name".equals(name)) this.name = (String) value;
+                                        else if ("url".equals(name)) this.url = (String) value;
+                                    }
+
+                                    @Override
+                                    public void visitEnd() {
+                                        if (name != null && url != null) {
+                                            urls.put(name, url);
+                                        }
+                                    }
+                                } : null;
+                            }
+                        } : null;
                     }
                 } : null;
         }
 
         @Override
         public void visitEnd() {
-            scalaVersion = new PluginScalaVersion(version, scalaLibrary, scalaReflect);
+            scalaVersion = new PluginScalaVersion(version, urls);
         }
     }
 

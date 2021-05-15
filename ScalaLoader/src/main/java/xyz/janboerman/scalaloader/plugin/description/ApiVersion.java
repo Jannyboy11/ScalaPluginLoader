@@ -31,17 +31,17 @@ public enum ApiVersion {
     static {
         ApiVersion runningOn;
         String bukkitVersion = Bukkit.getBukkitVersion();
-        if (bukkitVersion.contains("1.18")) {
+        if (bukkitVersion.startsWith("1.18")) {
             runningOn = v1_18;
-        } else if (bukkitVersion.contains("1.17")) {
+        } else if (bukkitVersion.startsWith("1.17")) {
             runningOn = v1_17;
-        } else if (bukkitVersion.contains("1.16")) {
+        } else if (bukkitVersion.startsWith("1.16")) {
             runningOn = v1_16;
-        } else if (bukkitVersion.contains("1.15")) {
+        } else if (bukkitVersion.startsWith("1.15")) {
             runningOn = v1_15;
-        } else if (bukkitVersion.contains("1.14")) {
+        } else if (bukkitVersion.startsWith("1.14")) {
             runningOn = v1_14;
-        } else if (bukkitVersion.contains("1.13")) {
+        } else if (bukkitVersion.startsWith("1.13")) {
             runningOn = v1_13;
         } else {
             runningOn = LEGACY;

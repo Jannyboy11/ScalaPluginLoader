@@ -1,7 +1,13 @@
 package xyz.janboerman.scalaloader.plugin.description;
 
+import xyz.janboerman.scalaloader.ScalaRelease;
+import static xyz.janboerman.scalaloader.compat.Compat.*;
+import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BinaryOperator;
 
 /**
  * An enumeration of some common recent versions of Scala.
@@ -9,6 +15,8 @@ import java.util.Map;
 public enum ScalaVersion {
 
     //2.11.x
+    /** @deprecated provided for those who wish to use it, but the Scala 2.11 series has been unsupported for a while now. */
+    @Deprecated
     v2_11_12("2.11.12"),
 
     //2.12.x
@@ -30,40 +38,49 @@ public enum ScalaVersion {
     v2_13_5("2.13.5"),
 
     //3.0.x
-    /** @deprecated not recommended to use anymore - Scala 3.0.0 has been released, but at the time of writing this comment it hasn't been published to Maven Central yet. */
-    v3_0_0_RC3("3.0.0-RC3", false, mavenCentralSearchScalaReflect("3.0.0-RC3"), mavenCentralSearchScalaLibrary("3.0.0-RC3"));
-
-    private static String mavenCentralSearchScalaLibrary(String scalaVersion) {
-        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-library/" + scalaVersion + "/scala-library-" + scalaVersion + ".jar";
-    }
-
-    private static String mavenCentralSearchScalaReflect(String scalaVersion) {
-        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-reflect/" + scalaVersion + "/scala-reflect-" + scalaVersion + ".jar";
-    }
+    v3_0_0("3.0.0");
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
 
     private static Map<String, ScalaVersion> byVersion = new HashMap<>();
     static {
         for (ScalaVersion version : ScalaVersion.values()) {
-            byVersion.put(version.getVersion(), version);
+            String ver = version.getVersion();
+            byVersion.put(ver, version);
         }
     }
 
     private final String version;
-    private final String scalaLibraryUrl;
-    private final String scalaReflectUrl;
     private final boolean stable;
+    private final Map<String, String> urls;
 
     ScalaVersion(String version) {
-        this(version, true, mavenCentralSearchScalaReflect(version), mavenCentralSearchScalaLibrary(version));
+        this(version, true, urls(version));
     }
 
-    ScalaVersion(String version, boolean stable, String reflect, String library) {
+    ScalaVersion(String version, boolean stable, Map<String, String> urls) {
         this.version = version;
-        this.scalaLibraryUrl = library;
-        this.scalaReflectUrl = reflect;
         this.stable = stable;
+        this.urls = urls;
+    }
+
+    private static Map<String, String> urls(String scalaVersion) {
+        if (scalaVersion.startsWith("2.")) {
+            return mapOf(
+                    mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(scalaVersion)),
+                    mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(scalaVersion))
+            );
+        } else if (scalaVersion.startsWith("3.0.")) {
+            return mapOf(
+                    mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary("2.13.5")),
+                    mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect("2.13.5")),
+                    mapEntry(PluginScalaVersion.SCALA3_LIBRARY_URL, mavenCentralScala3LibraryAdditions(scalaVersion)),
+                    mapEntry(PluginScalaVersion.TASTY_CORE_URL, mavenCentralScala3TastyCoreAdditions(scalaVersion))
+            );
+        } else {
+            assert false : "Scala 3.1+ not yet supported";
+            return null;
+        }
     }
 
     public static ScalaVersion fromVersionString(String string) {
@@ -71,7 +88,7 @@ public enum ScalaVersion {
     }
 
     /**
-     * Get the version of Scala
+     * Get the version of Scala.
      * @return the version
      */
     public String getVersion() {
@@ -79,21 +96,48 @@ public enum ScalaVersion {
     }
 
     /**
+     * <p>
+     *     Get the download urls for some of the Scala runtime jar files.
+     *     Possible keys in this map are a subset of the following constants:
+     * </p>
+     * <p>
+     *     <ul>
+     *         <li>{@link PluginScalaVersion#SCALA2_LIBRARY_URL}</li>
+     *         <li>{@link PluginScalaVersion#SCALA2_REFLECT_URL}</li>
+     *         <li>{@link PluginScalaVersion#SCALA3_LIBRARY_URL}</li>
+     *         <li>{@link PluginScalaVersion#TASTY_CORE_URL}</li>
+     *     </ul>
+     * </p>
+     * @return a map containing the urls as values
+     */
+    public Map<String, String> getUrls() {
+        return Collections.unmodifiableMap(urls);
+    }
+
+    /**
      * Get a url on which the standard library is hosted.
      * @return a url, usually to some maven repository
+     * @deprecated Starting from Scala 3, the runtime is larger than just a standard and reflection library. Use {@link #getUrls()} instead.
      */
+    @Deprecated
     public String getScalaLibraryUrl() {
-        return scalaLibraryUrl;
+        return urls.get(PluginScalaVersion.SCALA2_LIBRARY_URL);
     }
 
     /**
      * Get a url on which the reflection library is hosted.
      * @return a url, usually to some maven repository
+     * @deprecated Starting from Scala 3, the runtime is larger than just a standard and reflection library. Use {@link #getUrls()} instead.
      */
+    @Deprecated
     public String getScalaReflectUrl() {
-        return scalaReflectUrl;
+        return urls.get(PluginScalaVersion.SCALA2_REFLECT_URL);
     }
 
+    /**
+     * Get a string representation of this ScalaVersion.
+     * @return the scala version string
+     */
     @Override
     public String toString() {
         return getVersion();
@@ -106,5 +150,36 @@ public enum ScalaVersion {
     public boolean isStable() {
         return stable;
     }
+
+
+    //
+    // helper methods
+    //
+
+    private static String mavenCentralSearchScalaLibrary(String scalaVersion) {
+        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-library/" + scalaVersion + "/scala-library-" + scalaVersion + ".jar";
+    }
+
+    private static String mavenCentralSearchScalaReflect(String scalaVersion) {
+        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-reflect/" + scalaVersion + "/scala-reflect-" + scalaVersion + ".jar";
+    }
+
+    private static String mavenCentralScala3LibraryAdditions(String scalaVersion) {
+        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-library_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/scala3-library_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
+    }
+
+    private static String mavenCentralScala3TastyCoreAdditions(String scalaVersion) {
+        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/tasty-core_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/tasty-core_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
+    }
+
+    private static String mavenCentralScala3StagingAdditions(String scalaVersion) {
+        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-staging_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/scala3-staging_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
+    }
+
+    private static String mavenCentralScala3TastyInspectorAdditions(String scalaVersion) {
+        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-tasty-inspector_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/scala3-tasty-inspector_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
+    }
+
+
 
 }
