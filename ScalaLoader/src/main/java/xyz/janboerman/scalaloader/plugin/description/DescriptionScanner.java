@@ -91,7 +91,7 @@ public class DescriptionScanner extends ClassVisitor {
         mainClassCandidate = (asmClassName = name).replace('/', '.');
         isAbstract = (access & Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
         isModule = (access & Opcodes.ACC_MODULE) == Opcodes.ACC_MODULE;
-        isObject = name.endsWith("$");
+        isObject = name.endsWith("$") && (access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL;
         if (SCALAPLUGIN_CLASS_NAME.equals(superName)) {
             extendsScalaPlugin = true;
         } else if (JAVAPLUGIN_CLASS_NAME.equals(superName)) {
@@ -117,8 +117,8 @@ public class DescriptionScanner extends ClassVisitor {
     //visit fields
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-        if ("MODULE$".equals(name)) {
-            isObject &= ((access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC) && descriptor.equals("L" + asmClassName + ";");
+        if ("MODULE$".equals(name) && descriptor.equals("L" + asmClassName + ";")) {
+            isObject &= ((access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC);
         }
 
         return null;

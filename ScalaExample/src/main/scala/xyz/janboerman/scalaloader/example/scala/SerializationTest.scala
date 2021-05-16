@@ -314,7 +314,6 @@ class ImmutableCollectionTest {
 
 object ImmutableCollectionTest {
     import scala.collection.immutable._
-    import scala.collection.JavaConverters
     import xyz.janboerman.scalaloader.configurationserializable.runtime.{NumericRange => SLRange}
 
     def deserialize(map: java.util.Map[String, AnyRef]): ImmutableCollectionTest = {
@@ -444,7 +443,6 @@ object ImmutableCollectionTest {
 
 class MutableCollectionTest {
     import scala.collection.mutable._
-    import scala.jdk.CollectionConverters._
 
     //TODO need special cases for: ArrayBuilder, ArraySeq because they require an implicit ClassTag.
     //TODO I could choose to 'provide' that implicit argument (which is not implicit in the bytecode),
@@ -579,5 +577,62 @@ class OtherScalaTypesTest {
     private val tuple20 = new Tuple20("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t")
     private val tuple21 = new Tuple21("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u")
     private val tuple22 = new Tuple22("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v")
+
+}
+
+object OrderingTest {
+
+    //java primitives
+    def byteOrder = implicitly[Ordering[Byte]]
+    def shortOrder = implicitly[Ordering[Short]]
+    def intOrder = implicitly[Ordering[Int]]
+    def longOrder = implicitly[Ordering[Long]]
+    def floatOrder = implicitly[Ordering[Float]]
+    def doubleOrder = implicitly[Ordering[Double]]
+    def booleanOrder = implicitly[Ordering[Boolean]]
+    def charOrder = implicitly[Ordering[Char]]
+
+    //other scala primitives
+    def nullOrder = implicitly[Ordering[Null]]
+    def unitOrder = implicitly[Ordering[Unit]]
+    //there is no implicit for Ordering[Nothing] so, which makes sense I guess
+
+    //other types from the Ordering companion object
+    def stringOrder = implicitly[Ordering[String]](Ordering.String)
+    def bigDecimalOrder = implicitly[Ordering[BigDecimal]]
+    def bigIntOrder = implicitly[Ordering[BigInt]]
+
+    //common wrappers
+    def tupleOrder = implicitly[Ordering[(Long, Boolean)]]
+    def optionOrder = implicitly[Ordering[Option[Char]]]
+    //Either has no implicit Ordering! Didn't expect that!
+
+    //collections
+    import Ordering.Implicits._
+    def intListOrder = implicitly[Ordering[List[Int]]]
+    //the compiler does not seem to find the implicit. weird.
+    //def sortedSetOrdering = implicitly[Ordering[scala.collection.SortedSet[Int]]]
+
+
+    //comparable and comparator
+    def uuidOrder = implicitly[Ordering[java.util.UUID]]
+    implicit val stringComparator = String.CASE_INSENSITIVE_ORDER
+    def stringCaseInsensitiveOrder = implicitly[Ordering[String]]
+
+    //the stringComparator gets compiled to its own method (backed by a field):
+    /*
+        methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "stringComparator", "()Ljava/util/Comparator;", "()Ljava/util/Comparator<Ljava/lang/String;>;", null);
+        methodVisitor.visitCode();
+        Label label0 = new Label();
+        methodVisitor.visitLabel(label0);
+        methodVisitor.visitLineNumber(621, label0);
+        methodVisitor.visitFieldInsn(GETSTATIC, "xyz/janboerman/scalaloader/example/scala/OrderingTest$", "stringComparator", "Ljava/util/Comparator;");
+        methodVisitor.visitInsn(ARETURN);
+        Label label1 = new Label();
+        methodVisitor.visitLabel(label1);
+        methodVisitor.visitLocalVariable("this", "Lxyz/janboerman/scalaloader/example/scala/OrderingTest$;", null, label0, label1, 0);
+        methodVisitor.visitMaxs(1, 1);
+        methodVisitor.visitEnd();
+     */
 
 }

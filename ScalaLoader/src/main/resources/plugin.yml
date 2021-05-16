@@ -20,6 +20,7 @@ commands:
     usage: "/<command>"
     description: Outputs the scala plugins, grouped by their version of Scala.
     permission: scalaloader.listscalaplugins
+    aliases: [scalaplugins]
   resetScalaUrls:
     usage: "/<command> all|[<scala version>]"
     description:
