@@ -16,7 +16,7 @@ public final class OperandStack {
     private final ArrayList<Type> operandTypes;
 
     public OperandStack() {
-        this.operandTypes = new ArrayList<>(0);
+        this.operandTypes = new ArrayList<>(3);
         this.maxCount = 0;
     }
 
@@ -66,7 +66,7 @@ public final class OperandStack {
 
     public void pop(int amount) {
         final int initialSize = operandTypes.size();
-        assert initialSize >= amount;
+        assert initialSize >= amount : "Tried to pop more operands than available (pop=" + amount + ", available=" + initialSize + ")";
 
         for (int i = 0; i < amount; i++) {
             operandTypes.remove(initialSize - 1 - i);

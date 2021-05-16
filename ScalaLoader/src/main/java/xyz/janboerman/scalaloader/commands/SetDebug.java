@@ -8,8 +8,6 @@ import xyz.janboerman.scalaloader.DebugSettings;
 
 public class SetDebug implements CommandExecutor {
 
-    //TODO tabcompletion
-
     private final DebugSettings debugSettings;
 
     public SetDebug(DebugSettings debugSettings) {

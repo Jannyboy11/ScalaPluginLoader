@@ -23,7 +23,10 @@
                 <artifactId>scala-maven-plugin</artifactId>
                 <version>4.5.1</version>
                 <configuration>
-                    <recompileMode>incremental</recompileMode>
+                    <args>
+<!--                        <arg>-rewrite</arg><arg>-indent</arg>-->
+                        <arg>-rewrite</arg><arg>-new-syntax</arg>
+                    </args>
                 </configuration>
                 <executions>
                     <execution>

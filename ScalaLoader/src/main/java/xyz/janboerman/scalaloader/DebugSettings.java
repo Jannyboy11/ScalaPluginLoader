@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 
 public class DebugSettings {
 
@@ -24,6 +25,12 @@ public class DebugSettings {
 
     public DebugSettings(ScalaLoader scalaLoader) {
         this.scalaLoader = scalaLoader;
+        this.saveFile = new File(scalaLoader.getDataFolder(), FILE_NAME);
+        if (saveFile.exists()) try {
+            load();
+        } catch (IOException e) {
+            scalaLoader.getLogger().log(Level.WARNING, "Could not load debug classes.", e);
+        }
     }
 
     public Set<String> debugClassLoads() {
@@ -72,10 +79,7 @@ public class DebugSettings {
     }
 
     private File getSaveFile() throws IOException {
-        if (saveFile == null) {
-            saveFile = new File(scalaLoader.getDataFolder(), FILE_NAME);
-            if (!saveFile.exists()) saveFile.createNewFile();
-        }
+        if (!saveFile.exists()) saveFile.createNewFile();
 
         return saveFile;
     }

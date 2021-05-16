@@ -9,3 +9,15 @@ object Scala3Plugin extends ScalaPlugin(ScalaPluginDescription("Scala3Example", 
 
     override def onEnable(): Unit =
         getLogger.info("Hello from Scala 3!")
+//        CollectionTest.test()
+
+    def assertionsEnabled: Boolean =
+        try
+            assert(false)
+            false
+        catch
+            case ae: AssertionError =>
+                true
+
+
+

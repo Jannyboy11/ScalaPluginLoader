@@ -327,23 +327,9 @@ object ImmutableCollectionTest {
         }
         res.list = scalaListBuilder.result()
 
-        //TODO scala.collection.immutable.ArraySeq$.newBuilder[T] requires an implicit ClassTag[T]
-        //TODO create this ClassTag from the first type argument from the TypeSignature!
-        //TODO should be doable given this api! https://www.scala-lang.org/api/2.12.13/scala/reflect/ClassTag$.html
-        //TODO it seems to be quite stable too: https://www.scala-lang.org/api/2.13.5/scala/reflect/ClassTag$.html
-        //TODO unchanged in Scala 3 :)        : https://dotty.epfl.ch/api/scala/reflect/ClassTag$.html
-
         val arraySeq = map.get("arraySeq").asInstanceOf[java.util.List[Boolean]]
         val scalaArraySeqBuilder = ArraySeq.newBuilder[Boolean]
-        /*
-        GETSTATIC scala/collection/immutable/ArraySeq$.MODULE$ : Lscala/collection/immutable/ArraySeq$;
-        GETSTATIC scala/reflect/ClassTag$.MODULE$ : Lscala/reflect/ClassTag$;
-        INVOKEVIRTUAL scala/reflect/ClassTag$.Boolean ()Lscala/reflect/ManifestFactory$BooleanManifest;
-        INVOKEVIRTUAL scala/collection/immutable/ArraySeq$.newBuilder (Lscala/reflect/ClassTag;)Lscala/collection/mutable/Builder;
 
-        TODO what is the type descriptor for the other primitives? what is it for references? I should probably just special-case all of the special cases..
-        TODO that includes all primitives, scala.Null, scala.Nothing, scala.Any, scala.AnyRef, scala.AnyVal, scala.Unit and java.lang.Object
-         */
         val javaArraySeqIterator = arraySeq.iterator()
         while (javaArraySeqIterator.hasNext) {
             scalaArraySeqBuilder.addOne(/*serialize(*/javaArraySeqIterator.next()/*)*/)
@@ -446,8 +432,9 @@ class MutableCollectionTest {
 
     //TODO need special cases for: ArrayBuilder, ArraySeq because they require an implicit ClassTag.
     //TODO I could choose to 'provide' that implicit argument (which is not implicit in the bytecode),
-    //TODO or I could choose to call the constructor of the specialized subclasses directly (I think I'm going with this one!)
-
+    //TODO or I could choose to call the constructor of the specialized subclasses directly.
+    //TODO I think for ArraySeq the first solution is more apropriate (provide the 'explicit' classtag for the builder)
+    //TODO for ArrayBuilder a completely specialized generation strategy is necessary.
 
     private var arrayBuffer: ArrayBuffer[String] = new ArrayBuffer();
     private var arrayDeque: ArrayDeque[String] = new ArrayDeque();
@@ -613,26 +600,9 @@ object OrderingTest {
     //the compiler does not seem to find the implicit. weird.
     //def sortedSetOrdering = implicitly[Ordering[scala.collection.SortedSet[Int]]]
 
-
     //comparable and comparator
     def uuidOrder = implicitly[Ordering[java.util.UUID]]
-    implicit val stringComparator = String.CASE_INSENSITIVE_ORDER
-    def stringCaseInsensitiveOrder = implicitly[Ordering[String]]
+    def stringCaseInsensitiveOrder = implicitly[Ordering[String]](Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER))
 
-    //the stringComparator gets compiled to its own method (backed by a field):
-    /*
-        methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "stringComparator", "()Ljava/util/Comparator;", "()Ljava/util/Comparator<Ljava/lang/String;>;", null);
-        methodVisitor.visitCode();
-        Label label0 = new Label();
-        methodVisitor.visitLabel(label0);
-        methodVisitor.visitLineNumber(621, label0);
-        methodVisitor.visitFieldInsn(GETSTATIC, "xyz/janboerman/scalaloader/example/scala/OrderingTest$", "stringComparator", "Ljava/util/Comparator;");
-        methodVisitor.visitInsn(ARETURN);
-        Label label1 = new Label();
-        methodVisitor.visitLabel(label1);
-        methodVisitor.visitLocalVariable("this", "Lxyz/janboerman/scalaloader/example/scala/OrderingTest$;", null, label0, label1, 0);
-        methodVisitor.visitMaxs(1, 1);
-        methodVisitor.visitEnd();
-     */
 
 }

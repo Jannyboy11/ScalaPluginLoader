@@ -39,10 +39,10 @@ class Conversions {
             } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
                 mapToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
                 return;
+            } else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
+                ScalaConversions.serializeCollection(pluginClassLoader, methodVisitor, typeSignature, localVariables, operandStack);
+                return;
             }
-            /*TODO else if (isScalaCollection(typeSignature, pluginClassLoader)) {
-                //TODO this needs to support both mutable and immutable collections!
-            }*/
             /*TODO else if (isScalaMap(typeSignature, pluginClassLoader)) {
 
             }*/
@@ -516,8 +516,10 @@ class Conversions {
             } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
                 mapToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
                 return;
+            } else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
+                ScalaConversions.deserializeCollection(pluginClassLoader, methodVisitor, typeSignature, localVariables, operandStack);
+                return;
             }
-            //TODO else if Scala collection
             //TODO else if Scala Map
         }
 
@@ -908,7 +910,8 @@ class Conversions {
 
         //load the result
         methodVisitor.visitVarInsn(ALOAD, liveCollectionIndex);                                                         operandStack.push(Type.getObjectType(collectionTypeName));
-        methodVisitor.visitLabel(endLabel);                                             localVariableTable.removeFramesFromIndex(serializedCollectionIndex);    //the lowest index that we generated!
+        methodVisitor.visitLabel(endLabel);
+        localVariableTable.removeFramesFromIndex(serializedCollectionIndex);    //the lowest index that we generated!
     }
 
     private static void mapToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
@@ -1298,6 +1301,8 @@ class ScalaConversions {
     private static final Type BUILDER_TYPE = Type.getObjectType(BUILDER);
     private static final String ORDERING = "scala/math/Ordering";
     private static final Type ORDERING_TYPE = Type.getObjectType(ORDERING);
+    private static final String GROWABLE = "scala/collection/mutable/Growable";
+    private static final Type GROWABLE_TYPE = Type.getObjectType(GROWABLE);
 
 
     private ScalaConversions() {
@@ -1312,7 +1317,7 @@ class ScalaConversions {
     //TODO test this!
 
     static boolean isScalaCollection(final TypeSignature typeSignature, final ClassLoader pluginClassLoader) {
-        final String typeName = typeSignature.getTypeName();
+        final String typeName = typeSignature.internalName();
 
         switch (typeName) {
             //scala.collection
@@ -1486,14 +1491,14 @@ class ScalaConversions {
         final int iteratorIndex = localVariableIndex++;
         final LocalVariable iterator = new LocalVariable("iterator", ITERATOR_DESCRIPTOR, "L" + ITERATOR_NAME + "<" + elementTypeSignature.toSignature() + ">;", startLabel, endLabel, iteratorIndex);
         methodVisitor.visitTypeInsn(CHECKCAST, ITERABLE);               operandStack.replaceTop(ITERABLE_TYPE);
-        methodVisitor.visitMethodInsn(INVOKEINTERFACE, ITERABLE, "iterator", "()scala/collection/Iterator;", true);       operandStack.replaceTop(ITERATOR_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, ITERABLE, "iterator", "()Lscala/collection/Iterator;", true);       operandStack.replaceTop(ITERATOR_TYPE);
         methodVisitor.visitVarInsn(ASTORE, iteratorIndex);              operandStack.pop();     localVariableTable.add(iterator);
         methodVisitor.visitLabel(startLabel);
 
         //  java.util.ArrayList list = new java.util.ArrayList();
         final Label javaListLabel = new Label();
         final int javaListIndex = localVariableIndex++;
-        final LocalVariable javaList = new LocalVariable("list", "Ljava/util/ArrayList", null, javaListLabel, endLabel, javaListIndex);
+        final LocalVariable javaList = new LocalVariable("list", "Ljava/util/ArrayList;", null, javaListLabel, endLabel, javaListIndex);
         methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");    operandStack.push(Type.getType(ArrayList.class));
         methodVisitor.visitInsn(DUP);                                   operandStack.push(Type.getType(ArrayList.class));
         methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "()V", false);        operandStack.pop();
@@ -1528,19 +1533,26 @@ class ScalaConversions {
         methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
 
         //javaList
-        methodVisitor.visitVarInsn(ALOAD, javaListIndex);
+        methodVisitor.visitVarInsn(ALOAD, javaListIndex);               operandStack.push(ARRAYLIST_TYPE);
         methodVisitor.visitLabel(endLabel);
+        localVariableTable.removeFramesFromIndex(iteratorIndex);
     }
 
     static void deserializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
         final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
+        final String liveTypeName = typeSignature.internalName();
 
         int localVariableIndex = localVariableTable.frameSize();
 
         final Label startLabel = new Label();
         final Label endLabel = new Label();
 
-        //TODO special-case some collections (WrappedString, Range, NumericRange)
+        //TODO special-case some collections:
+        //TODO  - immutable.WrappedString
+        //TODO  - immutable.Range
+        //TODO  - immutable.NumericRange
+        //TODO  - mutable.ArrayBuilder
+        //TODO
 
         //get the Iterator of the List
         final int iteratorIndex = localVariableIndex++;
@@ -1551,33 +1563,62 @@ class ScalaConversions {
         localVariableTable.add(iterator);
         methodVisitor.visitLabel(startLabel);
 
-        final String companion = typeSignature.getTypeName() + '$';
-        methodVisitor.visitFieldInsn(GETSTATIC, companion, MODULE$, "L" + companion + ";");     operandStack.push(Type.getObjectType(companion));
-        generateNewBuilder(classLoader, methodVisitor, typeSignature, localVariableTable, operandStack, companion);
+        //create an empty builder
+        final Label builderLabel = new Label();
+        final int builderIndex = localVariableIndex++;
+        final LocalVariable builder = new LocalVariable("builder", BUILDER_TYPE.getDescriptor(), null, builderLabel, endLabel, builderIndex);
 
+        generateNewBuilderCall(classLoader, methodVisitor, typeSignature, localVariableTable, operandStack);
+        methodVisitor.visitVarInsn(ASTORE, builderIndex);                       operandStack.pop();
+        localVariableTable.add(builder);
+        methodVisitor.visitLabel(builderLabel);
 
+        //loop body!
+        final Label jumpBackTarget = builderLabel;
+        final Label endOfLoopLabel = new Label();
+        final Object[] localsFrame = localVariableTable.frame();
+        final Object[] stackFrame = operandStack.frame();
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
 
-        //TODO ^^^^^^^^^^^ might need to supply a ClassTag, or use a different class because the declared class is Abstract.
-        //TODO ^^^^^^^^^^^ might need to supply an Order[X].
-        //TODO loop through the list (using the java.util.Iterator)
-        //TODO convert the elements, append to the builder
-        //TODO call builder.result()
-        //TODO done!
+        //load the iterator, call next(), convert
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                       operandStack.push(Type.getObjectType("java/util/Iterator"));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "hasNext", "()Z", true);   operandStack.replaceTop(BOOLEAN_TYPE);
+        methodVisitor.visitJumpInsn(IFEQ, endOfLoopLabel);                      operandStack.pop();
+        //prepare builder so that we can call add later.
+        methodVisitor.visitVarInsn(ALOAD, builderIndex);                        operandStack.push(BUILDER_TYPE);
+        methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                       operandStack.push(Type.getObjectType("java/util/Iterator"));
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);                 operandStack.replaceTop(OBJECT_TYPE);
+        Conversions.toLiveType(classLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localVariableTable, operandStack);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, GROWABLE, "addOne", "(Ljava/lang/Object;)" + GROWABLE_TYPE.getDescriptor(), true);     operandStack.replaceTop(2, GROWABLE_TYPE);
+        methodVisitor.visitInsn(POP);   /*pop the growable from the stack*/     operandStack.pop();
+        methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
 
+        //end of loop
+        localVariableTable.removeFramesFromIndex(localVariableIndex);
+        assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
+        assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
+        methodVisitor.visitLabel(endOfLoopLabel);
+        methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+
+        //load the builder, call .result()
+        methodVisitor.visitVarInsn(ALOAD, builderIndex);                        operandStack.push(BUILDER_TYPE);
+        methodVisitor.visitMethodInsn(INVOKEINTERFACE, BUILDER, "result", "()Ljava/lang/Object;", true);    operandStack.replaceTop(OBJECT_TYPE);
+        methodVisitor.visitTypeInsn(CHECKCAST, liveTypeName);                   operandStack.replaceTop(Type.getObjectType(liveTypeName));
+
+        //clean up
         methodVisitor.visitLabel(endLabel);
+        localVariableTable.removeFramesFromIndex(iteratorIndex);
     }
 
-    //mutable collections
 
-    //other standard datatypes
+    private static void generateNewBuilderCall(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
+        final String companion = typeSignature.getTypeName() + '$';
 
-    //TODO helper method for getting Order instances on the operand stack!
-
-    private static void generateNewBuilder(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack,
-                                           String companion) {
-        //a reference to the companion object is already on the stack
+        //push the companion object on the stack and then we will call .newBuilder(), .newBuilder(Ordering) or .newBuilder(ClassTag).
+        methodVisitor.visitFieldInsn(GETSTATIC, companion, MODULE$, "L" + companion + ";");     operandStack.push(Type.getObjectType(companion));
 
         switch (typeSignature.getTypeName()) {
+            //collection types that require an ordering
             case "scala/collection/immutable/SortedMap":
             case "scala/collection/immutable/SortedSet":
             case "scala/collection/immutable/TreeMap":
@@ -1590,16 +1631,26 @@ class ScalaConversions {
             case "scala/collection/mutable/TreeMap":
             case "scala/collection/mutable/TreeSet":
 
+            case "scala/collection/SortedMap":
+            case "scala/collection/SortedSet":
+
                 generateOrdering(classLoader, methodVisitor, typeSignature.getTypeArgument(0), localVariableTable, operandStack);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, companion, "newBuilder", "(Lscala/math/Ordering;)Lscala/collection/mutable/Builder", false);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, companion, "newBuilder", "(Lscala/math/Ordering;)Lscala/collection/mutable/Builder;", false);
                 operandStack.replaceTop(2, BUILDER_TYPE);
                 break;
 
-            //TODO builders that require a ClassTag
+            //collection types that require a ClassTag
+            case "scala/collection/immutable/ArraySeq":
+            case "scala/collection/mutable/ArraySeq":
+
+                generateClassTag(classLoader, methodVisitor, typeSignature.getTypeArgument(0), localVariableTable, operandStack);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, companion, "newBuilder", "(Lscala/reflect/ClassTag;)Lscala/collection/mutable/Builder;", false);
+                operandStack.replaceTop(2, BUILDER_TYPE);
+                break;
 
             default:
-                //not a sorted or specialized
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, companion, "newBuilder", "()Lscala/collection/mutable/Builder", false);
+                //not a sorted or specialized collection
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, companion, "newBuilder", "()Lscala/collection/mutable/Builder;", false);
                 operandStack.replaceTop(1, BUILDER_TYPE);
                 break;
         }
@@ -1669,14 +1720,14 @@ class ScalaConversions {
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple2", "(Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop();
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple2", "(Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(2);    //Idem
                 break;
             case "scala/Tuple3":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple3", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop();
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple3", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(3);   //Idem
                 break;
             case "scala/Tuple4":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
@@ -1684,7 +1735,7 @@ class ScalaConversions {
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localVariableTable, operandStack);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple4", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop();
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple4", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(4);      //Idem
                 break;
             case "scala/Tuple5":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
@@ -1693,7 +1744,7 @@ class ScalaConversions {
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localVariableTable, operandStack);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple5", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop();
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple5", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(5);     //Idem
                 break;
             case "scala/Tuple6":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
@@ -1703,7 +1754,7 @@ class ScalaConversions {
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localVariableTable, operandStack);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple6", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop();
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple6", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(6);        //Idem
                 break;
             case "scala/Tuple7":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
@@ -1714,7 +1765,7 @@ class ScalaConversions {
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(6), localVariableTable, operandStack);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple7", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop();
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple7", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(7);   //Idem
                 break;
             case "scala/Tuple8":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
@@ -1726,7 +1777,7 @@ class ScalaConversions {
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(6), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(7), localVariableTable, operandStack);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple8", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop();
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple8", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(8);  //Idem
                 break;
             case "scala/Tuple9":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
@@ -1739,13 +1790,18 @@ class ScalaConversions {
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(6), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(7), localVariableTable, operandStack);
                 generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(8), localVariableTable, operandStack);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple9", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop();
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple9", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(9);     //Idem
                 break;
             //Tuple1 and Tuple10-Tuple22 have no Ordering instances defined in the Ordering companion object!
 
+            //TODO collection orderings?
+            //TODO Comparable-based Orderings? I mean - I could just hardcode for java.util.UUID, java.math.BigInteger and java.math.BigDecimal I guess?
+            //TODO alternatively, I could try to class-load the class? and check using Compmarable.class.isAssignableFrom(theClass)?
+
             default:
-                //assume the instance can be found in the companion object.
-                //TODO we need access to LocalScanResult so that we can inspect the fields & methods and generate the appropriate calls!
+                //assume the Ordering instance can be found in the companion object.
+                //TODO we need to inspect the fields & methods of the companion object and generate the appropriate calls!
+                //TODO need to Adjust GlobalScanner or something so that CompanionObjectScanResult is part of the result?
                 break;
         }
 
@@ -1753,59 +1809,78 @@ class ScalaConversions {
     }
 
 
-    private static final void generateClassTag(String internalName, MethodVisitor methodVisitor, OperandStack operandStack) {
+    private static final void generateClassTag(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalVariableTable localVariableTable, OperandStack operandStack) {
         methodVisitor.visitFieldInsn(GETSTATIC, CLASSTAG_COMPANION, MODULE$, CLASSTAG_COMPANION_DESCRIPTOR);                    operandStack.push(CLASSTAG_COMPANION_TYPE);
+        final String internalName = elementType.internalName();
         switch (internalName) {
             case "B":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Byte", "()" + BYTE_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "S":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Short", "()" + SHORT_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "I":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Int", "()" + INT_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "J":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Long", "()" + LONG_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "F":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Float", "()" + FLOAT_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "D":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Double", "()" + DOUBLE_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "C":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Char", "()" + CHAR_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "Z":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Boolean", "()" + BOOLEAN_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "scala/Unit":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Unit", "()" + UNIT_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "scala/Nothing":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Nothing", "()" + NOTHING_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "scala/Null":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Null", "()" + NULL_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "scala/Any":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Any", "()" + ANY_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "scala/AnyRef":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "AnyRef", "()" + ANYREF_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "scala/AnyVal":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "AnyVal", "()" + ANYVAL_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             case "java/lang/Object":
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "Object", "()" + OBJECT_TAG_DESCRIPTOR, false);
+                operandStack.replaceTop(CLASSTAG_TYPE);
                 break;
             default:
-                methodVisitor.visitLdcInsn(Type.getObjectType(internalName));       operandStack.push(Type.getType(Class.class));
+                methodVisitor.visitLdcInsn(Type.getObjectType(internalName));
+                operandStack.push(Type.getType(Class.class));
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASSTAG_COMPANION, "apply", "(Ljava/lang/Class;)" + CLASSTAG_DESCRIPTOR, false);
+                operandStack.replaceTop(2, CLASSTAG_TYPE);
                 break;
-        }                                                                                                                       operandStack.replaceTop(CLASSTAG_TYPE);
+        }
+
     }
 
 
