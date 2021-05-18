@@ -1320,6 +1320,17 @@ class ScalaConversions {
     private static final String ARRAY_BUILDER = "scala/collection/mutable/ArrayBuilder";
     private static final Type ARRAY_BUILDER_TYPE = Type.getObjectType(ARRAY_BUILDER);
 
+    private static final String SCALALOADER_NUMERICRANGE_OFINTEGER = "xyz/janboerman/scalaloader/configurationserializable/runtime/types/NumericRange$OfInteger";
+    private static final String SCALALOADER_NUMERICRANGE_OFINTEGER_DESCRIPTOR = "L" + SCALALOADER_NUMERICRANGE_OFINTEGER + ";";
+    private static final Type SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE = Type.getObjectType(SCALALOADER_NUMERICRANGE_OFINTEGER);
+    private static final String RANGE_COMPANION = RANGE + "$";
+    private static final String RANGE_COMPANION_DESCRIPTOR = "L" + RANGE_COMPANION + ";";
+    private static final Type RANGE_COMPANION_TYPE = Type.getObjectType(RANGE_COMPANION);
+    private static final String RANGE_INCLUSIVE = "scala/collection/immutable/Range$Inclusive";
+    private static final String RANGE_EXCLUSIVE = "scala/collection/immutable/Range$Exclusive";
+    private static final String RANGE_INCLUSIVE_DESCRIPTOR = "L" + RANGE_INCLUSIVE + ";";
+    private static final String RANGE_EXCLUSIVE_DESCRIPTOR = "L" + RANGE_EXCLUSIVE + ";";
+
     private ScalaConversions() {
     }
 
@@ -1503,12 +1514,36 @@ class ScalaConversions {
 
             case RANGE:
                 methodVisitor.visitTypeInsn(CHECKCAST, RANGE);              operandStack.replaceTop(RANGE_TYPE);
-                //TODO let's actually store it in a local variable.
-                //TODO call .start()
-                //TODO call .step()
-                //TODO call .end();
-                //TODO call .isInclusive()
-                //TODO call new xyz.janboerman.scalaloader.configurationserializable.runtime.NumericRange.ofInteger(start, step, end, inclusive);
+                //let's store it in a local variable
+                final Label rangeStartLabel = new Label();
+                final Label rangeEndLabel = new Label();
+
+                final int rangeIndex = localVariableTable.frameSize();
+                final LocalVariable range = new LocalVariable("range", RANGE, null, rangeStartLabel, rangeEndLabel, rangeIndex);
+                methodVisitor.visitVarInsn(ASTORE, rangeIndex);             operandStack.pop();
+                localVariableTable.add(range);
+                methodVisitor.visitLabel(rangeStartLabel);
+
+                //load a new NumericRange.OfInteger instance
+                methodVisitor.visitTypeInsn(NEW, SCALALOADER_NUMERICRANGE_OFINTEGER);
+                methodVisitor.visitInsn(DUP);
+                //call range.start()
+                methodVisitor.visitVarInsn(ALOAD, rangeIndex);              operandStack.push(RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, RANGE, "start", "()I", false);     operandStack.replaceTop(Type.INT_TYPE);
+                //call range.step()
+                methodVisitor.visitVarInsn(ALOAD, rangeIndex);              operandStack.push(RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, RANGE, "step", "()I", false);      operandStack.replaceTop(Type.INT_TYPE);
+                //call range.end()
+                methodVisitor.visitVarInsn(ALOAD, rangeIndex);              operandStack.push(RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, RANGE, "end", "()I", false);       operandStack.replaceTop(Type.INT_TYPE);
+                //call range.isInclusive()
+                methodVisitor.visitVarInsn(ALOAD, rangeIndex);              operandStack.push(RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, RANGE, "isInclusive", "()Z", false);           operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                //call new NumericRange.OfInteger(start, step, end, inclusive)
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, SCALALOADER_NUMERICRANGE_OFINTEGER, "<init>", "(IIIZ)V", false);   operandStack.pop(5);
+
+                methodVisitor.visitLabel(rangeEndLabel);
+                localVariableTable.removeFramesFromIndex(rangeIndex);
                 return;
 
         }
@@ -1601,12 +1636,63 @@ class ScalaConversions {
                 return;
 
             case RANGE:
-                //TODO!
+                final Label rangeStartLabel = new Label();
+                final Label rangeEndLabel = new Label();
+
+                //lets cast to NumericRange.OfInteger
+                methodVisitor.visitTypeInsn(CHECKCAST, SCALALOADER_NUMERICRANGE_OFINTEGER);     operandStack.replaceTop(SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE);
+                //let's store it in a local variable
+                final int rangeIndex = localVariableTable.frameSize();
+                final LocalVariable range = new LocalVariable("range", SCALALOADER_NUMERICRANGE_OFINTEGER_DESCRIPTOR, null, rangeStartLabel, rangeEndLabel, rangeIndex);
+                methodVisitor.visitVarInsn(ASTORE, rangeIndex);                                 operandStack.pop();
+                localVariableTable.add(range);
+                methodVisitor.visitLabel(rangeStartLabel);
+
+                //load it again so we can call .start(), .end(), .step() and .inclusive()
+                //load the companion object on which we will call either apply(start, end, step) or inclusive(start, end step)
+                methodVisitor.visitFieldInsn(GETSTATIC, RANGE_COMPANION, MODULE$, RANGE_COMPANION_DESCRIPTOR);     operandStack.replaceTop(RANGE_COMPANION_TYPE);
+
+                methodVisitor.visitVarInsn(ALOAD, rangeIndex);                                  operandStack.push(SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE_OFINTEGER, "start", "()I", false);    operandStack.replaceTop(Type.INT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, rangeIndex);                                  operandStack.push(SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE_OFINTEGER, "end", "()I", false);    operandStack.replaceTop(Type.INT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, rangeIndex);                                  operandStack.push(SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE_OFINTEGER, "step", "()I", false);    operandStack.replaceTop(Type.INT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, rangeIndex);                                  operandStack.push(SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE_OFINTEGER, "isInclusive", "()z", false);    operandStack.replaceTop(Type.BOOLEAN_TYPE);
+
+                final Label exlusiveLabel = new Label();
+                final Label joinLabel = new Label();
+
+                methodVisitor.visitJumpInsn(IFEQ, exlusiveLabel);   /*branches if the boolean on the stack is FALSE!*/  operandStack.pop();
+
+                Object[] localFrame = localVariableTable.frame();   // [..., ScalaLoader...NumericRange.OfInteger]
+                Object[] stackFrame = operandStack.frame();         // [..., scala...Range$, start, end, step]
+
+                {   //inclusive
+                    methodVisitor.visitMethodInsn(INVOKEVIRTUAL, RANGE_COMPANION, "inclusive", "(III)" + RANGE_INCLUSIVE_DESCRIPTOR, false);
+                    methodVisitor.visitJumpInsn(GOTO, joinLabel);
+                }
+                methodVisitor.visitLabel(exlusiveLabel);
+                {   //exclusive
+                    methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
+                    methodVisitor.visitMethodInsn(INVOKEVIRTUAL, RANGE_COMPANION, "apply", "(III)" + RANGE_EXCLUSIVE_DESCRIPTOR, false);
+                }
+
+                methodVisitor.visitLabel(joinLabel);
+                /*effect of invokevirtual Range$.[apply/inclusive](III)Range*/  operandStack.replaceTop(4, RANGE_TYPE);
+                //no need to update localsFrame because it hasn't changed.
+                stackFrame = operandStack.frame();
+                methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
+
+                localVariableTable.removeFramesFromIndex(rangeIndex);
+                methodVisitor.visitLabel(rangeEndLabel);
+                return;
         }
 
         //TODO special-case some collections:
         //TODO  - immutable.WrappedString   --- done!
-        //TODO  - immutable.Range
+        //TODO  - immutable.Range           --- done?
         //TODO  - immutable.NumericRange
         //TODO  - mutable.ArrayBuilder
         //TODO

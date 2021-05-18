@@ -562,7 +562,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                 definition = defineClass(className, byteCode, 0, byteCode.length);
             }
             Class<?> winner = addClass(definition);
-            if (definition == winner /*I don't think this is every false in the current implementation*/) {
+            if (definition == winner /*I don't think this is ever false in the current implementation*/) {
                 //the class is new
                 isNew.set(true);
 

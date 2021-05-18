@@ -197,9 +197,11 @@ public class RuntimeConversions {
             return xyz.janboerman.scalaloader.configurationserializable.runtime.types.Enum.forEnum((Enum) live, pluginClassLoader);
         }
 
-        //warn the author that, despite our best efforts, we are in UB territory
-        pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + live.getClass().getName() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
-        pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
+        //if the type is not ConfigurationSerializable, warn the plugin author
+        if (!(live instanceof ConfigurationSerializable)) {
+            pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + live.getClass().getName() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
+            pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
+        }
 
         //last try: just hope that SnakeYAML (which is an implementation detail technically) does the right thing
         return live;
@@ -388,9 +390,11 @@ public class RuntimeConversions {
             return ((Adapter) serialized).getValue();
         }
 
-        //warn the author that, despite our best efforts, we are in UB territory
-        pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + type.toString() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
-        pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
+        //if the type is not ConfigurationSerializable, warn the plugin author
+        if ((!(serialized instanceof ConfigurationSerializable))) {
+            pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + type.toString() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
+            pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
+        }
 
         //last try: just hope that SnakeYAML (which is an implementation detail technically) does the right thing
         return serialized;

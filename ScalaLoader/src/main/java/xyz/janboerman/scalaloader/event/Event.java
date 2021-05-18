@@ -33,8 +33,8 @@ import xyz.janboerman.scalaloader.event.transform.EventError;
  *      }
  *  }
  *
- *  {@literal @}Scala(version = ScalaVersion.v1_13_1)
- *  {@literal @}Api(ApiVersion.V1_15)
+ *  {@literal @}Scala(version = ScalaVersion.v2_13_5)
+ *  {@literal @}Api(ApiVersion.v1_16)
  *  object MyPlugin extends ScalaPlugin(new ScalaPluginDescription("MyPlugin", "1.0")) {
  *      override def onEnable(): Unit = {
  *          getServer.getPluginManager.registerEvents(HomeTeleportListener, this)

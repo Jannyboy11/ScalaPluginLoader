@@ -36,6 +36,7 @@ public enum ScalaVersion {
     v2_13_3("2.13.3"),
     v2_13_4("2.13.4"),
     v2_13_5("2.13.5"),
+    v2_13_6("2.13.6"),
 
     //3.0.x
     v3_0_0("3.0.0");
@@ -72,8 +73,8 @@ public enum ScalaVersion {
             );
         } else if (scalaVersion.startsWith("3.0.")) {
             return mapOf(
-                    mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary("2.13.5")),
-                    mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect("2.13.5")),
+                    mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary("2.13.6")),
+                    mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect("2.13.6")),
                     mapEntry(PluginScalaVersion.SCALA3_LIBRARY_URL, mavenCentralScala3LibraryAdditions(scalaVersion)),
                     mapEntry(PluginScalaVersion.TASTY_CORE_URL, mavenCentralScala3TastyCoreAdditions(scalaVersion))
             );

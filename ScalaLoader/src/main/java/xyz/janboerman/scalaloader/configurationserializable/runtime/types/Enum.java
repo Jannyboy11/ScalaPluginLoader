@@ -32,6 +32,7 @@ public abstract class Enum<E extends java.lang.Enum<E>> implements Adapter<E> {
      * @param classLoader the ScalaPlugin's classloader
      * @return the configuration-serializable enum value.
      */
+    //if we had sum types we would write: <E extends java.lang.Enum<E>> E | Enum<E>
     public static ConfigurationSerializable forEnum(java.lang.Enum<?> enumValue, ScalaPluginClassLoader classLoader) {
         Class<?> enumClazz = enumValue.getDeclaringClass();
 

@@ -604,3 +604,19 @@ object OrderingTest {
 
 
 }
+
+object RangeTest {
+    import scala.collection.immutable.Range
+
+    def test(): Unit = {
+        val start = 0;
+        val end = 10;
+        val step = 1
+        val inclusive = false
+
+        val range = if (inclusive) Range.inclusive(start, end, step) else Range.apply(start, end, step)
+
+
+    }
+
+}

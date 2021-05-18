@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.configuration.serialization.SerializableAs;
+import xyz.janboerman.scalaloader.bytecode.Called;
 
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -183,6 +184,7 @@ public abstract class NumericRange<I> {
             ConfigurationSerialization.registerClass(OfInteger.class, "NumericRange.OfInteger");
         }
 
+        @Called
         public OfInteger(int start, int step, int end, boolean inclusive) {
             super(start, step, end, inclusive);
         }
