@@ -124,6 +124,18 @@ public abstract class NumericRange<I> {
             super(start, step, end, inclusive);
         }
 
+        public byte start() {
+            return super.getStart();
+        }
+
+        public byte step() {
+            return super.getStep();
+        }
+
+        public byte end() {
+            return super.getEnd();
+        }
+
         @Override
         public Map<String, Object> serialize() {
             Map<String, Object> map = new HashMap<>();
@@ -154,6 +166,18 @@ public abstract class NumericRange<I> {
 
         public OfShort(short start, short step, short end, boolean inclusive) {
             super(start, step, end, inclusive);
+        }
+
+        public short start() {
+            return super.getStart();
+        }
+
+        public short step() {
+            return super.getStep();
+        }
+
+        public short end() {
+            return super.getEnd();
         }
 
         @Override
@@ -189,6 +213,21 @@ public abstract class NumericRange<I> {
             super(start, step, end, inclusive);
         }
 
+        @Called
+        public int start() {
+            return super.getStart();
+        }
+
+        @Called
+        public int step() {
+            return super.getStep();
+        }
+
+        @Called
+        public int end() {
+            return super.getEnd();
+        }
+
         @Override
         public Map<String, Object> serialize() {
             Map<String, Object> map = new HashMap<>();
@@ -221,6 +260,18 @@ public abstract class NumericRange<I> {
             super(start, step, end, inclusive);
         }
 
+        public long start() {
+            return super.getStart();
+        }
+
+        public long step() {
+            return super.getStep();
+        }
+
+        public long end() {
+            return super.getEnd();
+        }
+
         @Override
         public Map<String, Object> serialize() {
             Map<String, Object> map = new HashMap<>();
@@ -251,6 +302,18 @@ public abstract class NumericRange<I> {
 
         public OfBigInteger(BigInteger start, BigInteger step, BigInteger end, boolean inclusive) {
             super(start, step, end, inclusive);
+        }
+
+        public BigInteger start() {
+            return super.getStart();
+        }
+
+        public BigInteger step() {
+            return super.getStep();
+        }
+
+        public BigInteger end() {
+            return super.getEnd();
         }
 
         @Override

@@ -1550,7 +1550,7 @@ class ScalaConversions {
 
         //TODO special-case some collections:
         //TODO  - immutable.WrappedString   --- done!
-        //TODO  - immutable.Range
+        //TODO  - immutable.Range           --- done!
         //TODO  - immutable.NumericRange
         //TODO  - mutable.ArrayBuilder
         //TODO
