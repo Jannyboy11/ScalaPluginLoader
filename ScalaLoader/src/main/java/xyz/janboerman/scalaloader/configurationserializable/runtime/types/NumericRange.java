@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.configurationserializable.runtime;
+package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
@@ -25,7 +25,7 @@ import java.util.Objects;
  * @see OfLong
  * @see OfBigInteger
  */
-public abstract class NumericRange<I extends java.lang.Number> {
+public abstract class NumericRange<I> {
     public static void registerWithConfigurationSerialization() {
         OfByte.register();
         OfShort.register();

@@ -13,10 +13,15 @@ import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.Migration;
 import xyz.janboerman.scalaloader.configurationserializable.transform.*;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
 import xyz.janboerman.scalaloader.event.transform.EventError;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
+import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
+import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
+import xyz.janboerman.scalaloader.plugin.runtime.ClassGenerator;
+import xyz.janboerman.scalaloader.plugin.runtime.PersistentClasses;
 
 import java.io.*;
 import java.lang.invoke.MethodHandle;
@@ -33,6 +38,7 @@ import java.security.CodeSigner;
 import java.security.CodeSource;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.jar.*;
 import java.util.logging.Level;
@@ -135,6 +141,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
     private final ConcurrentMap<String, Class<?>> classes = new ConcurrentHashMap<>();
     private final ScalaPlugin plugin;
+    private final PersistentClasses persistentClasses;
 
     /**
      * Construct a ClassLoader that loads classes for {@link ScalaPlugin}s.
@@ -181,6 +188,10 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         this.platform = platform;
 
         this.plugin = createPluginInstance((Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this));
+        this.persistentClasses = new PersistentClasses(plugin);
+        for (ClassFile classFile : this.persistentClasses.load()) {
+            getOrDefineClass(classFile.getClassName(), name -> classFile.getByteCode(false), false);
+        }
     }
 
     /**
@@ -308,6 +319,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         || name.startsWith("xyz.janboerman.scalaloader.compat")
                         || name.startsWith("xyz.janboerman.scalaloader.util")
                         || name.startsWith("xyz.janboerman.scalaloader.commands")
+                        || name.equals("xyz.janboerman.scalaloader.plugin.runtime.PersistentClasses")
                 ) throw new ClassNotFoundException("Can't access internal class: " + name);
             }
 
@@ -325,7 +337,12 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         throw fallback;
     }
 
-
+    /**
+     * Checks whether the class definition should be dumped to the console when a class loads.
+     *
+     * @param className the name of the class to debug
+     * @return true if the classload should be debugged, otherwise false
+     */
     private boolean debugClassLoad(String className) {
         return getPluginLoader().debugClassNames().contains(className);
     }
@@ -357,6 +374,13 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
                 try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
                     byte[] classBytes = Compat.readAllBytes(inputStream);
+
+                    //apply migration bytecode transformations
+                    try {
+                        classBytes = Migration.transform(classBytes, this);
+                    } catch (Exception e) {
+                        getPluginLoader().getScalaLoader().getLogger().log(Level.SEVERE, "An unexpected error occurred when updating bytecode to work with new references to classes that have been moved or otherwise refactored.", e);
+                    }
 
                     //apply event bytecode transformations
                     try {
@@ -488,20 +512,75 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             throw new ClassNotFoundException(name);
         }
 
-        final Class<?> loadedConcurrently = classes.putIfAbsent(name, found);
-        if (loadedConcurrently == null) {
-            //if we find this class for the first time
-            if (pluginLoader.addClassGlobally(getScalaRelease(), name, found)) {
-                //TODO will bukkit ever get a proper pluginloader api? https://hub.spigotmc.org/jira/browse/SPIGOT-4255
-                //injectIntoJavaPluginLoaderScope(name, found);
-            }
-        } else {
-            //if some other thread tried to load the same class and won the race, use that class instead.
-            found = loadedConcurrently;
-        }
+        //cache the class, possibly racing against other threads that try to load the same class.
+        found = addClass(found);
 
         //we don't search in the parent classloader explicitly - this is done by the loadClass method.
         return found;
+    }
+
+    /**
+     * Adds a class to this ClassLoader so that this ScalaPluginClassLoader can find the class
+     * and the class can be used by the ScalaPlugin.
+     *
+     * @param toAdd the class
+     * @return the same class, or an already existing class if one with the same name was found already
+     */
+    public Class<?> addClass(Class<?> toAdd) {
+        String name = toAdd.getName();
+        Class<?> loadedConcurrently = classes.putIfAbsent(name, toAdd);
+        if (loadedConcurrently == null) {
+            //if we find this class for the first time
+            if (pluginLoader.addClassGlobally(getScalaRelease(), name, toAdd)) {
+                //TODO will bukkit ever get a proper pluginloader api? https://hub.spigotmc.org/jira/browse/SPIGOT-4255
+                //injectIntoJavaPluginLoaderScope(name, found);
+            }
+            return toAdd;
+        } else {
+            //if some other tried to load the same class and won the race, use that class instead.
+            return loadedConcurrently;
+        }
+    }
+
+    /**
+     * Generates a class for this class loader, or gets a cached version if a class with the same name was already loaded.
+     *
+     * @param className the name of the class
+     * @param classGenerator the generator for the class
+     * @param persist whether to automatically re-generate this class again the next time the plugin loads
+     * @return the result of a class definition
+     */
+    public ClassDefineResult getOrDefineClass(String className, ClassGenerator classGenerator, boolean persist) {
+        AtomicBoolean isNew = new AtomicBoolean(false);
+        Class<?> theClass = classes.compute(className, (n, existingClass) -> {
+            if (existingClass != null) return existingClass;
+
+            byte[] byteCode = classGenerator.generate(className);
+
+            Class<?> definition;
+            synchronized (getClassLoadingLock(className)) {
+                definition = defineClass(className, byteCode, 0, byteCode.length);
+            }
+            Class<?> winner = addClass(definition);
+            if (definition == winner /*I don't think this is every false in the current implementation*/) {
+                //the class is new
+                isNew.set(true);
+
+                //check whether we need to persist the definition
+                if (persist) {
+                    //assume the bytecode generated for 'definition' and 'result' are equal.
+                    persistentClasses.save(new ClassFile(className, byteCode));
+                }
+            }
+
+            return winner;
+        });
+
+        if (isNew.get()) {
+            return ClassDefineResult.newClass(theClass);
+        } else {
+            return ClassDefineResult.oldClass(theClass);
+        }
     }
 
     /**
@@ -712,7 +791,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @apiNote This method will become deprecated once ScalaLoader gets its own dependency framework
      *
      * @param url the location of the dependency
-     * @deprecated Spigot itself is getting the ability to load plugins from Maven central, meaning that could just upload a dummy artifact there that depends on all your real plugin dependencies. see <a href="https://hub.spigotmc.org/jira/browse/SPIGOT-6419?focusedCommentId=38865&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-38865">SPIGOT-6419</a>
+     * @deprecated Spigot itself is getting the ability to load plugins from Maven central, meaning that you could just upload a dummy artifact there that depends on all your real plugin dependencies. see <a href="https://hub.spigotmc.org/jira/browse/SPIGOT-6419?focusedCommentId=38865&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-38865">SPIGOT-6419</a>
      */
     //in the future when the dependency api is added, annotate this with @Deprecated and @Replaced and redirect calls at class-load time
     public final void addUrl(URL url) {

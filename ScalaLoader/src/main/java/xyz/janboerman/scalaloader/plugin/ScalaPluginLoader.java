@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.Server;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.*;

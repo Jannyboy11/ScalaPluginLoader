@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.configuration.serialization.SerializableAs;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import static xyz.janboerman.scalaloader.compat.Compat.*;
@@ -13,6 +14,9 @@ import java.util.Objects;
 
 @SerializableAs("ScalaVersion")
 public final class PluginScalaVersion implements ConfigurationSerializable {
+    public static void register() {
+        ConfigurationSerialization.registerClass(PluginScalaVersion.class, "ScalaVersion");
+    }
 
     private static final String SCALA_VERSION = "scala-version";
     public static final String SCALA2_REFLECT_URL = "scala-reflect-url";
@@ -102,7 +106,7 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
     }
 
     public static PluginScalaVersion deserialize(Map<String, Object> map) {
-        map.remove("==");   //bukkit leaks the type information in its abstraction!
+        map.remove(ConfigurationSerialization.SERIALIZED_TYPE_KEY);   //bukkit leaks the type information in its abstraction!
 
         String scalaVersion = map.remove("scala-version").toString();
 

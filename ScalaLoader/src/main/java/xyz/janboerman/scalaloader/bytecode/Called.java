@@ -28,6 +28,6 @@ import java.lang.reflect.Type;
  * @see ParameterizedParameterType#from(Class, ParameterType...)
  */
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE})
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 public @interface Called {
 }

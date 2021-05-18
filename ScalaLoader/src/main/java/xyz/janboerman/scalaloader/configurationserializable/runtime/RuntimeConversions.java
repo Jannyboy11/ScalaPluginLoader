@@ -2,6 +2,7 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.types.Primitives;
 import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableError;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.util.Maybe;
@@ -145,7 +146,7 @@ public class RuntimeConversions {
         //TODO scala built-ins
         //TODO scala collections
 
-        //fallback
+        //check plugin registrations
         Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);
         if (registrations != null) {
             Maybe<Object> maybe = registrations.serialize(type, live);
@@ -166,11 +167,40 @@ public class RuntimeConversions {
                     logger.warning("java.lang.String, java.lang.Integer, java.lang.Double, java.lang.Boolean, java.util.List, java.util.Set or java.util.Map");
                 }
                 return serializedInstance;
-            }
+            } //else: not present - just continue execution
         }
 
-        pluginClassLoader.getPlugin().getLogger()
-                .warning("No Codec found for " + live.getClass().getName() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
+        //try to adapt some common cases:
+        if (live instanceof Byte) {
+            return new Primitives.Byte((Byte) live);
+        } else if (live instanceof Short) {
+            return new Primitives.Short((Short) live);
+        } else if (live instanceof Integer) {
+            return new Primitives.Integer((Integer) live);
+        } else if (live instanceof Long) {
+            return new Primitives.Long((Long) live);
+        } else if (live instanceof Float) {
+            return new Primitives.Float((Float) live);
+        } else if (live instanceof Double) {
+            return new Primitives.Double((Double) live);
+        } else if (live instanceof Boolean) {
+            return new Primitives.Boolean((Boolean) live);
+        } else if (live instanceof Character) {
+            return new Primitives.Character((Character) live);
+        } else if (live instanceof UUID) {
+            return new xyz.janboerman.scalaloader.configurationserializable.runtime.types.UUID((UUID) live);
+        } else if (live instanceof BigInteger) {
+            return new xyz.janboerman.scalaloader.configurationserializable.runtime.types.BigInteger((BigInteger) live);
+        } else if (live instanceof BigDecimal) {
+            return new xyz.janboerman.scalaloader.configurationserializable.runtime.types.BigDecimal((BigDecimal) live);
+        } else if (live instanceof Enum) {
+            return xyz.janboerman.scalaloader.configurationserializable.runtime.types.Enum.forEnum((Enum) live, pluginClassLoader);
+        }
+
+        //warn the author that, despite our best efforts, we are in UB territory
+        pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + live.getClass().getName() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
+        pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
+
         //last try: just hope that SnakeYAML (which is an implementation detail technically) does the right thing
         return live;
     }
@@ -342,7 +372,7 @@ public class RuntimeConversions {
         //TODO scala built-ins
         //TODO scala collections
 
-        //fallback
+        //check plugin registrations
         Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);
         if (registrations != null) {
             Maybe<Object> maybe = registrations.deserialize(type, serialized);
@@ -353,8 +383,15 @@ public class RuntimeConversions {
             }
         }
 
-        pluginClassLoader.getPlugin().getLogger()
-                .warning("No Codec found for " + type.toString() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
+        //un-adapt
+        if (serialized instanceof Adapter<?>) {
+            return ((Adapter) serialized).getValue();
+        }
+
+        //warn the author that, despite our best efforts, we are in UB territory
+        pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + type.toString() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
+        pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
+
         //last try: just hope that SnakeYAML (which is an implementation detail technically) does the right thing
         return serialized;
     }

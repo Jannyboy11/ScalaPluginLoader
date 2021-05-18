@@ -30,12 +30,12 @@ import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
 import xyz.janboerman.scalaloader.commands.ResetScalaUrls;
 import xyz.janboerman.scalaloader.commands.SetDebug;
 import xyz.janboerman.scalaloader.compat.Compat;
-import xyz.janboerman.scalaloader.configurationserializable.runtime.NumericRange;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
+import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
 
 /**
  * The ScalaLoader plugin's main class! ScalaLoader enables you to write plugins in Scala. Just depend on ScalaLoader,
@@ -177,6 +177,24 @@ public final class ScalaLoader extends JavaPlugin {
         //Do we want to disable the scala plugins? I don't think so
     }
 
+    /**
+     * Runs a task on the server's main thread.
+     *
+     * @deprecated This method is only used by deprecated methods, and thus is no longer needed.
+     *             Should you need equivalent functionality, then use the following snippet:
+     *             <pre>
+     *                 <code>
+     *                     if (Bukkit.isPrimaryThread()) {
+     *                         runnable.run();
+     *                     } else {
+     *                         Bukkit.getScheduler().runTask(scalaLoader, runnable);
+     *                     }
+     *                 </code>
+     *             </pre>
+     *
+     * @param runnable the task to run on the main thread
+     */
+    @Deprecated
     public void runInMainThread(Runnable runnable) {
         Server server = getServer();
 
@@ -190,7 +208,8 @@ public final class ScalaLoader extends JavaPlugin {
     private void configure() {
         //ScalaLoader config stuff
         saveDefaultConfig();
-        ConfigurationSerialization.registerClass(PluginScalaVersion.class, "ScalaVersion");
+        PluginScalaVersion.register();
+        ClassFile.register();
         FileConfiguration config = getConfig();
         if (!config.isList("scala-versions")) {
             getConfig().set("scala-versions", Arrays.stream(ScalaVersion.values()).map(PluginScalaVersion::fromScalaVersion).collect(Collectors.toList()));
@@ -198,7 +217,11 @@ public final class ScalaLoader extends JavaPlugin {
         }
 
         //ScalaPlugin config stuff
-        NumericRange.registerWithConfigurationSerialization();
+        xyz.janboerman.scalaloader.configurationserializable.runtime.types.Primitives.registerWithConfigurationSerialization();
+        xyz.janboerman.scalaloader.configurationserializable.runtime.types.NumericRange.registerWithConfigurationSerialization();
+        xyz.janboerman.scalaloader.configurationserializable.runtime.types.UUID.registerWithConfigurationSerialization();
+        xyz.janboerman.scalaloader.configurationserializable.runtime.types.BigInteger.registerWithConfigurationSerialization();
+        xyz.janboerman.scalaloader.configurationserializable.runtime.types.BigDecimal.registerWithConfigurationSerialization();
     }
 
     private boolean downloadScalaJarFiles() {

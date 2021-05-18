@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public final class TypeSignature {
 
     private static final String ARRAY = "array";
-    private static final TypeSignature OBJECT_TYPE_SIGNATURE = new TypeSignature("java/lang/Object", Compat.emptyList());
+    public static final TypeSignature OBJECT_TYPE_SIGNATURE = new TypeSignature("java/lang/Object", Compat.emptyList());
 
     private final String typeName;
     private final List<TypeSignature> typeArguments;

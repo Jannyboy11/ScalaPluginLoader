@@ -235,7 +235,6 @@ object ScalaTypesSerializationTest {
 class ImmutableCollectionTest {
     import scala.collection.immutable._
     import scala.collection.JavaConverters
-    import xyz.janboerman.scalaloader.configurationserializable.runtime.{NumericRange => SLRange}
 
     private var list: List[Long] = List(0L, 1L, 2L)
     private var seq: Seq[Byte] = Seq(127.asInstanceOf[Byte])
@@ -314,7 +313,6 @@ class ImmutableCollectionTest {
 
 object ImmutableCollectionTest {
     import scala.collection.immutable._
-    import xyz.janboerman.scalaloader.configurationserializable.runtime.{NumericRange => SLRange}
 
     def deserialize(map: java.util.Map[String, AnyRef]): ImmutableCollectionTest = {
         val res = new ImmutableCollectionTest()

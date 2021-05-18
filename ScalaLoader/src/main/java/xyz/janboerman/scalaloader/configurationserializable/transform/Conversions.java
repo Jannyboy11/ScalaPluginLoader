@@ -39,14 +39,17 @@ class Conversions {
             } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
                 mapToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
                 return;
-            } else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
-                ScalaConversions.serializeCollection(pluginClassLoader, methodVisitor, typeSignature, localVariables, operandStack);
-                return;
             }
-            /*TODO else if (isScalaMap(typeSignature, pluginClassLoader)) {
-
-            }*/
         }
+
+        else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
+            //some of the scala collections don't have type parameters.
+            ScalaConversions.serializeCollection(pluginClassLoader, methodVisitor, typeSignature, localVariables, operandStack);
+            return;
+        }
+        /*TODO else if (isScalaMap(typeSignature, pluginClassLoader)) {
+
+        }*/
 
         //TODO just like conversion for arrays (including: tuples, Option, Either, Try)
 
@@ -516,12 +519,13 @@ class Conversions {
             } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
                 mapToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
                 return;
-            } else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
-                ScalaConversions.deserializeCollection(pluginClassLoader, methodVisitor, typeSignature, localVariables, operandStack);
-                return;
             }
-            //TODO else if Scala Map
         }
+
+        else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
+            ScalaConversions.deserializeCollection(pluginClassLoader, methodVisitor, typeSignature, localVariables, operandStack);
+            return;
+        } //TODO else if Scala Map
 
         //TODO other Scala types (Option, Either, Tuples)
         //TODO Scala primitive wrappers (BigInt, BigDecimal, RichInt, RichFloat, etc.)
@@ -1265,6 +1269,9 @@ class Conversions {
 
 class ScalaConversions {
 
+    private static final String STRING = STRING_TYPE.getInternalName();
+    private static final String STRING_DESCRIPTOR = STRING_TYPE.getDescriptor();
+
     private static final String CLASSTAG = "scala/reflect/ClassTag";
     private static final String CLASSTAG_COMPANION = "scala/reflect/ClassTag$";
     private static final String CLASSTAG_DESCRIPTOR = 'L' + CLASSTAG + ';';
@@ -1304,6 +1311,14 @@ class ScalaConversions {
     private static final String GROWABLE = "scala/collection/mutable/Growable";
     private static final Type GROWABLE_TYPE = Type.getObjectType(GROWABLE);
 
+    private static final String WRAPPED_STRING = "scala/collection/immutable/WrappedString";
+    private static final Type WRAPPED_STRING_TYPE = Type.getObjectType(WRAPPED_STRING);
+    private static final String RANGE = "scala/collection/immutable/Range";
+    private static final Type RANGE_TYPE = Type.getObjectType(RANGE);
+    private static final String NUMERIC_RANGE = "scala/collection/immutable/NumericRange";
+    private static final Type NUMERIC_RANGE_TYPE = Type.getObjectType(NUMERIC_RANGE);
+    private static final String ARRAY_BUILDER = "scala/collection/mutable/ArrayBuilder";
+    private static final Type ARRAY_BUILDER_TYPE = Type.getObjectType(ARRAY_BUILDER);
 
     private ScalaConversions() {
     }
@@ -1478,14 +1493,39 @@ class ScalaConversions {
         //but for now this method is compatible the 2.12 and 2.13 (and thus 3.0) standard library
         //I hope this will continue to work.
 
-        assert typeSignature.hasTypeArguments(1) : "trying to serialize scala collection without type arguments. Type signature = " + typeSignature;
-        final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
+        //special-case some special collections
+        switch (typeSignature.getTypeName()) {
+            case WRAPPED_STRING:
+                //serialize a WrappedString simply into a String
+                methodVisitor.visitTypeInsn(CHECKCAST, WRAPPED_STRING);     operandStack.replaceTop(WRAPPED_STRING_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, WRAPPED_STRING, "unwrap", "()" + STRING_DESCRIPTOR, false);    operandStack.replaceTop(STRING_TYPE);
+                return;
+
+            case RANGE:
+                methodVisitor.visitTypeInsn(CHECKCAST, RANGE);              operandStack.replaceTop(RANGE_TYPE);
+                //TODO let's actually store it in a local variable.
+                //TODO call .start()
+                //TODO call .step()
+                //TODO call .end();
+                //TODO call .isInclusive()
+                //TODO call new xyz.janboerman.scalaloader.configurationserializable.runtime.NumericRange.ofInteger(start, step, end, inclusive);
+                return;
+
+        }
+
+        //TODO special-case some collections:
+        //TODO  - immutable.WrappedString   --- done!
+        //TODO  - immutable.Range
+        //TODO  - immutable.NumericRange
+        //TODO  - mutable.ArrayBuilder
+        //TODO
+
+
+        //best effort
+        final TypeSignature elementTypeSignature = typeSignature.hasTypeArguments() ? typeSignature.getTypeArgument(0) : TypeSignature.OBJECT_TYPE_SIGNATURE;
 
         int localVariableIndex = localVariableTable.frameSize();
         final Label startLabel = new Label(), endLabel = new Label();
-
-        //TODO special-case some collections (WrappedString, Range, NumericRange)
-
 
         //  scala.Iterator<E> iterator = $coll.<E>iterator();
         final int iteratorIndex = localVariableIndex++;
@@ -1539,20 +1579,47 @@ class ScalaConversions {
     }
 
     static void deserializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
-        final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
+        //this is really a best effort.
+        //the standard library may evolve again in 3.1 or 3.2
+        //but for now this method is compatible the 2.12 and 2.13 (and thus 3.0) standard library
+        //I hope this will continue to work.
+
+        //special-case some special collections
+        switch (typeSignature.getTypeName()) {
+            case WRAPPED_STRING:
+                //the serialized type for a WrappedString is simply its String
+                methodVisitor.visitTypeInsn(CHECKCAST, STRING);         operandStack.replaceTop(STRING_TYPE);
+                //[..., string]
+                methodVisitor.visitTypeInsn(NEW, WRAPPED_STRING);       operandStack.push(WRAPPED_STRING_TYPE);
+                //[..., string, wrapped string]
+                methodVisitor.visitInsn(DUP_X1);                        operandStack.pop(2);    operandStack.push(WRAPPED_STRING_TYPE, STRING_TYPE, WRAPPED_STRING_TYPE);
+                //[..., wrapped string, string, wrapped string]
+                methodVisitor.visitInsn(SWAP);                          operandStack.pop(2);    operandStack.push(WRAPPED_STRING_TYPE, STRING_TYPE);
+                //[..., wrapped string, wrapped string, string]
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, WRAPPED_STRING, "<init>", "(" + STRING_DESCRIPTOR + ")V", false);      operandStack.pop(2);
+                //[..., wrapped string]
+                return;
+
+            case RANGE:
+                //TODO!
+        }
+
+        //TODO special-case some collections:
+        //TODO  - immutable.WrappedString   --- done!
+        //TODO  - immutable.Range
+        //TODO  - immutable.NumericRange
+        //TODO  - mutable.ArrayBuilder
+        //TODO
+
+
+        //best effort
+        final TypeSignature elementTypeSignature = typeSignature.hasTypeArguments() ? typeSignature.getTypeArgument(0) : TypeSignature.OBJECT_TYPE_SIGNATURE;
         final String liveTypeName = typeSignature.internalName();
 
         int localVariableIndex = localVariableTable.frameSize();
 
         final Label startLabel = new Label();
         final Label endLabel = new Label();
-
-        //TODO special-case some collections:
-        //TODO  - immutable.WrappedString
-        //TODO  - immutable.Range
-        //TODO  - immutable.NumericRange
-        //TODO  - mutable.ArrayBuilder
-        //TODO
 
         //get the Iterator of the List
         final int iteratorIndex = localVariableIndex++;

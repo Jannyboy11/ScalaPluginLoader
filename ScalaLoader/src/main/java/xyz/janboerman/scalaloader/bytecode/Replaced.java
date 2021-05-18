@@ -23,6 +23,6 @@ import java.lang.annotation.Target;
  * @see xyz.janboerman.scalaloader.event.EventBus#registerEvent(Class, Listener, EventPriority, EventExecutor, Plugin, boolean)
  */
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE})
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 public @interface Replaced {
 }
