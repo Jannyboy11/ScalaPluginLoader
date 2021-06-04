@@ -121,6 +121,16 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
             return original;
         }
+
+        private static Platform detect(Server server) {
+            if (server.getClass().getName().startsWith("org.bukkit.craftbukkit.")) {
+                return Platform.CRAFTBUKKIT;
+            } else if (server.getClass().getName().startsWith("net.glowstone.")) {
+                return Platform.GLOWSTONE;
+            } else {
+                return Platform.UNKNOWN;
+            }
+        }
     }
 
     static {
@@ -178,14 +188,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         this.apiVersion = apiVersion;
         this.mainClassName = mainClassName;
         this.transformerRegistry = transformerRegistry;
-
-        Platform platform = Platform.UNKNOWN;
-        if (server.getClass().getName().startsWith("org.bukkit.craftbukkit")) {
-            platform = Platform.CRAFTBUKKIT;
-        } else if (server.getClass().getName().startsWith("net.glowstone")) {
-            platform = Platform.GLOWSTONE;
-        }
-        this.platform = platform;
+        this.platform = Platform.detect(server);
 
         this.plugin = createPluginInstance((Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this));
         this.persistentClasses = new PersistentClasses(plugin);
@@ -193,6 +196,8 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             getOrDefineClass(classFile.getClassName(), name -> classFile.getByteCode(false), false);
         }
     }
+
+
 
     /**
      * Get the ScalaPlugin loaded by this class loader.
@@ -292,6 +297,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
             //short-circuit scala standard library and dotty/tasty classes.
             //we do this because if some plugin or library (such as PDM) adds the scala library to this classloader using #addUrl(URL),
             //then we still want to use the scala library that is loaded by the parent classloader
+            //the same goes for libraries defined in the plugin.yml
             try {
                 return getParent().loadClass(name);
             } catch (ClassNotFoundException ignored) {
@@ -319,6 +325,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                         || name.startsWith("xyz.janboerman.scalaloader.compat")
                         || name.startsWith("xyz.janboerman.scalaloader.util")
                         || name.startsWith("xyz.janboerman.scalaloader.commands")
+                        || name.startsWith("xyz.janboerman.scalaloader.dependency")
                         || name.equals("xyz.janboerman.scalaloader.plugin.runtime.PersistentClasses")
                 ) throw new ClassNotFoundException("Can't access internal class: " + name);
             }

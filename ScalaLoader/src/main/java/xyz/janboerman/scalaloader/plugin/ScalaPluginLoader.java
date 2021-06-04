@@ -17,6 +17,7 @@ import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariant
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanResult;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanner;
 import xyz.janboerman.scalaloader.configurationserializable.transform.PluginTransformer;
+import xyz.janboerman.scalaloader.dependency.PluginYamlLibraryLoader;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.event.plugin.ScalaPluginDisableEvent;
 import xyz.janboerman.scalaloader.event.plugin.ScalaPluginEnableEvent;
@@ -59,7 +60,8 @@ public class ScalaPluginLoader implements PluginLoader {
     private final Map<Path, ScalaPlugin> scalaPluginsByAbsolutePath = new HashMap<>();
     private final Collection<ScalaPlugin> scalaPluginsView = Collections.unmodifiableCollection(scalaPlugins.values());
 
-    private final EventBus eventBus;
+    private EventBus eventBus;
+    private PluginYamlLibraryLoader pluginYamlLibraryLoader;
 
     private static final Comparator<DescriptionScanner> descriptionComparator;
     static {
@@ -76,11 +78,9 @@ public class ScalaPluginLoader implements PluginLoader {
                 .thenComparing(DescriptionScanner::getClassName /* fallback - just compare the class name strings */));
     }
 
-    @SuppressWarnings("deprecation")
     public ScalaPluginLoader(ScalaLoader scalaLoader) {
         this.lazyScalaLoader = scalaLoader;
         this.server = scalaLoader.getServer();
-        this.eventBus = new EventBus(server.getPluginManager());
         init();
     }
 
@@ -88,13 +88,13 @@ public class ScalaPluginLoader implements PluginLoader {
      * Per PluginLoader API, the constructor has only one parameter: the Server.
      * @param server the server.
      */
-    @SuppressWarnings("deprecation")
     public ScalaPluginLoader(Server server) {
         this.server = Objects.requireNonNull(server, "Server cannot be null!");
-        this.eventBus = new EventBus(server.getPluginManager());
         init();
     }
 
+
+    @SuppressWarnings("deprecation")
     private void init() {
         //Static abuse but I cannot find a more elegant way to do this.
         if (INSTANCE == null) {
@@ -103,11 +103,16 @@ public class ScalaPluginLoader implements PluginLoader {
             throw new IllegalStateException("The ScalaPluginLoader can only be instantiated once!");
         }
 
+        //set fields
+        ScalaLoader scalaLoader = getScalaLoader();
+        this.eventBus = new EventBus(server.getPluginManager());
+        this.pluginYamlLibraryLoader = new PluginYamlLibraryLoader(scalaLoader.getLogger(), new File(scalaLoader.getDataFolder(), "libraries"));
+
         //pre-scan plugins so that scala-versions can be detected BEFORE the main classes are instantiated!
         //this is just a best-effort thing because the PluginManager may load plugins at arbitrary points in time.
         //TODO I don't think this is necessary anymore when plugins aren't instantiated anymore when their 'description' is read.
 
-        File pluginsFolder = getScalaLoader().getScalaPluginsFolder();
+        File pluginsFolder = scalaLoader.getScalaPluginsFolder();
         if (pluginsFolder.exists()) {
             File[] pluginJarFiles = pluginsFolder.listFiles((dir, name) -> Arrays.stream(getPluginFileFilters())
                     .anyMatch(pattern -> pattern.matcher(name).find()));
@@ -203,7 +208,7 @@ public class ScalaPluginLoader implements PluginLoader {
 
                     if (pluginYamlDefinedMainJarEntry != null) {
                         InputStream classBytesInputStream = jarFile.getInputStream(pluginYamlDefinedMainJarEntry);
-                        DescriptionScanner yamlMainScanner = new DescriptionScanner(classBytesInputStream);
+                        DescriptionScanner yamlMainScanner = new DescriptionScanner(classBytesInputStream); //use a less powerful scanner implementation here?
 
                         if (yamlMainScanner.extendsJavaPlugin()) {
                             result.isJavaPluginExplicitly = true;
@@ -254,8 +259,6 @@ public class ScalaPluginLoader implements PluginLoader {
     }
 
 
-
-    @SuppressWarnings("unchecked")
     @Override
     public PluginDescriptionFile getPluginDescription(File file) throws InvalidDescriptionException {
         final Path path = file.toPath().toAbsolutePath();
@@ -299,9 +302,19 @@ public class ScalaPluginLoader implements PluginLoader {
             //load scala version if not already present
             ScalaLibraryClassLoader scalaLibraryClassLoader = getScalaLoader().loadOrGetScalaVersion(scalaVersion);
 
+            //construct the URL[] for the plugin. urls[0] will contain the jar file of the plugin.
+            //all the other elements are runtime dependencies of the plugin.
+            Collection<URL> dependencyUrls = pluginYamlLibraryLoader.createURLs(pluginYamlData);
+            URL[] urls = new URL[dependencyUrls.size() + 1];
+            int i = 0;
+            urls[i++] = file.toURI().toURL();
+            for (URL url : dependencyUrls) {
+                urls[i++] = url;
+            }
+
             //create plugin classloader using the resolved scala classloader
             ScalaPluginClassLoader scalaPluginClassLoader =
-                    new ScalaPluginClassLoader(this, new URL[]{ file.toURI().toURL() }, scalaLibraryClassLoader,
+                    new ScalaPluginClassLoader(this, urls, scalaLibraryClassLoader,
                             server, pluginYamlData, file, apiVersion, mainClass, transformerRegistry);
             sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getCompatRelease(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 

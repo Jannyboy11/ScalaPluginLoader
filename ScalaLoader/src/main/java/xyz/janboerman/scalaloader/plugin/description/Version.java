@@ -16,6 +16,6 @@ public @interface Version {
     public static @interface ScalaLibrary {
         String name();
         String url();
-        //TODO sha256 or some other kind of hash
+        //TODO sha256 or some other kind of checksum hash
     }
 }

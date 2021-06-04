@@ -96,7 +96,7 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
     @Override
     public Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
-        map.put("scala-version", getScalaVersion());
+        map.put(SCALA_VERSION, getScalaVersion());
 
         for (Map.Entry<String, String> urlEntry : urls.entrySet()) {
             map.put(urlEntry.getKey(), urlEntry.getValue());
@@ -108,7 +108,7 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
     public static PluginScalaVersion deserialize(Map<String, Object> map) {
         map.remove(ConfigurationSerialization.SERIALIZED_TYPE_KEY);   //bukkit leaks the type information in its abstraction!
 
-        String scalaVersion = map.remove("scala-version").toString();
+        String scalaVersion = map.remove(SCALA_VERSION).toString();
 
         Map<String, String> urls = new HashMap<>();
         for (Map.Entry<String, Object> entry : map.entrySet()) {

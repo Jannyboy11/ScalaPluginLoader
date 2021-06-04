@@ -181,6 +181,4 @@ public enum ScalaVersion {
         return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-tasty-inspector_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/scala3-tasty-inspector_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
     }
 
-
-
 }

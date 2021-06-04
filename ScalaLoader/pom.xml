@@ -5,14 +5,18 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.16.0-SNAPSHOT</version>
+        <version>0.16.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ScalaLoader</artifactId>
 
     <properties>
+        <bukkitVersion>1.13.2-R0.1-SNAPSHOT</bukkitVersion>
         <asmVersion>9.1</asmVersion>
+        <bstatsVersion>2.2.1</bstatsVersion>
+        <mavenResolverVersion>1.6.2</mavenResolverVersion>
+        <mavenResolverProviderVersion>3.8.1</mavenResolverProviderVersion>
         <junitVersion>5.7.1</junitVersion>
 
         <java11.sourceDirectory>${project.basedir}/src/main/java11</java11.sourceDirectory>
@@ -149,6 +153,14 @@
                                     <pattern>org.bstats</pattern>
                                     <shadedPattern>xyz.janboerman.scalaloader.bstats</shadedPattern>
                                 </relocation>
+                                <relocation>
+                                    <pattern>org.apache.maven</pattern>
+                                    <shadedPattern>xyz.janboerman.scalaloader.maven</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.eclipse.aether</pattern>
+                                    <shadedPattern>xyz.janboerman.scalaloader.aether</shadedPattern>
+                                </relocation>
                             </relocations>
 
                             <createDependencyReducedPom>false</createDependencyReducedPom>
@@ -229,16 +241,14 @@
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
         </repository>
-        <!-- CodeMC repo no longer necessary becase bStats now lives on Maven Central! -->
+        <!-- CodeMC repo no longer necessary because bStats now lives on Maven Central! -->
     </repositories>
 
     <dependencies>
-        <!-- Depend on spigot-api instead of bukkit because bukkit is no longer hosted on the spigot maven. -->
-        <!-- We still are only using bukkit methods so ScalaLoader will still work on CraftBukkit -->
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.16.5-R0.1-SNAPSHOT</version>
+            <groupId>org.bukkit</groupId>
+            <artifactId>bukkit</artifactId>
+            <version>${bukkitVersion}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -249,13 +259,11 @@
             <version>${asmVersion}</version>
         </dependency>
 
-        <!-- needed for the renaming(remapping) part of the event bytecode transformations -->
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-commons</artifactId>
             <version>${asmVersion}</version>
         </dependency>
-        <!-- needed for debugging commands -->
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-util</artifactId>
@@ -280,10 +288,31 @@
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
-            <version>2.2.1</version>
+            <version>${bstatsVersion}</version>
             <scope>compile</scope>
         </dependency>
 
+        <!-- runtime library loading -->
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-resolver-provider</artifactId>
+            <version>${mavenResolverProviderVersion}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-connector-basic</artifactId>
+            <version>${mavenResolverVersion}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-transport-http</artifactId>
+            <version>${mavenResolverVersion}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>

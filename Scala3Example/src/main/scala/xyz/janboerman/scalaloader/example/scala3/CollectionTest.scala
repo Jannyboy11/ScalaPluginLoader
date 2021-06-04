@@ -11,12 +11,12 @@ import scala.collection.immutable.{ArraySeq, SortedSet}
 
 object CollectionTest:
 
-    val saveFile = new File(Scala3Plugin.getDataFolder, "collection-test.yml")
-    if !Scala3Plugin.getDataFolder.exists() then Scala3Plugin.getDataFolder.mkdirs()
+    val saveFile = new File(ExamplePlugin.getDataFolder, "collection-test.yml")
+    if !ExamplePlugin.getDataFolder.exists() then ExamplePlugin.getDataFolder.mkdirs()
     if !saveFile.exists() then saveFile.createNewFile()
 
     def test(): Unit =
-        val console = Scala3Plugin.getServer.getConsoleSender
+        val console = ExamplePlugin.getServer.getConsoleSender
         console.sendMessage(s"${ChatColor.YELLOW}Basic Scala collection serialization-deserialization test")
 
         val ints = Seq(0, 1, 2)
@@ -34,7 +34,7 @@ object CollectionTest:
         yamlConfig = YamlConfiguration.loadConfiguration(saveFile)
         val actual = yamlConfig.get("collection-test")
         assert(testCase == actual, "CollectionTest instances were not equal! :(")
-        if Scala3Plugin.assertionsEnabled then console.sendMessage(s"${ChatColor.GREEN}Test passed!")
+        if ExamplePlugin.assertionsEnabled then console.sendMessage(s"${ChatColor.GREEN}Test passed!")
     end test
 
 @ConfigurationSerializable(scan = Scan(

@@ -3,7 +3,6 @@ package xyz.janboerman.scalaloader;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.SimplePluginManager;
@@ -291,9 +290,6 @@ public final class ScalaLoader extends JavaPlugin {
                     } catch (IOException e) {
                         throw new ScalaPluginLoaderException("Could not create new jar file", e);
                     }
-
-                    ReadableByteChannel rbc = null;
-                    FileOutputStream fos = null;
 
                     try {
                         URL url = new URL(value);

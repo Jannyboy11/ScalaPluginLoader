@@ -14,6 +14,12 @@ Scala3Example/target/*
 .project
 .classpath
 
+#VSCode
+*/.settings/*
+.bloop/*
+.metals/*
+.vscode/*
+
 #Miscellaneous
 stager_feedback.txt
 *.log

@@ -3,12 +3,25 @@ package xyz.janboerman.scalaloader.example.scala3
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 
+import zio.ZIO
+import zio.console._
+
 @Scala(ScalaVersion.v3_0_0)
 @Api(ApiVersion.v1_16)
-object Scala3Plugin extends ScalaPlugin(ScalaPluginDescription("Scala3Example", "0.16.0-SNAPSHOT")):
+object ExamplePlugin extends ScalaPlugin(ScalaPluginDescription("Scala3Example", "0.16.2-SNAPSHOT")) { plugin =>
+
+    val syncRuntime = new BukkitRuntime(this).syncRuntime
 
     override def onEnable(): Unit =
         getLogger.info("Hello from Scala 3!")
+        val fourtyTwo: ZIO[Any, Nothing, Int] = ZIO.succeed(42)
+        val program = for
+            name <- fourtyTwo.map(number => s"Jannyboy${number}")
+            _ <- putStrLn(s"Hello $name, welcome to ZIO!")
+        yield ()
+        syncRuntime.unsafeRun(program)
+
+
 //        CollectionTest.test()
 
     def assertionsEnabled: Boolean =
@@ -19,5 +32,4 @@ object Scala3Plugin extends ScalaPlugin(ScalaPluginDescription("Scala3Example", 
             case ae: AssertionError =>
                 true
 
-
-
+}

@@ -45,7 +45,7 @@ public class ListScalaPlugins implements TabExecutor {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender commandSender, Command command, String s, String[] strings) {
+    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         return Compat.emptyList();
     }
 }

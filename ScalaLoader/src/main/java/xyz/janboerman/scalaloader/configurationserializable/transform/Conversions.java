@@ -1457,7 +1457,7 @@ class ScalaConversions {
             case "scala/collection/immutable/TreeSeqMap":
             case "scala/collection/immutable/VectorMap":
 
-            //scala.collection/mutable
+            //scala.collection.mutable
             case "scala/collection/mutable/AbstractMap":
             case "scala/collection/mutable/AnyRefMap":
             case "scala/collection/mutable/HashMap":
