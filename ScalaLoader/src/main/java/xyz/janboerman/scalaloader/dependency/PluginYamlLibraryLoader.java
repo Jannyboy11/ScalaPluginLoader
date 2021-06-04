@@ -30,6 +30,7 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 public class PluginYamlLibraryLoader {
 
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2").build();
+    private static final RemoteRepository CODE_MC = new RemoteRepository.Builder("CodeMC", "default", "https://repo.codemc.org/repository/maven-public/").build();
 
     private final Logger logger;
     private final RepositorySystem system;
@@ -41,7 +42,7 @@ public class PluginYamlLibraryLoader {
 
         this.system = getRepositorySystem();
         this.session = getSession(system, logger, localRepoDir);
-        this.repositories = system.newResolutionRepositories(session, Compat.singletonList(MAVEN_CENTRAL));
+        this.repositories = system.newResolutionRepositories(session, Compat.listOf(MAVEN_CENTRAL, CODE_MC));
     }
 
     public Collection<URL> createURLs(Map<String, Object> pluginYaml) throws ScalaPluginLoaderException {
