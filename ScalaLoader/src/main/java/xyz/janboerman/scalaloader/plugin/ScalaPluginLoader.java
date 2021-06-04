@@ -1,7 +1,6 @@
 package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.Server;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.*;
@@ -11,6 +10,7 @@ import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
+import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions;
 import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariantTransformer;
@@ -302,20 +302,14 @@ public class ScalaPluginLoader implements PluginLoader {
             //load scala version if not already present
             ScalaLibraryClassLoader scalaLibraryClassLoader = getScalaLoader().loadOrGetScalaVersion(scalaVersion);
 
-            //construct the URL[] for the plugin. urls[0] will contain the jar file of the plugin.
-            //all the other elements are runtime dependencies of the plugin.
-            Collection<URL> dependencyUrls = pluginYamlLibraryLoader.createURLs(pluginYamlData);
-            URL[] urls = new URL[dependencyUrls.size() + 1];
-            int i = 0;
-            urls[i++] = file.toURI().toURL();
-            for (URL url : dependencyUrls) {
-                urls[i++] = url;
-            }
+            //download or get the maven dependencies defined in the plugin.yml
+            Collection<File> dependencies = pluginYamlLibraryLoader.getJarFiles(pluginYamlData);
+            //TODO scan dependencies?
 
             //create plugin classloader using the resolved scala classloader
             ScalaPluginClassLoader scalaPluginClassLoader =
-                    new ScalaPluginClassLoader(this, urls, scalaLibraryClassLoader,
-                            server, pluginYamlData, file, apiVersion, mainClass, transformerRegistry);
+                    new ScalaPluginClassLoader(this, new URL[] { file.toURI().toURL() }, scalaLibraryClassLoader,
+                            server, pluginYamlData, file, apiVersion, mainClass, transformerRegistry, dependencies);
             sharedScalaPluginClassLoaders.computeIfAbsent(scalaVersion.getCompatRelease(), v -> new CopyOnWriteArrayList<>()).add(scalaPluginClassLoader);
 
             //get the ScalaPlugin from the class loader!

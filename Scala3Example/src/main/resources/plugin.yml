@@ -1,6 +1,6 @@
 name: Scala3Example
 main: xyz.janboerman.scalaloader.example.scala3.ExamplePlugin$
-version: 0.16.2
+version: 0.17.0-SNAPSHOT
 
 libraries:
   - "dev.zio:zio_3:1.0.9"

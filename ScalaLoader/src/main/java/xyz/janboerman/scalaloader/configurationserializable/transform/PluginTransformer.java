@@ -6,7 +6,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
-import xyz.janboerman.scalaloader.plugin.TransformerRegistry;
+import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 
 /**
  * This class is NOT part of the public API!

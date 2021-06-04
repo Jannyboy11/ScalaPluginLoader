@@ -9,7 +9,7 @@ import static org.objectweb.asm.Opcodes.*;
 import org.objectweb.asm.Type;
 import xyz.janboerman.scalaloader.compat.Compat;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
-import xyz.janboerman.scalaloader.plugin.TransformerRegistry;
+import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -39,8 +39,7 @@ public class AddVariantTransformer extends ClassVisitor {
         if (scanResult.sumAlternatives != null) {
             for (Type type : scanResult.sumAlternatives) {
                 String className = type.getInternalName().replace('/', '.');
-                transformerRegistry.addClassTransformer(className, (delegate, mainClassName) ->
-                        new AddVariantTransformer(delegate));
+                transformerRegistry.addClassTransformer(className, AddVariantTransformer::new);
             }
         }
     }

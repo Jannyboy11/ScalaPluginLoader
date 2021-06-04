@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.plugin;
 
+import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.plugin.description.DescriptionScanner;
 
 import java.util.Map;

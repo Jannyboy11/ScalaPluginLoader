@@ -7,7 +7,7 @@ import zio.internal.{Platform, Executor}
 import java.util.logging.Level
 import scala.concurrent.ExecutionContext
 
-class BukkitRuntime[P <: Plugin](plugin: P) {
+private[scala3] class BukkitRuntime[P <: Plugin](plugin: P) {
 
     private val syncExecutionContext = new ExecutionContext {
         override def execute(runnable: Runnable): Unit =
@@ -39,7 +39,7 @@ class BukkitRuntime[P <: Plugin](plugin: P) {
     //private val asyncPlatform: Platform = Platform.fromExecutionContext(asyncExecutionContext)
 
     val syncRuntime: Runtime[ZEnv /*TODO with P*/] = Runtime.default.withExecutor(syncExecutor)
-    val asyncRuntime: Runtime[ZEnv] = Runtime.default.withExecutor(asyncExecutor)
+    val asyncRuntime: Runtime[ZEnv /*TODO with P*/] = Runtime.default.withExecutor(asyncExecutor)
 
 }
 

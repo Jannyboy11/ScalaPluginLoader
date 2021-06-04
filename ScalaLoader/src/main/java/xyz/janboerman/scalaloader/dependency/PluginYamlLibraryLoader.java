@@ -1,7 +1,6 @@
 package xyz.janboerman.scalaloader.dependency;
 
 import java.io.File;
-import java.net.*;
 import java.util.*;
 import java.util.logging.*;
 
@@ -27,6 +26,12 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
  * https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/commits/146a7e4bd764990c56bb326643e92eb69f24d27e#src/main/java/org/bukkit/plugin/java/LibraryLoader.java
  * CraftBukkit commit: https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/commits/5bbb4a65a4a81dea32c29a5ecd6786a844036efb
  */
+/**
+ * This class is NOT part of the public API!
+ * But it implements loading of libraries that are defined in the plugin.yml
+ *
+ * @see <a href="https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/plugin/PluginDescriptionFile.html#getLibraries()">PluginDescriptionFile.getLibraries()</a>
+ */
 public class PluginYamlLibraryLoader {
 
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2").build();
@@ -45,7 +50,7 @@ public class PluginYamlLibraryLoader {
         this.repositories = system.newResolutionRepositories(session, Compat.listOf(MAVEN_CENTRAL, CODE_MC));
     }
 
-    public Collection<URL> createURLs(Map<String, Object> pluginYaml) throws ScalaPluginLoaderException {
+    public Collection<File> getJarFiles(Map<String, Object> pluginYaml) throws ScalaPluginLoaderException {
         Object o = pluginYaml.get("libraries");
         if (!(o instanceof List)) return Compat.emptySet();
 
@@ -73,17 +78,10 @@ public class PluginYamlLibraryLoader {
             DependencyRequest request = new DependencyRequest(collectRequest, null);
             DependencyResult result = system.resolveDependencies(session, request);
 
-            List<URL> jarFiles = new ArrayList<>(dependencies.size());
+            List<File> jarFiles = new ArrayList<>(dependencies.size());
             for (ArtifactResult artifactResult : result.getArtifactResults()) {
-                File file = artifactResult.getArtifact().getFile();
-                try {
-                    URL url = file.toURI().toURL();
-                    jarFiles.add(url);
-                } catch (MalformedURLException e) {
-                    throw new ScalaPluginLoaderException("downloaded dependency artifact has an invalid url", e);
-                }
+                jarFiles.add(artifactResult.getArtifact().getFile());
             }
-
             return jarFiles;
 
         } catch (DependencyResolutionException e) {

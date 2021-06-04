@@ -8,6 +8,9 @@ import org.objectweb.asm.commons.SimpleRemapper;
 import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import static xyz.janboerman.scalaloader.compat.Compat.*;
 
+/**
+ * This class is NOT part of the public API!
+ */
 public class Migration {
 
     private Migration() {}

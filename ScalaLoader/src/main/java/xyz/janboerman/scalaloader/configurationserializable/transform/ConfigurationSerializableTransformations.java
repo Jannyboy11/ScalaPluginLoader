@@ -114,14 +114,14 @@ public class ConfigurationSerializableTransformations {
     private ConfigurationSerializableTransformations() {}
 
     //TODO javadoc this!
-    public static byte[] transform(byte[] clazz, ScalaPluginClassLoader pluginClassLoader) throws ConfigurationSerializableError {
+    public static byte[] transform(byte[] clazz, ClassLoader definer, ScalaPluginClassLoader pluginClassLoader) throws ConfigurationSerializableError {
         LocalScanResult localResult = new LocalScanner().scan(new ClassReader(clazz));
         if (!localResult.annotatedByConfigurationSerializable && !localResult.annotatedByDelegateSerialization) return clazz;
 
         ClassWriter classWriter = new ClassWriter(0) {
             @Override
             protected ClassLoader getClassLoader() {
-                return pluginClassLoader;
+                return definer;
             }
         };
 
