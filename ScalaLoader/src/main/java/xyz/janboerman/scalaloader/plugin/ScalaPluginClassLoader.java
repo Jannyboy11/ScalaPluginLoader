@@ -2,6 +2,7 @@ package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.Server;
 import org.bukkit.plugin.PluginLoader;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.*;
@@ -205,6 +206,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @param name the name of the class
      * @return a class with the given name
      * @throws ClassNotFoundException if a class could not be found by this classloader
+     * @see LibraryClassLoader
      */
     @Override
     public Class<?> loadClass(final String name) throws ClassNotFoundException {
@@ -213,7 +215,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         //  1.  the plugin's jar
         //  2.  libraries
         //  3.  other scalaplugins
-        //  4.  javaplugins, Bukkit/NMS classes (parent)
+        //  4.  ScalaLoader, other javaplugins, Bukkit/NMS classes (parent)
 
         if (name.startsWith("scala.") || name.startsWith("dotty.")) {
             //short-circuit scala standard library and dotty/tasty classes.
@@ -382,6 +384,9 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         //search in library dependencies
         if (found == null) {
             try {
+                /* It is important here that we call libraryLoader.findClass(name) and not libraryLoader.loadClass(name)
+                 * because we don't want to find classes from the parent classloader of the libraryLoader!
+                 */
                 found = libraryLoader.findClass(name);
             } catch (ClassNotFoundException e) { /*ignored - continue onwards*/ }
         }
@@ -577,11 +582,13 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * This is dangerous business because it can pollute the JavaPluginLoader with classes for multiple (binary incompatible) versions of Scala.
      * <br>
      * Be sure to call {@link #removeFromJavaPluginLoaderScope(String)} again when the class is no longer needed to prevent memory leaks.
+     * <br>
+     * It is better (but still not ideal) to use {@link ScalaPluginLoader#openUpToJavaPlugin(ScalaPlugin, JavaPlugin)} instead.
      *
      * @param className the name of the class
      * @param clazz the class
      *
-     * @deprecated JavaPlugins that try to find classes using the JavaPluginLoader expect to only find JavaPlugins
+     * @deprecated JavaPlugins that try to find classes using the JavaPluginLoader expect to only find JavaPlugins.
      * @see <a href="https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/diff/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java?until=c3aeaea0fb88600643e01b6b4259e9d5da49e0e7">PluginClassLoader</a>
      */
     @Deprecated
@@ -670,10 +677,12 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      *     Adds a url to this classloader. This will allow more classes to be found that the plugin can then depend on.
      * </p>
      * <p>
-     *     <b>Only use this if you know that you are doing!!!</b>
+     *     <b>Only use this if you know what you are doing!!!</b>
      * </p>
      *
      * @apiNote Be sure to call this in the constructor or initializer of your plugin, and don't use the dependency before that point or else you will get a {@link NoClassDefFoundError}
+     * @deprecated use <a href="https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/plugin/PluginDescriptionFile.html#getLibraries()">libraries</a> instead.
+     *              The only reason this method still exist is that that method does not support user-defined repositories yet.
      *
      * @param url the location of the dependency
      */
@@ -681,6 +690,18 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     //in the future when the dependency api is added, annotate this with @Deprecated and @Replaced and redirect calls at class-load time
     public final void addUrl(URL url) {
         libraryLoader.addURL(url);
+    }
+
+    /**
+     * If you are calling this (which is only possible reflectively on JDK 16 and earlier), then you already know that what you are doing is considered bad practice.
+     * <br>
+     * If you are using some kind of dependency loader framework, please update it to use {@link #addUrl(URL)} instead, or better: don't even use it at all because it's doing hacky stuff!
+     * @param url the location of the dependency
+     */
+    @Deprecated
+    @Override
+    protected void addURL(URL url) {
+        addUrl(url);
     }
 
 }

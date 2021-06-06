@@ -42,6 +42,7 @@ public final class ScalaRelease implements Comparable<ScalaRelease> {
             res = AS_INT_COMPARATOR.compare(minor1, minor2);
             if (res != 0) return res;
 
+            //fallback, just compare whatever is after the minor version lexicographically
             int endMinor1 = matcher1.end("minor");
             int endMinor2 = matcher2.end("minor");
             return first.substring(endMinor1).compareTo(second.substring(endMinor2));

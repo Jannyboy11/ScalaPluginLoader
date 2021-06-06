@@ -28,7 +28,9 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
  */
 /**
  * This class is NOT part of the public API!
- * But it implements loading of libraries that are defined in the plugin.yml
+ * <br>
+ * But it implements loading of libraries that are defined in the plugin.yml.
+ * Libraries can be downloaded from <a href="https://repo.maven.apache.org/maven2/">Maven Central</a> or <a href="https://repo.codemc.org/repository/maven-public/">CodeMC</a>.
  *
  * @see <a href="https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/plugin/PluginDescriptionFile.html#getLibraries()">PluginDescriptionFile.getLibraries()</a>
  */

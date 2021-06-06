@@ -23,6 +23,9 @@ import java.util.logging.Logger;
 
 /**
  * This class is NOT part of the public API!
+ * <br>
+ * This classloader is used to classload classes defined by libraries.
+ * @see PluginYamlLibraryLoader
  */
 public class LibraryClassLoader extends URLClassLoader {
 
@@ -49,6 +52,14 @@ public class LibraryClassLoader extends URLClassLoader {
         super.addURL(url);
     }
 
+    /*
+     * loadClass(String name) is not overridden and that is very much intentional.
+     * why? because the load-class method defines the search order.
+     * and the default behaviour is ideal for us: we want to search in the parent classloader first!
+     * why do we want to find classes first in the parent cloassloader?
+     * because we want to use the use same class definitions for scala standard library types and bukkit types as the scalaplugins themselves.
+     * so we shouldn't load those classes from a downloaded jar file.
+     */
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
         //search in cache
