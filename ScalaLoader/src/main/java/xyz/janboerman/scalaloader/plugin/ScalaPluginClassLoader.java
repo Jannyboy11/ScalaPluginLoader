@@ -65,7 +65,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     private final ConcurrentMap<String, Class<?>> classes = new ConcurrentHashMap<>();
     private final ScalaPlugin plugin;
     private final PersistentClasses persistentClasses;
-    private LibraryClassLoader libraryLoader;
+    private final LibraryClassLoader libraryLoader;
 
     /**
      * Construct a ClassLoader that loads classes for {@link ScalaPlugin}s.
@@ -79,6 +79,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @param apiVersion bukkit's api version that's used by the plugin
      *
      * @throws IOException if the plugin's file could not be read as a {@link JarFile}
+     * @throws ScalaPluginLoaderException if the plugin instance could not be constructed
      */
     protected ScalaPluginClassLoader(ScalaPluginLoader pluginLoader,
                                      URL[] urls,
@@ -89,7 +90,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                                      ApiVersion apiVersion,
                                      String mainClassName,
                                      TransformerRegistry transformerRegistry,
-                                     Collection<File> dependencies) throws IOException, ScalaPluginLoaderException, ClassNotFoundException {
+                                     Collection<File> dependencies) throws IOException, ScalaPluginLoaderException {
         super(urls, parent);
 
         this.pluginLoader = pluginLoader;
@@ -110,8 +111,11 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                                                     pluginLoader.getScalaLoader().getLogger(),
                                                     this,
                                                     transformerRegistry);
-
-        this.plugin = createPluginInstance((Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this));
+        try {
+            this.plugin = createPluginInstance((Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this));
+        } catch (ClassNotFoundException e) {
+            throw new ScalaPluginLoaderException("Could not find plugin's main class: " + mainClassName, e);
+        }
         this.persistentClasses = new PersistentClasses(plugin);
         for (ClassFile classFile : this.persistentClasses.load()) {
             getOrDefineClass(classFile.getClassName(), name -> classFile.getByteCode(false), false);

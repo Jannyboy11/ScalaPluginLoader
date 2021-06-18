@@ -333,8 +333,6 @@ public class ScalaPluginLoader implements PluginLoader {
             //TODO for getting the ScalaPluginDescription.
             //TODO make sure that currently-compiled plugins can still load (possibly with the help of some extra bytecode transformations!)
 
-        } catch (ClassNotFoundException e) {
-            throw new InvalidDescriptionException(e, "The main class of your plugin could not be found!");
         } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
             throw new InvalidDescriptionException(e,
                     "Your plugin's constructor, initializer or class initializer tried to access classes that were not yet loaded. " +
