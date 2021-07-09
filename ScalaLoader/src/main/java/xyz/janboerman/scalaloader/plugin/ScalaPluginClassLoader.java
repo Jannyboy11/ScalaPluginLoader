@@ -6,6 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.*;
+import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.bytecode.Called;
@@ -35,7 +36,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.jar.*;
-import java.util.logging.Level;
 
 /**
  * ClassLoader that loads {@link ScalaPlugin}s.
@@ -279,7 +279,18 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @return true if the classload should be debugged, otherwise false
      */
     private boolean debugClassLoad(String className) {
-        return getPluginLoader().debugClassNames().contains(className);
+        return getPluginLoader().debugSettings().debugClassLoads().contains(className);
+    }
+
+    /**
+     * Get the printer which prints class definitions for debugging
+     * @return the printer
+     */
+    private Printer debugPrinter() {
+        switch (getPluginLoader().debugSettings().getFormat()) {
+            case DebugSettings.ASMIFIED: return new ASMifier();
+            default: return new Textifier();
+        }
     }
 
     /**
@@ -343,7 +354,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     if (debugClassLoad(name)) {
                         getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] Dumping bytecode for class " + name);
                         ClassReader debugReader = new ClassReader(classBytes);
-                        TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out));
+                        TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter(), new PrintWriter(System.out));
                         debugReader.accept(traceClassVisitor, 0);
                     }
 

@@ -7,6 +7,7 @@ import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
+import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
@@ -175,8 +176,8 @@ public class ScalaPluginLoader implements PluginLoader {
      *
      * @return the set of class names
      */
-    Set<String> debugClassNames() {
-        return getScalaLoader().getDebugSettings().debugClassLoads();
+    DebugSettings debugSettings() {
+        return getScalaLoader().getDebugSettings();
     }
 
 

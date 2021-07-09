@@ -16,12 +16,18 @@ public class DebugSettings {
 
     private static final String FILE_NAME = "debug.yml";
     private static final String CLASS_NAMES = "class-names";
+    private static final String FORMAT = "format";
+
+    public static final String TEXTIFIED = "Textified";
+    public static final String ASMIFIED = "ASMified";
 
     private final ScalaLoader scalaLoader;
     private File saveFile;
 
     //synchronized because the ScalaPluginClassLoader is parallel capable! It might not load classes from the server's main thread!
     private final Set<String> classNames = Collections.synchronizedSet(new LinkedHashSet<>());
+    private String format = TEXTIFIED; private final Object formatLock = new Object();
+    //TODO private boolean asmAnalysis
 
     public DebugSettings(ScalaLoader scalaLoader) {
         this.scalaLoader = scalaLoader;
@@ -35,6 +41,12 @@ public class DebugSettings {
 
     public Set<String> debugClassLoads() {
         return Collections.unmodifiableSet(classNames);
+    }
+
+    public String getFormat() {
+        synchronized (formatLock) {
+            return format;
+        }
     }
 
     public boolean isDebuggingClassLoadOf(String className) {
@@ -69,12 +81,17 @@ public class DebugSettings {
             List<String> classNames = config.getStringList(CLASS_NAMES);
             this.classNames.clear();
             this.classNames.addAll(classNames);
+            String format = config.getString(FORMAT, TEXTIFIED);
+            synchronized (formatLock) {
+                this.format = format;
+            }
         }
     }
 
     private void save() throws IOException {
         YamlConfiguration config = new YamlConfiguration();
         config.set(CLASS_NAMES, Compat.listCopy(classNames));
+        config.set(FORMAT, format);
         config.save(getSaveFile());
     }
 

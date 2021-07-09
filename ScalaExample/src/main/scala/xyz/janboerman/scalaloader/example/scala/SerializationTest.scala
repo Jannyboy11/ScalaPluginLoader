@@ -7,6 +7,8 @@ import org.bukkit.configuration.file.YamlConfiguration
 import xyz.janboerman.scalaloader.configurationserializable.Scan.IncludeProperty
 import xyz.janboerman.scalaloader.configurationserializable.{ConfigurationSerializable, DelegateSerialization, Scan}
 
+import scala.collection.immutable.WrappedString
+
 object SerializationMethodsTest {
 
     private val dataFolder = ExamplePlugin.getDataFolder;
@@ -206,23 +208,23 @@ object ScalaTypesSerializationTest {
         java.lang.Class.forName("xyz.janboerman.scalaloader.example.scala.ImmutableCollectionTest$")
         java.lang.Class.forName("xyz.janboerman.scalaloader.example.scala.MutableCollectionTest$")
 
-        import scala.reflect.ClassTag
-        implicitly[ClassTag[Byte]]
-        implicitly[ClassTag[Short]]
-        implicitly[ClassTag[Int]]
-        implicitly[ClassTag[Long]]
-        implicitly[ClassTag[Float]]
-        implicitly[ClassTag[Double]]
-        implicitly[ClassTag[Char]]
-        implicitly[ClassTag[Boolean]]
-        implicitly[ClassTag[Unit]]
-        implicitly[ClassTag[Nothing]]
-        implicitly[ClassTag[Null]]
-        implicitly[ClassTag[Any]]
-        implicitly[ClassTag[AnyRef]]
-        implicitly[ClassTag[AnyVal]]
-        implicitly[ClassTag[java.lang.Object]]
-        implicitly[ClassTag[java.lang.String]]
+//        import scala.reflect.ClassTag
+//        implicitly[ClassTag[Byte]]
+//        implicitly[ClassTag[Short]]
+//        implicitly[ClassTag[Int]]
+//        implicitly[ClassTag[Long]]
+//        implicitly[ClassTag[Float]]
+//        implicitly[ClassTag[Double]]
+//        implicitly[ClassTag[Char]]
+//        implicitly[ClassTag[Boolean]]
+//        implicitly[ClassTag[Unit]]
+//        implicitly[ClassTag[Nothing]]
+//        implicitly[ClassTag[Null]]
+//        implicitly[ClassTag[Any]]
+//        implicitly[ClassTag[AnyRef]]
+//        implicitly[ClassTag[AnyVal]]
+//        implicitly[ClassTag[java.lang.Object]]
+//        implicitly[ClassTag[java.lang.String]]
 
         //TODO on a different thought: could a Scala 3 compiler plugin work to get this type information?
         //TODO I may not have to generate bytecode at class-load time at all in that case, but just transform the AST in the plugin compiler phase!
@@ -313,6 +315,8 @@ class ImmutableCollectionTest {
 
 object ImmutableCollectionTest {
     import scala.collection.immutable._
+
+    SpecialcasedImmutableCollectionsTest.test()
 
     def deserialize(map: java.util.Map[String, AnyRef]): ImmutableCollectionTest = {
         val res = new ImmutableCollectionTest()
@@ -602,21 +606,52 @@ object OrderingTest {
     def uuidOrder = implicitly[Ordering[java.util.UUID]]
     def stringCaseInsensitiveOrder = implicitly[Ordering[String]](Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER))
 
-
 }
 
-object RangeTest {
+object SpecialcasedImmutableCollectionsTest {
     import scala.collection.immutable.Range
 
     def test(): Unit = {
-        val start = 0;
-        val end = 10;
-        val step = 1
-        val inclusive = false
+        val saveFile = new File(ExamplePlugin.getDataFolder, "specialcased-immutable-collections-test.yml")
 
-        val range = if (inclusive) Range.inclusive(start, end, step) else Range.apply(start, end, step)
+        //construct the things
+        val specialCasesTest1 = new SpecialcasedImmutableCollectionsTest(new WrappedString("Hello!"), Range.apply(0, 10, 1))
+        val specialCasesTest2 = new SpecialcasedImmutableCollectionsTest(new WrappedString("World!"), Range.inclusive(0, 10, 1));
 
+        val console = ExamplePlugin.getServer.getConsoleSender
+        console.sendMessage(s"${ChatColor.YELLOW}Test ${ChatColor.RESET}specialCases.equals(deserialize(serialize(specialCases))")
+
+        var config = new YamlConfiguration()
+        config.set("special-cases1", specialCasesTest1)
+        config.set("special-cases2", specialCasesTest2)
+        config.save(saveFile)
+
+        config = YamlConfiguration.loadConfiguration(saveFile)
+        assert(specialCasesTest1 == config.get("special-cases1"))
+        assert(specialCasesTest2 == config.get("special-cases2"))
+        if (ExamplePlugin.assertionsEnabled()) {
+            console.sendMessage(s"${ChatColor.GREEN}Test passed!")
+        }
 
     }
 
+}
+
+@ConfigurationSerializable(scan = new Scan(value = Scan.Type.FIELDS))
+class SpecialcasedImmutableCollectionsTest(val wrappedString: scala.collection.immutable.WrappedString,
+                                           val range: scala.collection.immutable.Range) {
+
+    override def equals(obj: Any): Boolean = {
+        if (obj == this) return true
+
+        obj match {
+            case that: SpecialcasedImmutableCollectionsTest =>
+                this.wrappedString == that.wrappedString && this.range == that.range
+            case _ => false
+        }
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(wrappedString, range)
+
+    override def toString(): String = s"SpecialcasedImmutableCollectionsTest(wrappedString=${wrappedString},range=${range})"
 }

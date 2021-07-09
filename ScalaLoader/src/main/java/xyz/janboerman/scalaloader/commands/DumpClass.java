@@ -64,6 +64,11 @@ public class DumpClass implements TabExecutor {
 
         try {
             File jarFile = getJarFile(plugin);
+            if (jarFile == null) {
+                sender.sendMessage(ChatColor.RED + "Could not detect plugin's jar file. Currently this command only supports ScalaPlugins and JavaPlugins.");
+                return true;
+            }
+
             JarFile jar = Compat.jarFile(jarFile);
             JarEntry jarEntry = jar.getJarEntry(classFileInput);
             if (jarEntry == null) {
@@ -74,9 +79,16 @@ public class DumpClass implements TabExecutor {
             try (InputStream inputStream = jar.getInputStream(jarEntry)) {
                 Printer printer;
                 switch (formatInput) {
-                    case ASMIFIED: printer = new ASMifier(); break;
-                    case TEXTIFIED: printer = new Textifier(); break;
-                    default: assert false : "format was not ASMified or Textified?"; printer = null; break;
+                    case ASMIFIED:
+                        printer = new ASMifier();
+                        break;
+                    case TEXTIFIED:
+                        printer = new Textifier();
+                        break;
+                    default:
+                        assert false : "format was not ASMified or Textified?";
+                        printer = null;
+                        break;
                 }
                 dump(inputStream, printer);
             }
