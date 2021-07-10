@@ -13,7 +13,7 @@
 
     <properties>
         <bukkitVersion>1.13.2-R0.1-SNAPSHOT</bukkitVersion>
-        <asmVersion>9.1</asmVersion>
+        <asmVersion>9.2</asmVersion>
         <bstatsVersion>2.2.1</bstatsVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
         <mavenResolverProviderVersion>3.8.1</mavenResolverProviderVersion>
@@ -241,7 +241,6 @@
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
         </repository>
-        <!-- CodeMC repo no longer necessary because bStats now lives on Maven Central! -->
     </repositories>
 
     <dependencies>
@@ -252,13 +251,12 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- needed for bytecode transformations! -->
+        <!-- needed for bytecode transformations & debugging functionality -->
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
             <version>${asmVersion}</version>
         </dependency>
-
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-commons</artifactId>
@@ -269,18 +267,17 @@
             <artifactId>asm-util</artifactId>
             <version>${asmVersion}</version>
         </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-analysis</artifactId>
+            <version>${asmVersion}</version>
+        </dependency>
 
-        <!-- for very nasty debugging only -->
-<!--        <dependency>-->
-<!--            <groupId>org.ow2.asm</groupId>-->
-<!--            <artifactId>asm-analysis</artifactId>-->
-<!--            <version>${asmVersion}</version>-->
-<!--        </dependency>-->
-<!--        &lt;!&ndash; for debugging only &ndash;&gt;-->
+        <!-- for debugging only -->
 <!--        <dependency>-->
 <!--            <groupId>org.scala-lang</groupId>-->
 <!--            <artifactId>scala-library</artifactId>-->
-<!--            <version>2.13.5</version>-->
+<!--            <version>2.13.6</version>-->
 <!--            <scope>provided</scope>-->
 <!--        </dependency>-->
 

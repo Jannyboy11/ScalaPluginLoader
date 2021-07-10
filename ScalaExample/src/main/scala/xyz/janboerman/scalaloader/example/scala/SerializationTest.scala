@@ -641,12 +641,12 @@ object SpecialcasedImmutableCollectionsTest {
 class SpecialcasedImmutableCollectionsTest(val wrappedString: scala.collection.immutable.WrappedString,
                                            val range: scala.collection.immutable.Range) {
 
-    override def equals(obj: Any): Boolean = {
-        if (obj == this) return true
+    private def unwrapString(): String = wrappedString.unwrap; //TODO remove
 
+    override def equals(obj: Any): Boolean = {
         obj match {
             case that: SpecialcasedImmutableCollectionsTest =>
-                this.wrappedString == that.wrappedString && this.range == that.range
+                (this `eq` that) || (this.wrappedString == that.wrappedString && this.range == that.range)
             case _ => false
         }
     }

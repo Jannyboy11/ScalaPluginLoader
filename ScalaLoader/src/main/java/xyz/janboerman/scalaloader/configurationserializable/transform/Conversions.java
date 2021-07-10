@@ -1314,8 +1314,10 @@ class ScalaConversions {
 
     private static final String WRAPPED_STRING = "scala/collection/immutable/WrappedString";
     private static final Type WRAPPED_STRING_TYPE = Type.getObjectType(WRAPPED_STRING);
+    private static final String WRAPPED_STRING_DESCRIPTOR = "L" + WRAPPED_STRING + ";";
     private static final String RANGE = "scala/collection/immutable/Range";
     private static final Type RANGE_TYPE = Type.getObjectType(RANGE);
+    private static final String RANGE_DESCRIPTOR = RANGE_TYPE.getDescriptor();
     private static final String NUMERIC_RANGE = "scala/collection/immutable/NumericRange";
     private static final Type NUMERIC_RANGE_TYPE = Type.getObjectType(NUMERIC_RANGE);
     private static final String ARRAY_BUILDER = "scala/collection/mutable/ArrayBuilder";
@@ -1509,8 +1511,35 @@ class ScalaConversions {
         switch (typeSignature.getTypeName()) {
             case WRAPPED_STRING:
                 //serialize a WrappedString simply into a String
+                Label startLabel = new Label(), endLabel = new Label();
+
                 methodVisitor.visitTypeInsn(CHECKCAST, WRAPPED_STRING);     operandStack.replaceTop(WRAPPED_STRING_TYPE);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, WRAPPED_STRING, "unwrap", "()" + STRING_DESCRIPTOR, false);    operandStack.replaceTop(STRING_TYPE);
+                //unwrap is not an instance method on WrappedString, instead, it is an extension method!!
+                //methodVisitor.visitMethodInsn(INVOKEVIRTUAL, WRAPPED_STRING, "unwrap", "()" + STRING_DESCRIPTOR, false);    operandStack.replaceTop(STRING_TYPE);
+
+                //WrappedString wrappedString = $valueOnTopOfTheStack
+                int wrappedStringIndex = localVariableTable.frameSize();
+                LocalVariable wrappedString = new LocalVariable("wrappedString", WRAPPED_STRING_DESCRIPTOR, null, startLabel, endLabel, wrappedStringIndex);
+                localVariableTable.add(wrappedString);
+                methodVisitor.visitVarInsn(ASTORE, wrappedStringIndex);     operandStack.pop();
+                methodVisitor.visitLabel(startLabel);
+
+                //wrappedString.unwrap()
+                methodVisitor.visitFieldInsn(GETSTATIC, "scala/collection/immutable/WrappedString$UnwrapOp$", "MODULE$", "Lscala/collection/immutable/WrappedString$UnwrapOp$;");
+                operandStack.push(Type.getType("Lscala/collection/immutable/WrappedString$UnwrapOp$;"));    //[..., UnwrapOp$]
+                methodVisitor.visitFieldInsn(GETSTATIC, "scala/collection/immutable/WrappedString$", "MODULE$", "Lscala/collection/immutable/WrappedString$;");
+                operandStack.push(Type.getType("Lscala/collection/immutable/WrappedString$;"));             //[..., UnwrapOp$, WrappedString$]
+                methodVisitor.visitVarInsn(ALOAD, wrappedStringIndex);
+                operandStack.push(WRAPPED_STRING_TYPE);                                                     //[..., UnWrapOp$, WrappedString$, WrappedString]
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/collection/immutable/WrappedString$", "UnwrapOp", "(Lscala/collection/immutable/WrappedString;)Lscala/collection/immutable/WrappedString;", false);
+                operandStack.replaceTop(2, WRAPPED_STRING_TYPE);                                //[..., UnwrapOp$, WrappedString]
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/collection/immutable/WrappedString$UnwrapOp$", "unwrap$extension", "(Lscala/collection/immutable/WrappedString;)Ljava/lang/String;", false);
+                operandStack.replaceTop(2, STRING_TYPE);                                        //[..., String]
+                //this seems needlessly complicated - do we need the UnwrapOp method? it does not seem to do anything besides consuming the WrappedString$ companion object.
+                //this is however what the Scala 2.13.6 compiler emits!
+
+                methodVisitor.visitLabel(endLabel);
+                localVariableTable.removeFramesFromIndex(wrappedStringIndex);
                 return;
 
             case RANGE:
@@ -1520,7 +1549,7 @@ class ScalaConversions {
                 final Label rangeEndLabel = new Label();
 
                 final int rangeIndex = localVariableTable.frameSize();
-                final LocalVariable range = new LocalVariable("range", RANGE, null, rangeStartLabel, rangeEndLabel, rangeIndex);
+                final LocalVariable range = new LocalVariable("range", RANGE_DESCRIPTOR, null, rangeStartLabel, rangeEndLabel, rangeIndex);
                 methodVisitor.visitVarInsn(ASTORE, rangeIndex);             operandStack.pop();
                 localVariableTable.add(range);
                 methodVisitor.visitLabel(rangeStartLabel);
@@ -1667,8 +1696,8 @@ class ScalaConversions {
 
                 methodVisitor.visitJumpInsn(IFEQ, exclusiveLabel);   /*branches if the boolean on the stack is FALSE!*/  operandStack.pop();
 
-                Object[] localFrame = localVariableTable.frame();   // [..., NumericRange.OfInteger]
-                Object[] stackFrame = operandStack.frame();         // [..., Range$, start, end, step]
+                Object[] localFrame = localVariableTable.frame();   // [..., ScalaLoader..NumericRange.OfInteger]
+                Object[] stackFrame = operandStack.frame();         // [..., scala..Range$, start, end, step]
 
                 {   //inclusive
                     methodVisitor.visitMethodInsn(INVOKEVIRTUAL, RANGE_COMPANION, "inclusive", "(III)" + RANGE_INCLUSIVE_DESCRIPTOR, false);
@@ -1689,6 +1718,7 @@ class ScalaConversions {
                 localVariableTable.removeFramesFromIndex(rangeIndex);
                 methodVisitor.visitLabel(rangeEndLabel);
                 return;
+
         }
 
         //TODO special-case some collections:

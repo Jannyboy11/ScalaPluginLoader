@@ -32,7 +32,6 @@ public class Migration {
         return classWriter.toByteArray();
     }
 
-
 }
 
 class NumericRangeUpdater extends ClassRemapper {

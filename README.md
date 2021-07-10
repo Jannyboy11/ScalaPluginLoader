@@ -12,6 +12,8 @@ results unnecessarily large plugins sizes, while really those Scala classes shou
 
 ScalaLoader uses a custom PluginLoader that loads the Scala runtime classes for you!
 
+[![ScalaLoader](https://api.mcbanners.com/banner/saved/UmfAZlBOygXvQb.png)](https://www.spigotmc.org/resources/scalaloader.59568/)
+
 #### Pros
 - Write idiomatic Scala!
 - No need to shade anymore!
