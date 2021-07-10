@@ -14,24 +14,28 @@ public enum ApiVersion {
     //I probably don't want to create a 1.7 compatibility layer xD
     /** Signals that the ScalaPlugin was based on Bukkit 1.12.2 or earlier */
     LEGACY(null),
-    /** Signals that the ScalaPlugin was created for Bukkit 1.13 */
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.13 */
     v1_13("1.13"),
-    /** Signals that the ScalaPlugin was created for Bukkit 1.14 */
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.14 */
     v1_14("1.14"),
-    /** Signals that the ScalaPlugin was created for Bukkit 1.15 */
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.15 */
     v1_15("1.15"),
-    /** Signals that the ScalaPlugin was created for Bukkit 1.16 */
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.16 */
     v1_16("1.16"),
-    /** Signals that the ScalaPlugin was created for Bukkit 1.17 */
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.17 */
     v1_17("1.17"),
-    /** Signals that the ScalaPlugin was created for Bukkit 1.18 */
-    v1_18("1.18");
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.18 */
+    v1_18("1.18"),
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.19 */
+    v1_19("1.19");
 
     private static final ApiVersion LATEST_VERSION;
     static {
         ApiVersion runningOn;
         String bukkitVersion = Bukkit.getBukkitVersion();
-        if (bukkitVersion.startsWith("1.18")) {
+        if (bukkitVersion.startsWith("1.19")) {
+            runningOn = v1_19;
+        } else if (bukkitVersion.startsWith("1.18")) {
             runningOn = v1_18;
         } else if (bukkitVersion.startsWith("1.17")) {
             runningOn = v1_17;

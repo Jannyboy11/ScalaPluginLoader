@@ -27,6 +27,7 @@ public final class ScalaPluginDescription {
 
     private String pluginDescription;
     private List<String> authors = new LinkedList<>();
+    private LinkedHashSet<String> contributors = new LinkedHashSet<>();
     private String prefix;
     private String website;
     private PluginLoadOrder loadOrder;
@@ -83,12 +84,31 @@ public final class ScalaPluginDescription {
     }
 
     public ScalaPluginDescription authors(String... authors) {
-        this.authors = Compat.listOf(authors);
+        this.authors = new ArrayList<>(Compat.listOf(authors));
+        return this;
+    }
+
+    public ScalaPluginDescription addAuthor(String author) {
+        this.authors.add(author);
         return this;
     }
 
     public List<String> getAuthors() {
         return Collections.unmodifiableList(authors);
+    }
+
+    public ScalaPluginDescription contributors(String... contributors) {
+        this.contributors = new LinkedHashSet<>(Compat.listOf(contributors));
+        return this;
+    }
+
+    public ScalaPluginDescription addContributor(String contributor) {
+        this.contributors.add(contributor);
+        return this;
+    }
+
+    public Collection<String> getContributors() {
+        return Collections.unmodifiableCollection(contributors);
     }
 
     public ScalaPluginDescription loadOrder(PluginLoadOrder loadOrder) {
@@ -232,7 +252,8 @@ public final class ScalaPluginDescription {
         pluginData.put("main", main);
 
         if (pluginDescription != null) pluginData.put("description", pluginDescription);
-        if (authors != null && !authors.isEmpty()) pluginData.put("authors", authors);
+        if (authors != null && !authors.isEmpty()) pluginData.put("authors", Compat.listCopy(authors));
+        if (contributors != null && !contributors.isEmpty()) pluginData.put("contributors", Compat.listCopy(contributors));
         if (website != null) pluginData.put("website", getWebsite());
         if (prefix != null) pluginData.put("prefix", prefix);
         if (apiVersion != null) pluginData.put("api-version", apiVersion);
@@ -268,7 +289,7 @@ public final class ScalaPluginDescription {
         }
 
         Yaml yaml = new Yaml();
-        String pluginYaml = yaml.dump(pluginData); //this can be quite a large string though. but whatever - Compact Strings to the rescue!
+        String pluginYaml = yaml.dump(pluginData); //this can be quite a large string though. Preferably I'd use a YamlReader, however I can't find any class that does that (yet).
 
         try {
             return new PluginDescriptionFile(new StringReader(pluginYaml));

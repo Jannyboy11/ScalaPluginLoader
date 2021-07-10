@@ -1,24 +1,26 @@
 package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.Server;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.PluginLoadOrder;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 import xyz.janboerman.scalaloader.plugin.description.Scala;
+import static xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.Command;
+import static xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.Permission;
 
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -65,6 +67,111 @@ public abstract class ScalaPlugin implements Plugin {
             getLogger().warning("ScalaPlugin got instantiated but was not loaded by a ScalaPluginClassLoader!");
             getLogger().warning("Many of ScalaPlugin's fields will remain uninitialised!");
         }
+    }
+
+    protected ScalaPlugin() {
+        if (getClass().getClassLoader() instanceof ScalaPluginClassLoader) {
+            this.classLoader = (ScalaPluginClassLoader) getClass().getClassLoader();
+            this.server = classLoader.getServer();
+            this.pluginLoader = classLoader.getPluginLoader();
+            this.file = classLoader.getPluginJarFile();
+
+            Map<String, Object> pluginYaml = classLoader.getExtraPluginYaml();
+            String name = Objects.requireNonNull(pluginYaml.get("name"), "name unspecified in plugin.yml").toString();
+            String version = Objects.requireNonNull(pluginYaml.get("version"), "version unspecified in plugin.yml").toString();
+
+            this.description = new ScalaPluginDescription(name, version);
+            this.description.addYaml(pluginYaml);
+            this.description.setMain(getClass().getName());
+            this.description.setApiVersion(classLoader.getApiVersion().getVersionString());
+            this.description.description((String) pluginYaml.get("description"));
+            String author = (String) pluginYaml.get("author");
+            if (author != null)
+                this.description.addAuthor(author);
+            Iterable authors = (Iterable) pluginYaml.get("authors");
+            if (authors != null)
+                for (Object auth : authors)
+                    if (auth != null)
+                        this.description.addAuthor(auth.toString());
+            Iterable contributors = (Iterable) pluginYaml.get("contributors");
+            if (contributors != null)
+                for (Object contrib : contributors)
+                    if (contrib != null)
+                        this.description.addContributor(contrib.toString());
+            this.description.website((String) pluginYaml.get("website"));
+            this.description.prefix((String) pluginYaml.get("prefix"));
+            String load = (String) pluginYaml.get("load");
+            if (load != null)
+                this.description.loadOrder(PluginLoadOrder.valueOf(load));
+            String defaultPermissionDefault = (String) pluginYaml.get("default-permission");
+            if (defaultPermissionDefault != null)
+                this.description.permissionDefault(PermissionDefault.getByName(defaultPermissionDefault));
+            List<String> depend = (List<String>) pluginYaml.get("depend");
+            if (depend != null)
+                for (String dep : depend)
+                    if (dep != null)
+                        this.description.addHardDepend(dep);
+            List<String> softDepend = (List<String>) pluginYaml.get("softdepend");
+            if (softDepend != null)
+                for (String softDep : softDepend)
+                    if (softDep != null)
+                        this.description.addSoftDepend(softDep);
+            List<String> inverseDepend = (List<String>) pluginYaml.get("loadbefore");
+            if (inverseDepend != null)
+                for (String inverseDep : inverseDepend)
+                    if (inverseDep != null)
+                        this.description.addLoadBefore(inverseDep);
+            List<String> provides = (List<String>) pluginYaml.get("provides");
+            if (provides != null)
+                this.description.provides(provides.toArray(new String[0]));
+            Map<String, Map<String, Object>> commands = (Map) pluginYaml.get("commands");
+            if (commands != null) {
+                for (Map.Entry<String, Map<String, Object>> entry : commands.entrySet()) {
+                    String cmdName = entry.getKey();
+                    Map<String, Object> value = entry.getValue();
+                    Command cmd = new Command(cmdName);
+                    cmd.description((String) value.get("description"));
+                    cmd.usage((String) value.get("usage"));
+                    cmd.permission((String) value.get("permission"));
+                    cmd.permissionMessage((String) value.get("permission-message"));
+                    Iterable aliases = (Iterable) value.get("aliases");
+                    for (Object alias : aliases) cmd.addAlias(alias.toString());
+                    this.description.addCommand(cmd);
+                }
+            }
+            Map<String, Map<String, Object>> permissions = (Map) pluginYaml.get("permissions");
+            if (permissions != null) {
+                for (Map.Entry<String, Map<String, Object>> entry : permissions.entrySet()) {
+                    String permissionName = entry.getKey();
+                    Map<String, Object> properties = entry.getValue();
+                    Permission perm = makePermission(permissionName, properties);
+                    this.description.addPermission(perm);
+                }
+            }
+
+        } else {
+            throw new IllegalStateException("ScalaPlugin nullary constructor can only be used when loaded by a " + ScalaPluginClassLoader.class.getSimpleName() + ".");
+        }
+    }
+
+    private static Permission makePermission(String name, Map<String, Object> properties) {
+        Permission perm = new Permission(name);
+
+        perm.description((String) properties.get("description"));
+        String def = (String) properties.get("default");
+        if (def != null) perm.permissionDefault(PermissionDefault.getByName(def));
+        Object children = properties.get("children");
+        if (children instanceof List) {
+            List kids = (List) children;
+            for (Object kid : kids) perm.addChild(new Permission(kid.toString()));
+        } else if (children instanceof Map) {
+            Map<String, Map<String, Object>> kids = (Map) children;
+            for (Map.Entry<String, Map<String, Object>> kid : kids.entrySet()) {
+                perm.addChild(makePermission(kid.getKey(), kid.getValue()));
+            }
+        }
+
+        return perm;
     }
 
     /**
@@ -396,7 +503,7 @@ public abstract class ScalaPlugin implements Plugin {
      * @param name the name of the command
      * @return the command if one with a corresponding name was found, otherwise null
      */
-    protected final PluginCommand getCommand(String name) {
+    protected final org.bukkit.command.PluginCommand getCommand(String name) {
         return getServer().getPluginCommand(name);
     }
 
@@ -404,7 +511,7 @@ public abstract class ScalaPlugin implements Plugin {
      * {@inheritDoc}
      */
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(org.bukkit.command.CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
         return false;
     }
 
@@ -412,7 +519,7 @@ public abstract class ScalaPlugin implements Plugin {
      * {@inheritDoc}
      */
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(org.bukkit.command.CommandSender sender, org.bukkit.command.Command command, String alias, String[] args) {
         return null;
     }
 

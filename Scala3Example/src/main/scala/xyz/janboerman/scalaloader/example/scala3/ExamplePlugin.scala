@@ -7,8 +7,7 @@ import zio.ZIO
 import zio.console._
 
 @Scala(ScalaVersion.v3_0_0)
-@Api(ApiVersion.v1_16)
-object ExamplePlugin extends ScalaPlugin(ScalaPluginDescription("Scala3Example", "0.17.1-SNAPSHOT")) { plugin =>
+object ExamplePlugin extends ScalaPlugin() { plugin =>
 
     val syncRuntime = new BukkitRuntime(this).syncRuntime
 
