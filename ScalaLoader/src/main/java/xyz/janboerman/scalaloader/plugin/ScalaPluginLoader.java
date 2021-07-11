@@ -499,9 +499,13 @@ public class ScalaPluginLoader implements PluginLoader {
             if (dependent != null) {
                 ScalaPluginDescription desc = dependent.getScalaDescription();
                 if (desc.getHardDependencies().contains(plugin.getName())) {
-                    ScalaPlugin lateScalaPlugin = (ScalaPlugin) loadPlugin(dependentFile);
-                    addPluginToPluginManager(lateScalaPlugin);
-                    fileIterator.remove();
+                    try {
+                        ScalaPlugin lateScalaPlugin = (ScalaPlugin) loadPlugin(dependentFile);
+                        addPluginToPluginManager(lateScalaPlugin);
+                        fileIterator.remove();
+                    } catch (UnknownDependencyException thereAreMoreDependenciesLeft) {
+                        //ignore
+                    }
                 }
             }
         }
