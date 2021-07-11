@@ -14,7 +14,7 @@ import java.util.*;
  * The Java API for configuring a {@link ScalaPlugin}. This API is meant as a compile-time type-safe alternative to the error-prone plugin.yml files.
  * An instance of this class is used by {@link ScalaPlugin#ScalaPlugin(ScalaPluginDescription)}.
  */
-public final class ScalaPluginDescription {
+public class ScalaPluginDescription {
 
     private static final PermissionDefault PERMISSION_DEFAULT = org.bukkit.permissions.Permission.DEFAULT_PERMISSION;
 
@@ -316,6 +316,98 @@ public final class ScalaPluginDescription {
         }
 
         return currentPermission;
+    }
+
+    protected void readFromPluginYamlData(Map<String, Object> pluginYaml) {
+        addYaml(pluginYaml);
+
+        Object apiVersion = pluginYaml.get("api-version");
+        if (apiVersion != null)
+            setApiVersion(String.valueOf(apiVersion));
+        description((String) pluginYaml.get("description"));
+        String author = (String) pluginYaml.get("author");
+        if (author != null)
+            addAuthor(author);
+        Iterable authors = (Iterable) pluginYaml.get("authors");
+        if (authors != null)
+            for (Object auth : authors)
+                if (auth != null)
+                    addAuthor(auth.toString());
+        Iterable contributors = (Iterable) pluginYaml.get("contributors");
+        if (contributors != null)
+            for (Object contrib : contributors)
+                if (contrib != null)
+                    addContributor(contrib.toString());
+        website((String) pluginYaml.get("website"));
+        prefix((String) pluginYaml.get("prefix"));
+        String load = (String) pluginYaml.get("load");
+        if (load != null)
+            loadOrder(PluginLoadOrder.valueOf(load));
+        String defaultPermissionDefault = (String) pluginYaml.get("default-permission");
+        if (defaultPermissionDefault != null)
+            permissionDefault(PermissionDefault.getByName(defaultPermissionDefault));
+        List<String> depend = (List<String>) pluginYaml.get("depend");
+        if (depend != null)
+            for (String dep : depend)
+                if (dep != null)
+                    addHardDepend(dep);
+        List<String> softDepend = (List<String>) pluginYaml.get("softdepend");
+        if (softDepend != null)
+            for (String softDep : softDepend)
+                if (softDep != null)
+                    addSoftDepend(softDep);
+        List<String> inverseDepend = (List<String>) pluginYaml.get("loadbefore");
+        if (inverseDepend != null)
+            for (String inverseDep : inverseDepend)
+                if (inverseDep != null)
+                    addLoadBefore(inverseDep);
+        List<String> provides = (List<String>) pluginYaml.get("provides");
+        if (provides != null)
+            provides(provides.toArray(new String[0]));
+        Map<String, Map<String, Object>> commands = (Map) pluginYaml.get("commands");
+        if (commands != null) {
+            for (Map.Entry<String, Map<String, Object>> entry : commands.entrySet()) {
+                String cmdName = entry.getKey();
+                Map<String, Object> value = entry.getValue();
+                Command cmd = new Command(cmdName);
+                cmd.description((String) value.get("description"));
+                cmd.usage((String) value.get("usage"));
+                cmd.permission((String) value.get("permission"));
+                cmd.permissionMessage((String) value.get("permission-message"));
+                Iterable aliases = (Iterable) value.get("aliases");
+                for (Object alias : aliases) cmd.addAlias(alias.toString());
+                addCommand(cmd);
+            }
+        }
+        Map<String, Map<String, Object>> permissions = (Map) pluginYaml.get("permissions");
+        if (permissions != null) {
+            for (Map.Entry<String, Map<String, Object>> entry : permissions.entrySet()) {
+                String permissionName = entry.getKey();
+                Map<String, Object> properties = entry.getValue();
+                Permission perm = makePermission(permissionName, properties);
+                addPermission(perm);
+            }
+        }
+    }
+
+    private static Permission makePermission(String name, Map<String, Object> properties) {
+        Permission perm = new Permission(name);
+
+        perm.description((String) properties.get("description"));
+        String def = (String) properties.get("default");
+        if (def != null) perm.permissionDefault(PermissionDefault.getByName(def));
+        Object children = properties.get("children");
+        if (children instanceof List) {
+            List kids = (List) children;
+            for (Object kid : kids) perm.addChild(new Permission(kid.toString()));
+        } else if (children instanceof Map) {
+            Map<String, Map<String, Object>> kids = (Map) children;
+            for (Map.Entry<String, Map<String, Object>> kid : kids.entrySet()) {
+                perm.addChild(makePermission(kid.getKey(), kid.getValue()));
+            }
+        }
+
+        return perm;
     }
 
 

@@ -7,7 +7,7 @@ import zio.ZIO
 import zio.console._
 
 @Scala(ScalaVersion.v3_0_0)
-object ExamplePlugin extends ScalaPlugin() { plugin =>
+object ExamplePlugin extends ScalaPlugin {
 
     val syncRuntime = new BukkitRuntime(this).syncRuntime
 
@@ -19,6 +19,8 @@ object ExamplePlugin extends ScalaPlugin() { plugin =>
             _ <- putStrLn(s"Hello $name, welcome to ZIO!")
         yield ()
         syncRuntime.unsafeRun(program)
+
+
 
 
 //        CollectionTest.test()

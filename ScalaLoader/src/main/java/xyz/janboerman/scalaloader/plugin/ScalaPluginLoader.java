@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.plugin;
 
+import com.google.common.graph.MutableGraph;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
@@ -55,11 +56,12 @@ public class ScalaPluginLoader implements PluginLoader {
     private final ConcurrentMap<ScalaRelease, ConcurrentMap<String, Class<?>>> sharedScalaPluginClasses = new ConcurrentHashMap<>();
     private final ConcurrentMap<ScalaRelease, CopyOnWriteArrayList<ScalaPluginClassLoader>> sharedScalaPluginClassLoaders = new ConcurrentHashMap<>();
     private final ScalaCompatMap scalaCompatMap = new ScalaCompatMap();
-    private final Map<File, PluginJarScanResult> preScannedPluginJars = new HashMap<>();
+    private final Map<Path, PluginJarScanResult> preScannedPluginJars = new ConcurrentHashMap<>();
 
     private final Map<String, ScalaPlugin> scalaPlugins = new HashMap<>();
-    private final Map<Path, ScalaPlugin> scalaPluginsByAbsolutePath = new HashMap<>();
+    private final Map<Path, ScalaPlugin> scalaPluginsByAbsolutePath = new HashMap<>();  //if the value is null, that means it's a JavaPlugin
     private final Collection<ScalaPlugin> scalaPluginsView = Collections.unmodifiableCollection(scalaPlugins.values());
+    private final Set<File> scalapluginsWaitingForDependencies = new LinkedHashSet<>();
 
     private EventBus eventBus;
     private PluginYamlLibraryLoader pluginYamlLibraryLoader;
@@ -72,11 +74,11 @@ public class ScalaPluginLoader implements PluginLoader {
         Comparator<String> packageComparator = Comparator.comparing(className -> className.split("\\."), Comparator.comparing(array -> array.length));
 
         //smaller element = better main class candidate!
-        descriptionComparator = Comparator.nullsLast(Comparator /* get rid of null descriptors */
-                .<DescriptionScanner, Optional<?>>comparing(DescriptionScanner::getMainClass, optionalComparator /* get rid of descriptions without a main class */)
+        descriptionComparator = Comparator.nullsLast(Comparator /* get rid of null descriptors. */
+                .<DescriptionScanner, Optional<?>>comparing(DescriptionScanner::getMainClass, optionalComparator /* get rid of descriptions without a main class. */)
                 .thenComparing(DescriptionScanner::extendsScalaPlugin /* classes that extend ScalaPlugin directly are less likely to be the best candidate. */)
-                .thenComparing(DescriptionScanner::getClassName, packageComparator /* less deeply nested class = better candidate*/)
-                .thenComparing(DescriptionScanner::getClassName /* fallback - just compare the class name strings */));
+                .thenComparing(DescriptionScanner::getClassName, packageComparator /* less deeply nested class = better candidate. */)
+                .thenComparing(DescriptionScanner::getClassName /* fallback - just compare the class name strings. */));
     }
 
     public ScalaPluginLoader(ScalaLoader scalaLoader) {
@@ -122,7 +124,7 @@ public class ScalaPluginLoader implements PluginLoader {
                     try {
                         PluginJarScanResult scanResult = scanJar(pluginJarFile);
                         if (!scanResult.isJavaPluginExplicitly) {
-                            preScannedPluginJars.put(pluginJarFile, scanResult);
+                            preScannedPluginJars.put(pluginJarFile.toPath().toAbsolutePath(), scanResult);
                             scanResult.mainClassCandidate.getScalaVersion().ifPresent(scalaCompatMap::add);
                         }
                     } catch (IOException e) {
@@ -182,15 +184,12 @@ public class ScalaPluginLoader implements PluginLoader {
 
 
     private static PluginJarScanResult scanJar(File file) throws IOException {
-        PluginJarScanResult result = new PluginJarScanResult();
-
         Logger logger = getInstance().getScalaLoader().getLogger();
-        logger.info("Reading ScalaPlugin file: " + file.getName() + "..");
 
+        PluginJarScanResult result = new PluginJarScanResult();
         Map<String, Object> pluginYamlData = null;
 
         JarFile jarFile = Compat.jarFile(file);
-
 
         {   //short-circuit: check whether the Plugin extends JavaPlugin
             JarEntry pluginYmlEntry = jarFile.getJarEntry("plugin.yml");
@@ -204,12 +203,12 @@ public class ScalaPluginLoader implements PluginLoader {
 
                 if (pluginYamlData.containsKey("main")) {
                     String yamlDefinedMainClassName = pluginYamlData.get("main").toString();
-                    String mainClassEntry = yamlDefinedMainClassName + ".class";
+                    String mainClassEntry = yamlDefinedMainClassName.replace('.', '/') + ".class";
                     JarEntry pluginYamlDefinedMainJarEntry = jarFile.getJarEntry(mainClassEntry);
 
                     if (pluginYamlDefinedMainJarEntry != null) {
                         InputStream classBytesInputStream = jarFile.getInputStream(pluginYamlDefinedMainJarEntry);
-                        DescriptionScanner yamlMainScanner = new DescriptionScanner(classBytesInputStream); //use a less powerful scanner implementation here?
+                        DescriptionScanner yamlMainScanner = new DescriptionScanner(classBytesInputStream); //TODO use a less powerful scanner implementation here?
 
                         if (yamlMainScanner.extendsJavaPlugin()) {
                             result.isJavaPluginExplicitly = true;
@@ -264,13 +263,22 @@ public class ScalaPluginLoader implements PluginLoader {
     public PluginDescriptionFile getPluginDescription(File file) throws InvalidDescriptionException {
         final Path path = file.toPath().toAbsolutePath();
         final ScalaPlugin alreadyPresent = scalaPluginsByAbsolutePath.get(path);
-        if (alreadyPresent != null) return alreadyPresent.getDescription();
+        if (alreadyPresent != null) {
+            // it's not null so we have a ScalaPlugin!
+            return alreadyPresent.getDescription();
+        }
+        else if (scalaPluginsByAbsolutePath.containsKey(path)) {
+            // alreadyPresent is null, but it was set explicitly in the map!
+            // this means we are dealing with a JavaPlugin!
+            return getJavaPluginLoader().getPluginDescription(file);
+        }
 
-        PluginJarScanResult jarScanResult = preScannedPluginJars.get(file);
+        PluginJarScanResult jarScanResult = preScannedPluginJars.get(path);
         if (jarScanResult == null) {
             try {
                 jarScanResult = scanJar(file);
                 if (jarScanResult.isJavaPluginExplicitly) {
+                    scalaPluginsByAbsolutePath.put(path, null);
                     return getJavaPluginLoader().getPluginDescription(file);
                 }
             } catch (IOException e) {
@@ -285,6 +293,7 @@ public class ScalaPluginLoader implements PluginLoader {
         if (mainClassCandidate == null || !mainClassCandidate.getMainClass().isPresent()) {
             getScalaLoader().getLogger().warning("Could not find main class in file " + file.getName() + ". Did you annotate your main class with @Scala and is it public?");
             getScalaLoader().getLogger().warning("Delegating to JavaPluginLoader...");
+            scalaPluginsByAbsolutePath.put(path, null);
             return getJavaPluginLoader().getPluginDescription(file);
         }
 
@@ -381,8 +390,6 @@ public class ScalaPluginLoader implements PluginLoader {
      * @param scalaPlugin the scala plugin
      * @param javaPlugin the java plugin
      */
-    //TODO deprecate this if this does not work without illegal access enabled
-    //TODO test this!
     public void openUpToJavaPlugin(ScalaPlugin scalaPlugin, JavaPlugin javaPlugin) {
         try {
             injectClassesIntoJavaPlugin(getAllClasses(scalaPlugin), javaPlugin);
@@ -453,24 +460,107 @@ public class ScalaPluginLoader implements PluginLoader {
 
     @Override
     public Plugin loadPlugin(File file) throws InvalidPluginException, UnknownDependencyException {
-        ScalaPlugin plugin = scalaPluginsByAbsolutePath.get(file.toPath().toAbsolutePath());
+        Path path = file.toPath().toAbsolutePath();
+        ScalaPlugin scalaPlugin = scalaPluginsByAbsolutePath.get(path);
+        Plugin plugin = scalaPlugin;
 
-        if (plugin != null) {
-            // assume a ScalaPlugin was loaded by getPluginDescription
-            for (String dependency : plugin.getScalaDescription().getHardDependencies()) {
+        if (scalaPlugin != null) {
+            // A ScalaPlugin was loaded by getPluginDescription().
+            for (String dependency : scalaPlugin.getScalaDescription().getHardDependencies()) {
                 boolean dependencyFound = server.getPluginManager().getPlugin(dependency) != null;
                 if (!dependencyFound) {
-                    throw new UnknownDependencyException("Dependency " + dependency + " not found while loading plugin " + plugin.getName());
+                    throw new UnknownDependencyException("Dependency " + dependency + " not found while loading plugin " + scalaPlugin.getName());
                 }
             }
 
-            plugin.getLogger().info("Loading " + plugin.getScalaDescription().getFullName());
-            plugin.onLoad();
-            return plugin;
+            scalaPlugin.getLogger().info("Loading " + scalaPlugin.getScalaDescription().getFullName());
+            scalaPlugin.onLoad();
+        } else if (scalaPluginsByAbsolutePath.containsKey(path)) {
+            // A null value was put into the map! This means it is a JavaPlugin!
+            // A ScalaPlugin was not loaded by getPluginDescription - try to load a JavaPlugin.
+            plugin = getJavaPluginLoader().loadPlugin(file);
         } else {
-            // A ScalaPlugin was not loaded by getPluginDescription - try to load a JavaPlugin
-            return getJavaPluginLoader().loadPlugin(file);
+            // We got here before getPluginDescription() was called.
+            // So let's call it now and retry.
+            try {
+                getPluginDescription(file);
+                assert scalaPluginsByAbsolutePath.containsKey(path) : "Expected an already-scanned jar on path: " + path;
+                return loadPlugin(file);
+            } catch (InvalidDescriptionException e) {
+                throw new InvalidPluginException(e);
+            }
         }
+
+        //if the newly-loaded plugin is a dependency of a waiting ScalaPlugin, then try to load the ScalaPlugin again.
+        Iterator<File> fileIterator = scalapluginsWaitingForDependencies.iterator();
+        while (fileIterator.hasNext()) {
+            File dependentFile = fileIterator.next();
+            ScalaPlugin dependent = scalaPluginsByAbsolutePath.get(path);
+            if (dependent != null) {
+                ScalaPluginDescription desc = dependent.getScalaDescription();
+                if (desc.getHardDependencies().contains(plugin.getName())) {
+                    ScalaPlugin lateScalaPlugin = (ScalaPlugin) loadPlugin(dependentFile);
+                    addPluginToPluginManager(lateScalaPlugin);
+                    fileIterator.remove();
+                }
+            }
+        }
+
+        return plugin;
+    }
+
+    private void addPluginToPluginManager(ScalaPlugin plugin) {
+        synchronized (server.getPluginManager()) {
+            try {
+                Field pluginsField = SimplePluginManager.class.getDeclaredField("plugins");
+                pluginsField.setAccessible(true);
+                List<Plugin> plugins = (List) pluginsField.get(server.getPluginManager());
+                plugins.add(plugin);
+            } catch (Exception tooBad) {
+                getScalaLoader().getLogger().severe("Could not register plugin to PluginManager: " + plugin.getName());
+            }
+
+            Set<String> provides = plugin.getScalaDescription().getProvides();
+            if (!provides.isEmpty()) {
+                try {
+                    Field lookupNamesField = SimplePluginManager.class.getDeclaredField("lookupNames");
+                    lookupNamesField.setAccessible(true);
+                    Map<String, Plugin> lookupNames = (Map) lookupNamesField.get(server.getPluginManager());
+                    lookupNames.put(plugin.getName(), plugin);
+                    for (String provide : provides)
+                        lookupNames.putIfAbsent(provide, plugin);
+                } catch (Exception tooBad) {
+                    getScalaLoader().getLogger().severe("Could not register plugin lookupNames to PluginManager: " + plugin.getName());
+                }
+            }
+
+            Set<String> hardDeps = plugin.getScalaDescription().getHardDependencies(),
+                    softDeps = plugin.getScalaDescription().getSoftDependencies(),
+                    inverseDeps = plugin.getScalaDescription().getInverseDependencies();
+            if (!(hardDeps.isEmpty() && softDeps.isEmpty() && inverseDeps.isEmpty())) {
+                try {
+                    Field dependencyGraphField = SimplePluginManager.class.getDeclaredField("dependencyGraph");
+                    dependencyGraphField.setAccessible(true);
+                    MutableGraph<String> dependencyGraph = (MutableGraph) dependencyGraphField.get(server.getPluginManager());
+                    for (String hardDep : hardDeps)
+                        dependencyGraph.putEdge(plugin.getName(), hardDep);
+                    for (String softDep : softDeps)
+                        dependencyGraph.putEdge(plugin.getName(), softDep);
+                    for (String inverseDep : inverseDeps)
+                        dependencyGraph.putEdge(inverseDep, plugin.getName());
+                } catch (Exception tooBad) {
+                    getScalaLoader().getLogger().severe("Could not register plugin dependencies to PluginManager: " + plugin.getName());
+                }
+            }
+        }
+    }
+
+    public void loadWhenDependenciesComeAvailable(File file) {
+        scalapluginsWaitingForDependencies.add(file);
+    }
+
+    public Set<File> getPluginsWaitingForDependencies() {
+        return Collections.unmodifiableSet(scalapluginsWaitingForDependencies);
     }
 
     @Override

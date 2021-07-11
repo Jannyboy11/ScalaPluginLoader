@@ -1576,12 +1576,20 @@ class ScalaConversions {
                 localVariableTable.removeFramesFromIndex(rangeIndex);
                 return;
 
+            //TODO NumericRange and ordered collections have the same problem - I need to summon their Integral and Ordering instances.
+            //TODO usually these reside in the companion object of the type argument's class, so I need to write a bunch of bytecode
+            //TODO that loads that 'gets' that companion object and gets the Integral or Ordering instance.
+            //TODO which means I need to scan the companion object's class for method declarations.
+            //TODO This will be a lot of fun to implement!!!
+            //TODO if I really feel ambitious, I might implement recursive lookups too!
+            //TODO I should probably factor this out to a separate "ImplicitSearch" class.
+
         }
 
         //TODO special-case some collections:
         //TODO  - immutable.WrappedString   --- done!
         //TODO  - immutable.Range           --- done!
-        //TODO  - immutable.NumericRange
+        //TODO  - immutable.NumericRange    --- TODO requires ImplicitSearch
         //TODO  - mutable.ArrayBuilder
         //TODO
 

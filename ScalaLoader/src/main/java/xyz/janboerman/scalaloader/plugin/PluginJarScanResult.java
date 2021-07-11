@@ -15,4 +15,13 @@ class PluginJarScanResult {
     PluginJarScanResult() {
     }
 
+    public String toString() {
+        return "PluginJarScanResult"
+                + "{mainClassCandidate=" + mainClassCandidate
+                + ",pluginYaml=" + pluginYaml
+                + ",isJavaPluginExplicitly=" + isJavaPluginExplicitly
+                + ",transformerRegistry=" + transformerRegistry
+                + "}";
+    }
+
 }

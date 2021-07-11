@@ -639,19 +639,21 @@ object SpecialcasedImmutableCollectionsTest {
 
 @ConfigurationSerializable(scan = new Scan(value = Scan.Type.FIELDS))
 class SpecialcasedImmutableCollectionsTest(val wrappedString: scala.collection.immutable.WrappedString,
-                                           val range: scala.collection.immutable.Range) {
-
-    private def unwrapString(): String = wrappedString.unwrap; //TODO remove
+                                           val range: scala.collection.immutable.Range/*,
+                                           val numericRange: scala.collection.immutable.NumericRange[Long]*/) {
 
     override def equals(obj: Any): Boolean = {
         obj match {
             case that: SpecialcasedImmutableCollectionsTest =>
-                (this `eq` that) || (this.wrappedString == that.wrappedString && this.range == that.range)
+                if (this `eq` that) true
+                else this.wrappedString == that.wrappedString &&
+                    this.range == that.range /*&&
+                    this.numericRange == that.numericRange*/
             case _ => false
         }
     }
 
     override def hashCode(): Int = java.util.Objects.hash(wrappedString, range)
 
-    override def toString(): String = s"SpecialcasedImmutableCollectionsTest(wrappedString=${wrappedString},range=${range})"
+    override def toString(): String = s"SpecialcasedImmutableCollectionsTest(wrappedString=${wrappedString},range=${range})" //,numericRange=${numericRange})"
 }

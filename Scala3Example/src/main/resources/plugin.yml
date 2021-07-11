@@ -3,5 +3,6 @@ main: xyz.janboerman.scalaloader.example.scala3.ExamplePlugin$
 version: ${project.version}
 api-version: 1.17
 
+depend: [Vault]
 libraries:
   - "dev.zio:zio_3:1.0.9"

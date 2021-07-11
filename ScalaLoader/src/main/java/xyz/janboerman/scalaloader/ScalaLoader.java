@@ -3,9 +3,12 @@ package xyz.janboerman.scalaloader;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.plugin.InvalidDescriptionException;
+import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.SimplePluginManager;
+import org.bukkit.plugin.UnknownDependencyException;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.bstats.bukkit.Metrics;
@@ -117,7 +120,27 @@ public final class ScalaLoader extends JavaPlugin {
 
         //try to load scala plugins in the same plugin load phase as java plugins
         if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
-            getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
+            //getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
+
+            Map<File, UnknownDependencyException> ex = new HashMap<>();
+
+            for (File file : scalaPluginsFolder.listFiles((File dir, String name) -> name.endsWith(".jar"))) {
+                try {
+                    getServer().getPluginManager().loadPlugin(file);
+                } catch (UnknownDependencyException ude) {
+                    ScalaPluginLoader.getInstance().loadWhenDependenciesComeAvailable(file);
+                    ex.put(file, ude);
+                } catch (InvalidPluginException | InvalidDescriptionException e) {
+                    getLogger().log(Level.SEVERE, "Could not load plugin from file: " + file.getAbsolutePath(), e);
+                }
+            }
+
+            //if there are still scalaplugins whose dependencies have not been loaded, then throw the
+            for (File file : ScalaPluginLoader.getInstance().getPluginsWaitingForDependencies()) {
+                UnknownDependencyException ude = ex.get(file);
+                assert ude != null : "found plugin file that didn't load, but hasn't got any missing dependencies: " + file.getAbsolutePath();
+                throw ude;
+            }
 
             //don't re-register the JavaPluginLoader again.
             //doing so would break hot-reloading of ScalaPlugins
