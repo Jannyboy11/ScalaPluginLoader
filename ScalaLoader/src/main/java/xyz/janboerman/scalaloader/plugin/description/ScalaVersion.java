@@ -1,13 +1,11 @@
 package xyz.janboerman.scalaloader.plugin.description;
 
-import xyz.janboerman.scalaloader.ScalaRelease;
 import static xyz.janboerman.scalaloader.compat.Compat.*;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BinaryOperator;
 
 /**
  * An enumeration of some common recent versions of Scala.
@@ -40,7 +38,8 @@ public enum ScalaVersion {
     v2_13_6("2.13.6"),
 
     //3.0.x
-    v3_0_0("3.0.0");
+    v3_0_0("3.0.0"),
+    v3_0_1("3.0.1");
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
 
@@ -167,19 +166,24 @@ public enum ScalaVersion {
     }
 
     private static String mavenCentralScala3LibraryAdditions(String scalaVersion) {
-        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-library_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/scala3-library_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
+        if ("3.0.0".equals(scalaVersion)) {
+            return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-library_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/scala3-library_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
+        } else {
+            return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-library_3/" + scalaVersion + "/scala3-library_3-" + scalaVersion + ".jar";
+        }
     }
 
     private static String mavenCentralScala3TastyCoreAdditions(String scalaVersion) {
-        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/tasty-core_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/tasty-core_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
+        if ("3.0.0".equals(scalaVersion)) {
+            return "https://search.maven.org/remotecontent?filepath=org/scala-lang/tasty-core_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/tasty-core_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
+        } else {
+            return "https://search.maven.org/remotecontent?filepath=org/scala-lang/tasty-core_3/" + scalaVersion + "/tasty-core_3-" + scalaVersion + ".jar";
+        }
     }
 
-    private static String mavenCentralScala3StagingAdditions(String scalaVersion) {
-        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-staging_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/scala3-staging_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
-    }
-
-    private static String mavenCentralScala3TastyInspectorAdditions(String scalaVersion) {
-        return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-tasty-inspector_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/scala3-tasty-inspector_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
-    }
+    //other possible artifacts:
+    // scala3-staging
+    // scala3-tasty-inspector
+    // scala3-compiler
 
 }
