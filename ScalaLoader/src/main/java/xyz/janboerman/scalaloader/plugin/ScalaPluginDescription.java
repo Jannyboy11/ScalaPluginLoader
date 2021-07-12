@@ -397,9 +397,11 @@ public class ScalaPluginDescription {
         String def = (String) properties.get("default");
         if (def != null) perm.permissionDefault(PermissionDefault.getByName(def));
         Object children = properties.get("children");
-        if (children instanceof List) {
-            List kids = (List) children;
-            for (Object kid : kids) perm.addChild(new Permission(kid.toString()));
+        if (children instanceof Iterable) {
+            Iterable kids = (Iterable) children;
+            for (Object kid : kids) {
+                perm.addChild(new Permission(kid.toString()));
+            }
         } else if (children instanceof Map) {
             Map<String, Map<String, Object>> kids = (Map) children;
             for (Map.Entry<String, Map<String, Object>> kid : kids.entrySet()) {

@@ -552,7 +552,10 @@ public class ScalaPluginLoader implements PluginLoader {
                         dependencyGraph.putEdge(plugin.getName(), softDep);
                     for (String inverseDep : inverseDeps)
                         dependencyGraph.putEdge(inverseDep, plugin.getName());
-                } catch (Exception tooBad) {
+                } catch (NoSuchFieldException expected) {
+                    //the dependencyGraph field does not exist yet in Bukkit 1.8.8. therefore this behaviour is expected in some scenarios.
+                    //therefore we only log the exception if the field does exist.
+                } catch (Exception e) {
                     getScalaLoader().getLogger().severe("Could not register plugin dependencies to PluginManager: " + plugin.getName());
                 }
             }

@@ -55,6 +55,7 @@ public final class ScalaLoader extends JavaPlugin {
     private JavaPluginLoader weFoundTheJavaPluginLoader;
     private Map<Pattern, PluginLoader> pluginLoaderMap;
     private Pattern[] javaPluginLoaderPatterns;
+    private final Map<File, UnknownDependencyException> scalaPluginsWaitingOnJavaPlugins = new HashMap<>();
 
     public ScalaLoader() {
         //setup scala plugins folder (can't do this in initializer yet because the super() constructor initializes the dataFolder)
@@ -120,26 +121,18 @@ public final class ScalaLoader extends JavaPlugin {
 
         //try to load scala plugins in the same plugin load phase as java plugins
         if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
-            //getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
-
-            Map<File, UnknownDependencyException> ex = new HashMap<>();
+            //don't call getServer().getPluginManager().loadPlugins(scalaPluginsFolder);
+            //because at this point some javaplugins that are dependencies of scalaplugins may not have been loaded yet.
 
             for (File file : scalaPluginsFolder.listFiles((File dir, String name) -> name.endsWith(".jar"))) {
                 try {
                     getServer().getPluginManager().loadPlugin(file);
                 } catch (UnknownDependencyException ude) {
                     ScalaPluginLoader.getInstance().loadWhenDependenciesComeAvailable(file);
-                    ex.put(file, ude);
+                    scalaPluginsWaitingOnJavaPlugins.put(file, ude);
                 } catch (InvalidPluginException | InvalidDescriptionException e) {
                     getLogger().log(Level.SEVERE, "Could not load plugin from file: " + file.getAbsolutePath(), e);
                 }
-            }
-
-            //if there are still scalaplugins whose dependencies have not been loaded, then throw the
-            for (File file : ScalaPluginLoader.getInstance().getPluginsWaitingForDependencies()) {
-                UnknownDependencyException ude = ex.get(file);
-                assert ude != null : "found plugin file that didn't load, but hasn't got any missing dependencies: " + file.getAbsolutePath();
-                throw ude;
             }
 
             //don't re-register the JavaPluginLoader again.
@@ -154,7 +147,15 @@ public final class ScalaLoader extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        if (!iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
+        if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
+            //at this point all JavaPlugins have been at least loaded (not enabled)
+            //if there are still scalaplugins whose dependencies have not yet been loaded, then throw the UnknownDependencyException
+            for (File file : ScalaPluginLoader.getInstance().getPluginsWaitingForDependencies()) {
+                UnknownDependencyException ude = scalaPluginsWaitingOnJavaPlugins.get(file);
+                assert ude != null : "found plugin file that didn't load, but hasn't got any missing dependencies: " + file.getAbsolutePath();
+                throw ude;
+            }
+        } else {
             //if the injection didn't work, load scala plugins in onEnable.
             //this violates the JavaDocs of Plugin#onLoad, but we have no other option sadly.
             //Plugin#onLoad states that onLoad of all plugins is called before onEnable is called of any other plugin.
