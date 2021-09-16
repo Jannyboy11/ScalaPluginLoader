@@ -7,6 +7,7 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.generator.BiomeProvider;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import xyz.janboerman.scalaloader.ScalaRelease;
@@ -392,13 +393,24 @@ public abstract class ScalaPlugin implements Plugin {
     }
 
     /**
-     * Get the default world's chunk generator
-     * @param worldName the name of the world
-     * @param id the id of the world
-     * @return a chunkgenerator if present, or null when this plugin doesn't provide a chunk generator
+     * Gets a ChunkGenerator for use in a default world, as specified in the server configuration.
+     * @param worldName the name of the world that the generator will be applied to
+     * @param id Unique ID, if any, that was specified to indicate which generated was requested
+     * @return a chunk generator if present, or null when this plugin doesn't provide a chunk generator
      */
     @Override
     public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
+        return null;
+    }
+
+    /**
+     * Gets a BiomeProvider for use in a default world, as specified in the server configuration.
+     * @param worldName the name of the world that the biome provider will be applied to
+     * @param id Unique ID, if any, that was specified to indicate which biome provider was requested
+     * @return a biome provider if present, or null when this plugin doesn't provide a biome provider
+     */
+    @Override
+    public BiomeProvider getDefaultBiomeProvider(String worldName, String id) {
         return null;
     }
 

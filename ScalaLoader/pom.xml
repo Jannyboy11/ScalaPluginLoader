@@ -5,14 +5,14 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.17.5-SNAPSHOT</version>
+        <version>0.17.7-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ScalaLoader</artifactId>
 
     <properties>
-        <bukkitVersion>1.13.2-R0.1-SNAPSHOT</bukkitVersion>
+        <bukkitVersion>1.17.1-R0.1-SNAPSHOT</bukkitVersion>
         <asmVersion>9.2</asmVersion>
         <bstatsVersion>2.2.1</bstatsVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
@@ -42,7 +42,9 @@
                     <release>8</release>
                     <parameters>true</parameters>
                 </configuration>
+
             </plugin>
+			<!-- TODO: https://www.baeldung.com/maven-multi-release-jars -->
 
             <!-- compile java 11 sources -->
             <!-- as described at: https://in.relation.to/2017/02/13/building-multi-release-jars-with-maven/ -->
@@ -246,8 +248,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>bukkit</artifactId>
+            <!-- depend on spigot-api instead of bukkit here because newer versions of bukkit aren't hosted on SpigotMC's maven -->
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
             <version>${bukkitVersion}</version>
             <scope>provided</scope>
         </dependency>

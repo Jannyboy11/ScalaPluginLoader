@@ -5,15 +5,15 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.17.5-SNAPSHOT</version>
+        <version>0.17.7-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>Scala3Example</artifactId>
 
     <properties>
-        <scala.boostrapVersion>2.13.5</scala.boostrapVersion>
-        <scala.version>3.0.0</scala.version>
+        <scala.boostrapVersion>2.13.6</scala.boostrapVersion>
+        <scala.version>3.0.2</scala.version>
     </properties>
 
     <build>
@@ -28,7 +28,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>4.5.1</version>
+                <version>4.5.4</version>
                 <configuration>
                     <args>
 <!--                        <arg>-rewrite</arg><arg>-indent</arg>-->
@@ -78,17 +78,17 @@
 
         <dependency>
             <groupId>org.scala-lang</groupId>
-            <artifactId>scala3-library_${scala.version}-nonbootstrapped</artifactId>
+            <artifactId>scala3-library_3</artifactId>
             <version>${scala.version}</version>
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>tasty-core_${scala.version}-nonbootstrapped</artifactId>
-            <version>${scala.version}</version>
-            <scope>provided</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.scala-lang</groupId>-->
+<!--            <artifactId>tasty-core3_${scala.version}</artifactId>-->
+<!--            <version>${scala.version}</version>-->
+<!--            <scope>provided</scope>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>xyz.janboerman</groupId>
@@ -100,7 +100,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.16.5-R0.1-SNAPSHOT</version>
+            <version>1.17.1-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 

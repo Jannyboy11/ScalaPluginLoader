@@ -155,9 +155,13 @@ public final class ScalaLoader extends JavaPlugin {
                 assert ude != null : "found plugin file that didn't load, but hasn't got any missing dependencies: " + file.getAbsolutePath();
                 throw ude;
             }
+
+            //don't leak memory.
+            scalaPluginsWaitingOnJavaPlugins.clear();
+            ScalaPluginLoader.getInstance().clearPluginsWaitingForDependencies();
         } else {
             //if the injection didn't work, load scala plugins in onEnable.
-            //this violates the JavaDocs of Plugin#onLoad, but we have no other option sadly.
+            //this violates the JavaDocs of Plugin#onLoad(), but we have no other option sadly.
             //Plugin#onLoad states that onLoad of all plugins is called before onEnable is called of any other plugin.
             //..which is false in this case because ScalaLoader's onEnable is called before the onLoads of all ScalaPlugins.
 

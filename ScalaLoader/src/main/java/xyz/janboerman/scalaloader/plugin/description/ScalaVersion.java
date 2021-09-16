@@ -39,7 +39,8 @@ public enum ScalaVersion {
 
     //3.0.x
     v3_0_0("3.0.0"),
-    v3_0_1("3.0.1");
+    v3_0_1("3.0.1"),
+    v3_0_2("3.0.2");
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
 

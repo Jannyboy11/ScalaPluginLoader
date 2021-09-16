@@ -570,6 +570,10 @@ public class ScalaPluginLoader implements PluginLoader {
         return Collections.unmodifiableSet(scalapluginsWaitingForDependencies);
     }
 
+    public void clearPluginsWaitingForDependencies() {
+        scalapluginsWaitingForDependencies.clear();
+    }
+
     @Override
     public void enablePlugin(Plugin plugin) {
         if (plugin instanceof ScalaPlugin) {
