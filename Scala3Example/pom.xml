@@ -12,7 +12,7 @@
     <artifactId>Scala3Example</artifactId>
 
     <properties>
-        <scala.boostrapVersion>2.13.6</scala.boostrapVersion>
+        <scala.boostrapVersion>2.13.7</scala.boostrapVersion>
         <scala.version>3.0.2</scala.version>
     </properties>
 

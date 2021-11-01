@@ -24,11 +24,23 @@ class ScalaCompatMap {
             return latest;
         });
 
-        //special-case for the transition to scala 3
-        if (versionString.startsWith("3.0.")) {
-            //if we detect that scala 3.0.x is present, then mark it as highest compatible version for scala 2.13.x
-            compatReleaseToLatestVersionMap.put(ScalaRelease.SCALA_2_13, versionString);
-            //3.1 won't be backwards compatible anymore with 2.13.x (by the looks of current developments)
+        //special cases for the transition to scala 3
+        if (versionString.length() > 4) {
+            switch (versionString.substring(0, 4)) {
+                case "3.1.":
+                    //According to https://github.com/lampepfl/dotty/releases/tag/3.1.0-RC1:
+                    //"Scala 3.1 is backwards binary-compatible with Scala 3.0: libraries compiled with 3.0.x can be used from 3.1 without change."
+                    compatReleaseToLatestVersionMap.compute(ScalaRelease.SCALA_3_0, (cv, latest) -> {
+                        if (latest == null || ScalaRelease.VERSION_COMPARATOR.compare(latest, versionString) < 0) return versionString;
+                        return latest;
+                    });
+                case "3.0.": //intentional fall-through: Scala 3.1.x still uses 2_13 as a base: https://search.maven.org/artifact/org.scala-lang/scala3-library_3/3.1.0/jar
+                    //if we detect that scala 3.0.x is present, then mark it as highest compatible version for scala 2.13.x
+                    compatReleaseToLatestVersionMap.compute(ScalaRelease.SCALA_2_13, (cv, latest) -> {
+                        if (latest == null || ScalaRelease.VERSION_COMPARATOR.compare(latest, versionString) < 0) return versionString;
+                        return latest;
+                    });
+            }
         }
     }
 

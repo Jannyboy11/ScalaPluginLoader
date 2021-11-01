@@ -27,6 +27,7 @@ public enum ScalaVersion {
     v2_12_12("2.12.12"),
     v2_12_13("2.12.13"),
     v2_12_14("2.12.14"),
+    v2_12_15("2.12.15"),
 
     //2.13.x
     v2_13_0("2.13.0"),
@@ -36,11 +37,15 @@ public enum ScalaVersion {
     v2_13_4("2.13.4"),
     v2_13_5("2.13.5"),
     v2_13_6("2.13.6"),
+    v2_13_7("2.13.7"),
 
     //3.0.x
     v3_0_0("3.0.0"),
     v3_0_1("3.0.1"),
-    v3_0_2("3.0.2");
+    v3_0_2("3.0.2"),
+
+    //3.1.x
+    v3_1_0("3.1.0");
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
 
@@ -72,15 +77,15 @@ public enum ScalaVersion {
                     mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(scalaVersion)),
                     mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(scalaVersion))
             );
-        } else if (scalaVersion.startsWith("3.0.")) {
+        } else if (scalaVersion.startsWith("3.0.") || scalaVersion.startsWith("3.1.")) {
             return mapOf(
-                    mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary("2.13.6")),
-                    mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect("2.13.6")),
+                    mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary("2.13.7")),
+                    mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect("2.13.7")),
                     mapEntry(PluginScalaVersion.SCALA3_LIBRARY_URL, mavenCentralScala3LibraryAdditions(scalaVersion)),
                     mapEntry(PluginScalaVersion.TASTY_CORE_URL, mavenCentralScala3TastyCoreAdditions(scalaVersion))
             );
         } else {
-            assert false : "Scala 3.1+ not yet supported";
+            assert false : "Scala 3.2+ not yet supported";
             return null;
         }
     }

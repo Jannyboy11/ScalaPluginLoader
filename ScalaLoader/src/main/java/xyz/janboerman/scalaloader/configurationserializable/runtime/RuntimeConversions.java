@@ -143,7 +143,7 @@ public class RuntimeConversions {
             return serializeMap(live, (ParameterizedParameterType) type, pluginClassLoader);
         }
 
-        //TODO scala built-ins
+        //TODO scala built-ins: Option, Either, Tuples. possibly: Try ?
         //TODO scala collections
 
         //check plugin registrations
@@ -451,7 +451,7 @@ public class RuntimeConversions {
                     Constructor<?> nullaryConstructor = rawType.getConstructor(new Class[0]);
                     resultCollection = (Collection<Object>) nullaryConstructor.newInstance();
                 } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                    ConfigurationSerializableError error = new ConfigurationSerializableError("Could not instantiate an instance of " + rawType.getName() + ". It has no public constructor with zero arguments.");
+                    ConfigurationSerializableError error = new ConfigurationSerializableError("Could not instantiate an instance of " + rawType.getName() + ". It has no public constructor with zero parameters.");
                     error.addSuppressed(e);
                     throw error;
                 }
@@ -492,7 +492,7 @@ public class RuntimeConversions {
                     Constructor<?> nullaryConstructor = rawType.getConstructor(new Class[0]);
                     resultMap = (Map<Object, Object>) nullaryConstructor.newInstance();
                 } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                    ConfigurationSerializableError error = new ConfigurationSerializableError("Could not instantiate an instance of " + rawType.getName() + ". It has no public constructor with zero arguments.");
+                    ConfigurationSerializableError error = new ConfigurationSerializableError("Could not instantiate an instance of " + rawType.getName() + ". It has no public constructor with zero parameters.");
                     error.addSuppressed(e);
                     throw error;
                 }

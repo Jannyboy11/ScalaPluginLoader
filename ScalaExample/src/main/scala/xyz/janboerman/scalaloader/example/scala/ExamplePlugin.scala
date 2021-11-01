@@ -8,7 +8,7 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCo
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 
-@Scala(version = ScalaVersion.v2_13_6)
+@Scala(version = ScalaVersion.v2_13_7)
 @Api(ApiVersion.v1_16)
 object ExamplePlugin
     extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.17.7-SNAPSHOT")

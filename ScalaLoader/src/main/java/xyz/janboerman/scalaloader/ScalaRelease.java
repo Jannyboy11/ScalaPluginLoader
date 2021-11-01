@@ -65,7 +65,9 @@ public final class ScalaRelease implements Comparable<ScalaRelease> {
     /** The Scala 3.0.x series */
     public static final ScalaRelease SCALA_3_0 = new ScalaRelease("3.0");
     /** The Scala 3.1.x series */
-    private static final ScalaRelease SCALA_3_1 = new ScalaRelease("3.1");
+    public static final ScalaRelease SCALA_3_1 = new ScalaRelease("3.1");
+    /** The Scala 3.2.x series */
+    private static final ScalaRelease SCALA_3_2 = new ScalaRelease("3.2");
 
     private final String compatVersion;
 

@@ -27,7 +27,6 @@ class Conversions {
 
         final TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
 
-        //detect arrays
         if (typeSignature.hasTypeArguments()) {
             if (typeSignature.isArray()) {
                 //convert array to java.util.List.

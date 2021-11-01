@@ -20,8 +20,8 @@ public class TransformerRegistry {
     public TransformerRegistry() {
     }
 
-    public void addMainClassTransformer(BiFunction<ClassVisitor, String , ClassVisitor> function) {
-        this.mainClassTransformers.add(function);
+    public void addMainClassTransformer(BiFunction<ClassVisitor, String, ClassVisitor> function) {
+        mainClassTransformers.add(function);
     }
 
     public void addClassTransformer(String targetClassName, Function<ClassVisitor, ClassVisitor> function) {
