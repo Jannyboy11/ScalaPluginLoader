@@ -5,14 +5,14 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.17.7-SNAPSHOT</version>
+        <version>0.17.8-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ScalaLoader</artifactId>
 
     <properties>
-        <bukkitVersion>1.17.1-R0.1-SNAPSHOT</bukkitVersion>
+        <bukkitVersion>1.18.1-R0.1-SNAPSHOT</bukkitVersion>
         <asmVersion>9.2</asmVersion>
         <bstatsVersion>2.2.1</bstatsVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
@@ -96,7 +96,6 @@
                 </executions>
             </plugin>
 
-
             <!-- define our automatic module name, and define the jar as Multi-Release -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -108,7 +107,6 @@
                             <Automatic-Module-Name>xyz.janboerman.scalaloader</Automatic-Module-Name>
                             <!-- use an automatic module until we migrate to Java 11 (or newer!) in a future release
                             module xyz.janboerman.scalaloader {
-
                                 requires java.logging;
                                 requires org.bukkit;
                                 requires org.yaml.snakeyaml;
@@ -127,7 +125,6 @@
                                 exports xyz.janboerman.scalaloader;
 
                                 opens xyz.janboerman.scalaloader to org.bukkit;
-
                             }
                             -->
                             <Multi-Release>true</Multi-Release>
@@ -139,7 +136,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.3.0-SNAPSHOT</version>
+                <version>3.2.4</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -271,11 +268,13 @@
             <artifactId>asm-util</artifactId>
             <version>${asmVersion}</version>
         </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-analysis</artifactId>
-            <version>${asmVersion}</version>
-        </dependency>
+
+        <!-- this is not yet used -->
+<!--        <dependency>-->
+<!--            <groupId>org.ow2.asm</groupId>-->
+<!--            <artifactId>asm-analysis</artifactId>-->
+<!--            <version>${asmVersion}</version>-->
+<!--        </dependency>-->
 
         <!-- for debugging only -->
 <!--        <dependency>-->

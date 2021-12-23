@@ -17,7 +17,7 @@ public class DebugSettings {
     private static final String FILE_NAME = "debug.yml";
     private static final String CLASS_NAMES = "class-names";
     private static final String FORMAT = "format";
-    private static final String ANALYSIS = "analysis";
+    private static final String ANALYSIS = "analysis"; //value would be List<String>: the methods that need analyzing
 
     public static final String TEXTIFIED = "Textified";
     public static final String ASMIFIED = "ASMified";

@@ -5,9 +5,9 @@ import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
-import org.objectweb.asm.tree.analysis.Analyzer;
-import org.objectweb.asm.tree.analysis.Interpreter;
-import org.objectweb.asm.tree.analysis.SimpleVerifier;
+//import org.objectweb.asm.tree.analysis.Analyzer;
+//import org.objectweb.asm.tree.analysis.Interpreter;
+//import org.objectweb.asm.tree.analysis.SimpleVerifier;
 import org.objectweb.asm.util.*;
 import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
@@ -46,8 +46,6 @@ import java.util.jar.*;
  */
 @Called
 public class ScalaPluginClassLoader extends URLClassLoader {
-
-
 
     static {
         registerAsParallelCapable();
@@ -282,7 +280,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @return true if the classload should be debugged, otherwise false
      */
     private boolean debugClassLoad(String className) {
-        return getPluginLoader().debugSettings().debugClassLoads().contains(className);
+        return getPluginLoader().debugSettings().isDebuggingClassLoadOf(className);
     }
 
     /**
@@ -357,6 +355,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     if (debugClassLoad(name)) {
                         getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] Dumping bytecode for class " + name);
                         ClassReader debugReader = new ClassReader(classBytes);
+                        //TODO if check whether asm-analysis is enabled in the debugsettings, and if so, perform analysis using the SimpleVerifier
                         TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter(), new PrintWriter(System.out));
                         debugReader.accept(traceClassVisitor, 0);
                     }
