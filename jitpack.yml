@@ -5,6 +5,5 @@ before_install:
   - source ./install-jdk.sh --feature 17 --license GPL
   - wget http://apache.cs.uu.nl/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz
   - tar -xzvf apache-maven-3.8.4-bin.tar.gz
-  - apache-maven-3.8.4/bin/mvn install -f maven-shade-plugin/pom.xml
 install:
   - apache-maven-3.8.4/bin/mvn install
