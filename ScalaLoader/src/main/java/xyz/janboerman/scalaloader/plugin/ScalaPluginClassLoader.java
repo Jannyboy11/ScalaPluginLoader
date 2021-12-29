@@ -1,6 +1,8 @@
 package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.Server;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
@@ -122,7 +124,14 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         }
         this.persistentClasses = new PersistentClasses(plugin);
         for (ClassFile classFile : this.persistentClasses.load()) {
-            getOrDefineClass(classFile.getClassName(), name -> classFile.getByteCode(false), false);
+            ClassDefineResult cdr = getOrDefineClass(classFile.getClassName(), name -> classFile.getByteCode(false), false);
+            if (cdr.isNew()) {
+                Class<?> clazz = cdr.getClassDefinition();
+                if (ConfigurationSerializable.class.isAssignableFrom(clazz)) {
+                    Class<? extends ConfigurationSerializable> cls = (Class<? extends ConfigurationSerializable>) clazz;
+                    ConfigurationSerialization.registerClass(cls, ConfigurationSerialization.getAlias(cls));
+                }
+            }
         }
     }
 

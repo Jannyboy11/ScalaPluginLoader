@@ -20,7 +20,7 @@ public class PersistentClasses {
     private final ScalaPlugin plugin;
     private File saveFile;
 
-    //this set is not meant tobe accessible from the outside world.
+    //this set is not meant to be accessible from the outside world.
     //the only entity that is allowed to interact with PersistentClasses is the ScalaPluginClassLoader.
     //and it does so through the #save and #load methods.
     private final Set<ClassFile> classFiles = new HashSet<>();
