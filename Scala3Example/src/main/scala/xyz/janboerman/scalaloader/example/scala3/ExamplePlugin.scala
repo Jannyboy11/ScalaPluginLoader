@@ -6,13 +6,16 @@ import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import zio.ZIO
 import zio.console._
 
-@Scala(ScalaVersion.v3_0_2)
+@Scala(ScalaVersion.v3_1_0)
 object ExamplePlugin extends ScalaPlugin {
 
     val syncRuntime = new BukkitRuntime(this).syncRuntime
 
     override def onEnable(): Unit =
         getLogger.info("Hello from Scala 3!")
+
+        TupleTest.test()
+
         val fourtyTwo: ZIO[Any, Nothing, Int] = ZIO.succeed(42)
         val program = for
             name <- fourtyTwo.map(number => s"Jannyboy${number}")

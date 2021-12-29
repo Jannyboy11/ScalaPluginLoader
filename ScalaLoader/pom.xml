@@ -23,8 +23,8 @@
         <java11.build.outputDirectory>${project.build.directory}/classes-java11</java11.build.outputDirectory>
     </properties>
 
-    <!-- for more recent versions of the maven-shade-plugin -->
     <pluginRepositories>
+        <!-- for more recent versions of the maven-shade-plugin -->
         <pluginRepository>
             <id>apache-snapshots</id>
             <url>https://repository.apache.org/content/repositories/snapshots/</url>
@@ -155,19 +155,19 @@
                             <relocations>
                                 <relocation>
                                     <pattern>org.objectweb.asm</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.asm</shadedPattern>
+                                    <shadedPattern>xyz.janboerman.scalaloader.libs.asm</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.bstats</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.bstats</shadedPattern>
+                                    <shadedPattern>xyz.janboerman.scalaloader.libs.bstats</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.apache.maven</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.maven</shadedPattern>
+                                    <shadedPattern>xyz.janboerman.scalaloader.libs.maven</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.eclipse.aether</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.aether</shadedPattern>
+                                    <shadedPattern>xyz.janboerman.scalaloader.libs.aether</shadedPattern>
                                 </relocation>
                             </relocations>
 
@@ -285,6 +285,12 @@
 <!--        </dependency>-->
 
         <!-- for debugging only -->
+<!--        <dependency>-->
+<!--            <groupId>org.scala-lang</groupId>-->
+<!--            <artifactId>scala3-library_3</artifactId>-->
+<!--            <version>3.1.0</version>-->
+<!--            <scope>provided</scope>-->
+<!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>org.scala-lang</groupId>-->
 <!--            <artifactId>scala-library</artifactId>-->

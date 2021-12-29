@@ -1,7 +1,6 @@
 name: Scala3Example
 version: ${project.version}
-api-version: "1.17"
+api-version: "1.18"
 
-depend: [Vault]
 libraries:
   - "dev.zio:zio_3:1.0.9"

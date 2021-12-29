@@ -143,7 +143,11 @@ public class RuntimeConversions {
             return serializeMap(live, (ParameterizedParameterType) type, pluginClassLoader);
         }
 
-        //TODO scala built-ins: Option, Either, Tuples. possibly: Try ?
+        //scala built-ins
+        else if (xyz.janboerman.scalaloader.configurationserializable.runtime.types.Tuple.isTuple(live)) {
+            return xyz.janboerman.scalaloader.configurationserializable.runtime.types.Tuple.serialize(live, type, pluginClassLoader);
+        }
+        //TODO scala built-ins: Option, Either
         //TODO scala collections
 
         //check plugin registrations

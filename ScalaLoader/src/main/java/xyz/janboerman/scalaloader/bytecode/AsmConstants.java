@@ -32,6 +32,7 @@ public class AsmConstants {
     public static final String   javaLangBoolean_TYPE   = Type.getType(Boolean.class).getInternalName();
     public static final String      javaLangVoid_TYPE   = Type.getType(Void.class).getInternalName();
     public static final String    javaLangString_TYPE   = Type.getType(String.class).getInternalName();
+    public static final String    javaLangObject_TYPE   = Type.getType(Object.class).getInternalName();
 
     public static final String      javaLangByte_DESCRIPTOR = Type.getType(Byte.class).getDescriptor();
     public static final String     javaLangShort_DESCRIPTOR = Type.getType(Short.class).getDescriptor();
@@ -43,5 +44,6 @@ public class AsmConstants {
     public static final String   javaLangBoolean_DESCRIPTOR = Type.getType(Boolean.class).getDescriptor();
     public static final String      javaLangVoid_DESCRIPTOR = Type.getType(Void.class).getDescriptor();
     public static final String    javaLangString_DESCRIPTOR = Type.getType(String.class).getDescriptor();
+    public static final String    javaLangObject_DESCRIPTOR = Type.getType(Object.class).getDescriptor();
 
 }

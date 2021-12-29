@@ -47,7 +47,7 @@ public class PersistentClasses {
         }
 
         FileConfiguration config = YamlConfiguration.loadConfiguration(saveFile);
-        List<ClassFile> classFiles = (List<ClassFile>) config.get(CLASS_FILES);
+        List<ClassFile> classFiles = (List<ClassFile>) config.get(CLASS_FILES, Compat.emptyList());
 
         this.classFiles.addAll(classFiles);
         config.set(CLASS_FILES, Compat.listCopy(this.classFiles));
@@ -62,7 +62,7 @@ public class PersistentClasses {
         if (!saveFile.exists()) return Compat.emptySet();
 
         YamlConfiguration config = YamlConfiguration.loadConfiguration(saveFile);
-        List<ClassFile> classFiles = (List<ClassFile>) config.get(CLASS_FILES);
+        List<ClassFile> classFiles = (List<ClassFile>) config.get(CLASS_FILES, Compat.emptyList());
 
         return classFiles;
     }

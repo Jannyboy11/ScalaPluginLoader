@@ -4,6 +4,7 @@ import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.Adapter;
+import static xyz.janboerman.scalaloader.configurationserializable.runtime.types.Types.*;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
 import org.objectweb.asm.*;
@@ -15,9 +16,6 @@ import java.lang.reflect.Constructor;
 
 @Called
 public abstract class Enum<E extends java.lang.Enum<E>> implements Adapter<E> {
-
-    private static final String PREFIX_USING_DOTS = "xyz.janboerman.scalaloader.configurationserializable.runtime.types.generated.";
-    private static final String PREFIX_USING_SLASHES = PREFIX_USING_DOTS.replace('.', '/');
 
     @Called
     protected Enum() {
@@ -76,7 +74,7 @@ public abstract class Enum<E extends java.lang.Enum<E>> implements Adapter<E> {
         final String enumClassDescriptor = "L" + enumClassName + ";";
         final String generatedClassDescriptor = "L" + generatedClassName + ";";
 
-        classWriter.visit(V1_8, ACC_SUPER, generatedClassName, "Lxyz/janboerman/scalaloader/configurationserializable/runtime/types/Enum<" + enumClassDescriptor + ">;", "xyz/janboerman/scalaloader/configurationserializable/runtime/types/Enum", null);
+        classWriter.visit(V1_8, ACC_PUBLIC | ACC_SUPER, generatedClassName, "Lxyz/janboerman/scalaloader/configurationserializable/runtime/types/Enum<" + enumClassDescriptor + ">;", "xyz/janboerman/scalaloader/configurationserializable/runtime/types/Enum", null);
 
         classWriter.visitSource("xyz/janboerman/scalaloader/configurationserializable/runtime/types/Enum.java", null);
 

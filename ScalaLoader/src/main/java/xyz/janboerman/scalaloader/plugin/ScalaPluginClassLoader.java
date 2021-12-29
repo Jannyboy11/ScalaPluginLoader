@@ -5,13 +5,16 @@ import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
+import org.objectweb.asm.tree.MethodNode;
 //import org.objectweb.asm.tree.analysis.Analyzer;
+//import org.objectweb.asm.tree.analysis.AnalyzerException;
 //import org.objectweb.asm.tree.analysis.Interpreter;
 //import org.objectweb.asm.tree.analysis.SimpleVerifier;
 import org.objectweb.asm.util.*;
 import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
+import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.dependency.LibraryClassLoader;
 import xyz.janboerman.scalaloader.util.ClassLoaderUtils;
@@ -459,35 +462,42 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * @return the result of a class definition
      */
     public ClassDefineResult getOrDefineClass(String className, ClassGenerator classGenerator, boolean persist) {
-        AtomicBoolean isNew = new AtomicBoolean(false);
-        Class<?> theClass = classes.compute(className, (n, existingClass) -> {
-            if (existingClass != null) return existingClass;
+        final Class<?> oldClass = classes.get(className);
+        if (oldClass != null) {
+            return ClassDefineResult.oldClass(oldClass);
+        }
 
-            byte[] byteCode = classGenerator.generate(className);
+        byte[] byteCode = classGenerator.generate(className);
+        if (debugClassLoad(className)) {
+            //TODO un-duplicate?
+            getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] Dumping bytecode for class " + className);
+            ClassReader classReader = new ClassReader(byteCode);
+            TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter(), new PrintWriter(System.out));
+            classReader.accept(traceClassVisitor, 0);
+        }
 
-            Class<?> definition;
-            synchronized (getClassLoadingLock(className)) {
-                definition = defineClass(className, byteCode, 0, byteCode.length);
+        boolean isNew;
+        Class<?> clazz;
+
+        synchronized (getClassLoadingLock(className)) {
+            Class<?> existingClass = classes.get(className);
+            if (existingClass == null) {
+                Class<?> definition = defineClass(className, byteCode, 0, byteCode.length);
+                clazz = addClass(definition);
+                isNew = true;
+            } else {
+                clazz = existingClass;
+                isNew = false;
             }
-            Class<?> winner = addClass(definition);
-            if (definition == winner /*I don't think this is ever false in the current implementation*/) {
-                //the class is new
-                isNew.set(true);
+        }
 
-                //check whether we need to persist the definition
-                if (persist) {
-                    //assume the bytecode generated for 'definition' and 'result' are equal.
-                    persistentClasses.save(new ClassFile(className, byteCode));
-                }
+        if (isNew) {
+            if (persist) {
+                persistentClasses.save(new ClassFile(className, byteCode));
             }
-
-            return winner;
-        });
-
-        if (isNew.get()) {
-            return ClassDefineResult.newClass(theClass);
+            return ClassDefineResult.newClass(clazz);
         } else {
-            return ClassDefineResult.oldClass(theClass);
+            return ClassDefineResult.oldClass(clazz);
         }
     }
 
