@@ -195,7 +195,7 @@ public class DumpClass implements TabExecutor {
         return jarFile;
     }
 
-    private void dump(InputStream classBytes, Printer printer) throws IOException {
+    private static void dump(InputStream classBytes, Printer printer) throws IOException {
         ClassReader debugReader = new ClassReader(classBytes);
         TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, printer, new PrintWriter(System.out));
         debugReader.accept(traceClassVisitor, 0);

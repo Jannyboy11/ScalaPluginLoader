@@ -27,8 +27,7 @@ public enum Platform {
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
                 Server craftServer = pluginClassLoader.getServer();
                 try {
-                    Class<?> commodoreClass = Class.forName(
-                            craftServer.getClass().getPackage().getName() + ".util.Commodore"); //use getClass().getPackageName() in Java11+
+                    Class<?> commodoreClass = Class.forName(Compat.getPackageName(craftServer.getClass()) + ".util.Commodore");
                     String methodName = "convert";
                     MethodType methodType = MethodType.methodType(byte[].class, new Class<?>[]{byte[].class, boolean.class});
                     commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);

@@ -80,4 +80,8 @@ public class Compat {
     public static JarFile jarFile(File jarFile) throws IOException {
         return new JarFile(jarFile, true, ZipFile.OPEN_READ, JarFile.runtimeVersion());
     }
+
+    public static String getPackageName(Class<?> clazz) {
+        return clazz.getPackageName();
+    }
 }

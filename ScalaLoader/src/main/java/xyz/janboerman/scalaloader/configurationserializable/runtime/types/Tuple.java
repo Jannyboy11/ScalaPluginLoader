@@ -84,7 +84,7 @@ public class Tuple {
                     true);
             Class<? extends ConfigurationSerializable> wrapperClazz = (Class<? extends ConfigurationSerializable>) classDefineResult.getClassDefinition();
             if (classDefineResult.isNew()) {
-                //TODO put plugin name in the name of the generated class?
+                //put plugin name in the name of the generated class? to workaround a design flaw in bukkit?
                 ConfigurationSerialization.registerClass(wrapperClazz, serializedClassName);
             }
 
@@ -103,7 +103,7 @@ public class Tuple {
                     true);
             Class<? extends ConfigurationSerializable> wrapperClazz = (Class<? extends ConfigurationSerializable>) classDefineResult.getClassDefinition();
             if (classDefineResult.isNew()) {
-                //TODO put plugin name in the name of the generated class?
+                //put plugin name in the name of the generated class? to work around a design flaw in bukkit?
                 ConfigurationSerialization.registerClass(wrapperClazz, serializedClassName);
             }
 

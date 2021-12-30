@@ -7,7 +7,7 @@ import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.objectweb.asm.*;
-import org.objectweb.asm.tree.MethodNode;
+//import org.objectweb.asm.tree.MethodNode;
 //import org.objectweb.asm.tree.analysis.Analyzer;
 //import org.objectweb.asm.tree.analysis.AnalyzerException;
 //import org.objectweb.asm.tree.analysis.Interpreter;
@@ -286,23 +286,26 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     }
 
     /**
-     * Checks whether the class definition should be dumped to the console when a class loads.
-     *
-     * @param className the name of the class to debug
-     * @return true if the classload should be debugged, otherwise false
+     * Dumps the disassembled class bytecode to standard output, if debugging is enabled for this class.
+     * @param className the fully qualified name of the class
+     * @param bytecode the bytecode of the class
+     * @see xyz.janboerman.scalaloader.commands.SetDebug
      */
-    private boolean debugClassLoad(String className) {
-        return getPluginLoader().debugSettings().isDebuggingClassLoadOf(className);
-    }
+    private void debugClass(String className, byte[] bytecode) {
+        DebugSettings debugSettings = getPluginLoader().debugSettings();
+        if (debugSettings.isDebuggingClassLoadOf(className)) {
+            Printer debugPrinter;
+            switch (debugSettings.getFormat()) {
+                case DebugSettings.ASMIFIED: debugPrinter = new ASMifier(); break;
+                default: debugPrinter = new Textifier();
+            }
 
-    /**
-     * Get the printer which prints class definitions for debugging
-     * @return the printer
-     */
-    private Printer debugPrinter() {
-        switch (getPluginLoader().debugSettings().getFormat()) {
-            case DebugSettings.ASMIFIED: return new ASMifier();
-            default: return new Textifier();
+            getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] Dumping bytecode for class " + className);
+            ClassReader debugReader = new ClassReader(bytecode);
+            TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter, new PrintWriter(System.out));
+            debugReader.accept(traceClassVisitor, 0);
+
+            //TODO if check whether asm-analysis is enabled in the debugsettings, and if so, perform analysis using the SimpleVerifier
         }
     }
 
@@ -364,13 +367,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                     }
 
                     //dump the class to the log in case classloading debugging was enabled for this class
-                    if (debugClassLoad(name)) {
-                        getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] Dumping bytecode for class " + name);
-                        ClassReader debugReader = new ClassReader(classBytes);
-                        //TODO if check whether asm-analysis is enabled in the debugsettings, and if so, perform analysis using the SimpleVerifier
-                        TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter(), new PrintWriter(System.out));
-                        debugReader.accept(traceClassVisitor, 0);
-                    }
+                    debugClass(name, classBytes);
 
                     // Note to self 2020-11-11:
                     // If I ever get a java.lang.ClassFormatError: Invalid length 65526 in LocalVariableTable in class file com/example/MyClass
@@ -477,13 +474,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         }
 
         byte[] byteCode = classGenerator.generate(className);
-        if (debugClassLoad(className)) {
-            //TODO un-duplicate?
-            getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] Dumping bytecode for class " + className);
-            ClassReader classReader = new ClassReader(byteCode);
-            TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter(), new PrintWriter(System.out));
-            classReader.accept(traceClassVisitor, 0);
-        }
+        debugClass(className, byteCode);
 
         boolean isNew;
         Class<?> clazz;

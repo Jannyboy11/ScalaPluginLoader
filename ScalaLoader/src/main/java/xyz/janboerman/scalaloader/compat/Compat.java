@@ -108,4 +108,7 @@ public class Compat {
         return new JarFile(jarFile);
     }
 
+    public static String getPackageName(Class<?> clazz) {
+        return clazz.getPackage().getName();
+    }
 }
