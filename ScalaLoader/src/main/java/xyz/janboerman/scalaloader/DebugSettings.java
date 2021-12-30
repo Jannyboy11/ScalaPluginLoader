@@ -25,7 +25,7 @@ public class DebugSettings {
     private final ScalaLoader scalaLoader;
     private File saveFile;
 
-    //synchronized because the ScalaPluginClassLoader is parallel capable! It might not load classes from the server's main thread!
+    //Synchronized because the ScalaPluginClassLoader is parallel capable! Some classes may be loaded in a different thread than the server's primary thread!
     private final Set<String> classNames = Collections.synchronizedSet(new LinkedHashSet<>());
     private String format = TEXTIFIED; private final Object formatLock = new Object();
 

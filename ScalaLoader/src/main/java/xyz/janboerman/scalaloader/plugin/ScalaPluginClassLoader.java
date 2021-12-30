@@ -289,6 +289,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
      * Dumps the disassembled class bytecode to standard output, if debugging is enabled for this class.
      * @param className the fully qualified name of the class
      * @param bytecode the bytecode of the class
+     * @see DebugSettings
      * @see xyz.janboerman.scalaloader.commands.SetDebug
      */
     private void debugClass(String className, byte[] bytecode) {
