@@ -2,7 +2,10 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.types.Either;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.types.Option;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.types.Primitives;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.types.Tuple;
 import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableError;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.util.Maybe;
@@ -144,11 +147,14 @@ public class RuntimeConversions {
         }
 
         //scala built-ins
-        else if (xyz.janboerman.scalaloader.configurationserializable.runtime.types.Tuple.isTuple(live)) {
-            return xyz.janboerman.scalaloader.configurationserializable.runtime.types.Tuple.serialize(live, type, pluginClassLoader);
+        else if (Tuple.isTuple(live)) {
+            return Tuple.serialize(live, type, pluginClassLoader);
+        } else if (Option.isOption(live, pluginClassLoader)) {
+            return Option.serialize(live, type, pluginClassLoader);
+        } else if (Either.isEither(live, pluginClassLoader)) {
+            return Either.serialize(live, type, pluginClassLoader);
         }
-        //TODO scala built-ins: Option, Either
-        //TODO scala collections
+        //TODO scala collections (need to special-case Range, NumericRange, WrappedString and ArrayBuilder)
 
         //check plugin registrations
         Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);
@@ -366,7 +372,7 @@ public class RuntimeConversions {
             return Enum.valueOf((Class<Enum>) rawType, (String) serialized);
         }
 
-        //collections
+        //collections //TODO at the moment this doesn't handle 'rawtype' collections
         else if (type instanceof ArrayParameterType) {
             return deserializeArray((List<?>) serialized, (ArrayParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && Collection.class.isAssignableFrom(type.getRawType())) {
@@ -375,7 +381,12 @@ public class RuntimeConversions {
             return deserializeMap((Map<?, ?>) serialized, (ParameterizedParameterType) type, pluginClassLoader);
         }
 
-        //TODO scala built-ins
+        //scala built-ins (tuples are covered by Adapter)
+        else if (Option.isSerializedOption(serialized)) {
+            return Option.deserialize(serialized, type, pluginClassLoader);
+        } else if (Either.isSerializedEither(serialized)) {
+            return Either.deserialize(serialized, type, pluginClassLoader);
+        }
         //TODO scala collections
 
         //check plugin registrations
@@ -395,7 +406,7 @@ public class RuntimeConversions {
         }
 
         //if the type is not ConfigurationSerializable, warn the plugin author
-        if ((!(serialized instanceof ConfigurationSerializable))) {
+        if (!(serialized instanceof ConfigurationSerializable)) {
             pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + type.toString() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
             pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
         }

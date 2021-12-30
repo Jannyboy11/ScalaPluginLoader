@@ -249,6 +249,8 @@ public final class ScalaLoader extends JavaPlugin {
         xyz.janboerman.scalaloader.configurationserializable.runtime.types.UUID.registerWithConfigurationSerialization();
         xyz.janboerman.scalaloader.configurationserializable.runtime.types.BigInteger.registerWithConfigurationSerialization();
         xyz.janboerman.scalaloader.configurationserializable.runtime.types.BigDecimal.registerWithConfigurationSerialization();
+        xyz.janboerman.scalaloader.configurationserializable.runtime.types.Option.registerWithConfigurationSerialization();
+        xyz.janboerman.scalaloader.configurationserializable.runtime.types.Either.registerWithConfigurationSerialization();
     }
 
     private boolean downloadScalaJarFiles() {

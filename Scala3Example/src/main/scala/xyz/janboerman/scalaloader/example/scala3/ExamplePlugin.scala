@@ -14,7 +14,10 @@ object ExamplePlugin extends ScalaPlugin {
     override def onEnable(): Unit =
         getLogger.info("Hello from Scala 3!")
 
+        //CollectionTest.test()
         TupleTest.test()
+        OptionTest.test()
+        EitherTest.test()
 
         val fourtyTwo: ZIO[Any, Nothing, Int] = ZIO.succeed(42)
         val program = for
@@ -22,7 +25,6 @@ object ExamplePlugin extends ScalaPlugin {
             _ <- putStrLn(s"Hello $name, welcome to ZIO!")
         yield ()
         syncRuntime.unsafeRun(program)
-//        CollectionTest.test()
 
 
     def assertionsEnabled: Boolean =

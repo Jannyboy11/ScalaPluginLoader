@@ -1715,9 +1715,9 @@ class ScalaConversions {
                     methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
                     methodVisitor.visitMethodInsn(INVOKEVIRTUAL, RANGE_COMPANION, "apply", "(III)" + RANGE_EXCLUSIVE_DESCRIPTOR, false);
                 }
+                /*effect of invokevirtual Range$.[apply/inclusive](III)Range*/                  operandStack.replaceTop(4, RANGE_TYPE);
 
                 methodVisitor.visitLabel(joinLabel);
-                /*effect of invokevirtual Range$.[apply/inclusive](III)Range*/  operandStack.replaceTop(4, RANGE_TYPE);
                 //no need to update localsFrame because it hasn't changed.
                 stackFrame = operandStack.frame();
                 methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);

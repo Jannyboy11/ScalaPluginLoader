@@ -57,6 +57,15 @@ public class ParameterizedParameterType extends ParameterType {
         return typeParameters;
     }
 
+    /**
+     * Get the i'th type parameter.
+     * @param index the 0-based index
+     * @return the i'th type parameter
+     */
+    public ParameterType getTypeParameter(int index) {
+        return getTypeParameters().get(index);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;
