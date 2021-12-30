@@ -22,6 +22,8 @@ public class Tuple {
     private Tuple() {}
 
     public static boolean isTuple(Object live) {
+        if (live == null) return false;
+
         String rawTypeName = live.getClass().getName();
 
         for (int arity = 1; arity <= 22; arity++)

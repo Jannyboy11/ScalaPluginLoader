@@ -1,16 +1,11 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
-import org.bukkit.configuration.serialization.SerializableAs;
+import org.bukkit.configuration.serialization.*;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.Map;
 import java.util.Objects;
 

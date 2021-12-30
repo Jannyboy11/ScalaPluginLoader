@@ -99,6 +99,7 @@ public class RuntimeConversions {
      */
     @Called
     public static Object serialize(Object live, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
+        if (live == null) return null;
         Class<?> rawType = type.getRawType();
         assert rawType.isInstance(live) : "live object is not an instance of " + type;
 
@@ -145,6 +146,7 @@ public class RuntimeConversions {
         } else if (type instanceof ParameterizedParameterType && live instanceof Map) {
             return serializeMap(live, (ParameterizedParameterType) type, pluginClassLoader);
         }
+        //TODO deal with rawtype collctions (Scala compiler doesn't emit type arguments as well as the Java compiler does)
 
         //scala built-ins
         else if (Tuple.isTuple(live)) {
@@ -155,6 +157,7 @@ public class RuntimeConversions {
             return Either.serialize(live, type, pluginClassLoader);
         }
         //TODO scala collections (need to special-case Range, NumericRange, WrappedString and ArrayBuilder)
+        //TODO scala.math.BigInt, scala.math.BigDecimal
 
         //check plugin registrations
         Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);
@@ -335,6 +338,7 @@ public class RuntimeConversions {
      */
     @Called
     public static Object deserialize(Object serialized, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
+        if (serialized == null) return null;
         Class<?> rawType = type.getRawType();
 
         //out-of-the-box supported
@@ -388,6 +392,7 @@ public class RuntimeConversions {
             return Either.deserialize(serialized, type, pluginClassLoader);
         }
         //TODO scala collections
+        //TODO scala.math.BigInt, scala.math.BigDecimal
 
         //check plugin registrations
         Registrations registrations = RuntimeConversions.registrations.get(pluginClassLoader);
