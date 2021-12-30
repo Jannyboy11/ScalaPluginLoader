@@ -69,6 +69,9 @@ public abstract class ScalaPlugin implements Plugin {
         }
     }
 
+    /**
+     * This constructor can be used if you use a plugin.yml to define your plugin description.
+     */
     protected ScalaPlugin() {
         if (getClass().getClassLoader() instanceof ScalaPluginClassLoader) {
             this.classLoader = (ScalaPluginClassLoader) getClass().getClassLoader();

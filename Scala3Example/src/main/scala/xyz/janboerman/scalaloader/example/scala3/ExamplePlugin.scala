@@ -1,10 +1,10 @@
 package xyz.janboerman.scalaloader.example.scala3
 
+import xyz.janboerman.scalaloader.configurationserializable.runtime.{Codec, RuntimeConversions}
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
-
 import zio.ZIO
-import zio.console._
+import zio.console.*
 
 @Scala(ScalaVersion.v3_1_0)
 object ExamplePlugin extends ScalaPlugin {
@@ -14,6 +14,9 @@ object ExamplePlugin extends ScalaPlugin {
     override def onEnable(): Unit =
         getLogger.info("Hello from Scala 3!")
 
+        //use the identity codec for unknown Object and String objects to make the framework stop complaining :)
+        RuntimeConversions.registerCodec[Object](getClassLoader(), classOf[Object], Codec.of[Object, Object](identity, identity))
+        RuntimeConversions.registerCodec[String](getClassLoader(), classOf[String], Codec.of[String, String](identity, identity))
         //CollectionTest.test()
         TupleTest.test()
         OptionTest.test()

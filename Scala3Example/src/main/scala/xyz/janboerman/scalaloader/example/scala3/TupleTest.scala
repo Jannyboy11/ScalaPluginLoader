@@ -15,7 +15,7 @@ object TupleTest {
     def test(): Unit = {
         val console = ExamplePlugin.getServer.getConsoleSender
 
-        console.sendMessage(s"${ChatColor.YELLOW}Basic Scala tuple serialization-deserialization test")
+        console.sendMessage(s"${ChatColor.YELLOW}Basic Scala Tuple serialization-deserialization test")
 
         val t1 = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)
         val t2 = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23)

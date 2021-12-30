@@ -27,4 +27,21 @@ public interface Codec<LIVE, SERIALIZED> {
      */
     public LIVE deserialize(SERIALIZED serializedValue);
 
+    /**
+     * Construct a codec from a serialization function and a deserialization function.
+     * @param serializer the serialization function
+     * @param deserializer the deserialization function
+     * @param <LIVE> the Live type
+     * @param <SERIALIZED> the Serialized type
+     * @return a new Codec
+     */
+    public static <LIVE, SERIALIZED> Codec<LIVE, SERIALIZED> of(
+            java.util.function.Function<? super LIVE, ? extends SERIALIZED> serializer,
+            java.util.function.Function<? super SERIALIZED, ? extends LIVE> deserializer) {
+        return new Codec<LIVE, SERIALIZED>() {
+            @Override public SERIALIZED serialize(LIVE liveValue) { return serializer.apply(liveValue); }
+            @Override public LIVE deserialize(SERIALIZED serializedValue) { return deserializer.apply(serializedValue); }
+        };
+    }
+
 }
