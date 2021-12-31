@@ -29,6 +29,7 @@ import java.util.StringJoiner;
  *
  * @see RuntimeConversions
  */
+@Called
 public class ParameterType {
 
     private final Set<? extends Annotation> annotations; //already unmodifiable :)

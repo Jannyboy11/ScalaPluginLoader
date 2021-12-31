@@ -14,13 +14,11 @@ object ExamplePlugin extends ScalaPlugin {
     override def onEnable(): Unit =
         getLogger.info("Hello from Scala 3!")
 
-        //use the identity codec for unknown Object and String objects to make the framework stop complaining :)
-        RuntimeConversions.registerCodec[Object](getClassLoader(), classOf[Object], Codec.of[Object, Object](identity, identity))
-        RuntimeConversions.registerCodec[String](getClassLoader(), classOf[String], Codec.of[String, String](identity, identity))
         //CollectionTest.test()
         TupleTest.test()
         OptionTest.test()
         EitherTest.test()
+        JavaCollectionTest.test()
 
         val fourtyTwo: ZIO[Any, Nothing, Int] = ZIO.succeed(42)
         val program = for

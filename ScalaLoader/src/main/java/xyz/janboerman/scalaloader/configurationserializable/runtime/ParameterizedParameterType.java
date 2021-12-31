@@ -15,6 +15,7 @@ import java.util.StringJoiner;
  * @see ParameterType
  * @see RuntimeConversions
  */
+@Called
 public class ParameterizedParameterType extends ParameterType {
 
     private final List<? extends ParameterType> typeParameters;

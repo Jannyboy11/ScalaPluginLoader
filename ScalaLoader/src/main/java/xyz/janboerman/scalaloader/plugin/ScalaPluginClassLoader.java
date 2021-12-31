@@ -300,12 +300,10 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                 case DebugSettings.ASMIFIED: debugPrinter = new ASMifier(); break;
                 default: debugPrinter = new Textifier();
             }
-
             getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] Dumping bytecode for class " + className);
             ClassReader debugReader = new ClassReader(bytecode);
             TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter, new PrintWriter(System.out));
             debugReader.accept(traceClassVisitor, 0);
-
             //TODO if check whether asm-analysis is enabled in the debugsettings, and if so, perform analysis using the SimpleVerifier
         }
     }

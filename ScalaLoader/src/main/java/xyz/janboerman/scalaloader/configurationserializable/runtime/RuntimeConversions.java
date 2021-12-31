@@ -2,10 +2,7 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import xyz.janboerman.scalaloader.bytecode.Called;
-import xyz.janboerman.scalaloader.configurationserializable.runtime.types.Either;
-import xyz.janboerman.scalaloader.configurationserializable.runtime.types.Option;
-import xyz.janboerman.scalaloader.configurationserializable.runtime.types.Primitives;
-import xyz.janboerman.scalaloader.configurationserializable.runtime.types.Tuple;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.types.*;
 import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableError;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.util.Maybe;
@@ -13,13 +10,17 @@ import xyz.janboerman.scalaloader.util.Maybe;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
+
+//explicit imports from the java standard library, to make sure we don't use our own custom runtime/types.
+import java.util.UUID;
+import java.lang.Enum;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * <p>
@@ -138,15 +139,17 @@ public class RuntimeConversions {
             return ((Enum<?>) live).name();
         }
 
-        //collections
+        //java collections
         else if (type instanceof ArrayParameterType) {
             return serializeArray(live, (ArrayParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && live instanceof Collection) {
             return serializeCollection(live, (ParameterizedParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && live instanceof Map) {
             return serializeMap(live, (ParameterizedParameterType) type, pluginClassLoader);
+        } else if (JavaCollection.isRawtypeCollection(live, type)) {
+            return JavaCollection.serialize(live, type, pluginClassLoader);
         }
-        //TODO deal with rawtype collctions (Scala compiler doesn't emit type arguments as well as the Java compiler does)
+        //TODO deal with rawtype Maps
 
         //scala built-ins
         else if (Tuple.isTuple(live)) {
@@ -376,7 +379,7 @@ public class RuntimeConversions {
             return Enum.valueOf((Class<Enum>) rawType, (String) serialized);
         }
 
-        //collections //TODO at the moment this doesn't handle 'rawtype' collections
+        //java collections //TODO at the moment this doesn't handle 'rawtype' collections
         else if (type instanceof ArrayParameterType) {
             return deserializeArray((List<?>) serialized, (ArrayParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && Collection.class.isAssignableFrom(type.getRawType())) {

@@ -15,6 +15,7 @@ import java.util.StringJoiner;
  * @see ParameterType
  * @see RuntimeConversions
  */
+@Called
 public class ArrayParameterType extends ParameterType {
 
     private final ParameterType componentType;

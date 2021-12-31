@@ -41,6 +41,7 @@ public interface Codec<LIVE, SERIALIZED> {
         return new Codec<LIVE, SERIALIZED>() {
             @Override public SERIALIZED serialize(LIVE liveValue) { return serializer.apply(liveValue); }
             @Override public LIVE deserialize(SERIALIZED serializedValue) { return deserializer.apply(serializedValue); }
+            @Override public String toString() { return "Codec.of("+ serializer + "," + deserializer + ")"; }
         };
     }
 

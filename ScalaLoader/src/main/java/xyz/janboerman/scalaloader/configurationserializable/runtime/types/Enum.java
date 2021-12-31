@@ -43,13 +43,13 @@ public abstract class Enum<E extends java.lang.Enum<E>> implements Adapter<E> {
         }
 
 
-        String enumClazzName = enumClazz.getName();
-        String generatedClassName = PREFIX_USING_DOTS + enumClazzName;
+        String enumClassName = enumClazz.getName();
+        String generatedClassName = PREFIX_USING_DOTS + enumClassName;
 
-        ClassDefineResult classDefineResult = classLoader.getOrDefineClass(generatedClassName, Enum::make, true);
+        ClassDefineResult classDefineResult = classLoader.getOrDefineClass(generatedClassName, name -> make(name, enumClassName), true);
         Class<? extends Enum> wrapperClazz = (Class<? extends Enum>) classDefineResult.getClassDefinition();
         if (classDefineResult.isNew()) {
-            ConfigurationSerialization.registerClass(wrapperClazz, enumClazzName);      //use the original enum class name as the alias
+            ConfigurationSerialization.registerClass(wrapperClazz, enumClassName);      //use the original enum class name as the alias
         }
 
         try {
@@ -60,17 +60,17 @@ public abstract class Enum<E extends java.lang.Enum<E>> implements Adapter<E> {
         }
     }
 
-    private static byte[] make(String enumClassName) {
+    private static byte[] make(String generatedClassName, String enumClassName) {
         final ClassWriter classWriter = new ClassWriter(0);
         FieldVisitor fieldVisitor;
         RecordComponentVisitor recordComponentVisitor;
         MethodVisitor methodVisitor;
         AnnotationVisitor annotationVisitor0;
 
-        final String classNameUsingDots = enumClassName;
+        final String enumClassUsingDots = enumClassName;
 
         enumClassName = enumClassName.replace('.', '/');
-        final String generatedClassName = PREFIX_USING_SLASHES + enumClassName;
+        generatedClassName = generatedClassName.replace('.', '/');
         final String enumClassDescriptor = "L" + enumClassName + ";";
         final String generatedClassDescriptor = "L" + generatedClassName + ";";
 
@@ -80,7 +80,7 @@ public abstract class Enum<E extends java.lang.Enum<E>> implements Adapter<E> {
 
         {
             annotationVisitor0 = classWriter.visitAnnotation("Lorg/bukkit/configuration/serialization/SerializableAs;", true);
-            annotationVisitor0.visit("value", classNameUsingDots);                      //use the original enum class name as the alias
+            annotationVisitor0.visit("value", enumClassUsingDots);                      //use the original enum class name as the alias
             annotationVisitor0.visitEnd();
         }
         {
