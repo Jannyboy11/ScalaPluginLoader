@@ -87,7 +87,7 @@ public abstract class JavaMap<K, V> implements Adapter<Map<? extends K, ? extend
 
         {
         annotationVisitor0 = classWriter.visitAnnotation("Lorg/bukkit/configuration/serialization/SerializableAs;", true);
-        annotationVisitor0.visit("value", "MAP_CLASS_NAME");
+        annotationVisitor0.visit("value", alias);
         annotationVisitor0.visitEnd();
         }
         classWriter.visitInnerClass("java/util/Map$Entry", "java/util/Map", "Entry", ACC_PUBLIC | ACC_STATIC | ACC_ABSTRACT | ACC_INTERFACE);
