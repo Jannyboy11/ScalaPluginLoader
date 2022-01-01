@@ -19,6 +19,7 @@ object ExamplePlugin extends ScalaPlugin {
         OptionTest.test()
         EitherTest.test()
         JavaCollectionTest.test()
+        JavaMapTest.test()
 
         val fourtyTwo: ZIO[Any, Nothing, Int] = ZIO.succeed(42)
         val program = for

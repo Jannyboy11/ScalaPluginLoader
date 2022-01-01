@@ -30,7 +30,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
         return live instanceof Collection && ParameterType.class.equals(type.getClass());
     }
 
-    public static JavaCollection serialize(Object live, ParameterType type, ScalaPluginClassLoader plugin) {
+    public static <T> JavaCollection<T> serialize(Object live, ParameterType type, ScalaPluginClassLoader plugin) {
 
         ParameterType elementType = type instanceof ParameterizedParameterType ? ((ParameterizedParameterType) type).getTypeParameter(0) : ParameterType.from(Object.class);
 
@@ -57,11 +57,10 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
             Class<? extends JavaCollection<?>> ForGenericClass = ForGenericAdapters.get(collClass);
 
             if (ForGenericClass == null) {
-                final String innerName = collClass.getName();
-                final String className = FOR_GENERIC + "$" + innerName;
+                final String className = FOR_GENERIC + "$" + collClass.getName();
                 final String alias = collClass.getName();
                 ClassDefineResult classDefineResult = plugin.getOrDefineClass(className,
-                        name -> makeForGeneric(alias, innerName, name, collClass, elementType, plugin),
+                        name -> makeForGeneric(alias, name, collClass, elementType, plugin),
                         true);
                 ForGenericClass = (Class<? extends JavaCollection<?>>) classDefineResult.getClassDefinition();
                 if (classDefineResult.isNew()) {
@@ -81,7 +80,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
         throw new RuntimeException("Could not serialize java collection: " + live + " of type: " + live.getClass().getName());
     }
 
-    private static byte[] makeForGeneric(final String alias, final String innerName, String generatedClassName, Class<? extends Collection> wrappedCollectionType, final ParameterType elementType, ScalaPluginClassLoader plugin) {
+    private static byte[] makeForGeneric(final String alias, String generatedClassName, Class<? extends Collection> wrappedCollectionType, final ParameterType elementType, ScalaPluginClassLoader plugin) {
         final String classNameUsingDots = generatedClassName;
         generatedClassName = generatedClassName.replace('.', '/');
         final String generatedClassDescriptor = "L" + generatedClassName + ";";

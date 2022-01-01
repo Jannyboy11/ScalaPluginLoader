@@ -148,8 +148,9 @@ public class RuntimeConversions {
             return serializeMap(live, (ParameterizedParameterType) type, pluginClassLoader);
         } else if (JavaCollection.isRawtypeCollection(live, type)) {
             return JavaCollection.serialize(live, type, pluginClassLoader);
+        } else if (JavaMap.isRawtypeMap(live, type)) {
+            return JavaMap.serialize(live, type, pluginClassLoader);
         }
-        //TODO deal with rawtype Maps
 
         //scala built-ins
         else if (Tuple.isTuple(live)) {

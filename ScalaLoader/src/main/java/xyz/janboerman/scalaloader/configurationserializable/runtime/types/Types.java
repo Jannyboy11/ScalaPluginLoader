@@ -19,6 +19,7 @@ class Types {
 
     private Types() {}
 
+    //adapted from Conversions#genScalaPluginClassLoader
     static void genScalaPluginClassLoader(MethodVisitor methodVisitor, ScalaPluginClassLoader plugin, OperandStack operandStack) {
         String main = plugin.getMainClassName();
         Type mainType = Type.getType("L" + main.replace('.', '/') + ";");
