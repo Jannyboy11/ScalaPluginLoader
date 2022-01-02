@@ -11,6 +11,7 @@ import org.objectweb.asm.*;
 class CancellableTransformer extends ClassVisitor {
 
     private final ScanResult scanResult;
+    private String superType;
 
     CancellableTransformer(ScanResult scanResult, ClassVisitor delegate) {
         super(ASM_API, delegate);
@@ -19,7 +20,9 @@ class CancellableTransformer extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-       for (int i = 0; i < interfaces.length; ++i) {
+        this.superType = superName;
+
+        for (int i = 0; i < interfaces.length; ++i) {
             if (SCALALOADER_CANCELLABLE_NAME.equals(interfaces[i])) {
                 interfaces[i] = BUKKIT_CANCELLABLE_NAME;
             }
@@ -64,9 +67,8 @@ class CancellableTransformer extends ClassVisitor {
                 public void visitMethodInsn(int opCode, String owner, String name, String descriptor, boolean isInterface) {
                     super.visitMethodInsn(opCode, owner, name, descriptor, isInterface);
 
-                    if (opCode == INVOKESPECIAL) {
+                    if (opCode == INVOKESPECIAL && "<init>".equals(name) && superType.equals(owner)) {
                         //inject "this.$cancel = false;" after the super constructor call
-                        //TODO how safe is this, could there be an invokeSpecial that is not a super-constructor call?
                         Label label = new Label();
                         super.visitLabel(label);
                         super.visitVarInsn(ALOAD, 0);   //loads 'this' onto the stack

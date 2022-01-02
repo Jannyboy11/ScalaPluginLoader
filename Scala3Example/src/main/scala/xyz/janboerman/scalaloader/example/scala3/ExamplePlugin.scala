@@ -20,6 +20,7 @@ object ExamplePlugin extends ScalaPlugin {
         EitherTest.test()
         JavaCollectionTest.test()
         JavaMapTest.test()
+        ScalaMapTest.test()
 
         val fourtyTwo: ZIO[Any, Nothing, Int] = ZIO.succeed(42)
         val program = for

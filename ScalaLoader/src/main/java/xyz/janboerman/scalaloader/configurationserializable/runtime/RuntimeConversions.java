@@ -139,7 +139,7 @@ public class RuntimeConversions {
             return ((Enum<?>) live).name();
         }
 
-        //java collections
+        //java containers
         else if (type instanceof ArrayParameterType) {
             return serializeArray(live, (ArrayParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && live instanceof Collection) {
@@ -152,13 +152,15 @@ public class RuntimeConversions {
             return JavaMap.serialize(live, type, pluginClassLoader);
         }
 
-        //scala built-ins
+        //scala containers
         else if (Tuple.isTuple(live)) {
             return Tuple.serialize(live, type, pluginClassLoader);
         } else if (Option.isOption(live, pluginClassLoader)) {
             return Option.serialize(live, type, pluginClassLoader);
         } else if (Either.isEither(live, pluginClassLoader)) {
             return Either.serialize(live, type, pluginClassLoader);
+        } else if (ScalaMap.isMap(live, pluginClassLoader)) {
+            return ScalaMap.serialize(live, type, pluginClassLoader);
         }
         //TODO scala collections (need to special-case Range, NumericRange, WrappedString and ArrayBuilder)
         //TODO scala.math.BigInt, scala.math.BigDecimal
@@ -380,7 +382,7 @@ public class RuntimeConversions {
             return Enum.valueOf((Class<Enum>) rawType, (String) serialized);
         }
 
-        //java collections //TODO at the moment this doesn't handle 'rawtype' collections
+        //java containers
         else if (type instanceof ArrayParameterType) {
             return deserializeArray((List<?>) serialized, (ArrayParameterType) type, pluginClassLoader);
         } else if (type instanceof ParameterizedParameterType && Collection.class.isAssignableFrom(type.getRawType())) {
@@ -416,6 +418,12 @@ public class RuntimeConversions {
 
         //if the type is not ConfigurationSerializable, warn the plugin author
         if (!(serialized instanceof ConfigurationSerializable)) {
+            //TODO do I really want to keep these error messages? right now I'm getting them in the scala3 example plugin for String and Object.
+            //TODO the scala compiler has a habit of just emitting rawtypes, so this occurs rather often.
+            //TODO but the types that I need are already handled correctly by SnakeYAML, so the warning is useless.
+            //TODO maybe this should be configurable? or maybe I only want to log these messages when assertions are on?
+            //TODO solution: make it configurable, and make the default value equal to (whether assertions are on);
+            //TODO make sure that this setting works on a per-plugin basis.
             pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + type.toString() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
             pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
         }

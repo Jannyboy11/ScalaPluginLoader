@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +41,7 @@ public class Compat {
         return new ArrayList<>(coll);
     }
 
+    @SafeVarargs
     public static <T> List<T> listOf(T... items) {
         return Collections.unmodifiableList(Arrays.asList(items));
     }
@@ -58,6 +58,7 @@ public class Compat {
         return new LinkedHashSet<>(coll);
     }
 
+    @SafeVarargs
     public static <T> Set<T> setOf(T... items) {
         Set<T> set = new LinkedHashSet<>();
         Collections.addAll(set, items);
@@ -84,6 +85,7 @@ public class Compat {
         return Collections.singletonMap(key, value);
     }
 
+    @SafeVarargs
     public static <K, V> Map<K, V> mapOf(Map.Entry<K, V>... entries) {
         Map<K, V> map = new HashMap<>();
         for (Map.Entry<K, V> entry : entries) {

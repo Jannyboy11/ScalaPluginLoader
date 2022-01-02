@@ -32,6 +32,8 @@ public abstract class Either<L, R> implements ConfigurationSerializable {
     }
 
     public static ConfigurationSerializable serialize(Object scalaEither, ParameterType type, ScalaPluginClassLoader plugin) {
+        assert isEither(scalaEither, plugin) : "Not a " + EITHER;
+
         final RuntimeException ex = new RuntimeException("Could not serialize either: " + scalaEither + ", of type: " + type);
 
         try {

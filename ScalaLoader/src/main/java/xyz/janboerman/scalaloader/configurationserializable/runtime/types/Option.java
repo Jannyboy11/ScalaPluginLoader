@@ -32,6 +32,8 @@ public abstract class Option<T> implements ConfigurationSerializable {
     }
 
     public static ConfigurationSerializable serialize(Object scalaOption, ParameterType type, ScalaPluginClassLoader plugin) {
+        assert isOption(scalaOption, plugin) : "Not a " + OPTION;
+
         final RuntimeException ex = new RuntimeException("Could not serialize option: " + scalaOption + ", of type: " + type);
 
         try {

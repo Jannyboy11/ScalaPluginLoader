@@ -386,7 +386,7 @@ final class MapAdapter<K, V> extends JavaMap<K, V> {
 
     public static <K, V> MapAdapter<K, V> deserialize(Map<String, Object> map) {
         Map<Object, Object> serializedValue = (Map<Object, Object>) map.get("value");
-        Map<K, V> value = new HashMap<>();  //TODO in bytecode replace this by implementation class
+        Map<K, V> value = new HashMap<>();  //in bytecode replace this by implementation class
         for (Map.Entry<Object, Object> entry : serializedValue.entrySet()) {
             value.put((K) RuntimeConversions.deserialize(entry.getKey(), (ParameterType) null, (ScalaPluginClassLoader) null),
                     (V) RuntimeConversions.deserialize(entry.getValue(), (ParameterType) null, (ScalaPluginClassLoader) null));

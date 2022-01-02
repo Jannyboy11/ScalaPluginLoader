@@ -57,6 +57,7 @@ public enum Platform {
 
     private Boolean conversionMethodExists = null;
 
+    @SuppressWarnings("deprecation")
     public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
         if (conversionMethodExists == null || conversionMethodExists) {
             try {

@@ -67,6 +67,8 @@ public class Tuple {
 
     public static ConfigurationSerializable serialize(Object scalaTuple, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
         final int arity = getArity(scalaTuple.getClass());
+        assert arity != 0 : "Not a scala tuple";
+
         if (type instanceof ParameterizedParameterType || arity > 0) {
             List<? extends ParameterType> tupleTypeArguments;
             if (type instanceof ParameterizedParameterType) {
@@ -96,7 +98,9 @@ public class Tuple {
             } catch (Exception shouldNotOccur) {
                 throw new Error("Malformed generated class", shouldNotOccur);
             }
-        } else if (TUPLE_XXL.equals(type.getRawType().getName()) || TUPLE_XXL.equals(scalaTuple.getClass().getName())) {
+        }
+
+        else if (TUPLE_XXL.equals(type.getRawType().getName()) || TUPLE_XXL.equals(scalaTuple.getClass().getName())) {
             String serializedClassName = TUPLE_XXL;
             String generatedClassName = PREFIX_USING_DOTS + serializedClassName;
 
