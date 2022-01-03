@@ -95,27 +95,6 @@ class EventScanner extends ClassVisitor {
             };
         }
 
-        else if ("<init>".equals(name)) {
-            return new MethodVisitor(ASM_API) {
-                boolean isPrimaryConstructor = true;
-
-                @Override
-                public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                    if (opcode == INVOKESPECIAL && "<init>".equals(name) && owner.equals(result.className)) {
-                        //constructor is calling this(params..) instead of super(params..)
-                        isPrimaryConstructor = false;
-                    }
-                }
-
-                @Override
-                public void visitEnd() {
-                    if (isPrimaryConstructor) {
-                        result.primaryConstructorDescriptors.add(descriptor);
-                    }
-                }
-            };
-        }
-
         else if ("<clinit>".equals(name)) {
             result.hasClassInitializer = true;
         }

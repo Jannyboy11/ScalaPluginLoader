@@ -72,7 +72,7 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
         final String alias = ourMapClass.getName();
         final String generatedClassName = PREFIX_USING_DOTS + "ScalaMap$" + alias;
 
-        OptionalInt isMapN = IntStream.rangeClosed(1, 4).filter(N -> isMapN(alias, N)).findAny();
+        final OptionalInt isMapN = IntStream.rangeClosed(1, 4).filter(N -> isMapN(alias, N)).findAny();
         if (isMapN.isPresent()) {
             final int N = isMapN.getAsInt();
 
@@ -91,6 +91,9 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
                 throw new RuntimeException("Could not serialize scala map: " + live + ", of type: " + type, shouldNotOccur);
             }
         }
+
+        //TODO if the keyType is not java.lang.Object, we might be able to handle SortedMaps (both immutable and mutable)
+        //TODO because only then we could generate a meaningful Ordering instance.
 
         else if (isImmutableMap(live, plugin)) {
             ClassDefineResult classDefineResult = plugin.getOrDefineClass(generatedClassName,

@@ -1,7 +1,5 @@
 package xyz.janboerman.scalaloader.event.transform;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.StringJoiner;
 
 class ScanResult {
@@ -15,7 +13,6 @@ class ScanResult {
     boolean hasGetHandlerList;
     boolean hasValidIsCancelled;
     boolean hasValidSetCancelled;
-    Set<String> primaryConstructorDescriptors = new HashSet<>();
     boolean hasClassInitializer;
 
     @Override
@@ -28,8 +25,7 @@ class ScanResult {
         stringJoiner.add("has getHandlers = " + hasGetHandlers);
         stringJoiner.add("has getHandlerList = " + hasGetHandlerList);
         stringJoiner.add("has isCancelled = " + hasValidIsCancelled);
-        stringJoiner.add("has setCancelled = " + hasValidSetCancelled);
-        stringJoiner.add("primary constructor descriptors = " + primaryConstructorDescriptors);
+        stringJoiner.add("has setCancelled = " + hasValidSetCancelled);\
         stringJoiner.add("has class initializer = " + hasClassInitializer);
         return stringJoiner.toString();
     }

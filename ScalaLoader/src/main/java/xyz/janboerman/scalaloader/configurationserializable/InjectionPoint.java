@@ -37,7 +37,9 @@ public enum InjectionPoint {
     PLUGIN_CLASS_INTIALIZER,
     /**
      * Injects a call to {@link org.bukkit.configuration.serialization.ConfigurationSerialization#registerClass(Class, String)}
-     * in the class initializer of the serializable class itself.
+     * in the class initializer of the serializable class itself. This means that the class won't be registered with Bukkit's
+     * {@link org.bukkit.configuration.serialization.ConfigurationSerialization} until the class is loaded, but the class won't be
+     * loaded until explicitly done so by your plugin's code.
      */
     CLASS_INITIALIZER,
 }

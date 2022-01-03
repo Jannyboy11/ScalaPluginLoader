@@ -1,4 +1,4 @@
 jdk:
   - openjdk17
 install:
-  - mvn install
+  - mvn --batch-mode --update-snapshots clean package install

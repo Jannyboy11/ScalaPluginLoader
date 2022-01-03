@@ -502,7 +502,6 @@ object MutableCollectionTest {
         result.arrayBuffer = arrayBufferBuilder.result()
 
 
-
 //        val arrayBuffer = map.get("arrayBuffer").asInstanceOf[java.util.List[String]]
 //        result.arrayBuffer = ArrayBuffer.from(arrayBuffer.asScala)
 //

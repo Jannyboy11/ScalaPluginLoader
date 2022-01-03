@@ -57,23 +57,37 @@ class CancellableTransformer extends ClassVisitor {
 
         else if ("<init>".equals(name)
                 && scanResult.implementsScalaLoaderCancellable
-                && scanResult.primaryConstructorDescriptors.contains(descriptor)
                 && !scanResult.hasValidSetCancelled) {
 
             //initialize the $cancel field to false
 
             return new MethodVisitor(ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+                boolean injectedConstructor = false;
+
                 @Override
                 public void visitMethodInsn(int opCode, String owner, String name, String descriptor, boolean isInterface) {
                     super.visitMethodInsn(opCode, owner, name, descriptor, isInterface);
 
                     if (opCode == INVOKESPECIAL && "<init>".equals(name) && superType.equals(owner)) {
+                        injectedConstructor = true;
                         //inject "this.$cancel = false;" after the super constructor call
                         Label label = new Label();
                         super.visitLabel(label);
                         super.visitVarInsn(ALOAD, 0);   //loads 'this' onto the stack
                         super.visitInsn(ICONST_0);           //loads 'false' onto the stack
                         super.visitFieldInsn(PUTFIELD, scanResult.className, FALLBACK_CANCEL_FIELD_NAME, "Z");
+                    }
+                }
+
+                @Override
+                public void visitMaxs(int maxStack, int maxLocals) {
+                    if (injectedConstructor) {
+                        //if "this.$cancel = false;" was injected, then 'this' and 'false' were on the operand stack, so the max stack size is at least 2.
+                        //this prevents a ClassFormatError that would otherwise be thrown for Events with a no-args constructor.
+                        maxStack = Math.max(maxStack, 2);
+                        super.visitMaxs(maxStack, maxLocals);
+                    } else {
+                        super.visitMaxs(maxStack, maxLocals);
                     }
                 }
             };
@@ -107,7 +121,7 @@ class CancellableTransformer extends ClassVisitor {
                     mv.visitInsn(IRETURN);
                     Label label1 = new Label();
                     mv.visitLabel(label1);
-                    mv.visitLocalVariable("this", "L" + scanResult.className + ';', null, label0, label1, 0);
+                    mv.visitLocalVariable("this", 'L' + scanResult.className + ';', null, label0, label1, 0);
                     mv.visitMaxs(1, 1);
                     mv.visitEnd();
                 }

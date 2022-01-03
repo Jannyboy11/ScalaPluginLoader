@@ -11,7 +11,7 @@ import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, Sc
 @Scala(version = ScalaVersion.v2_13_7)
 @Api(ApiVersion.v1_16)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.17.9-SNAPSHOT")
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.17.12-SNAPSHOT")
         .addCommand(new SPCommand("foo") permission "scalaexample.foo")
         .addCommand(new SPCommand("home") permission "scalaexample.home" usage "/home set|tp")
         .permissions(new SPPermission("scalaexample.home") permissionDefault PermissionDefault.TRUE)) {
@@ -42,8 +42,8 @@ object ExamplePlugin
 
         listConfigs()
         checkMaterials()
-        SerializationMethodsTest.test()
-        ScalaTypesSerializationTest.test()
+        //SerializationMethodsTest.test()
+        //ScalaTypesSerializationTest.test()
     }
 
     override def onDisable(): Unit = {

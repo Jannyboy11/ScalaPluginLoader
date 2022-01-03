@@ -51,7 +51,7 @@ class Conversions {
 
         }*/
 
-        //TODO just like conversion for arrays (including: tuples, Option, Either, Try)
+        //TODO just like conversion for arrays (including: tuples, Option, Either)
 
         switch (descriptor) {
             //primitives
