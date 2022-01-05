@@ -41,7 +41,6 @@ import java.security.CodeSigner;
 import java.security.CodeSource;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.jar.*;
 

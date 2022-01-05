@@ -25,7 +25,7 @@ class ScanResult {
         stringJoiner.add("has getHandlers = " + hasGetHandlers);
         stringJoiner.add("has getHandlerList = " + hasGetHandlerList);
         stringJoiner.add("has isCancelled = " + hasValidIsCancelled);
-        stringJoiner.add("has setCancelled = " + hasValidSetCancelled);\
+        stringJoiner.add("has setCancelled = " + hasValidSetCancelled);
         stringJoiner.add("has class initializer = " + hasClassInitializer);
         return stringJoiner.toString();
     }
