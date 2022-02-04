@@ -21,4 +21,12 @@
         <module>Scala3Example</module>
     </modules>
 
+    <distributionManagement>
+        <repository>
+            <id>repsy</id>
+            <name>Jannyboy11 Minecraft Repo</name>
+            <url>https://repo.repsy.io/mvn/jannyboy11/minecraft</url>
+        </repository>
+    </distributionManagement>
+
 </project>

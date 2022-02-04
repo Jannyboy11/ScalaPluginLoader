@@ -656,21 +656,6 @@ public class ScalaPluginLoader implements PluginLoader {
     }
 
     /**
-     * Make a class visible for all {@link ScalaPlugin}s with a certain (or binary compatible) Scala version.
-     * @implNote Classes loaded by a {@link ScalaLibraryClassLoader} directly are rejected.
-     *
-     * @param scalaVersion the scala version
-     * @param className the name of the class
-     * @param clazz the class
-     * @return whether the class was added to the cache of this plugin loader
-     * @deprecated use {@link #addClassGlobally(ScalaRelease, String, Class)} instead
-     */
-    @Deprecated
-    public boolean addClassGlobally(String scalaVersion, String className, Class<?> clazz) {
-        return addClassGlobally(ScalaRelease.fromScalaVersion(scalaVersion), className, clazz);
-    }
-
-    /**
      * Make a class visible for all {@link ScalaPlugin}s with a binary compatible version of Scala.
      * @implNote scala standard library classes are immediately rejected.
      *
@@ -683,6 +668,13 @@ public class ScalaPluginLoader implements PluginLoader {
         if (clazz.getClassLoader() instanceof ScalaLibraryClassLoader) return false;
 
         return cacheClass(scalaCompat, className, clazz) == null;
+    }
+
+    protected boolean removeClassGlobally(ScalaRelease scalaCompat, String className, Class<?> clazz) {
+        ConcurrentMap<String, Class<?>> classesForThisVersion = sharedScalaPluginClasses.get(scalaCompat);
+        if (classesForThisVersion == null) return false;
+
+        return classesForThisVersion.remove(className, clazz);
     }
 
     /**

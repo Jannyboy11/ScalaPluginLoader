@@ -134,5 +134,4 @@ public class PluginTransformer extends ClassVisitor {
         super.visitEnd();
     }
 
-
 }

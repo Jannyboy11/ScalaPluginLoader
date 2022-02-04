@@ -218,5 +218,4 @@ class LocalScanner extends ClassVisitor {
         //all of this is a workaround for the scala compiler generating annotations on both the classes and companion objects.
     }
 
-
 }

@@ -1,3 +1,4 @@
+# While I don't officially 'support' Jitpack anymore, this is the configuration that *should* make it work on there.
 jdk:
   - openjdk17
 install:

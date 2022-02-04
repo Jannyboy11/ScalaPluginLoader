@@ -276,7 +276,7 @@ class Conversions {
     private static void collectionToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
         final String rawTypeName = typeSignature.getTypeName();
         final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
-        int localVariableIndex = localVariableTable.frameSize();
+        int localVariableIndex = localVariableTable.frameSize();    //TODO localsSize
 
         //serializing is a lot easier than deserializing.
         //if it's a set, we just need to create a LinkedHashSet,

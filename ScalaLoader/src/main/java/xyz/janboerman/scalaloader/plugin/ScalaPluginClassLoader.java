@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.plugin;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
@@ -63,7 +64,6 @@ public class ScalaPluginClassLoader extends URLClassLoader {
     private final File pluginJarFile;
     private final JarFile jarFile;
     private final ApiVersion apiVersion;
-    private final Platform platform;
     private final String mainClassName;
     private final TransformerRegistry transformerRegistry;
 
@@ -109,7 +109,6 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         this.apiVersion = apiVersion;
         this.mainClassName = mainClassName;
         this.transformerRegistry = transformerRegistry;
-        this.platform = Platform.detect(server);
 
         this.libraryLoader = new LibraryClassLoader(dependencies.toArray(new File[dependencies.size()]),
                                                     parent,
@@ -447,9 +446,12 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         if (loadedConcurrently == null) {
             //if we find this class for the first time
             if (pluginLoader.addClassGlobally(getScalaRelease(), name, toAdd)) {
-                //TODO will bukkit ever get a proper pluginloader api? https://hub.spigotmc.org/jira/browse/SPIGOT-4255
-                //injectIntoJavaPluginLoaderScope(name, found);
+                if (canInjectIntoJavaPluginLoaderScope()) {
+                    injectIntoJavaPluginLoaderScope(name, toAdd);
+                }
             }
+            //TODO should we 'link' this class using resolveClass(toAdd)? or maybe at our call sites? I haven't really ran into issues by NOT calling this method, so...
+            //TODO what breaks when we don't link using resolveClass? classes can already be found by loadClass en findClass because they are in the classes Map.
             return toAdd;
         } else {
             //if some other tried to load the same class and won the race, use that class instead.
@@ -601,7 +603,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
 
 
     /**
-     * Similar to {@link ScalaPluginLoader#addClassGlobally(String, String, Class)}, the {@link JavaPluginLoader} also has such a method: setClass.
+     * Similar to {@link ScalaPluginLoader#addClassGlobally(ScalaRelease, String, Class)}, the {@link JavaPluginLoader} also has such a method: setClass.
      * This is used by {@link org.bukkit.plugin.java.JavaPlugin}s to make their classes accessible to other JavaPlugins.
      * Since we want a  {@link ScalaPlugin}'s classes to be accessible to JavaPlugins, this method can be called to share a class with ALL JavaPlugins and ScalaPlugins.
      * This is dangerous business because it can pollute the JavaPluginLoader with classes for multiple (binary incompatible) versions of Scala.
@@ -683,6 +685,31 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         }
     }
 
+    private Boolean canInjectIntoJavaPluginLoaderScope;
+    private boolean canInjectIntoJavaPluginLoaderScope() {
+        if (canInjectIntoJavaPluginLoaderScope != null) return canInjectIntoJavaPluginLoaderScope;
+
+        //injecting classes into the JavaPluginLoader worked up until January 26th 2020 (MC 1.15.2)
+        //https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/diff/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java?until=89586a4cfcc07fe91972d214d80017de887cb8e6
+        //related issue: https://hub.spigotmc.org/jira/browse/SPIGOT-4255
+        //but it works again since June 11 2021 (MC 1.17.1) after the introduction of the LibraryLoader (that itself got added in Bukkit 1.16.5)
+        //https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/diff/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java?until=7e29f7654411f0a17ebbcc2c3f6a7dfe93bff39e
+
+        //so we can return false if 1.15.2 <= bukkitVersion < 1.17.1
+        //otherwise we return true
+
+        final String bukkitVersion = Bukkit.getBukkitVersion();
+        if (bukkitVersion.startsWith("1.15.2")
+            || bukkitVersion.startsWith("1.16")
+            || (bukkitVersion.startsWith("1.17") && !bukkitVersion.startsWith("1.17."))) {
+            canInjectIntoJavaPluginLoaderScope = false;
+        } else {
+            canInjectIntoJavaPluginLoaderScope = true;
+        }
+
+        return canInjectIntoJavaPluginLoaderScope;
+    }
+
     private Boolean scalaLoaderClassLoaderParallelCapable = null;
     private boolean javaPluginClassLoaderParallelCapable() {
         if (scalaLoaderClassLoaderParallelCapable != null) return scalaLoaderClassLoaderParallelCapable;
@@ -729,4 +756,23 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         addUrl(url);
     }
 
+    @Override
+    public void close() throws IOException {
+        for (Map.Entry<String, Class<?>> entry : classes.entrySet()) {
+            String className = entry.getKey();
+            Class<?> clazz = entry.getValue();
+            if (pluginLoader.removeClassGlobally(scalaRelease, className, clazz)) {
+                if (canInjectIntoJavaPluginLoaderScope()) {
+                    removeFromJavaPluginLoaderScope(className);
+                }
+            }
+        }
+        classes.clear();
+
+        try {
+            super.close();
+        } finally {
+            jarFile.close();
+        }
+    }
 }

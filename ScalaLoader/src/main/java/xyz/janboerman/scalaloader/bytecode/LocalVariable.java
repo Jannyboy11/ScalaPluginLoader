@@ -23,6 +23,7 @@ public final class LocalVariable {
             Label startLabel,
             Label endLabel,
             int tableIndex
+            /*TODO? int frameIndex?*/
     ) {
         this.name = name;
         this.descriptor = descriptor;

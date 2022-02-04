@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader.compat;
 import org.bukkit.Server;
 import org.bukkit.UnsafeValues;
 import org.bukkit.plugin.PluginDescriptionFile;
+import static xyz.janboerman.scalaloader.compat.Compat.getPackageName;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 
@@ -27,7 +28,7 @@ public enum Platform {
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
                 Server craftServer = pluginClassLoader.getServer();
                 try {
-                    Class<?> commodoreClass = Class.forName(Compat.getPackageName(craftServer.getClass()) + ".util.Commodore");
+                    Class<?> commodoreClass = Class.forName(getPackageName(craftServer.getClass()) + ".util.Commodore");
                     String methodName = "convert";
                     MethodType methodType = MethodType.methodType(byte[].class, new Class<?>[]{byte[].class, boolean.class});
                     commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);

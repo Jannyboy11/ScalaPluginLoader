@@ -70,7 +70,6 @@ public class AddVariantTransformer extends ClassVisitor {
         AnnotationVisitor superVisitor = super.visitAnnotation(descriptor, visible);
 
         if (SCALALOADER_CONFIGURATIONSERIALIZABLE_DESCRIPTOR.equals(descriptor)) {
-
             return new AnnotationVisitor(ASM_API, superVisitor) {
                 @Override
                 public void visit(String name, Object value) {
@@ -79,7 +78,6 @@ public class AddVariantTransformer extends ClassVisitor {
                     }
                     super.visit(name, value);
                 }
-
             };
         }
 
@@ -210,6 +208,5 @@ public class AddVariantTransformer extends ClassVisitor {
                     + className.replace('/', '.'));
         }
     }
-
 
 }
