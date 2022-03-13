@@ -39,6 +39,7 @@ public enum ScalaVersion {
     v2_13_6("2.13.6"),
     v2_13_7("2.13.7"),
     v2_13_8("2.13.8"),
+    v2_13_x("2.13.8"), //latest
 
     //3.0.x
     v3_0_0("3.0.0"),
@@ -51,19 +52,12 @@ public enum ScalaVersion {
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
 
-    private static Map<String, ScalaVersion> byVersion = new HashMap<>();
-    private static final ScalaVersion latest_2_13;
+    private static final Map<String, ScalaVersion> byVersion = new HashMap<>();
     static {
-        ScalaVersion latest_2_13_version = null;
         for (ScalaVersion version : ScalaVersion.values()) {
             String ver = version.getVersion();
             byVersion.put(ver, version);
-            if (version.getVersion().startsWith("2.13.")) {
-                latest_2_13_version = version;
-            }
         }
-        assert latest_2_13_version != null : "latest Scala 2.13 version cannot be null";
-        latest_2_13 = latest_2_13_version;
     }
 
     private final String version;
@@ -88,8 +82,8 @@ public enum ScalaVersion {
             );
         } else if (scalaVersion.startsWith("3.0.") || scalaVersion.startsWith("3.1.")) {
             return mapOf(
-                    mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(latest_2_13.getVersion())),
-                    mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(latest_2_13.getVersion())),
+                    mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(ScalaVersion.v2_13_x.getVersion())),
+                    mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(ScalaVersion.v2_13_x.getVersion())),
                     mapEntry(PluginScalaVersion.SCALA3_LIBRARY_URL, mavenCentralScala3LibraryAdditions(scalaVersion)),
                     mapEntry(PluginScalaVersion.TASTY_CORE_URL, mavenCentralScala3TastyCoreAdditions(scalaVersion))
             );
