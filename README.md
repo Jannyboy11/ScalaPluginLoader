@@ -157,21 +157,22 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 ## Dependency Information [![](https://jitpack.io/v/Jannyboy11/ScalaPluginLoader.svg)](https://jitpack.io/#Jannyboy11/ScalaPluginLoader)
 ##### SBT
 ```scala
-resolvers += "jitpack" at "https://jitpack.io"
-libraryDependencies += "com.github.Jannyboy11.ScalaPluginLoader" % "ScalaLoader" % "v0.17.12" % "provided"
+resolvers += "jannyboy11-minecraft" at "https://repo.repsy.io/mvn/jannyboy11/minecraft"
+libraryDependencies += "xyz.janboerman" % "ScalaLoader" % "0.17.14-SNAPSHOT" % "provided"
 ```
 
 ##### Maven
 ```xml
 <repository>
-    <id>jitpack.io</id>
-    <url>https://jitpack.io</url>
+    <id>jannyboy11-minecraft</id>
+    <name>Jannyboy11 Minecraft Repo</name>
+    <url>https://repo.repsy.io/mvn/jannyboy11/minecraft</url>
 </repository>
 
 <dependency>
-    <groupId>com.github.Jannyboy11.ScalaPluginLoader</groupId>
+    <groupId>xyz.janboerman</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>v0.17.12</version>
+    <version>0.17.14-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>
 ```
