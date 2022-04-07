@@ -68,16 +68,15 @@ public enum ScalaVersion {
 
     private final String version;
     private final boolean stable;
-    private final Map<String, String> urls;
+    private Map<String, String> urls;
 
     ScalaVersion(String version) {
-        this(version, true, urls(version));
+        this(version, true);
     }
 
-    ScalaVersion(String version, boolean stable, Map<String, String> urls) {
+    ScalaVersion(String version, boolean stable) {
         this.version = version;
         this.stable = stable;
-        this.urls = urls;
     }
 
     private static Map<String, String> urls(String scalaVersion) {
@@ -127,6 +126,7 @@ public enum ScalaVersion {
      * @return a map containing the urls as values
      */
     public Map<String, String> getUrls() {
+        if (this.urls == null) this.urls = urls(getVersion());
         return Collections.unmodifiableMap(urls);
     }
 
@@ -137,7 +137,7 @@ public enum ScalaVersion {
      */
     @Deprecated
     public String getScalaLibraryUrl() {
-        return urls.get(PluginScalaVersion.SCALA2_LIBRARY_URL);
+        return getUrls().get(PluginScalaVersion.SCALA2_LIBRARY_URL);
     }
 
     /**
@@ -147,7 +147,7 @@ public enum ScalaVersion {
      */
     @Deprecated
     public String getScalaReflectUrl() {
-        return urls.get(PluginScalaVersion.SCALA2_REFLECT_URL);
+        return getUrls().get(PluginScalaVersion.SCALA2_REFLECT_URL);
     }
 
     /**

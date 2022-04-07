@@ -5,7 +5,7 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.17.13-SNAPSHOT</version>
+        <version>0.17.14-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -23,7 +23,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <release>17</release>
+                    <release>18</release>
                     <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
