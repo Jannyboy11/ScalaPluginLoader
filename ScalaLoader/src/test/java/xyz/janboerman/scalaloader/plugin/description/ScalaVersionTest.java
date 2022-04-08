@@ -31,6 +31,7 @@ public class ScalaVersionTest {
         assertEquals("3.1.1", scalaVersion.getVersion());
         assertTrue(scalaVersion.isStable());
         assertEquals("https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-library_3/3.1.1/scala3-library_3-3.1.1.jar", scalaVersion.getUrls().get(PluginScalaVersion.SCALA3_LIBRARY_URL));
+        assertNotNull(scalaVersion.getUrls().get(PluginScalaVersion.SCALA2_LIBRARY_URL));
     }
 
 }
