@@ -472,7 +472,6 @@ public class ScalaPluginLoader implements PluginLoader {
                     throw new UnknownDependencyException("Dependency " + dependency + " not found while loading plugin " + scalaPlugin.getName());
                 }
             }
-
             scalaPlugin.getLogger().info("Loading " + scalaPlugin.getScalaDescription().getFullName());
             scalaPlugin.onLoad();
         } else if (scalaPluginsByAbsolutePath.containsKey(path)) {
@@ -490,18 +489,25 @@ public class ScalaPluginLoader implements PluginLoader {
                 throw new InvalidPluginException(e);
             }
         }
-
+        
         //if the newly-loaded plugin is a dependency of a waiting ScalaPlugin, then try to load the ScalaPlugin again.
         Iterator<File> fileIterator = scalapluginsWaitingForDependencies.iterator();
         while (fileIterator.hasNext()) {
             File dependentFile = fileIterator.next();
-            ScalaPlugin dependent = scalaPluginsByAbsolutePath.get(path);
+            ScalaPlugin dependent = scalaPluginsByAbsolutePath.get(dependentFile.toPath().toAbsolutePath());
             if (dependent != null) {
                 ScalaPluginDescription desc = dependent.getScalaDescription();
                 if (desc.getHardDependencies().contains(plugin.getName())) {
                     try {
+                        //prepare for recursive call because the dependency is not known the plugin manager at this point.
+                        //another workaround could be to call addPluginToPluginManager(plugin), but I'm not certain that won't cause issues at the SimplePluginManager.
+                        desc.moveHardDependencyToSoftDependency(plugin.getName());
+
+                        //try to load the depending plugin again
                         ScalaPlugin lateScalaPlugin = (ScalaPlugin) loadPlugin(dependentFile);
+                        //hack it into the PluginManager
                         addPluginToPluginManager(lateScalaPlugin);
+                        //remove it from the waiting queue
                         fileIterator.remove();
                     } catch (UnknownDependencyException thereAreMoreDependenciesLeft) {
                         //ignore

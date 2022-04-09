@@ -158,7 +158,7 @@ class MethodMoney /*implements org.bukkit.configuration.serialization.Configurat
         if (obj == this) return true;
         if (!(obj instanceof MethodMoney that)) return false;
 
-        return Objects.equals(this.getCurrency(), that.getCurrency())
+        return this.getCurrency() == that.getCurrency()
                 && this.getAmount() == that.getAmount();
     }
 }

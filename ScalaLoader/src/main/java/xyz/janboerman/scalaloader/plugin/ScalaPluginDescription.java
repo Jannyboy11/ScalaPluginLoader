@@ -157,6 +157,13 @@ public class ScalaPluginDescription {
         return Collections.unmodifiableSet(hardDependencies);
     }
 
+    public ScalaPluginDescription moveHardDependencyToSoftDependency(String dependency) {
+        if (hardDependencies.remove(dependency)) {
+            addSoftDepend(dependency);
+        }
+        return this;
+    }
+
     public ScalaPluginDescription softDepend(String... dependencies) {
         this.softDependencies.clear();
         this.softDependencies.add("ScalaLoader");

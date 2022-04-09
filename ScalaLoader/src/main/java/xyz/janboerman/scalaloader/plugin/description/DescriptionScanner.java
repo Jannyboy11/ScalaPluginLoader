@@ -81,6 +81,7 @@ public class DescriptionScanner extends ClassVisitor {
                 + ",extendsJavaLangObject=" + extendsJavaLangObject
                 + ",isAbstract=" + isAbstract
                 + ",isModule=" + isModule
+                + ",isObject=" + isObject
                 + ",hasSuitableConstructor" + hasPublicNoArgsConstructor
                 + "}";
     }

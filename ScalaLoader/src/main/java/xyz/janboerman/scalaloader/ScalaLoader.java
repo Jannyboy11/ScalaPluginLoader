@@ -126,7 +126,7 @@ public final class ScalaLoader extends JavaPlugin {
 
             for (File file : scalaPluginsFolder.listFiles((File dir, String name) -> name.endsWith(".jar"))) {
                 try {
-                    getServer().getPluginManager().loadPlugin(file);
+                    getServer().getPluginManager().loadPlugin(file);    //will now use our own ScalaPluginLoader to load the plugin
                 } catch (UnknownDependencyException ude) {
                     ScalaPluginLoader.getInstance().loadWhenDependenciesComeAvailable(file);
                     scalaPluginsWaitingOnJavaPlugins.put(file, ude);
@@ -147,8 +147,15 @@ public final class ScalaLoader extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        //ScalaLoader commands
+        getCommand("resetScalaUrls").setExecutor(new ResetScalaUrls(this));
+        getCommand("dumpClass").setExecutor(new DumpClass(this));
+        getCommand("setDebug").setExecutor(new SetDebug(getDebugSettings()));
+        getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins());
+
+        //if the ".jar"-pluginloader is overridden, then check for unloaded plugins. otherwise just enable the scalaplugins now.
         if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
-            //at this point all JavaPlugins have been at least loaded (not enabled)
+            //at this point all JavaPlugins have been at least loaded (not enabled). all ScalaPlugins are loaded as well.
             //if there are still scalaplugins whose dependencies have not yet been loaded, then throw the UnknownDependencyException
             for (File file : ScalaPluginLoader.getInstance().getPluginsWaitingForDependencies()) {
                 UnknownDependencyException ude = scalaPluginsWaitingOnJavaPlugins.get(file);
@@ -190,13 +197,6 @@ public final class ScalaLoader extends JavaPlugin {
         }));
         //TODO track used features of the ScalaLoader plugin -> ConfigurationSerializable api?, Event api? (could make these drilldowns!)
         //TODO track popular third-party libraries (once we include a third-party library loading api) (using advanced pie!)
-
-        //ScalaLoader commands
-        getCommand("resetScalaUrls").setExecutor(new ResetScalaUrls(this));
-        getCommand("dumpClass").setExecutor(new DumpClass(this));
-        getCommand("setDebug").setExecutor(new SetDebug(getDebugSettings()));
-        getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins());
-
     }
 
     @Override

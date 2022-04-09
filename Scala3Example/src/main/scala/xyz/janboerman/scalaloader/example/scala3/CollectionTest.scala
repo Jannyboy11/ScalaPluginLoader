@@ -24,8 +24,9 @@ object CollectionTest:
         val floats = IndexedSeq(3.0F, 4.0F)
         val strings = ArraySeq("Hello, ", "World!")
         val chars = SortedSet('A', 'B', 'C', 'D', 'E', 'F')
+        val longs = ArraySeq(0L, 1L, 2L)
 
-        val testCase = CollectionTest(ints, booleans, floats, strings, chars)
+        val testCase = CollectionTest(ints, booleans, floats, strings, chars, longs)
 
         var yamlConfig = YamlConfiguration()
         yamlConfig.set("collection-test", testCase)
@@ -33,7 +34,7 @@ object CollectionTest:
 
         yamlConfig = YamlConfiguration.loadConfiguration(saveFile)
         val actual = yamlConfig.get("collection-test")
-        assert(testCase == actual, "CollectionTest instances were not equal! :(")
+        assert(testCase == actual, s"CollectionTest instances were not equal! :( expected=${testCase}, actual=${actual}")
         if ExamplePlugin.assertionsEnabled then console.sendMessage(s"${ChatColor.GREEN}Test passed!")
     end test
 
@@ -44,7 +45,8 @@ class CollectionTest(@Scan.IncludeProperty var integers: Seq[Int],
                      @Scan.IncludeProperty var booleans: Set[Boolean],
                      @Scan.IncludeProperty var floats: IndexedSeq[Float],
                      @Scan.IncludeProperty var strings: ArraySeq[String],
-                     @Scan.IncludeProperty var chars: SortedSet[Char]):
+                     @Scan.IncludeProperty var chars: SortedSet[Char],
+                     @Scan.IncludeProperty var longs: ArraySeq[Long]):
 
     override def equals(obj: Any): Boolean = obj match {
         case that: CollectionTest =>
@@ -52,12 +54,13 @@ class CollectionTest(@Scan.IncludeProperty var integers: Seq[Int],
             this.booleans == that.booleans &&
             this.floats == that.floats &&
             this.strings == that.strings &&
-            this.chars == that.chars
+            this.chars == that.chars &&
+            this.longs == that.longs
         case _ =>
             false
     }
 
-    override def hashCode(): Int = java.util.Objects.hash(integers, booleans, floats, strings, chars)
+    override def hashCode(): Int = java.util.Objects.hash(integers, booleans, floats, strings, chars, longs)
 
     override def toString: String =
-        s"CollectionTest($integers, $booleans, $floats, $strings, $chars)"
+        s"CollectionTest($integers, $booleans, $floats, $strings, $chars, $longs)"

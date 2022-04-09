@@ -63,7 +63,7 @@ public class ExamplePlugin extends ScalaPlugin {
         new ListSerializationTest(this).test();     //check whether list elements get converted properly
         Maybe.test(this);                           //checks whether @DelegateSerializtion works correctly
         MapSerializable.test(this);                 //checks whether map elements get converted properly
-        new ScalaCollectionSerializationTest(this).test();  //checks whether scala collections get converted properly
+        //TODO: new ScalaCollectionSerializationTest(this).test();  //checks whether scala collections get converted properly
         //testDeserializedTypes();    //check which types we get back after one round trip of live->serialized->live
     }
 

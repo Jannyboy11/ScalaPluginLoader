@@ -35,7 +35,8 @@ public class ListScalaPlugins implements TabExecutor {
 
             StringJoiner pluginsPart = new StringJoiner(", ");
             for (ScalaPlugin scalaPlugin : plugins) {
-                pluginsPart.add(scalaPlugin.getName() + " (" + ChatColor.DARK_AQUA + scalaPlugin.getDeclaredScalaVersion() + ChatColor.AQUA + ")");
+                pluginsPart.add((scalaPlugin.isEnabled() ? ChatColor.AQUA : ChatColor.RED) + scalaPlugin.getName()
+                        + ChatColor.AQUA + " (" + ChatColor.DARK_AQUA + scalaPlugin.getDeclaredScalaVersion() + ChatColor.AQUA + ")");
             }
 
             sender.sendMessage(ChatColor.AQUA + "[" + ChatColor.DARK_AQUA + scalaRelease.getCompatVersion() + ".x" + ChatColor.AQUA + "] " + pluginsPart);
