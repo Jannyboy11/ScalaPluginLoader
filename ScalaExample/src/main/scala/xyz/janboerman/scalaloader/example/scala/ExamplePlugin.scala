@@ -8,10 +8,10 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCo
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 
-@Scala(version = ScalaVersion.v2_13_7)
+@Scala(version = ScalaVersion.v2_13_8)
 @Api(ApiVersion.v1_16)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.17.12-SNAPSHOT")
+    extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.17.15-SNAPSHOT")
         .addCommand(new SPCommand("foo") permission "scalaexample.foo")
         .addCommand(new SPCommand("home") permission "scalaexample.home" usage "/home set|tp")
         .permissions(new SPPermission("scalaexample.home") permissionDefault PermissionDefault.TRUE)) {
