@@ -158,7 +158,7 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 ##### SBT
 ```scala
 resolvers += "jannyboy11-minecraft" at "https://repo.repsy.io/mvn/jannyboy11/minecraft"
-libraryDependencies += "xyz.janboerman" % "ScalaLoader" % "0.17.15-SNAPSHOT" % "provided"
+libraryDependencies += "xyz.janboerman" % "ScalaLoader" % "0.17.16-SNAPSHOT" % "provided"
 ```
 
 ##### Maven
@@ -172,7 +172,7 @@ libraryDependencies += "xyz.janboerman" % "ScalaLoader" % "0.17.15-SNAPSHOT" % "
 <dependency>
     <groupId>xyz.janboerman</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>0.17.15-SNAPSHOT</version>
+    <version>0.17.16-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>
 ```

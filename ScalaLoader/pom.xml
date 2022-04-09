@@ -5,7 +5,7 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.17.15-SNAPSHOT</version>
+        <version>0.17.16-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,7 +13,7 @@
 
     <properties>
         <bukkitVersion>1.18.2-R0.1-SNAPSHOT</bukkitVersion>
-        <asmVersion>9.2</asmVersion>
+        <asmVersion>9.3</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
         <mavenResolverProviderVersion>3.8.1</mavenResolverProviderVersion>

@@ -5,14 +5,14 @@
     <parent>
         <artifactId>ScalaPluginLoader</artifactId>
         <groupId>xyz.janboerman</groupId>
-        <version>0.17.15-SNAPSHOT</version>
+        <version>0.17.16-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>Scala3Example</artifactId>
 
     <properties>
-        <scala.boostrapVersion>2.13.7</scala.boostrapVersion>
+        <scala.boostrapVersion>2.13.8</scala.boostrapVersion>
         <scala.version>3.1.0</scala.version>
     </properties>
 
