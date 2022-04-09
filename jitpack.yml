@@ -1,5 +1,5 @@
 # While I don't officially 'support' Jitpack anymore, this is the configuration that *should* make it work on there.
 jdk:
-  - openjdk17
+  - openjdk18
 install:
   - mvn --batch-mode --update-snapshots clean package install
