@@ -14,7 +14,8 @@ public final class LocalVariable {
     public final String signature;
     public final Label startLabel;
     public final Label endLabel;
-    public final int tableIndex;
+    public final int tableSlot;
+    public final int frameIndex;
 
     public LocalVariable(
             String name,
@@ -22,15 +23,16 @@ public final class LocalVariable {
             String signature,
             Label startLabel,
             Label endLabel,
-            int tableIndex
-            /*TODO? int frameIndex?*/
+            int tableSlot,
+            int frameIndex
     ) {
         this.name = name;
         this.descriptor = descriptor;
         this.signature = signature;
         this.startLabel = startLabel;
         this.endLabel = endLabel;
-        this.tableIndex = tableIndex;
+        this.tableSlot = tableSlot;
+        this.frameIndex = frameIndex;
     }
 
     @Override
@@ -41,18 +43,19 @@ public final class LocalVariable {
         LocalVariable that = (LocalVariable) o;
         return Objects.equals(this.name, that.name)
                 && Objects.equals(this.descriptor, that.descriptor)
-                && this.tableIndex == that.tableIndex
+                && this.tableSlot == that.tableSlot
+                && this.frameIndex == that.frameIndex
                 && Objects.equals(this.startLabel, that.startLabel)
                 && Objects.equals(this.endLabel, that.endLabel);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, descriptor, tableIndex, startLabel, endLabel);
+        return Objects.hash(name, descriptor, tableSlot, frameIndex, startLabel, endLabel);
     }
 
     @Override
     public String toString() {
-        return "LocalVariable{" + name + ": " + (signature == null ? descriptor : signature) + " @ " + tableIndex + "}";
+        return "LocalVariable{" + name + ": " + (signature == null ? descriptor : signature) + " @ " + tableSlot + "/" + frameIndex + "}";
     }
 }

@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader.configurationserializable.transform;
 import org.objectweb.asm.*;
 import org.objectweb.asm.signature.SignatureReader;
 import xyz.janboerman.scalaloader.bytecode.FieldDeclaration;
+import xyz.janboerman.scalaloader.bytecode.LocalCounter;
 import xyz.janboerman.scalaloader.bytecode.LocalVariable;
 import xyz.janboerman.scalaloader.bytecode.LocalVariableTable;
 import xyz.janboerman.scalaloader.bytecode.MethodHeader;
@@ -482,10 +483,14 @@ class SerializableTransformer extends ClassVisitor {
 
             if (!alreadyHasSerializeMethod) {
                 //generate serialize method.
-                final int thisIndex = 0;
-                final int mapIndex = 1;
 
                 final OperandStack operandStack = new OperandStack();
+                final LocalVariableTable localVariableTable = new LocalVariableTable();
+                final LocalCounter localCounter = new LocalCounter();
+                final int thisTableSlot = localCounter.getSlotIndex(), thisFrameIndex = localCounter.getFrameIndex();
+                localCounter.add(Type.getType(classDescriptor));
+                final int mapTableSlot = localCounter.getSlotIndex(), mapFrameIndex = localCounter.getFrameIndex();
+                localCounter.add(Type.getType(MAP_DESCRIPTOR));
 
                 //start by creating a new hashmap and storing it in the local variable table at index 1.
                 MethodVisitor methodVisitor = visitMethod(ACC_PUBLIC, SERIALIZE_NAME, SERIALIZE_DESCRIPTOR, SERIALIZE_SIGNATURE, null);
@@ -495,14 +500,13 @@ class SerializableTransformer extends ClassVisitor {
                 methodVisitor.visitTypeInsn(NEW, HASHMAP_NAME);         operandStack.push(HASHMAP_TYPE);
                 methodVisitor.visitInsn(DUP);                           operandStack.push(HASHMAP_TYPE);
                 methodVisitor.visitMethodInsn(INVOKESPECIAL, HASHMAP_NAME, CONSTRUCTOR_NAME, "()V", false);     operandStack.pop();
-                methodVisitor.visitVarInsn(ASTORE, mapIndex);           operandStack.pop();
+                methodVisitor.visitVarInsn(ASTORE, mapTableSlot);           operandStack.pop();
                 final Label label1 = new Label();
                 methodVisitor.visitLabel(label1);
 
                 final Label veryLastLabel = new Label();
-                final LocalVariableTable localVariableTable = new LocalVariableTable();
-                final LocalVariable thisDef = new LocalVariable("this", classDescriptor, classSignature, label0, veryLastLabel, thisIndex);
-                final LocalVariable mapDef = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label1, veryLastLabel, mapIndex);
+                final LocalVariable thisDef = new LocalVariable("this", classDescriptor, classSignature, label0, veryLastLabel, thisTableSlot, thisFrameIndex);
+                final LocalVariable mapDef = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label1, veryLastLabel, mapTableSlot, mapFrameIndex);
                 localVariableTable.add(thisDef, mapDef);
 
                 switch (scanType) {
@@ -511,19 +515,19 @@ class SerializableTransformer extends ClassVisitor {
                             String property = entry.getKey();
                             FieldDeclaration field = entry.getValue();
 
-                            methodVisitor.visitVarInsn(ALOAD, mapIndex);    operandStack.push(MAP_TYPE);
+                            methodVisitor.visitVarInsn(ALOAD, mapTableSlot);    operandStack.push(MAP_TYPE);
                             methodVisitor.visitLdcInsn(property);           operandStack.push(STRING_TYPE);
-                            methodVisitor.visitVarInsn(ALOAD, thisIndex);   operandStack.push(Type.getType(classDescriptor));
+                            methodVisitor.visitVarInsn(ALOAD, thisTableSlot);   operandStack.push(Type.getType(classDescriptor));
                             methodVisitor.visitFieldInsn(GETFIELD, className, field.name, field.descriptor);    operandStack.replaceTop(Type.getType(field.descriptor));
                             final Label newLabel = new Label();
-                            toSerializedType(pluginClassLoader, methodVisitor, field.descriptor, field.signature, localVariableTable, operandStack);
+                            toSerializedType(pluginClassLoader, methodVisitor, field.descriptor, field.signature, localCounter, localVariableTable, operandStack);
                             methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);   operandStack.replaceTop(3, OBJECT_TYPE);
                             methodVisitor.visitInsn(POP);                   operandStack.pop(); //get rid of the old map value.
                             methodVisitor.visitLabel(newLabel);
                         }
 
                         //return the map
-                        methodVisitor.visitVarInsn(ALOAD, mapIndex);        operandStack.push(MAP_TYPE);
+                        methodVisitor.visitVarInsn(ALOAD, mapTableSlot);        operandStack.push(MAP_TYPE);
                         methodVisitor.visitInsn(ARETURN);                   operandStack.pop();
 
                         break;
@@ -532,20 +536,20 @@ class SerializableTransformer extends ClassVisitor {
                             String property = entry.getKey();
                             MethodHeader methodHeader = entry.getValue();
 
-                            methodVisitor.visitVarInsn(ALOAD, mapIndex);    operandStack.push(MAP_TYPE);
+                            methodVisitor.visitVarInsn(ALOAD, mapTableSlot);    operandStack.push(MAP_TYPE);
                             methodVisitor.visitLdcInsn(property);           operandStack.push(STRING_TYPE);
-                            methodVisitor.visitVarInsn(ALOAD, thisIndex);   operandStack.push(Type.getType(classDescriptor));
+                            methodVisitor.visitVarInsn(ALOAD, thisTableSlot);   operandStack.push(Type.getType(classDescriptor));
                             final int INVOKE = (methodHeader.access & ACC_PRIVATE) == ACC_PRIVATE ? INVOKESPECIAL : INVOKEVIRTUAL;
                             methodVisitor.visitMethodInsn(INVOKE, className, methodHeader.name, methodHeader.descriptor, false);    operandStack.replaceTop(1, Type.getType(methodHeader.getReturnDescriptor()));
                             final Label newLabel = new Label();
-                            toSerializedType(pluginClassLoader, methodVisitor, methodHeader.getReturnDescriptor(), methodHeader.getReturnSignature(), localVariableTable, operandStack);
+                            toSerializedType(pluginClassLoader, methodVisitor, methodHeader.getReturnDescriptor(), methodHeader.getReturnSignature(), localCounter, localVariableTable, operandStack);
                             methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);       operandStack.replaceTop(3, OBJECT_TYPE);
                             methodVisitor.visitInsn(POP);                   operandStack.pop(); // discard the return value of Map.put
                             methodVisitor.visitLabel(newLabel);
                         }
 
                         //return the map
-                        methodVisitor.visitVarInsn(ALOAD, mapIndex);        operandStack.push(MAP_TYPE);
+                        methodVisitor.visitVarInsn(ALOAD, mapTableSlot);        operandStack.push(MAP_TYPE);
                         methodVisitor.visitInsn(ARETURN);                   operandStack.pop();
 
                         break;
@@ -556,19 +560,19 @@ class SerializableTransformer extends ClassVisitor {
                             String property = entry.getKey();
                             FieldDeclaration fieldDeclaration = entry.getValue();
 
-                            methodVisitor.visitVarInsn(ALOAD, mapIndex);    operandStack.push(MAP_TYPE);
+                            methodVisitor.visitVarInsn(ALOAD, mapTableSlot);    operandStack.push(MAP_TYPE);
                             methodVisitor.visitLdcInsn(property);           operandStack.push(STRING_TYPE);
-                            methodVisitor.visitVarInsn(ALOAD, thisIndex);   operandStack.push(Type.getType(classDescriptor));
+                            methodVisitor.visitVarInsn(ALOAD, thisTableSlot);   operandStack.push(Type.getType(classDescriptor));
                             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, className, property, "()" + fieldDeclaration.descriptor, false);   operandStack.replaceTop(Type.getType(fieldDeclaration.descriptor));
                             final Label newLabel = new Label();
-                            toSerializedType(pluginClassLoader, methodVisitor, fieldDeclaration.descriptor, fieldDeclaration.signature, localVariableTable, operandStack);
+                            toSerializedType(pluginClassLoader, methodVisitor, fieldDeclaration.descriptor, fieldDeclaration.signature, localCounter, localVariableTable, operandStack);
                             methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);                       operandStack.replaceTop(3, OBJECT_TYPE);
                             methodVisitor.visitInsn(POP);                   operandStack.pop();
                             methodVisitor.visitLabel(newLabel);
                         }
 
                         //return the map
-                        methodVisitor.visitVarInsn(ALOAD, mapIndex);        operandStack.push(MAP_TYPE);
+                        methodVisitor.visitVarInsn(ALOAD, mapTableSlot);        operandStack.push(MAP_TYPE);
                         methodVisitor.visitInsn(ARETURN);                   operandStack.pop();
 
                         break;
@@ -582,7 +586,7 @@ class SerializableTransformer extends ClassVisitor {
                             //just continue to the end, return the map as-is.
 
                             //call unapply(this)
-                            methodVisitor.visitVarInsn(ALOAD, thisIndex);       operandStack.push(Type.getType(classDescriptor));
+                            methodVisitor.visitVarInsn(ALOAD, thisTableSlot);       operandStack.push(Type.getType(classDescriptor));
                             methodVisitor.visitMethodInsn(INVOKESTATIC, className, "unapply", unapplyHeader.descriptor, classIsInterface);  operandStack.replaceTop(BOOLEAN_TYPE);
                             //we now have just a boolean on top of the operand stack
 
@@ -590,7 +594,7 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitJumpInsn(IFEQ, failLabel);       operandStack.pop();
 
                             //unapply successful: return the empty map
-                            methodVisitor.visitVarInsn(ALOAD, mapIndex);        operandStack.push(MAP_TYPE);
+                            methodVisitor.visitVarInsn(ALOAD, mapTableSlot);        operandStack.push(MAP_TYPE);
                             methodVisitor.visitInsn(ARETURN);                   operandStack.pop();
 
                             //unapply unsuccessful: return null
@@ -603,18 +607,19 @@ class SerializableTransformer extends ClassVisitor {
                             //put the thing into the map
 
                             //call unapply(this)
-                            methodVisitor.visitVarInsn(ALOAD, thisIndex);       operandStack.push(Type.getType(classDescriptor));
+                            methodVisitor.visitVarInsn(ALOAD, thisTableSlot);       operandStack.push(Type.getType(classDescriptor));
                             methodVisitor.visitMethodInsn(INVOKESTATIC, className, "unapply", unapplyHeader.descriptor, classIsInterface);      operandStack.replaceTop(OPTION_TYPE);
 
                             final Label endTestVarLabel = new Label();
-                            final int testIndex = localVariableTable.localsSize();
-                            localVariableTable.add(new LocalVariable("test", OPTION_DESCRIPTOR, "Lscala/Option<Ljava/lang/Object;>;", label1, endTestVarLabel, testIndex));
-                            methodVisitor.visitVarInsn(ASTORE, testIndex);      operandStack.pop();
+                            final int testTableIndex = localCounter.getFrameIndex(), testFrameIndex = localCounter.getFrameIndex();
+                            localVariableTable.add(new LocalVariable("test", OPTION_DESCRIPTOR, "Lscala/Option<Ljava/lang/Object;>;", label1, endTestVarLabel, testTableIndex, testFrameIndex));
+                            localCounter.add(Type.getType(OPTION_DESCRIPTOR));
+                            methodVisitor.visitVarInsn(ASTORE, testTableIndex);      operandStack.pop();
 
                             final Label beforeIsDefinedLabel = new Label();
                             //call (test: Option).isDefined
                             methodVisitor.visitLabel(beforeIsDefinedLabel);
-                            methodVisitor.visitVarInsn(ALOAD, testIndex);       operandStack.push(OPTION_TYPE);
+                            methodVisitor.visitVarInsn(ALOAD, testTableIndex);       operandStack.push(OPTION_TYPE);
                             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, OPTION_NAME, "isDefined", "()Z", false);           operandStack.replaceTop(BOOLEAN_TYPE);
 
                             final Label definedFalseJumpTarget = new Label();
@@ -629,13 +634,13 @@ class SerializableTransformer extends ClassVisitor {
                             final String paramDescriptor = applyHeader.getParameterDescriptor(0);
                             final String paramType = Type.getType(paramDescriptor).getInternalName();
 
-                            methodVisitor.visitVarInsn(ALOAD, mapIndex);    operandStack.push(MAP_TYPE);        //load map onto the stack
+                            methodVisitor.visitVarInsn(ALOAD, mapTableSlot);    operandStack.push(MAP_TYPE);        //load map onto the stack
                             methodVisitor.visitLdcInsn(propertyName);       operandStack.push(STRING_TYPE);     //the name of the argument
-                            methodVisitor.visitVarInsn(ALOAD, testIndex);   operandStack.push(OPTION_TYPE);     //load option onto the stack
+                            methodVisitor.visitVarInsn(ALOAD, testTableIndex);   operandStack.push(OPTION_TYPE);     //load option onto the stack
                             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, OPTION_NAME, "get", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
                             //conversion from object to serialized type
                             methodVisitor.visitTypeInsn(CHECKCAST, boxedType(paramType)); //cast from java.lang.Object to the type of live object.
-                            toSerializedType(pluginClassLoader, methodVisitor, boxedDescriptor(paramDescriptor), paramSignature, localVariableTable, operandStack);
+                            toSerializedType(pluginClassLoader, methodVisitor, boxedDescriptor(paramDescriptor), paramSignature, localCounter, localVariableTable, operandStack);
                             //put the value in the map
                             methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);                   operandStack.replaceTop(3, OBJECT_TYPE);
                             methodVisitor.visitInsn(POP);                   operandStack.pop();                 //discard old value of the map
@@ -644,7 +649,7 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitLabel(endTestVarLabel);
 
                             //return the map
-                            methodVisitor.visitVarInsn(ALOAD, mapIndex);    operandStack.push(MAP_TYPE);
+                            methodVisitor.visitVarInsn(ALOAD, mapTableSlot);    operandStack.push(MAP_TYPE);
                             methodVisitor.visitInsn(ARETURN);               operandStack.pop();
 
                             //not defined - return null;
@@ -658,18 +663,19 @@ class SerializableTransformer extends ClassVisitor {
                             //put the many things into the map
 
                             //call unapply(this)
-                            methodVisitor.visitVarInsn(ALOAD, thisIndex);                       operandStack.push(Type.getType(classDescriptor));
+                            methodVisitor.visitVarInsn(ALOAD, thisTableSlot);                       operandStack.push(Type.getType(classDescriptor));
                             methodVisitor.visitMethodInsn(INVOKESTATIC, className, "unapply", unapplyHeader.descriptor, classIsInterface);          operandStack.replaceTop(OPTION_TYPE);
 
                             final Label endTestVarLabel = new Label();
-                            final int testIndex = localVariableTable.localsSize();
-                            localVariableTable.add(new LocalVariable("test", OPTION_DESCRIPTOR, "Lscala/Option<Ljava/lang/Object;>;", label1, endTestVarLabel, testIndex));
-                            methodVisitor.visitVarInsn(ASTORE, testIndex);                      operandStack.pop();
+                            final int testTableSlot = localCounter.getSlotIndex(), testFrameIndex = localCounter.getFrameIndex();
+                            localVariableTable.add(new LocalVariable("test", OPTION_DESCRIPTOR, "Lscala/Option<Ljava/lang/Object;>;", label1, endTestVarLabel, testTableSlot, testFrameIndex));
+                            localCounter.add(Type.getType(OPTION_DESCRIPTOR));
+                            methodVisitor.visitVarInsn(ASTORE, testTableSlot);                      operandStack.pop();
 
                             final Label beforeIsDefinedLabel = new Label();
                             //call (test: Option).isDefined
                             methodVisitor.visitLabel(beforeIsDefinedLabel);
-                            methodVisitor.visitVarInsn(ALOAD, testIndex);                       operandStack.push(OPTION_TYPE);
+                            methodVisitor.visitVarInsn(ALOAD, testTableSlot);                       operandStack.push(OPTION_TYPE);
                             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, OPTION_NAME, "isDefined", "()Z", false);               operandStack.replaceTop(BOOLEAN_TYPE);
 
                             final Label definedFalseJumpTarget = new Label();
@@ -681,16 +687,16 @@ class SerializableTransformer extends ClassVisitor {
 
                             final String tupleName = "scala/Tuple" + unapplyParamCount;
                             final String tupleDescriptor = 'L' + tupleName + ';';
-                            final int tupleIndex = localVariableTable.localsSize();
+                            final int tupleTableSlot = localCounter.getSlotIndex(), tupleFrameIndex = localCounter.getFrameIndex();
 
                             //define and store tuple local variable
-                            localVariableTable.add(new LocalVariable("tup", tupleDescriptor, null /*TODO signature?*/, definedTrueLabel, endTestVarLabel, tupleIndex));
-                            methodVisitor.visitVarInsn(ALOAD, testIndex);                       operandStack.push(OPTION_TYPE);
+                            localVariableTable.add(new LocalVariable("tup", tupleDescriptor, null /*TODO signature?*/, definedTrueLabel, endTestVarLabel, tupleTableSlot, tupleFrameIndex));
+                            localCounter.add(Type.getType(tupleDescriptor));
+                            methodVisitor.visitVarInsn(ALOAD, testTableSlot);                       operandStack.push(OPTION_TYPE);
                             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, OPTION_NAME, "get", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
                             methodVisitor.visitTypeInsn(CHECKCAST, tupleName);
-                            methodVisitor.visitVarInsn(ASTORE, tupleIndex);                     operandStack.pop();
+                            methodVisitor.visitVarInsn(ASTORE, tupleTableSlot);                     operandStack.pop();
 
-                            int extraLocals = 0, extraStack = 0;
                             for (int paramIndex = 0; paramIndex < unapplyParamCount; paramIndex++) {
 
                                 String propertyName = applyParamNames.get(paramIndex);
@@ -700,14 +706,14 @@ class SerializableTransformer extends ClassVisitor {
                                 String paramType = Type.getType(paramDescriptor).getInternalName();
                                 String indexMethod = "_" + (paramIndex + 1);
 
-                                methodVisitor.visitVarInsn(ALOAD, mapIndex);                    operandStack.push(MAP_TYPE);                        //load map onto the stack
+                                methodVisitor.visitVarInsn(ALOAD, mapTableSlot);                    operandStack.push(MAP_TYPE);                        //load map onto the stack
                                 methodVisitor.visitLdcInsn(propertyName);                       operandStack.push(STRING_TYPE);                     //the name of the argument
                                 methodVisitor.visitVarInsn(ALOAD, 3);                       operandStack.push(Type.getType(tupleDescriptor));   // load tuple onto the stack
                                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, tupleName, indexMethod, "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
 
                                 //conversion from object to serialized type
                                 methodVisitor.visitTypeInsn(CHECKCAST, boxedType(paramType));
-                                toSerializedType(pluginClassLoader, methodVisitor, boxedDescriptor(paramDescriptor), paramSignature, localVariableTable, operandStack);
+                                toSerializedType(pluginClassLoader, methodVisitor, boxedDescriptor(paramDescriptor), paramSignature, localCounter, localVariableTable, operandStack);
                                 //put the value in the map
                                 methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);   operandStack.replaceTop(3, OBJECT_TYPE);
                                 methodVisitor.visitInsn(POP);                                   operandStack.pop(); //discard old value of the map
@@ -715,7 +721,7 @@ class SerializableTransformer extends ClassVisitor {
 
                             //end of branch - return the map
                             methodVisitor.visitLabel(endTestVarLabel);
-                            methodVisitor.visitVarInsn(ALOAD, mapIndex);                        operandStack.push(MAP_TYPE);
+                            methodVisitor.visitVarInsn(ALOAD, mapTableSlot);                        operandStack.push(MAP_TYPE);
                             methodVisitor.visitInsn(ARETURN);                                   operandStack.pop();
 
                             methodVisitor.visitLabel(definedFalseJumpTarget);
@@ -731,9 +737,9 @@ class SerializableTransformer extends ClassVisitor {
                     case ENUM:
                         //we already have a hashmap ready for use! (local variable index 1)
 
-                        methodVisitor.visitVarInsn(ALOAD, mapIndex);            operandStack.push(MAP_TYPE);                        //load map
+                        methodVisitor.visitVarInsn(ALOAD, mapTableSlot);            operandStack.push(MAP_TYPE);                        //load map
                         methodVisitor.visitLdcInsn("name");                 operandStack.push(STRING_TYPE);                     //load string constant
-                        methodVisitor.visitVarInsn(ALOAD, thisIndex);           operandStack.push(Type.getType(classDescriptor));   //load 'this'
+                        methodVisitor.visitVarInsn(ALOAD, thisTableSlot);           operandStack.push(Type.getType(classDescriptor));   //load 'this'
                         methodVisitor.visitMethodInsn(INVOKEVIRTUAL, className, "name", "()Ljava/lang/String;", false); operandStack.replaceTop(STRING_TYPE);
                         methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);   operandStack.replaceTop(3, OBJECT_TYPE);
                         methodVisitor.visitInsn(POP);                           operandStack.pop();                                 //ignore return value of Map.put
@@ -742,7 +748,7 @@ class SerializableTransformer extends ClassVisitor {
                         methodVisitor.visitLabel(doneLabel);
 
                         //return the map
-                        methodVisitor.visitVarInsn(ALOAD, mapIndex);            operandStack.push(MAP_TYPE);
+                        methodVisitor.visitVarInsn(ALOAD, mapTableSlot);            operandStack.push(MAP_TYPE);
                         methodVisitor.visitInsn(ARETURN);                       operandStack.pop();
 
                         break;
@@ -751,7 +757,7 @@ class SerializableTransformer extends ClassVisitor {
                         assert alreadyHasModule$ : "scanType SINGELTON_OBJECT without a MODULE$ static field";
 
                         //literally zero extra code is needed to put values into the map - we just need to return the map!
-                        methodVisitor.visitVarInsn(ALOAD, mapIndex);            operandStack.push(MAP_TYPE);
+                        methodVisitor.visitVarInsn(ALOAD, mapTableSlot);            operandStack.push(MAP_TYPE);
                         methodVisitor.visitInsn(ARETURN);                       operandStack.pop();
 
                         break;
@@ -760,7 +766,7 @@ class SerializableTransformer extends ClassVisitor {
                 //we are at the end, finally!
                 methodVisitor.visitLabel(veryLastLabel);
                 for (LocalVariable local : localVariableTable) {
-                    methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableIndex);
+                    methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableSlot);
                 }
                 methodVisitor.visitMaxs(operandStack.maxStack(), localVariableTable.maxLocals());
                 methodVisitor.visitEnd();
@@ -772,6 +778,7 @@ class SerializableTransformer extends ClassVisitor {
             if (!hasDeserizalizationMethod) {
                 //generate deserialization method
 
+                final LocalCounter localCounter = new LocalCounter();
                 final LocalVariableTable localVariableTable = new LocalVariableTable();
                 final OperandStack operandStack = new OperandStack();
 
@@ -850,8 +857,9 @@ class SerializableTransformer extends ClassVisitor {
                     final Label veryLastLabel = new Label();
                     final int thisIndex = thisFirstThenMap ? 0 : 1;
                     final int mapIndex = thisFirstThenMap ? 1 : 0;
-                    final LocalVariable localVariableThis = new LocalVariable("this", classDescriptor, classSignature, label0, veryLastLabel, thisIndex);
-                    final LocalVariable localVariableMap = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, veryLastLabel, mapIndex);
+                    final LocalVariable localVariableThis = new LocalVariable("this", classDescriptor, classSignature, label0, veryLastLabel, thisIndex, thisIndex);
+                    final LocalVariable localVariableMap = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, veryLastLabel, mapIndex, mapIndex);
+                    localCounter.add(Type.getType(classDescriptor)); localCounter.add(Type.getType(MAP_DESCRIPTOR));
                     localVariableTable.add(localVariableThis, localVariableMap);
 
                     final Label label1 = new Label();
@@ -868,7 +876,7 @@ class SerializableTransformer extends ClassVisitor {
                             final Label newLabel = new Label();
                             methodVisitor.visitLdcInsn(propertyName);           operandStack.push(STRING_TYPE);
                             methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_GET_NAME, MAP_GET_DESCRIPTOR, true);       operandStack.replaceTop(2, OBJECT_TYPE);
-                            toLiveType(pluginClassLoader, methodVisitor, field.descriptor, field.signature, localVariableTable, operandStack);
+                            toLiveType(pluginClassLoader, methodVisitor, field.descriptor, field.signature, localCounter, localVariableTable, operandStack);
                             methodVisitor.visitFieldInsn(PUTFIELD, className, field.name, field.descriptor);                                operandStack.pop(2);
                             methodVisitor.visitLabel(newLabel);
                         }
@@ -884,7 +892,7 @@ class SerializableTransformer extends ClassVisitor {
                             final Label newLabel = new Label();
                             methodVisitor.visitLdcInsn(propertyName);                   operandStack.push(STRING_TYPE);
                             methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_GET_NAME, MAP_GET_DESCRIPTOR, true);   operandStack.replaceTop(2, OBJECT_TYPE);
-                            toLiveType(pluginClassLoader, methodVisitor, method.getParameterDescriptor(0), method.getParameterSignature(0), localVariableTable, operandStack);
+                            toLiveType(pluginClassLoader, methodVisitor, method.getParameterDescriptor(0), method.getParameterSignature(0), localCounter, localVariableTable, operandStack);
                             final int INVOKE = (method.access & ACC_PRIVATE) == ACC_PRIVATE ? INVOKESPECIAL : INVOKEVIRTUAL;
                             methodVisitor.visitMethodInsn(INVOKE, className, method.name, method.descriptor, false);            operandStack.replaceTop(2, Type.getType(method.getReturnDescriptor()));
                             String methodReturnDescriptor = method.getReturnDescriptor();
@@ -912,11 +920,15 @@ class SerializableTransformer extends ClassVisitor {
 
                     methodVisitor.visitLabel(veryLastLabel);
                     for (LocalVariable localVariable : localVariableTable) {
-                        methodVisitor.visitLocalVariable(localVariable.name, localVariable.descriptor, localVariable.signature, localVariable.startLabel, localVariable.endLabel, localVariable.tableIndex);
+                        methodVisitor.visitLocalVariable(localVariable.name, localVariable.descriptor, localVariable.signature, localVariable.startLabel, localVariable.endLabel, localVariable.tableSlot);
                     }
                     methodVisitor.visitMaxs(operandStack.maxStack(), localVariableTable.maxLocals());
                     methodVisitor.visitEnd();
                 } //end of (scanType == FIELDS || scanType == GETTER_SETTER_METHODS)
+
+                //TODO
+                //TODO ==== CONTINUE HERE ====
+                //TODO
 
                 else if (scanType == RECORD) {
                     //use all-component constructor (which can be determined from the fields)
@@ -940,8 +952,12 @@ class SerializableTransformer extends ClassVisitor {
                             //"this" is already in the local variable table. we only need to call the constructor.
                             methodVisitor.visitLabel(label0);
 
-                            LocalVariable thisDefinition = new LocalVariable("this", classDescriptor, classSignature, label0, endLabel, 0);
-                            LocalVariable mapDefinition = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, endLabel, 1);
+                            final int thisTableSlot = localCounter.getSlotIndex(), thisFrameIndex = localCounter.getFrameIndex();
+                            localCounter.add(Type.getType(classDescriptor));
+                            final int mapTableSlot = localCounter.getSlotIndex(), mapFrameIndex = localCounter.getFrameIndex();
+                            localCounter.add(Type.getType(MAP_DESCRIPTOR));
+                            LocalVariable thisDefinition = new LocalVariable("this", classDescriptor, classSignature, label0, endLabel, thisTableSlot, thisFrameIndex);
+                            LocalVariable mapDefinition = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, endLabel, mapTableSlot, mapFrameIndex);
                             localVariableTable.add(thisDefinition, mapDefinition);
 
                             //load arguments onto the stack
@@ -957,7 +973,7 @@ class SerializableTransformer extends ClassVisitor {
                                 methodVisitor.visitVarInsn(ALOAD, 1);       operandStack.push(MAP_TYPE);                        //load map
                                 methodVisitor.visitLdcInsn(property);           operandStack.push(STRING_TYPE);                     //load string constant onto the stack
                                 methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_GET_NAME, MAP_GET_DESCRIPTOR, true);   operandStack.replaceTop(2, OBJECT_TYPE);
-                                toLiveType(pluginClassLoader, methodVisitor, fieldDeclaration.descriptor, fieldDeclaration.signature, localVariableTable, operandStack);
+                                toLiveType(pluginClassLoader, methodVisitor, fieldDeclaration.descriptor, fieldDeclaration.signature, localCounter, localVariableTable, operandStack);
                                 //add an argument on the stack! keep it there!
                             }
                             methodVisitor.visitLabel(endLoopLabel);
@@ -968,7 +984,7 @@ class SerializableTransformer extends ClassVisitor {
 
                             methodVisitor.visitLabel(endLabel);
                             for (LocalVariable local : localVariableTable) {
-                                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableIndex);
+                                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableSlot);
                             }
                             methodVisitor.visitMaxs(operandStack.maxStack(), localVariableTable.maxLocals());
                             methodVisitor.visitEnd();
@@ -980,12 +996,16 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitCode();
                             methodVisitor.visitLabel(label0);
 
-                            mapDefinition = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, endLabel, 0);
-                            thisDefinition = new LocalVariable("this", classDescriptor, classSignature, label0, endLabel, 1);
+                            final int thisSlot = localCounter.getSlotIndex(), thisFrame = localCounter.getFrameIndex();
+                            localCounter.add(Type.getType(classDescriptor));
+                            final int mapSlot = localCounter.getSlotIndex(), mapFrame = localCounter.getFrameIndex();
+                            localCounter.add(Type.getType(MAP_DESCRIPTOR));
+                            mapDefinition = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, endLabel, thisSlot, thisFrame);
+                            thisDefinition = new LocalVariable("this", classDescriptor, classSignature, label0, endLabel, mapSlot, mapFrame);
                             localVariableTable.add(mapDefinition, thisDefinition);
 
                             //return null if the map argument was null
-                            methodVisitor.visitVarInsn(ALOAD, mapDefinition.tableIndex);        operandStack.push(MAP_TYPE);
+                            methodVisitor.visitVarInsn(ALOAD, mapDefinition.tableSlot);        operandStack.push(MAP_TYPE);
                             Label notNullLabel = new Label();
                             methodVisitor.visitJumpInsn(IFNONNULL, notNullLabel);               operandStack.pop();
                             methodVisitor.visitInsn(ACONST_NULL);                               operandStack.push(Type.getType(classDescriptor));
@@ -1007,7 +1027,7 @@ class SerializableTransformer extends ClassVisitor {
                                 methodVisitor.visitVarInsn(ALOAD, 0);                       operandStack.push(MAP_TYPE);                        //load map
                                 methodVisitor.visitLdcInsn(property);                           operandStack.push(STRING_TYPE);                     //load string constant
                                 methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_GET_NAME, MAP_GET_DESCRIPTOR, true);       operandStack.replaceTop(2, OBJECT_TYPE);
-                                toLiveType(pluginClassLoader, methodVisitor, fieldDeclaration.descriptor, fieldDeclaration.signature, localVariableTable, operandStack);
+                                toLiveType(pluginClassLoader, methodVisitor, fieldDeclaration.descriptor, fieldDeclaration.signature, localCounter, localVariableTable, operandStack);
                             }
                             methodVisitor.visitLabel(afterLoopLabel);
 
@@ -1017,7 +1037,7 @@ class SerializableTransformer extends ClassVisitor {
 
                             methodVisitor.visitLabel(endLabel);
                             for (LocalVariable local : localVariableTable) {
-                                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableIndex);
+                                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableSlot);
                             }
                             methodVisitor.visitMaxs(operandStack.maxStack(), localVariableTable.maxLocals());
                             methodVisitor.visitEnd();
@@ -1048,13 +1068,16 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitCode();
                             final Label label0 = new Label();
                             methodVisitor.visitLabel(label0);
-                            LocalVariable mapDefinition = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, endLabel, 0);
-                            LocalVariable thisDefinition = new LocalVariable("this", classDescriptor, classSignature, label0, endLabel, 1);
+                            final int thisTableSlot = localCounter.getSlotIndex(), thisTableFrame = localCounter.getFrameIndex();
+                            localCounter.add(Type.getType(MAP_DESCRIPTOR));
+                            final int mapTableSlot = localCounter.getSlotIndex(), mapTableFrame = localCounter.getFrameIndex();
+                            LocalVariable mapDefinition = new LocalVariable("map", MAP_DESCRIPTOR, MAP_SIGNATURE, label0, endLabel, thisTableSlot, thisTableFrame);
+                            LocalVariable thisDefinition = new LocalVariable("this", classDescriptor, classSignature, label0, endLabel, mapTableSlot, mapTableFrame);
                             localVariableTable.add(mapDefinition, thisDefinition);
 
                             //check whether the map is null and return null
                             final Label notNullLabel = new Label();
-                            methodVisitor.visitVarInsn(ALOAD, mapDefinition.tableIndex);    operandStack.push(MAP_TYPE);    //load the map
+                            methodVisitor.visitVarInsn(ALOAD, mapDefinition.tableSlot);    operandStack.push(MAP_TYPE);    //load the map
                             methodVisitor.visitJumpInsn(IFNONNULL, notNullLabel);           operandStack.pop();
                             final Label nullLabel = new Label();
                             methodVisitor.visitLabel(nullLabel);
@@ -1074,10 +1097,10 @@ class SerializableTransformer extends ClassVisitor {
                                 final String paramDescriptor = applyHeader.getParameterDescriptor(i);
                                 final String paramSignature = applyHeader.getParameterSignature(i);
 
-                                methodVisitor.visitVarInsn(ALOAD, mapDefinition.tableIndex);    operandStack.push(MAP_TYPE);    //load 'map'
+                                methodVisitor.visitVarInsn(ALOAD, mapDefinition.tableSlot);    operandStack.push(MAP_TYPE);    //load 'map'
                                 methodVisitor.visitLdcInsn(property);                           operandStack.push(STRING_TYPE); //load string constant
                                 methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_GET_NAME, MAP_GET_DESCRIPTOR, true);       operandStack.replaceTop(2, OBJECT_TYPE);
-                                toLiveType(pluginClassLoader, methodVisitor, paramDescriptor, paramSignature, localVariableTable, operandStack);
+                                toLiveType(pluginClassLoader, methodVisitor, paramDescriptor, paramSignature, localCounter, localVariableTable, operandStack);
                                 //converted thing is now on top of the stack!
                                 //it will get covered in the next iteration by (first the map and the property name, but then) the next parameter.
                             }
@@ -1091,7 +1114,7 @@ class SerializableTransformer extends ClassVisitor {
                             methodVisitor.visitLabel(endLabel);
 
                             for (LocalVariable local : localVariableTable) {
-                                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableIndex);
+                                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableSlot);
                             }
                             methodVisitor.visitMaxs(operandStack.maxStack(), localVariableTable.maxLocals());
                             methodVisitor.visitEnd();

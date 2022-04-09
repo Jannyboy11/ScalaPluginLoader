@@ -23,28 +23,28 @@ class Conversions {
 
     private Conversions() {}
 
-    static void toSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalVariableTable localVariables, OperandStack operandStack) {
+    static void toSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalCounter localCounter, LocalVariableTable localVariables, OperandStack operandStack) {
 
         final TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
 
         if (typeSignature.hasTypeArguments()) {
             if (typeSignature.isArray()) {
                 //convert array to java.util.List.
-                arrayToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                arrayToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
             } else if (isJavaUtilCollection(typeSignature, pluginClassLoader)) {
                 //convert collection to ArrayList or LinkedHashSet
-                collectionToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                collectionToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
             } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
-                mapToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                mapToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
             }
         }
 
         else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
             //some of the scala collections don't have type parameters.
-            ScalaConversions.serializeCollection(pluginClassLoader, methodVisitor, typeSignature, localVariables, operandStack);
+            ScalaConversions.serializeCollection(pluginClassLoader, methodVisitor, typeSignature, localCounter, localVariables, operandStack);
             return;
         }
         /*TODO else if (isScalaMap(typeSignature, pluginClassLoader)) {
@@ -157,8 +157,8 @@ class Conversions {
                 //a java/lang/Object is already on top of the stack
                 //which is nice because it is also the first argument of RuntimeConversions#serialize
                 // :D
-                genParameterType(methodVisitor, typeSignature, operandStack, localVariables);
-                genScalaPluginClassLoader(methodVisitor, pluginClassLoader, operandStack, localVariables);
+                genParameterType(methodVisitor, typeSignature, operandStack, localCounter, localVariables);
+                genScalaPluginClassLoader(methodVisitor, pluginClassLoader, operandStack, localCounter, localVariables);
                 methodVisitor.visitMethodInsn(INVOKESTATIC,
                         Type.getType(RuntimeConversions.class).getInternalName(),
                         "serialize",
@@ -173,7 +173,7 @@ class Conversions {
 
     }
 
-    private static void arrayToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void arrayToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
 
         assert arrayTypeSignature.isArray() : "not an array";
         final TypeSignature componentTypeSignature = arrayTypeSignature.getTypeArgument(0);
@@ -182,45 +182,44 @@ class Conversions {
         final TypeSignature serializedComponentTypeSignature = serializedType(componentTypeSignature);
         final Type serializedComponentType = Type.getType(serializedComponentTypeSignature.toDescriptor());
 
-        int localVariableIndex = localVariableTable.frameSize();
         final Label start = new Label();
         final Label end = new Label();
         methodVisitor.visitLabel(start);
 
         //store array in local variable
         methodVisitor.visitTypeInsn(CHECKCAST, arrayType.getInternalName());        operandStack.replaceTop(arrayType);
-        final int arrayIndex = localVariableIndex++;
-        final LocalVariable array = new LocalVariable("array", arrayTypeSignature.toDescriptor(), arrayTypeSignature.toSignature(), start, end, arrayIndex);
-        localVariableTable.add(array);
+        final int arrayIndex = localCounter.getSlotIndex(), arrayFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable array = new LocalVariable("array", arrayTypeSignature.toDescriptor(), arrayTypeSignature.toSignature(), start, end, arrayIndex, arrayFrameIndex);
+        localVariableTable.add(array); localCounter.add(Type.getType(arrayTypeSignature.toDescriptor()));
         methodVisitor.visitVarInsn(ASTORE, arrayIndex);                             operandStack.pop();
 
         //make list and store it in a local variable
-        final int listIndex = localVariableIndex++;
+        final int listIndex = localCounter.getSlotIndex(), listFrameIndex = localCounter.getFrameIndex();
         methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");                operandStack.push(ARRAYLIST_TYPE);
         methodVisitor.visitInsn(DUP);                                               operandStack.push(ARRAYLIST_TYPE);
         methodVisitor.visitVarInsn(ALOAD, arrayIndex);                              operandStack.push(arrayType);
         methodVisitor.visitInsn(ARRAYLENGTH);                                       operandStack.replaceTop(Type.INT_TYPE);
         methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "(I)V", false);    operandStack.pop(2);
-        final LocalVariable list = new LocalVariable("list", "Ljava/util/List;", "Ljava/util/List<" + serializedComponentTypeSignature.toSignature() + ">;", start, end, listIndex);
-        localVariableTable.add(list);
+        final LocalVariable list = new LocalVariable("list", "Ljava/util/List;", "Ljava/util/List<" + serializedComponentTypeSignature.toSignature() + ">;", start, end, listIndex, listFrameIndex);
+        localVariableTable.add(list); localCounter.add(Type.getType(java.util.List.class));
         methodVisitor.visitVarInsn(ASTORE, listIndex);                              operandStack.pop();
 
         //make size and index local variables, additionally create an extra local variable for the array!
-        final int sameArrayIndex = localVariableIndex++;
-        final int sizeIndex = localVariableIndex++;
-        final int indexIndex = localVariableIndex++;
         methodVisitor.visitVarInsn(ALOAD, arrayIndex);                              operandStack.push(arrayType);
-        final LocalVariable sameArray = new LocalVariable("sameArray", arrayTypeSignature.toDescriptor(), arrayTypeSignature.toSignature(), start, end, sameArrayIndex);
-        localVariableTable.add(sameArray);
+        final int sameArrayIndex = localCounter.getSlotIndex(), sameArrayFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable sameArray = new LocalVariable("sameArray", arrayTypeSignature.toDescriptor(), arrayTypeSignature.toSignature(), start, end, sameArrayIndex, sameArrayFrameIndex);
+        localVariableTable.add(sameArray); localCounter.add(Type.getType(arrayTypeSignature.toDescriptor()));
         methodVisitor.visitVarInsn(ASTORE, sameArrayIndex);                         operandStack.pop();
         methodVisitor.visitVarInsn(ALOAD, sameArrayIndex);                          operandStack.push(arrayType);
         methodVisitor.visitInsn(ARRAYLENGTH);                                       operandStack.replaceTop(Type.INT_TYPE);
-        final LocalVariable size = new LocalVariable("size", "I", null, start, end, sizeIndex);
-        localVariableTable.add(size);
+        final int sizeIndex = localCounter.getSlotIndex(), sizeFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable size = new LocalVariable("size", "I", null, start, end, sizeIndex, sizeFrameIndex);
+        localVariableTable.add(size); localCounter.add(Type.INT_TYPE);
         methodVisitor.visitVarInsn(ISTORE, sizeIndex);                              operandStack.pop();
         methodVisitor.visitInsn(ICONST_0);                                          operandStack.push(Type.INT_TYPE);
-        final LocalVariable index = new LocalVariable("index", "I", null, start, end, indexIndex);
-        localVariableTable.add(index);
+        final int indexIndex = localCounter.getSlotIndex(), indexFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable index = new LocalVariable("index", "I", null, start, end, indexIndex, indexFrameIndex);
+        localVariableTable.add(index); localCounter.add(Type.INT_TYPE);
         methodVisitor.visitVarInsn(ISTORE, indexIndex);                             operandStack.pop();
 
         //loop body
@@ -241,14 +240,14 @@ class Conversions {
         methodVisitor.visitInsn(arrayComponentType.getOpcode(IALOAD));              operandStack.replaceTop(2, arrayComponentType);
 
         //convert
-        final int elementIndex = localVariableIndex++;
         final Label bodyStart = new Label();
         final Label bodyEnd = new Label();
         methodVisitor.visitLabel(bodyStart);
-        toSerializedType(pluginClassLoader, methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localVariableTable, operandStack);
+        toSerializedType(pluginClassLoader, methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);
         methodVisitor.visitLabel(bodyEnd);
-        final LocalVariable element = new LocalVariable("element", serializedComponentTypeSignature.toDescriptor(), serializedComponentTypeSignature.toSignature(), jumpBackTarget, endOfLoopTarget, elementIndex);
-        localVariableTable.add(element);
+        final int elementIndex = localCounter.getSlotIndex(), elementFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable element = new LocalVariable("element", serializedComponentTypeSignature.toDescriptor(), serializedComponentTypeSignature.toSignature(), jumpBackTarget, endOfLoopTarget, elementIndex, elementFrameIndex);
+        localVariableTable.add(element); localCounter.add(Type.getType(serializedComponentTypeSignature.toDescriptor()));
         methodVisitor.visitVarInsn(serializedComponentType.getOpcode(ISTORE), elementIndex);        operandStack.pop();
 
         //call list.add
@@ -262,7 +261,7 @@ class Conversions {
         methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
 
         methodVisitor.visitLabel(endOfLoopTarget);
-        localVariableTable.removeFramesFromIndex(elementIndex);
+        localVariableTable.removeFramesFromIndex(elementFrameIndex);    localCounter.reset(elementIndex, elementFrameIndex);
         assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
         assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
         methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
@@ -270,13 +269,12 @@ class Conversions {
         //load the list again, and continue execution.
         methodVisitor.visitVarInsn(ALOAD, listIndex);                               operandStack.push(LIST_TYPE);
         methodVisitor.visitLabel(end);
-        localVariableTable.removeFramesFromIndex(arrayIndex);
+        localVariableTable.removeFramesFromIndex(arrayFrameIndex);      localCounter.reset(arrayIndex, arrayFrameIndex);
     }
 
-    private static void collectionToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void collectionToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
         final String rawTypeName = typeSignature.getTypeName();
         final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
-        int localVariableIndex = localVariableTable.frameSize();    //TODO localsSize
 
         //serializing is a lot easier than deserializing.
         //if it's a set, we just need to create a LinkedHashSet,
@@ -288,9 +286,9 @@ class Conversions {
 
         //store the existing collection in a local variable
         methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Collection");                                                                             operandStack.replaceTop(Type.getType(Collection.class));
-        final int oldCollectionIndex = localVariableIndex++;
-        final LocalVariable oldCollection = new LocalVariable("liveCollection", "Ljava/util/Collection;", null, startLabel, endLabel, oldCollectionIndex);
-        methodVisitor.visitVarInsn(ASTORE, oldCollectionIndex);                     localVariableTable.add(oldCollection);                              operandStack.pop();
+        final int oldCollectionIndex = localCounter.getSlotIndex(), oldCollectionFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable oldCollection = new LocalVariable("liveCollection", "Ljava/util/Collection;", null, startLabel, endLabel, oldCollectionIndex, oldCollectionFrameIndex);
+        methodVisitor.visitVarInsn(ASTORE, oldCollectionIndex); localVariableTable.add(oldCollection); localCounter.add(Type.getType(java.util.Collection.class)); operandStack.pop();
         methodVisitor.visitLabel(startLabel);
 
         //store the new collection in a local variable
@@ -321,18 +319,18 @@ class Conversions {
         }
 
         final Label newCollectionLabel = new Label();
-        final int newCollectionIndex = localVariableIndex++;
-        final LocalVariable newCollection = new LocalVariable("serializedCollection", "Ljava/util/Collection;", null, newCollectionLabel, endLabel, newCollectionIndex);
-        methodVisitor.visitVarInsn(ASTORE, newCollectionIndex);                     localVariableTable.add(newCollection);                              operandStack.pop();
+        final int newCollectionIndex = localCounter.getSlotIndex(), newCollectionFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable newCollection = new LocalVariable("serializedCollection", "Ljava/util/Collection;", null, newCollectionLabel, endLabel, newCollectionIndex, newCollectionFrameIndex);
+        methodVisitor.visitVarInsn(ASTORE, newCollectionIndex);                     localVariableTable.add(newCollection);                              operandStack.pop();     localCounter.add(Type.getType(java.util.Collection.class));
         methodVisitor.visitLabel(newCollectionLabel);
 
         //get the iterator
         final Label iteratorLabel = new Label();
         methodVisitor.visitVarInsn(ALOAD, oldCollectionIndex);                                                                                          operandStack.push(Type.getType(Collection.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "iterator", "()Ljava/util/Iterator;", true);      operandStack.replaceTop(Type.getType(Iterator.class));
-        final int iteratorIndex = localVariableIndex++;
-        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex);
-        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                          localVariableTable.add(iterator);                                   operandStack.pop();
+        final int iteratorIndex = localCounter.getSlotIndex(), iteratorFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex, iteratorFrameIndex);
+        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                          localVariableTable.add(iterator);                                   operandStack.pop();     localCounter.add(Type.getType(java.util.Iterator.class));
         methodVisitor.visitLabel(iteratorLabel);
 
         final Label jumpBackTarget = iteratorLabel, endLoopLabel = new Label();     //jumpBackTarget label is already visited!
@@ -350,7 +348,7 @@ class Conversions {
         methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                                                                               operandStack.push(Type.getType(Iterator.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);             operandStack.replaceTop(OBJECT_TYPE);
         //convert element
-        toSerializedType(pluginClassLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localVariableTable, operandStack);
+        toSerializedType(pluginClassLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);
         //store in the new collection
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "add", "(Ljava/lang/Object;)Z", true);       operandStack.replaceTop(2, Type.BOOLEAN_TYPE);
         methodVisitor.visitInsn(POP);                       /*discard boolean result of Collection#add(Object) !*/                                      operandStack.pop();
@@ -359,22 +357,22 @@ class Conversions {
 
         //end of loop
         methodVisitor.visitLabel(endLoopLabel);
-        localVariableTable.removeFramesFromIndex(localVariableIndex);
+        localVariableTable.removeFramesFromIndex(localCounter.getFrameIndex());
         assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
         assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
         methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
 
         //load the result
         methodVisitor.visitVarInsn(ALOAD, newCollectionIndex);                                                                                          operandStack.push(Type.getType(Collection.class));
-        methodVisitor.visitLabel(endLabel);                                         localVariableTable.removeFramesFromIndex(oldCollectionIndex);
+        methodVisitor.visitLabel(endLabel);
+        localVariableTable.removeFramesFromIndex(oldCollectionFrameIndex);  localCounter.reset(oldCollectionIndex, oldCollectionFrameIndex);
     }
 
-    private static void mapToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void mapToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
         final String rawTypeName = typeSignature.getTypeName();
 
         final TypeSignature keyTypeSignature = typeSignature.getTypeArgument(0);
         final TypeSignature valueTypeSignature = typeSignature.getTypeArgument(1);
-        int localVariableIndex = localVariableTable.frameSize();
         final Type keyType = Type.getObjectType(keyTypeSignature.internalName());
         final Type valueType = Type.getObjectType(valueTypeSignature.internalName());
 
@@ -384,9 +382,9 @@ class Conversions {
 
         //store the existing map in a local variable
         methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Map");                operandStack.replaceTop(MAP_TYPE);
-        final int oldMapIndex = localVariableIndex++;
-        final LocalVariable oldMap = new LocalVariable("liveMap", "Ljava/util/Map;", null, startLabel, endLabel, oldMapIndex);
-        localVariableTable.add(oldMap);
+        final int oldMapIndex = localCounter.getSlotIndex(), oldMapFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable oldMap = new LocalVariable("liveMap", "Ljava/util/Map;", null, startLabel, endLabel, oldMapIndex, oldMapFrameIndex);
+        localVariableTable.add(oldMap); localCounter.add(Type.getType(Map.class));
         methodVisitor.visitVarInsn(ASTORE, oldMapIndex);                            operandStack.pop();
         methodVisitor.visitLabel(startLabel);
 
@@ -395,9 +393,9 @@ class Conversions {
         methodVisitor.visitTypeInsn(NEW, "java/util/LinkedHashMap");            operandStack.push(LINKEDHASHMAP_TYPE);
         methodVisitor.visitInsn(DUP);                                               operandStack.push(LINKEDHASHMAP_TYPE);
         methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/LinkedHashMap", "<init>", "()V", false);      operandStack.pop();
-        final int newMapIndex = localVariableIndex++;
-        final LocalVariable newMap = new LocalVariable("serializedMap", "Ljava/util/Map;", null, newMapLabel, endLabel, newMapIndex);
-        localVariableTable.add(newMap);
+        final int newMapIndex = localCounter.getSlotIndex(), newMapFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable newMap = new LocalVariable("serializedMap", "Ljava/util/Map;", null, newMapLabel, endLabel, newMapIndex, newMapFrameIndex);
+        localVariableTable.add(newMap); localCounter.add(Type.getType(java.util.Map.class));
         methodVisitor.visitVarInsn(ASTORE, newMapIndex);                            operandStack.pop();
         methodVisitor.visitLabel(newMapLabel);
 
@@ -406,9 +404,9 @@ class Conversions {
         methodVisitor.visitVarInsn(ALOAD, oldMapIndex);                             operandStack.push(MAP_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, "entrySet", "()Ljava/util/Set;", true);    operandStack.replaceTop(SET_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, SET_NAME, "iterator", "()Ljava/util/Iterator;", true);       operandStack.replaceTop(ITERATOR_TYPE);
-        final int iteratorIndex = localVariableIndex++;
-        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex);
-        localVariableTable.add(iterator);
+        final int iteratorIndex = localCounter.getSlotIndex(), iteratorFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex, iteratorFrameIndex);
+        localVariableTable.add(iterator); localCounter.add(Type.getType(java.util.Iterator.class));
         methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                          operandStack.pop();
         methodVisitor.visitLabel(iteratorLabel);
 
@@ -428,9 +426,9 @@ class Conversions {
         methodVisitor.visitTypeInsn(CHECKCAST, MAP$ENTRY_NAME);                     operandStack.replaceTop(MAP$ENTRY_TYPE);
         //store the entry in a new local variable
         final Label entryLabel = new Label();
-        final int entryIndex = localVariableIndex++;
-        final LocalVariable entry = new LocalVariable("entry", "Ljava/util/Map$Entry;", null, jumpBackTarget, endLoopLabel, entryIndex);
-        localVariableTable.add(entry);
+        final int entryIndex = localCounter.getSlotIndex(), entryFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable entry = new LocalVariable("entry", "Ljava/util/Map$Entry;", null, jumpBackTarget, endLoopLabel, entryIndex, entryFrameIndex);
+        localVariableTable.add(entry); localCounter.add(Type.getType(java.util.Map.Entry.class));
         methodVisitor.visitVarInsn(ASTORE, entryIndex);                             operandStack.pop();
         methodVisitor.visitLabel(entryLabel);
 
@@ -441,12 +439,12 @@ class Conversions {
         methodVisitor.visitVarInsn(ALOAD, entryIndex);                              operandStack.push(MAP$ENTRY_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP$ENTRY_NAME, "getKey", "()Ljava/lang/Object;", true);     operandStack.replaceTop(OBJECT_TYPE);
         methodVisitor.visitTypeInsn(CHECKCAST, keyTypeSignature.internalName());    operandStack.replaceTop(keyType);
-        toSerializedType(pluginClassLoader, methodVisitor, keyTypeSignature.toDescriptor(), keyTypeSignature.toSignature(), localVariableTable, operandStack);
+        toSerializedType(pluginClassLoader, methodVisitor, keyTypeSignature.toDescriptor(), keyTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);
         //serialize(entry(getValue())
         methodVisitor.visitVarInsn(ALOAD, entryIndex);                              operandStack.push(MAP$ENTRY_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP$ENTRY_NAME, "getValue", "()Ljava/lang/Object;", true);   operandStack.replaceTop(OBJECT_TYPE);
         methodVisitor.visitTypeInsn(CHECKCAST, valueTypeSignature.internalName());  operandStack.replaceTop(valueType);
-        toSerializedType(pluginClassLoader, methodVisitor, valueTypeSignature.toDescriptor(), valueTypeSignature.toSignature(), localVariableTable, operandStack);
+        toSerializedType(pluginClassLoader, methodVisitor, valueTypeSignature.toDescriptor(), valueTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);
         //call resultMap.put
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);           operandStack.replaceTop(3, OBJECT_TYPE);
         methodVisitor.visitInsn(POP);   /*pop the result from resultMap.put (which is the old value for the key)*/      operandStack.pop();
@@ -455,14 +453,14 @@ class Conversions {
 
         //end of loop
         methodVisitor.visitLabel(endLoopLabel);
-        localVariableTable.removeFramesFromIndex(entryIndex);
+        localVariableTable.removeFramesFromIndex(entryFrameIndex);  localCounter.reset(entryIndex, entryFrameIndex);
         assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
         assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
         methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
 
         //load the map containing the serialized keys and values
         methodVisitor.visitVarInsn(ALOAD, newMapIndex);                             operandStack.push(MAP_TYPE);
-        localVariableTable.removeFramesFromIndex(oldMapIndex);
+        localVariableTable.removeFramesFromIndex(oldMapFrameIndex); localCounter.reset(oldMapIndex, oldMapFrameIndex);
         methodVisitor.visitLabel(endLabel);
     }
 
@@ -504,26 +502,26 @@ class Conversions {
 
     // ==================================================================================================================================================================
 
-    static void toLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalVariableTable localVariables, OperandStack operandStack) {
+    static void toLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalCounter localCounter, LocalVariableTable localVariables, OperandStack operandStack) {
 
         final TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
 
         if (typeSignature.hasTypeArguments()) {
             if (typeSignature.isArray()) {
                 //generate code for transforming arrays to lists and their elements
-                arrayToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                arrayToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
             } else if (isJavaUtilCollection(typeSignature, pluginClassLoader)) {
-                collectionToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                collectionToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
             } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
-                mapToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localVariables);
+                mapToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
             }
         }
 
         else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
-            ScalaConversions.deserializeCollection(pluginClassLoader, methodVisitor, typeSignature, localVariables, operandStack);
+            ScalaConversions.deserializeCollection(pluginClassLoader, methodVisitor, typeSignature, localCounter, localVariables, operandStack);
             return;
         } //TODO else if Scala Map
 
@@ -682,8 +680,8 @@ class Conversions {
             //unsupported type - attempt runtime deserialization
             default:
                 //a serialized java/lang/Object is already on top of the stack
-                genParameterType(methodVisitor, typeSignature, operandStack, localVariables);
-                genScalaPluginClassLoader(methodVisitor, pluginClassLoader, operandStack, localVariables);
+                genParameterType(methodVisitor, typeSignature, operandStack, localCounter, localVariables);
+                genScalaPluginClassLoader(methodVisitor, pluginClassLoader, operandStack, localCounter, localVariables);
                 methodVisitor.visitMethodInsn(INVOKESTATIC,
                         Type.getType(RuntimeConversions.class).getInternalName(),
                         "deserialize",
@@ -699,7 +697,7 @@ class Conversions {
         }
     }
 
-    private static void arrayToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void arrayToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
 
         assert arrayTypeSignature.isArray() : "not an array";
 
@@ -708,32 +706,31 @@ class Conversions {
         final Type componentType = Type.getType(componentTypeSignature.toDescriptor());
         final TypeSignature listTypeSignature = serializedType(arrayTypeSignature);
 
-        int localVariableIndex = localVariableTable.frameSize();
         final Label start = new Label();
         final Label end = new Label();
         methodVisitor.visitLabel(start);
 
         //take operand on top of the stack, cast it to list, store it in a local variable
-        final int listIndex = localVariableIndex++;
+        final int listIndex = localCounter.getSlotIndex(), listFrameIndex = localCounter.getFrameIndex();
         methodVisitor.visitTypeInsn(CHECKCAST, "java/util/List");                       operandStack.replaceTop(LIST_TYPE);                                         //[..., list]
-        final LocalVariable list = new LocalVariable("list", "Ljava/util/List;", listTypeSignature.toSignature(), start, end, listIndex);
-        localVariableTable.add(list);
+        final LocalVariable list = new LocalVariable("list", "Ljava/util/List;", listTypeSignature.toSignature(), start, end, listIndex, listFrameIndex);
+        localVariableTable.add(list); localCounter.add(Type.getType(java.util.List.class));
         methodVisitor.visitVarInsn(ASTORE, listIndex);                                  operandStack.pop();                                                             //[...]
 
         //get the size, instantiate a new array, store it in a local variable
-        final int arrayIndex = localVariableIndex++;
+        final int arrayIndex = localCounter.getSlotIndex(), arrayFrameIndex = localCounter.getFrameIndex();
         methodVisitor.visitVarInsn(ALOAD, listIndex);                                   operandStack.push(LIST_TYPE);                                                   //[..., list]
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "size", "()I", true);      operandStack.replaceTop(Type.INT_TYPE);     //[..., size]
         visitNewArray(arrayTypeSignature, methodVisitor);                               operandStack.replaceTop(arrayType);                                             //[..., array]
-        final LocalVariable array = new LocalVariable("array", arrayTypeSignature.toDescriptor(), arrayTypeSignature.toSignature(), start, end, arrayIndex);
-        localVariableTable.add(array);
+        final LocalVariable array = new LocalVariable("array", arrayTypeSignature.toDescriptor(), arrayTypeSignature.toSignature(), start, end, arrayIndex, arrayFrameIndex);
+        localVariableTable.add(array); localCounter.add(Type.getType(arrayTypeSignature.toDescriptor()));
         methodVisitor.visitVarInsn(ASTORE, arrayIndex);                                 operandStack.pop();                                                             //[...]
 
         //instantiate index
-        final int indexIndex = localVariableIndex++;
+        final int indexIndex = localCounter.getSlotIndex(), indexFrameIndex = localCounter.getFrameIndex();
         methodVisitor.visitInsn(ICONST_0);                                              operandStack.push(Type.INT_TYPE);                                               //[..., index]
-        final LocalVariable index = new LocalVariable("index", "I", null, start, end, indexIndex);
-        localVariableTable.add(index);
+        final LocalVariable index = new LocalVariable("index", "I", null, start, end, indexIndex, indexFrameIndex);
+        localVariableTable.add(index); localCounter.add(Type.INT_TYPE);
         methodVisitor.visitVarInsn(ISTORE, indexIndex);                                 operandStack.pop();                                                             //[...]
 
         //loop body
@@ -760,7 +757,7 @@ class Conversions {
         //convert
         final Label bodyStart = new Label(), bodyEnd = new Label();
         methodVisitor.visitLabel(bodyStart);
-        toLiveType(pluginClassLoader, methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localVariableTable, operandStack);   //[..., array, index, element]
+        toLiveType(pluginClassLoader, methodVisitor, componentTypeSignature.toDescriptor(), componentTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);   //[..., array, index, element]
         methodVisitor.visitLabel(bodyEnd);
         //store in the array (that we loaded earlier before list.get)
         methodVisitor.visitInsn(componentType.getOpcode(IASTORE));                      operandStack.pop(3);                                                    //[...]
@@ -771,7 +768,7 @@ class Conversions {
 
         //(index < size) is no longer true
         methodVisitor.visitLabel(endOfLoopTarget);                                                                                                                      //[...]
-        localVariableTable.removeFramesFromIndex(localVariableIndex);
+        localVariableTable.removeFramesFromIndex(localCounter.getFrameIndex());
         assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
         assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
         methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
@@ -779,7 +776,7 @@ class Conversions {
         //load the array again, and continue execution
         methodVisitor.visitVarInsn(ALOAD, arrayIndex);                                  operandStack.push(arrayType);                                                   //[..., array]
         methodVisitor.visitLabel(end);
-        localVariableTable.removeFramesFromIndex(listIndex);
+        localVariableTable.removeFramesFromIndex(listFrameIndex);   localCounter.reset(listIndex, listFrameIndex);
     }
 
     private static void visitNewArray(TypeSignature theArrayType, MethodVisitor mv) {
@@ -798,7 +795,7 @@ class Conversions {
     }
 
 
-    private static void collectionToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void collectionToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
         final String collectionTypeName = typeSignature.getTypeName();
 
         //determine implementation class for the live type.
@@ -844,15 +841,15 @@ class Conversions {
 
         //assert that we have a collection indeed.
         methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Collection");                                                                                                 operandStack.replaceTop(Type.getType(Collection.class));
-        int localVariableIndex = localVariableTable.frameSize();
         final Label startLabel = new Label();
         final Label endLabel = new Label();
         methodVisitor.visitLabel(startLabel);
 
         //store it in a local variable
-        final int serializedCollectionIndex = localVariableIndex++;
-        final LocalVariable serializedCollection = new LocalVariable("serializedCollection", "Ljava/util/Collection;", null, startLabel, endLabel, serializedCollectionIndex);
-        methodVisitor.visitVarInsn(ASTORE, serializedCollectionIndex);                                                  localVariableTable.add(serializedCollection);       operandStack.pop();
+        final int serializedCollectionIndex = localCounter.getSlotIndex(), serializedCollectionFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable serializedCollection = new LocalVariable("serializedCollection", "Ljava/util/Collection;", null, startLabel, endLabel, serializedCollectionIndex, serializedCollectionFrameIndex);
+        localVariableTable.add(serializedCollection);                       localCounter.add(Type.getType(java.util.Collection.class));                                     operandStack.pop();
+        methodVisitor.visitVarInsn(ASTORE, serializedCollectionIndex);
 
         final Label liveCollectionLabel = new Label();
         methodVisitor.visitLabel(liveCollectionLabel);
@@ -869,9 +866,10 @@ class Conversions {
             methodVisitor.visitMethodInsn(INVOKESPECIAL, implementationClassName, "<init>", "()V", false);                                          operandStack.pop();
         }
         //store it in a local variable
-        final int liveCollectionIndex = localVariableIndex++;
-        final LocalVariable liveCollection = new LocalVariable("liveCollection", typeSignature.toDescriptor(), typeSignature.toSignature(), liveCollectionLabel, endLabel, liveCollectionIndex);
-        methodVisitor.visitVarInsn(ASTORE, liveCollectionIndex);                                                        localVariableTable.add(liveCollection);                 operandStack.pop();
+        final int liveCollectionIndex = localCounter.getSlotIndex(), liveCollectionFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable liveCollection = new LocalVariable("liveCollection", typeSignature.toDescriptor(), typeSignature.toSignature(), liveCollectionLabel, endLabel, liveCollectionIndex, liveCollectionFrameIndex);
+        localVariableTable.add(liveCollection);                             localCounter.add(Type.getType(typeSignature.toDescriptor()));                                       operandStack.pop();
+        methodVisitor.visitVarInsn(ASTORE, liveCollectionIndex);
 
         final Label iteratorLabel = new Label();
         methodVisitor.visitLabel(iteratorLabel);
@@ -879,9 +877,10 @@ class Conversions {
         //let's get the iterator and store it
         methodVisitor.visitVarInsn(ALOAD, serializedCollectionIndex);                                                                                                           operandStack.push(Type.getType(Collection.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "iterator", "()Ljava/util/Iterator;", true);                     operandStack.replaceTop(Type.getType(Iterator.class));
-        final int iteratorIndex = localVariableIndex++;
-        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex);
-        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                                                              localVariableTable.add(iterator);                       operandStack.pop();
+        final int iteratorIndex = localCounter.getSlotIndex(), iteratorFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex, iteratorFrameIndex);
+        localCounter.add(Type.getType(java.util.Iterator.class));                                   localVariableTable.add(iterator);                                          operandStack.pop();
+        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);
 
         //loop body!
         final Label jumpBackTarget = new Label();
@@ -900,13 +899,13 @@ class Conversions {
         methodVisitor.visitVarInsn(ALOAD, liveCollectionIndex);                                                         operandStack.push(Type.getObjectType(collectionTypeName));
         methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                                               operandStack.push(Type.getType(Iterator.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(OBJECT_TYPE);
-        toLiveType(pluginClassLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localVariableTable, operandStack);
+        toLiveType(pluginClassLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "add", "(Ljava/lang/Object;)Z", true);       operandStack.replaceTop(2, Type.BOOLEAN_TYPE);
         methodVisitor.visitInsn(POP);   /*get rid of da boolean*/                                                       operandStack.pop();
         methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
 
         //end of loop
-        localVariableTable.removeFramesFromIndex(localVariableIndex);
+        localVariableTable.removeFramesFromIndex(localCounter.getFrameIndex());
         assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
         assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
         methodVisitor.visitLabel(endOfLoopLabel);
@@ -915,10 +914,11 @@ class Conversions {
         //load the result
         methodVisitor.visitVarInsn(ALOAD, liveCollectionIndex);                                                         operandStack.push(Type.getObjectType(collectionTypeName));
         methodVisitor.visitLabel(endLabel);
-        localVariableTable.removeFramesFromIndex(serializedCollectionIndex);    //the lowest index that we generated!
+        localVariableTable.removeFramesFromIndex(serializedCollectionFrameIndex);    //the lowest index that we generated!
+        localCounter.reset(serializedCollectionIndex, serializedCollectionFrameIndex);
     }
 
-    private static void mapToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void mapToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
 
         final String mapTypeName = typeSignature.getTypeName();
 
@@ -955,15 +955,14 @@ class Conversions {
 
         //assert that we have a map indeed.
         methodVisitor.visitTypeInsn(CHECKCAST, MAP_NAME);                   operandStack.replaceTop(MAP_TYPE);
-        int localVariableIndex = localVariableTable.frameSize();
         final Label startlabel = new Label();
         final Label endLabel = new Label();
         methodVisitor.visitLabel(startlabel);
 
         //store it in a local variable
-        final int serializedMapIndex = localVariableIndex++;
-        final LocalVariable serializedMap = new LocalVariable("serializedMap", MAP_DESCRIPTOR, null, startlabel, endLabel, serializedMapIndex);
-        localVariableTable.add(serializedMap);
+        final int serializedMapIndex = localCounter.getSlotIndex(), serializedMapFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable serializedMap = new LocalVariable("serializedMap", MAP_DESCRIPTOR, null, startlabel, endLabel, serializedMapIndex, serializedMapFrameIndex);
+        localVariableTable.add(serializedMap); localCounter.add(Type.getType(java.util.Map.class));
         methodVisitor.visitVarInsn(ASTORE, serializedMapIndex);             operandStack.pop();
 
         //create the live map
@@ -982,9 +981,9 @@ class Conversions {
             methodVisitor.visitMethodInsn(INVOKESPECIAL, implementationClassName, "<init>", "()V", false);                          operandStack.pop();
         }
         //store it in a local variable
-        final int liveMapIndex = localVariableIndex++;
-        final LocalVariable liveMap = new LocalVariable("liveMap", "L" + implementationClassName + ";", null, liveMapLabel, endLabel, liveMapIndex);
-        localVariableTable.add(liveMap);
+        final int liveMapIndex = localCounter.getSlotIndex(), liveMapFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable liveMap = new LocalVariable("liveMap", "L" + implementationClassName + ";", null, liveMapLabel, endLabel, liveMapIndex, liveMapFrameIndex);
+        localVariableTable.add(liveMap); localCounter.add(Type.getObjectType(implementationClassName));
         methodVisitor.visitVarInsn(ASTORE, liveMapIndex);                   operandStack.pop();
 
         //get the iterator and store it in a local variable
@@ -993,9 +992,9 @@ class Conversions {
         methodVisitor.visitVarInsn(ALOAD, serializedMapIndex);              operandStack.push(MAP_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, "entrySet", "()Ljava/util/Set;", true);    operandStack.replaceTop(SET_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, SET_NAME, "iterator", "()Ljava/util/Iterator;", true);       operandStack.replaceTop(ITERATOR_TYPE);
-        final int iteratorIndex = localVariableIndex++;
-        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex);
-        localVariableTable.add(iterator);
+        final int iteratorIndex = localCounter.getSlotIndex(), iteratorFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, iteratorLabel, endLabel, iteratorIndex, iteratorFrameIndex);
+        localVariableTable.add(iterator); localCounter.add(Type.getType(java.util.Iterator.class));
         methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                  operandStack.pop();
 
         //loop body!
@@ -1015,27 +1014,27 @@ class Conversions {
         methodVisitor.visitVarInsn(ALOAD, iteratorIndex);               operandStack.push(ITERATOR_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(OBJECT_TYPE);
         methodVisitor.visitTypeInsn(CHECKCAST, MAP$ENTRY_NAME);         operandStack.replaceTop(MAP$ENTRY_TYPE);
-        final int entryIndex = localVariableIndex++;
-        final LocalVariable entry = new LocalVariable("entry", "Ljava/util/Map$Entry;", null, jumpBackTarget, endOfLoopLabel, entryIndex);
-        localVariableTable.add(entry);
+        final int entryIndex = localCounter.getSlotIndex(), entryFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable entry = new LocalVariable("entry", "Ljava/util/Map$Entry;", null, jumpBackTarget, endOfLoopLabel, entryIndex, entryFrameIndex);
+        localVariableTable.add(entry); localCounter.add(Type.getType(java.util.Map.Entry.class));
         methodVisitor.visitVarInsn(ASTORE, entryIndex);                 operandStack.pop();
         //prepare live map so that we can call .put on it later!
         methodVisitor.visitVarInsn(ALOAD, liveMapIndex);                operandStack.push(MAP_TYPE);
         //deserialize(entry.getKey())
         methodVisitor.visitVarInsn(ALOAD, entryIndex);                  operandStack.push(MAP$ENTRY_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP$ENTRY_NAME, "getKey", "()Ljava/lang/Object;", true);    operandStack.replaceTop(OBJECT_TYPE);
-        toLiveType(pluginClassLoader, methodVisitor, keyTypeSignature.toDescriptor(), keyTypeSignature.toSignature(), localVariableTable, operandStack);
+        toLiveType(pluginClassLoader, methodVisitor, keyTypeSignature.toDescriptor(), keyTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);
         //deserialize(entry.getValue())
         methodVisitor.visitVarInsn(ALOAD, entryIndex);                  operandStack.push(MAP$ENTRY_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP$ENTRY_NAME, "getValue", "()Ljava/lang/Object;", true);       operandStack.replaceTop(OBJECT_TYPE);
-        toLiveType(pluginClassLoader, methodVisitor, valueTypeSignature.toDescriptor(), valueTypeSignature.toSignature(), localVariableTable, operandStack);
+        toLiveType(pluginClassLoader, methodVisitor, valueTypeSignature.toDescriptor(), valueTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);
         //call liveMap.put
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, MAP_NAME, MAP_PUT_NAME, MAP_PUT_DESCRIPTOR, true);                           operandStack.replaceTop(3, OBJECT_TYPE);
         methodVisitor.visitInsn(POP);   /*get rid of the old value in the map*/     operandStack.pop();
         methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
 
         //end of loop
-        localVariableTable.removeFramesFromIndex(entryIndex);
+        localVariableTable.removeFramesFromIndex(entryFrameIndex);      localCounter.reset(entryIndex, entryFrameIndex);
         assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
         assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
         methodVisitor.visitLabel(endOfLoopLabel);
@@ -1044,7 +1043,8 @@ class Conversions {
         //load the result
         methodVisitor.visitVarInsn(ALOAD, liveMapIndex);                operandStack.push(Type.getObjectType(implementationClassName));
         methodVisitor.visitLabel(endLabel);
-        localVariableTable.removeFramesFromIndex(serializedMapIndex);   //the lowest index that we generated!
+        localVariableTable.removeFramesFromIndex(serializedMapFrameIndex);   //the lowest index that we generated!
+        localCounter.reset(serializedMapIndex, serializedMapFrameIndex);
     }
 
 
@@ -1211,7 +1211,7 @@ class Conversions {
 
     // ==================================================================================================================================================================
 
-    private static void genScalaPluginClassLoader(MethodVisitor methodVisitor, ScalaPluginClassLoader plugin, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void genScalaPluginClassLoader(MethodVisitor methodVisitor, ScalaPluginClassLoader plugin, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
         String main = plugin.getMainClassName();
         Type mainType = Type.getType("L" + main.replace('.', '/') + ";");
 
@@ -1220,12 +1220,12 @@ class Conversions {
         methodVisitor.visitTypeInsn(CHECKCAST, "xyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader");                                                     operandStack.replaceTop(Type.getType(ScalaPluginClassLoader.class));
     }
 
-    private static void genParameterType(MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalVariableTable localVariableTable) {
+    private static void genParameterType(MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
         //include annotations? would need to make typeSignature contain annotations in that case.
 
         if (typeSignature.isArray()) {
             //gen component conversion
-            genParameterType(methodVisitor, typeSignature.getTypeArgument(0), operandStack, localVariableTable);
+            genParameterType(methodVisitor, typeSignature.getTypeArgument(0), operandStack, localCounter, localVariableTable);
             //load 'false' (not var-args)
             methodVisitor.visitInsn(ICONST_0);                                                                                  operandStack.push(Type.BOOLEAN_TYPE);
             //invoke
@@ -1244,7 +1244,7 @@ class Conversions {
                 methodVisitor.visitInsn(DUP);                                                                                   operandStack.push(Type.getType(ParameterType[].class));
                 TypeSignature typeArgument = typeSignature.getTypeArgument(i);
                 methodVisitor.visitIntInsn(BIPUSH, i);                                                                          operandStack.push(Type.INT_TYPE);
-                genParameterType(methodVisitor, typeArgument, operandStack, localVariableTable);
+                genParameterType(methodVisitor, typeArgument, operandStack, localCounter, localVariableTable);
                 methodVisitor.visitInsn(AASTORE);                                                                               operandStack.pop(2);
             }
             //invoke
@@ -1500,7 +1500,7 @@ class ScalaConversions {
 
     //immutable collections
 
-    static void serializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    static void serializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         //this is really a best effort.
         //the standard library may evolve again in 3.1 or 3.2
         //but for now this method is compatible the 2.12 and 2.13 (and thus 3.0) standard library
@@ -1517,9 +1517,9 @@ class ScalaConversions {
                 //methodVisitor.visitMethodInsn(INVOKEVIRTUAL, WRAPPED_STRING, "unwrap", "()" + STRING_DESCRIPTOR, false);    operandStack.replaceTop(STRING_TYPE);
 
                 //WrappedString wrappedString = $valueOnTopOfTheStack
-                int wrappedStringIndex = localVariableTable.frameSize();
-                LocalVariable wrappedString = new LocalVariable("wrappedString", WRAPPED_STRING_DESCRIPTOR, null, startLabel, endLabel, wrappedStringIndex);
-                localVariableTable.add(wrappedString);
+                final int wrappedStringIndex = localCounter.getSlotIndex(), wrappedStringFrameIndex = localCounter.getFrameIndex();
+                LocalVariable wrappedString = new LocalVariable("wrappedString", WRAPPED_STRING_DESCRIPTOR, null, startLabel, endLabel, wrappedStringIndex, wrappedStringFrameIndex);
+                localVariableTable.add(wrappedString); localCounter.add(WRAPPED_STRING_TYPE);
                 methodVisitor.visitVarInsn(ASTORE, wrappedStringIndex);     operandStack.pop();
                 methodVisitor.visitLabel(startLabel);
 
@@ -1538,7 +1538,7 @@ class ScalaConversions {
                 //this is however what the Scala 2.13.6 compiler emits!
 
                 methodVisitor.visitLabel(endLabel);
-                localVariableTable.removeFramesFromIndex(wrappedStringIndex);
+                localVariableTable.removeFramesFromIndex(wrappedStringFrameIndex); localCounter.reset(wrappedStringIndex, wrappedStringFrameIndex);
                 return;
 
             case RANGE:
@@ -1547,10 +1547,10 @@ class ScalaConversions {
                 final Label rangeStartLabel = new Label();
                 final Label rangeEndLabel = new Label();
 
-                final int rangeIndex = localVariableTable.frameSize();
-                final LocalVariable range = new LocalVariable("range", RANGE_DESCRIPTOR, null, rangeStartLabel, rangeEndLabel, rangeIndex);
+                final int rangeIndex = localCounter.getSlotIndex(), rangeFrameIndex = localCounter.getFrameIndex();
+                final LocalVariable range = new LocalVariable("range", RANGE_DESCRIPTOR, null, rangeStartLabel, rangeEndLabel, rangeIndex, rangeFrameIndex);
                 methodVisitor.visitVarInsn(ASTORE, rangeIndex);             operandStack.pop();
-                localVariableTable.add(range);
+                localVariableTable.add(range); localCounter.add(RANGE_TYPE);
                 methodVisitor.visitLabel(rangeStartLabel);
 
                 //load a new NumericRange.OfInteger instance
@@ -1572,7 +1572,7 @@ class ScalaConversions {
                 methodVisitor.visitMethodInsn(INVOKESPECIAL, SCALALOADER_NUMERICRANGE_OFINTEGER, "<init>", "(IIIZ)V", false);   operandStack.pop(5);
 
                 methodVisitor.visitLabel(rangeEndLabel);
-                localVariableTable.removeFramesFromIndex(rangeIndex);
+                localVariableTable.removeFramesFromIndex(rangeFrameIndex);  localCounter.reset(rangeIndex, rangeFrameIndex);
                 return;
 
             //TODO NumericRange and ordered collections have the same problem - I need to summon their Integral and Ordering instances.
@@ -1596,25 +1596,24 @@ class ScalaConversions {
         //best effort
         final TypeSignature elementTypeSignature = typeSignature.hasTypeArguments() ? typeSignature.getTypeArgument(0) : TypeSignature.OBJECT_TYPE_SIGNATURE;
 
-        int localVariableIndex = localVariableTable.frameSize();
         final Label startLabel = new Label(), endLabel = new Label();
 
         //  scala.Iterator<E> iterator = $coll.<E>iterator();
-        final int iteratorIndex = localVariableIndex++;
-        final LocalVariable iterator = new LocalVariable("iterator", ITERATOR_DESCRIPTOR, "L" + ITERATOR_NAME + "<" + elementTypeSignature.toSignature() + ">;", startLabel, endLabel, iteratorIndex);
+        final int iteratorIndex = localCounter.getSlotIndex(), iteratorFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable iterator = new LocalVariable("iterator", ITERATOR_DESCRIPTOR, "L" + ITERATOR_NAME + "<" + elementTypeSignature.toSignature() + ">;", startLabel, endLabel, iteratorIndex, iteratorFrameIndex);
         methodVisitor.visitTypeInsn(CHECKCAST, ITERABLE);               operandStack.replaceTop(ITERABLE_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, ITERABLE, "iterator", "()Lscala/collection/Iterator;", true);       operandStack.replaceTop(ITERATOR_TYPE);
-        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);              operandStack.pop();     localVariableTable.add(iterator);
+        methodVisitor.visitVarInsn(ASTORE, iteratorIndex);              operandStack.pop();     localVariableTable.add(iterator);   localCounter.add(ITERATOR_TYPE);
         methodVisitor.visitLabel(startLabel);
 
         //  java.util.ArrayList list = new java.util.ArrayList();
         final Label javaListLabel = new Label();
-        final int javaListIndex = localVariableIndex++;
-        final LocalVariable javaList = new LocalVariable("list", "Ljava/util/ArrayList;", null, javaListLabel, endLabel, javaListIndex);
+        final int javaListIndex = localCounter.getSlotIndex(), javaListFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable javaList = new LocalVariable("list", "Ljava/util/ArrayList;", null, javaListLabel, endLabel, javaListIndex, javaListFrameIndex);
         methodVisitor.visitTypeInsn(NEW, "java/util/ArrayList");    operandStack.push(Type.getType(ArrayList.class));
         methodVisitor.visitInsn(DUP);                                   operandStack.push(Type.getType(ArrayList.class));
         methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "()V", false);        operandStack.pop();
-        methodVisitor.visitVarInsn(ASTORE, javaListIndex);              operandStack.pop();     localVariableTable.add(javaList);
+        methodVisitor.visitVarInsn(ASTORE, javaListIndex);              operandStack.pop();     localVariableTable.add(javaList);   localCounter.add(Type.getType(java.util.ArrayList.class));
         methodVisitor.visitLabel(javaListLabel);
 
         //  while
@@ -1631,7 +1630,7 @@ class ScalaConversions {
         methodVisitor.visitVarInsn(ALOAD, javaListIndex);               operandStack.push(Type.getType(ArrayList.class));
         methodVisitor.visitVarInsn(ALOAD, iteratorIndex);               operandStack.push(ITERATOR_TYPE);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, ITERATOR, "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(OBJECT_TYPE);
-        Conversions.toSerializedType(classLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localVariableTable, operandStack);
+        Conversions.toSerializedType(classLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);
         methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/util/ArrayList", "add", "(Ljava/lang/Object;)Z", false);     operandStack.replaceTop(2, BOOLEAN_TYPE);
         methodVisitor.visitInsn(POP);                                   operandStack.pop();
         //      }
@@ -1639,7 +1638,7 @@ class ScalaConversions {
 
         //after loop
         methodVisitor.visitLabel(endLoopLabel);
-        localVariableTable.removeFramesFromIndex(localVariableIndex);
+        localVariableTable.removeFramesFromIndex(localCounter.getFrameIndex());
         assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
         assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
         methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
@@ -1647,10 +1646,10 @@ class ScalaConversions {
         //javaList
         methodVisitor.visitVarInsn(ALOAD, javaListIndex);               operandStack.push(ARRAYLIST_TYPE);
         methodVisitor.visitLabel(endLabel);
-        localVariableTable.removeFramesFromIndex(iteratorIndex);
+        localVariableTable.removeFramesFromIndex(iteratorFrameIndex);   localCounter.reset(iteratorIndex, iteratorFrameIndex);
     }
 
-    static void deserializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    static void deserializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         //this is really a best effort.
         //the standard library may evolve again in 3.1 or 3.2
         //but for now this method is compatible the 2.12 and 2.13 (and thus 3.0) standard library
@@ -1679,10 +1678,10 @@ class ScalaConversions {
                 //lets cast to NumericRange.OfInteger
                 methodVisitor.visitTypeInsn(CHECKCAST, SCALALOADER_NUMERICRANGE_OFINTEGER);     operandStack.replaceTop(SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE);
                 //let's store it in a local variable
-                final int rangeIndex = localVariableTable.frameSize();
-                final LocalVariable range = new LocalVariable("range", SCALALOADER_NUMERICRANGE_OFINTEGER_DESCRIPTOR, null, rangeStartLabel, rangeEndLabel, rangeIndex);
+                final int rangeIndex = localCounter.getSlotIndex(), rangeFrameIndex = localCounter.getFrameIndex();
+                final LocalVariable range = new LocalVariable("range", SCALALOADER_NUMERICRANGE_OFINTEGER_DESCRIPTOR, null, rangeStartLabel, rangeEndLabel, rangeIndex, rangeFrameIndex);
                 methodVisitor.visitVarInsn(ASTORE, rangeIndex);                                 operandStack.pop();
-                localVariableTable.add(range);
+                localVariableTable.add(range); localCounter.add(SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE);
                 methodVisitor.visitLabel(rangeStartLabel);
 
                 //load it again so we can call .start(), .end(), .step() and .inclusive()
@@ -1722,7 +1721,7 @@ class ScalaConversions {
                 stackFrame = operandStack.frame();
                 methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
 
-                localVariableTable.removeFramesFromIndex(rangeIndex);
+                localVariableTable.removeFramesFromIndex(rangeFrameIndex);  localCounter.reset(rangeIndex, rangeFrameIndex);
                 methodVisitor.visitLabel(rangeEndLabel);
                 return;
 
@@ -1740,28 +1739,25 @@ class ScalaConversions {
         final TypeSignature elementTypeSignature = typeSignature.hasTypeArguments() ? typeSignature.getTypeArgument(0) : TypeSignature.OBJECT_TYPE_SIGNATURE;
         final String liveTypeName = typeSignature.internalName();
 
-        int localVariableIndex = localVariableTable.frameSize();
-
         final Label startLabel = new Label();
         final Label endLabel = new Label();
 
         //get the Iterator of the List
-        final int iteratorIndex = localVariableIndex++;
-        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, startLabel, endLabel, iteratorIndex);
+        final int iteratorIndex = localCounter.getSlotIndex(), iteratorFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable iterator = new LocalVariable("iterator", "Ljava/util/Iterator;", null, startLabel, endLabel, iteratorIndex, iteratorFrameIndex);
+        localVariableTable.add(iterator); localCounter.add(Type.getType(java.util.Iterator.class));
         methodVisitor.visitTypeInsn(CHECKCAST, "java/util/List");           operandStack.replaceTop(Type.getType(List.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "iterator", "()Ljava/util/Iterator;", true);   operandStack.replaceTop(Type.getType(Iterator.class));
         methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                      operandStack.pop();
-        localVariableTable.add(iterator);
         methodVisitor.visitLabel(startLabel);
 
         //create an empty builder
         final Label builderLabel = new Label();
-        final int builderIndex = localVariableIndex++;
-        final LocalVariable builder = new LocalVariable("builder", BUILDER_TYPE.getDescriptor(), null, builderLabel, endLabel, builderIndex);
-
-        generateNewBuilderCall(classLoader, methodVisitor, typeSignature, localVariableTable, operandStack);
+        final int builderIndex = localCounter.getSlotIndex(), builderFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable builder = new LocalVariable("builder", BUILDER_TYPE.getDescriptor(), null, builderLabel, endLabel, builderIndex, builderFrameIndex);
+        localVariableTable.add(builder); localCounter.add(BUILDER_TYPE);
+        generateNewBuilderCall(classLoader, methodVisitor, typeSignature, localCounter, localVariableTable, operandStack);
         methodVisitor.visitVarInsn(ASTORE, builderIndex);                       operandStack.pop();
-        localVariableTable.add(builder);
         methodVisitor.visitLabel(builderLabel);
 
         //loop body!
@@ -1779,13 +1775,13 @@ class ScalaConversions {
         methodVisitor.visitVarInsn(ALOAD, builderIndex);                        operandStack.push(BUILDER_TYPE);
         methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                       operandStack.push(Type.getObjectType("java/util/Iterator"));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);                 operandStack.replaceTop(OBJECT_TYPE);
-        Conversions.toLiveType(classLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localVariableTable, operandStack);
+        Conversions.toLiveType(classLoader, methodVisitor, elementTypeSignature.toDescriptor(), elementTypeSignature.toSignature(), localCounter, localVariableTable, operandStack);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, GROWABLE, "addOne", "(Ljava/lang/Object;)" + GROWABLE_TYPE.getDescriptor(), true);     operandStack.replaceTop(2, GROWABLE_TYPE);
         methodVisitor.visitInsn(POP);   /*pop the growable from the stack*/     operandStack.pop();
         methodVisitor.visitJumpInsn(GOTO, jumpBackTarget);
 
         //end of loop
-        localVariableTable.removeFramesFromIndex(localVariableIndex);
+        localVariableTable.removeFramesFromIndex(localCounter.getFrameIndex());
         assert Arrays.equals(localsFrame, localVariableTable.frame()) : "local variables differ!";
         assert Arrays.equals(stackFrame, operandStack.frame()) : "stack operands differ!";
         methodVisitor.visitLabel(endOfLoopLabel);
@@ -1798,11 +1794,11 @@ class ScalaConversions {
 
         //clean up
         methodVisitor.visitLabel(endLabel);
-        localVariableTable.removeFramesFromIndex(iteratorIndex);
+        localVariableTable.removeFramesFromIndex(iteratorFrameIndex);   localCounter.reset(iteratorIndex, iteratorFrameIndex);
     }
 
 
-    private static void generateNewBuilderCall(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    private static void generateNewBuilderCall(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         final String companion = typeSignature.getTypeName() + '$';
 
         //push the companion object on the stack and then we will call .newBuilder(), .newBuilder(Ordering) or .newBuilder(ClassTag).
@@ -1825,7 +1821,7 @@ class ScalaConversions {
             case "scala/collection/SortedMap":
             case "scala/collection/SortedSet":
 
-                generateOrdering(classLoader, methodVisitor, typeSignature.getTypeArgument(0), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, typeSignature.getTypeArgument(0), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, companion, "newBuilder", "(Lscala/math/Ordering;)Lscala/collection/mutable/Builder;", false);
                 operandStack.replaceTop(2, BUILDER_TYPE);
                 break;
@@ -1834,7 +1830,7 @@ class ScalaConversions {
             case "scala/collection/immutable/ArraySeq":
             case "scala/collection/mutable/ArraySeq":
 
-                generateClassTag(classLoader, methodVisitor, typeSignature.getTypeArgument(0), localVariableTable, operandStack);
+                generateClassTag(classLoader, methodVisitor, typeSignature.getTypeArgument(0), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, companion, "newBuilder", "(Lscala/reflect/ClassTag;)Lscala/collection/mutable/Builder;", false);
                 operandStack.replaceTop(2, BUILDER_TYPE);
                 break;
@@ -1848,7 +1844,7 @@ class ScalaConversions {
 
     }
 
-    private static void generateOrdering(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    private static void generateOrdering(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         switch(elementType.internalName()) {
             //java primitives
             case "B":
@@ -1904,83 +1900,83 @@ class ScalaConversions {
             //value wrappers
             case "scala/Option":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Option", "(Lscala/math/Ordering;)Lscala/math/Ordering;", false);                          operandStack.pop(); //Ordering gets pushed at the end of this generateOrdering method.
                 break;
             case "scala/Tuple2":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple2", "(Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(2);    //Idem
                 break;
             case "scala/Tuple3":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple3", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(3);   //Idem
                 break;
             case "scala/Tuple4":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple4", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(4);      //Idem
                 break;
             case "scala/Tuple5":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple5", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(5);     //Idem
                 break;
             case "scala/Tuple6":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple6", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(6);        //Idem
                 break;
             case "scala/Tuple7":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(6), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(6), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple7", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(7);   //Idem
                 break;
             case "scala/Tuple8":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(6), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(7), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(6), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(7), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple8", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(8);  //Idem
                 break;
             case "scala/Tuple9":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$", "MODULE$", "Lscala/math/Ordering$;");   operandStack.push(Type.getObjectType("scala/math/Ordering$"));
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(6), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(7), localVariableTable, operandStack);
-                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(8), localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(0), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(1), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(2), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(3), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(4), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(5), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(6), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(7), localCounter, localVariableTable, operandStack);
+                generateOrdering(classLoader, methodVisitor, elementType.getTypeArgument(8), localCounter, localVariableTable, operandStack);
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "scala/math/Ordering$", "Tuple9", "(Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;Lscala/math/Ordering;)Lscala/math/Ordering;", false);     operandStack.pop(9);     //Idem
                 break;
             //Tuple1 and Tuple10-Tuple22 have no Ordering instances defined in the Ordering companion object!
@@ -2000,7 +1996,7 @@ class ScalaConversions {
     }
 
 
-    private static final void generateClassTag(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    private static final void generateClassTag(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         methodVisitor.visitFieldInsn(GETSTATIC, CLASSTAG_COMPANION, MODULE$, CLASSTAG_COMPANION_DESCRIPTOR);                    operandStack.push(CLASSTAG_COMPANION_TYPE);
         final String internalName = elementType.internalName();
         switch (internalName) {

@@ -21,8 +21,6 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
     private final Set<LocalVariable> localVariables;
     private final ArrayList<LocalVariable> frameData;
 
-    //TODO use LocalCounter instead of int for localVariableIndex
-
     public LocalVariableTable() {
         this.localVariables = new LinkedHashSet<>();
         this.frameData = new ArrayList<>(0);
@@ -32,24 +30,25 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
     public void add(LocalVariable localVariable) {
         assert localVariable != null : "can't add a null localVariable";
 
-        //TODO should we set the index of the local variable on the local variable here?
-        //TODO instead of it already having a value beforehand?
+        final int tableSlot = localVariable.tableSlot;
+        final int frameIndex = localVariable.frameIndex;
 
-        final int tableIndex = localVariable.tableIndex;
         //assert that the position of the local variable in the table is 0 or more.
-        assert 0 <= tableIndex : "index in the local variable table below 0";
+        assert 0 <= tableSlot : "index in the local variable table below 0";
         //assert that the new local variable's index is not more than 1 above the currently known highest local variable.
-        assert tableIndex <= maxLocals() : "local variable " + localVariable + " is more than 1 higher than the currently known highest local variable in the table " + this + ", maxLocals = " + maxLocals();
+        assert tableSlot <= maxLocals() : "local variable " + localVariable + " is more than 1 higher than the currently known highest local variable in the table " + this + ", maxLocals = " + maxLocals();
         //assert that the local variable is replaces an older one, or is added at the 'next' index.
-        assert tableIndex <= localsSize() : "local variable " + localVariable + " does not 'replace' another, nor, is it the 'next' local variable in the table " + this;
+        assert tableSlot <= localsSize() : "local variable " + localVariable + " does not 'replace' another, nor, is it the 'next' local variable in the table " + this;
         //assert that the local variable is the last one in the frame
-        assert tableIndex == frameData.size() : "local variable " + localVariable + " can't be appended at the end of the frame: " + frameData;
+        assert frameIndex == frameData.size() : "local variable " + localVariable + " can't be appended at the end of the frame: " + frameData;
 
         localVariables.add(localVariable);
-        maxCount = Math.max(maxCount, tableIndex + Type.getType(localVariable.descriptor).getSize());
+        maxCount = Math.max(maxCount, tableSlot + Type.getType(localVariable.descriptor).getSize());
         addFrame(localVariable);
 
+        //assert that the frame data is consistent
         assert frameData.stream().noneMatch(Objects::isNull) : "a local variable in the frame is null";
+        assert IntStream.range(0, frameData.size()).allMatch(index -> frameData.get(index).frameIndex == index);
     }
 
     public void add(LocalVariable... localVariables) {
@@ -57,16 +56,16 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
             assert localVariable != null : "local variable can't be null!";
 
             this.localVariables.add(localVariable);
-            this.maxCount = Math.max(maxCount, localVariable.tableIndex + Type.getType(localVariable.descriptor).getSize());
+            this.maxCount = Math.max(maxCount, localVariable.tableSlot + Type.getType(localVariable.descriptor).getSize());
             addFrame(localVariable);
         }
 
         //assert that there are no gaps in the local variable table
         assert noGapsBetweenEntries();
         //assert that no local variable in the frame is null
-        assert frameData.stream().allMatch(Objects::nonNull);
+        assert frameData.stream().allMatch(Objects::nonNull) : "a local variable in the frame is null";
         //assert that the frame data is consistent
-        assert IntStream.range(0, frameData.size()).allMatch(index -> frameData.get(index).tableIndex == index);
+        assert IntStream.range(0, frameData.size()).allMatch(index -> frameData.get(index).frameIndex == index);
     }
 
     private boolean noGapsBetweenEntries() {
@@ -75,7 +74,7 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
         //it doesn't really matter in production though, because assertions shouldn't be enabled there.
         for (LocalVariable local : this) {
             int size = Type.getType(local.descriptor).getSize();
-            for (int i = local.tableIndex; i < local.tableIndex + size; i++) {
+            for (int i = local.tableSlot; i < local.tableSlot + size; i++) {
                 indicesToGo.remove(i);  //is executed twice for long and double.
             }
         }
@@ -85,20 +84,20 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
     private void addFrame(LocalVariable localVariable) {
         assert localVariable != null : "local variable can't be null!";
 
-        final int tableIndex = localVariable.tableIndex;    //TODO is this still correct? NOT IT IS NOT! There should be a frameIndex! Can we calculate that? Probably we can!
-        if (tableIndex < frameData.size()) {
+        final int frameIndex = localVariable.frameIndex;
+        if (frameIndex < frameData.size()) {
             //replace
-            frameData.set(tableIndex, localVariable);
-        } else if (tableIndex == frameData.size()) {
+            frameData.set(frameIndex, localVariable);
+        } else if (frameIndex == frameData.size()) {
             //append
             frameData.add(localVariable);
         } else {
             //add nulls and replace later
-            for (int i = frameData.size(); i < tableIndex; i++) {
+            for (int i = frameData.size(); i < frameIndex; i++) {
                 frameData.add(null);
             }
             addFrame(localVariable);
-            assert frameData.get(frameData.size() - 1) != null : "last local in the frame was is not null!";
+            assert frameData.get(frameData.size() - 1) != null : "last local in the frame cannot be null!";
         }
 
         //callers need to assert that our frame data is consistent.
@@ -108,15 +107,8 @@ public final class LocalVariableTable implements Iterable<LocalVariable> {
         return maxCount;
     }
 
-    public int localsSize() {
+    private int localsSize() {
         return localVariables.stream().mapToInt(local -> Type.getType(local.descriptor).getSize()).sum();
-        //TODO fix usages of this. longs and doubles take two slots in the local variable table!
-        //TODO don't use localVariableIndex++, but localVariableIndex += Type.getType(local.descriptor).getSize()
-        //TODO maybe introduce a nextSlot() method LocalVariableTable? or maybe we can have it 'set' the slot number of the local variable?
-    }
-
-    public int frameSize() {    //TODO THIS IS BEING MIS_USED
-        return frameData.size();
     }
 
     public void removeFramesFromIndex(int frameIndex) {

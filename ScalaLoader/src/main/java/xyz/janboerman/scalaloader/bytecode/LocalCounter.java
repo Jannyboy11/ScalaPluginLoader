@@ -11,12 +11,10 @@ public final class LocalCounter implements Cloneable {
     private int nextFrame;
 
     public LocalCounter() {
-        this(0, 0);
     }
 
     public LocalCounter(int slotIndex, int frameIndex) {
-        this.nextSlot = slotIndex;
-        this.nextFrame = frameIndex;
+        reset(slotIndex, frameIndex);
     }
 
     public int getSlotIndex() {
@@ -25,6 +23,11 @@ public final class LocalCounter implements Cloneable {
 
     public int getFrameIndex() {
         return nextFrame;
+    }
+
+    public void reset(int slotIndex, int frameIndex) {
+        this.nextSlot = slotIndex;
+        this.nextFrame = frameIndex;
     }
 
     public void add(Type type) {

@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.objectweb.asm.Type;
 import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.bytecode.LocalCounter;
 import xyz.janboerman.scalaloader.bytecode.LocalVariable;
 import xyz.janboerman.scalaloader.bytecode.LocalVariableTable;
 import xyz.janboerman.scalaloader.bytecode.OperandStack;
@@ -870,14 +871,14 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
         {
         final OperandStack operandStack = new OperandStack();
         final LocalVariableTable localVariableTable = new LocalVariableTable();
-        int localVariableIndex = 0;
+        final LocalCounter localCounter = new LocalCounter();
 
         final Label startLabel = new Label();
         final Label endLabel = new Label();
 
-        final int argumentMapIndex = localVariableIndex++;
-        final LocalVariable argumentMapVariable = new LocalVariable("map", "Ljava/util/Map;", null, startLabel, endLabel, argumentMapIndex);
-        localVariableTable.add(argumentMapVariable);
+        final int argumentMapIndex = localCounter.getSlotIndex(), argumentMapFrameIndex = localCounter.getFrameIndex();
+        final LocalVariable argumentMapVariable = new LocalVariable("map", "Ljava/util/Map;", null, startLabel, endLabel, argumentMapIndex, argumentMapFrameIndex);
+        localVariableTable.add(argumentMapVariable); localCounter.add(Type.getType(java.util.Map.class));
 
 
         methodVisitor = classWriter.visitMethod(ACC_PUBLIC | ACC_STATIC, "deserialize", "(Ljava/util/Map;)" + generatedClassDescriptor, "(Ljava/util/Map<Ljava/lang/String;Ljava/lang/Object;>;)" + generatedClassDescriptor, null);
@@ -890,23 +891,23 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
         methodVisitor.visitLdcInsn("map");                                                  operandStack.push(Type.getType(java.lang.Object.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);     operandStack.replaceTop(2, Type.getType(Object.class));
         methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Map");                            operandStack.replaceTop(Type.getType(java.util.Map.class));
-        final int serializedMapIndex = localVariableIndex++;
+        final int serializedMapIndex = localCounter.getSlotIndex(), serializedMapFrameIndex = localCounter.getFrameIndex();;
         methodVisitor.visitVarInsn(ASTORE, serializedMapIndex);                                 operandStack.pop();
         Label label1 = new Label();
         methodVisitor.visitLabel(label1);
-        final LocalVariable serializedMapVariable = new LocalVariable("serialized", "Ljava/util/Map;", null, label1, endLabel, serializedMapIndex);
-        localVariableTable.add(serializedMapVariable);
+        final LocalVariable serializedMapVariable = new LocalVariable("serialized", "Ljava/util/Map;", null, label1, endLabel, serializedMapIndex, serializedMapFrameIndex);
+        localVariableTable.add(serializedMapVariable); localCounter.add(Type.getType(java.util.Map.class));
 
         //java.util.Iterator<java.util.Map.Entry> iterator = serialized.entrySet().iterator();
         methodVisitor.visitVarInsn(ALOAD, serializedMapIndex);                                  operandStack.push(Type.getType(java.util.Map.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "entrySet", "()Ljava/util/Set;", true);                     operandStack.replaceTop(Type.getType(java.util.Set.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Set", "iterator", "()Ljava/util/Iterator;", true);                operandStack.replaceTop(Type.getType(java.util.Iterator.class));
-        final int iteratorIndex = localVariableIndex++;
+        final int iteratorIndex = localCounter.getSlotIndex(), iteratorFrameIndex = localCounter.getFrameIndex();
         methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                                      operandStack.pop();
         Label label3 = new Label();
         methodVisitor.visitLabel(label3);
-        final LocalVariable iteratorVariable = new LocalVariable("iterator", "Ljava/util/Iterator;", null, label3, endLabel, iteratorIndex);
-        localVariableTable.add(iteratorVariable);
+        final LocalVariable iteratorVariable = new LocalVariable("iterator", "Ljava/util/Iterator;", null, label3, endLabel, iteratorIndex, iteratorFrameIndex);
+        localVariableTable.add(iteratorVariable); localCounter.add(Type.getType(java.util.Iterator.class));
 
         //prepare for return: new Adapter, new MapN, ...
         methodVisitor.visitTypeInsn(NEW, generatedClassName);                                   operandStack.push(Type.getType(generatedClassDescriptor));
@@ -922,12 +923,12 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
             methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                   operandStack.push(Type.getType(java.util.Iterator.class));
             methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);             operandStack.replaceTop(Type.getType(Object.class));
             methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Map$Entry");                  operandStack.replaceTop(Type.getType(java.util.Map.Entry.class));
-            final int entryKIndex = localVariableIndex++;
+            final int entryKIndex = localCounter.getSlotIndex(), entryKFrameIndex = localCounter.getFrameIndex();
             methodVisitor.visitVarInsn(ASTORE, entryKIndex);                                    operandStack.pop();
             final Label entryKLabel = new Label();
             methodVisitor.visitLabel(entryKLabel);
-            final LocalVariable entryKVariable = new LocalVariable("entry" + k, "Ljava/util/Map$Entry;", null, entryKLabel, endLabel, entryKIndex);
-            localVariableTable.add(entryKVariable);
+            final LocalVariable entryKVariable = new LocalVariable("entry" + k, "Ljava/util/Map$Entry;", null, entryKLabel, endLabel, entryKIndex, entryKFrameIndex);
+            localVariableTable.add(entryKVariable); localCounter.add(Type.getType(java.util.Map.Entry.class));
 
             //RuntimeConversions.deserialize(entry.getKey(), keyType, pluginClassLoader);
             methodVisitor.visitVarInsn(ALOAD, entryKIndex);                                     operandStack.push(Type.getType(java.util.Map.Entry.class));
@@ -953,7 +954,7 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
 
         methodVisitor.visitLabel(endLabel);
         for (LocalVariable local : localVariableTable) {
-            methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableIndex);
+            methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableSlot);
         }
         methodVisitor.visitMaxs(operandStack.maxStack(), localVariableTable.maxLocals());
         methodVisitor.visitEnd();

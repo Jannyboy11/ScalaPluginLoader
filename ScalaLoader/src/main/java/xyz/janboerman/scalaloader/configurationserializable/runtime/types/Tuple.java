@@ -198,6 +198,7 @@ public class Tuple {
         {   //serialize
             final OperandStack operandStack = new OperandStack();
             final LocalVariableTable localVariableTable = new LocalVariableTable();
+            final LocalCounter localCounter = new LocalCounter();
 
             methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "serialize", "()Ljava/util/Map;", "()Ljava/util/Map<Ljava/lang/String;Ljava/lang/Object;>;", null);
             methodVisitor.visitCode();
@@ -206,16 +207,18 @@ public class Tuple {
             final Label endLabel = new Label();
             methodVisitor.visitLabel(beginLabel);
 
-            final LocalVariable thisVariable = new LocalVariable("this", generatedClassDescriptor, generatedClassSignature, beginLabel, endLabel, 0);
-            localVariableTable.add(thisVariable);
+            final int generatedClassDescriptorIndex = localCounter.getSlotIndex(), generatedClassDescriptorFrameIndex = localCounter.getFrameIndex();
+            final LocalVariable thisVariable = new LocalVariable("this", generatedClassDescriptor, generatedClassSignature, beginLabel, endLabel, generatedClassDescriptorIndex, generatedClassDescriptorFrameIndex);
+            localVariableTable.add(thisVariable); localCounter.add(Type.getType(generatedClassDescriptor));
 
             methodVisitor.visitTypeInsn(NEW, "java/util/HashMap");      operandStack.push(Type.getType(HashMap.class));
             methodVisitor.visitInsn(DUP);                                   operandStack.push(Type.getType(HashMap.class));
             methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/HashMap", "<init>", "()V", false);      operandStack.pop();
             methodVisitor.visitVarInsn(ASTORE, 1);                      operandStack.pop();
 
-            final LocalVariable mapVariable = new LocalVariable("map", Type.getDescriptor(HashMap.class), "Ljava/util/HashMap<Ljava/lang/String;Ljava/lang/Object;>;", beginLabel, endLabel, 1);
-            localVariableTable.add(mapVariable);
+            final int hashMapIndex = localCounter.getSlotIndex(), hashMapFrameIndex = localCounter.getFrameIndex();
+            final LocalVariable mapVariable = new LocalVariable("map", Type.getDescriptor(HashMap.class), "Ljava/util/HashMap<Ljava/lang/String;Ljava/lang/Object;>;", beginLabel, endLabel, hashMapIndex, hashMapFrameIndex);
+            localVariableTable.add(mapVariable); localCounter.add(Type.getType(HashMap.class));
 
             for (int a = 1; a <= arity; a++) {
                 methodVisitor.visitVarInsn(ALOAD, 1);                   operandStack.push(Type.getType(Map.class));
@@ -245,7 +248,7 @@ public class Tuple {
 
             methodVisitor.visitLabel(endLabel);
             for (LocalVariable local : localVariableTable) {
-                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableIndex);
+                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableSlot);
             }
             methodVisitor.visitMaxs(operandStack.maxStack(), localVariableTable.maxLocals());
             methodVisitor.visitEnd();
@@ -261,6 +264,7 @@ public class Tuple {
 
             final OperandStack operandStack = new OperandStack();
             final LocalVariableTable localVariableTable = new LocalVariableTable();
+            final LocalCounter localCounter = new LocalCounter();
 
             methodVisitor = classWriter.visitMethod(ACC_PUBLIC | ACC_STATIC, "deserialize", "(Ljava/util/Map;)" + generatedClassDescriptor, deserializeSignature, null);
             methodVisitor.visitCode();
@@ -268,8 +272,9 @@ public class Tuple {
             Label endLabel = new Label();
             methodVisitor.visitLabel(beginLabel);
 
-            LocalVariable mapVariable = new LocalVariable("map", "Ljava/util/Map;", "Ljava/util/Map<Ljava/lang/String;Ljava/lang/Object;>;", beginLabel, endLabel, 0);
-            localVariableTable.add(mapVariable);
+            final int mapIndex = localCounter.getSlotIndex(), mapFrameIndex = localCounter.getFrameIndex();
+            LocalVariable mapVariable = new LocalVariable("map", "Ljava/util/Map;", "Ljava/util/Map<Ljava/lang/String;Ljava/lang/Object;>;", beginLabel, endLabel, mapIndex, mapFrameIndex);
+            localVariableTable.add(mapVariable); localCounter.add(Type.getType(java.util.Map.class));
 
             for (int a = 1; a <= arity; a++) {
                 methodVisitor.visitVarInsn(ALOAD, 0);                       operandStack.push(Type.getType(Map.class));
@@ -288,8 +293,9 @@ public class Tuple {
                         false);                                         operandStack.replaceTop(3, Type.getType(Object.class));
                 methodVisitor.visitVarInsn(ASTORE, a);                              operandStack.pop();
                 //methodVisitor.visitLocalVariable("_1", "Ljava/lang/Object;", "TT1;", label1, label3, 1);
-                LocalVariable _variable = new LocalVariable("_" + a, "Ljava/lang/Object;", "TT" + a + ";", beginLabel, endLabel, a);
-                localVariableTable.add(_variable);
+                final int aIndex = localCounter.getSlotIndex(), aFrameIndex = localCounter.getFrameIndex();
+                LocalVariable _variable = new LocalVariable("_" + a, "Ljava/lang/Object;", "TT" + a + ";", beginLabel, endLabel, aIndex, aFrameIndex);
+                localVariableTable.add(_variable); localCounter.add(Type.getType(java.lang.Object.class));
             }
 
             Label returnLabel = new Label();
@@ -313,7 +319,7 @@ public class Tuple {
 
             methodVisitor.visitLabel(endLabel);
             for (LocalVariable local : localVariableTable){
-                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableIndex);
+                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableSlot);
             }
             methodVisitor.visitMaxs(operandStack.maxStack(), localVariableTable.maxLocals());
             methodVisitor.visitEnd();
@@ -601,7 +607,6 @@ public class Tuple {
             methodVisitor.visitLabel(label7);
             methodVisitor.visitJumpInsn(GOTO, label3);
             methodVisitor.visitLabel(label4);
-            methodVisitor.visitLineNumber(803, label4);
             methodVisitor.visitFrame(Opcodes.F_CHOP,1, null, 0, null);
             methodVisitor.visitTypeInsn(NEW, generatedClassName);
             methodVisitor.visitInsn(DUP);
