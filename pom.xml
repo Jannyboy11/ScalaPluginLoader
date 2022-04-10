@@ -22,11 +22,10 @@
     </modules>
 
     <distributionManagement>
-        <repository>
-            <id>repsy</id>
-            <name>Jannyboy11 Minecraft Repo</name>
-            <url>https://repo.repsy.io/mvn/jannyboy11/minecraft</url>
-        </repository>
+        <snapshotRepository>
+            <id>codemc-snapshots</id>
+            <url>https://repo.codemc.io/repository/maven-snapshots/</url>
+        </snapshotRepository>
     </distributionManagement>
 
 </project>
