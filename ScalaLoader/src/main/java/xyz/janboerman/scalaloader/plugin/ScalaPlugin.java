@@ -26,9 +26,28 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * <p>
  * A ScalaPlugin!
  * <br>
  * This is what your main class (can be an {@literal object} singleton) usually extends in your Scala plugin project.
+ * <br>
+ * Example:
+ * <pre>
+ * <code>
+ * import xyz.janboerman.scalaloader.plugin.ScalaPlugin
+ * import xyz.janboerman.scalaloader.plugin.description.*
+ *
+ * {@literal @}Scala(ScalaVersion.v3_1_1)
+ * object MyPlugin extends ScalaPlugin:
+ *     override def onEnable(): Unit =
+ *         getLogger().info("Hello, World!")
+ *
+ * </code>
+ * </pre>
+ * Optionally you can pass a {@link ScalaPluginDescription} to the ScalaPlugin constructor which allows you to not have to provide a plugin.yml plugin description file.
+ *
+ * <p>
+ * For ScalaLoader's Event api, see {@link EventBus}, {@link xyz.janboerman.scalaloader.event.Event} and {@link xyz.janboerman.scalaloader.event.Cancellable}.
  */
 public abstract class ScalaPlugin implements Plugin {
 

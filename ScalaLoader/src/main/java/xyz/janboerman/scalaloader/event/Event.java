@@ -19,7 +19,7 @@ import xyz.janboerman.scalaloader.event.transform.EventError;
  *  Listening to events can still be done using Bukkit's EventHandler/Listener api, for example:
  * </p>
  * <pre><code>
- *  import org.bukkit.event.EventPriority
+ *  import org.bukkit.event.{EventHandler, EventPriority}
  *  import xyz.janboerman.scalaloader.event.{Event, Cancellable}
  *  import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
  *  import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion, Api, ApiVersion}
