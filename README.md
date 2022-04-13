@@ -154,19 +154,18 @@ Note that while ScalaLoader can run on Java 8, it requires JDK-18 to compile.
 ### Pre-built plugin jar file?
 Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 
-## Dependency Information [![](https://jitpack.io/v/Jannyboy11/ScalaPluginLoader.svg)](https://jitpack.io/#Jannyboy11/ScalaPluginLoader)
+## Dependency Information [![Build Status](https://ci.codemc.io/buildStatus/icon?job=Jannyboy11%2FScalaPluginLoader)](https://ci.codemc.io/job/Jannyboy11/job/ScalaPluginLoader/)
 ##### SBT
 ```scala
-resolvers += "jannyboy11-minecraft" at "https://repo.repsy.io/mvn/jannyboy11/minecraft"
+resolvers += "codemc-snapshots" at "https://repo.codemc.io/repository/maven-snapshots/"
 libraryDependencies += "xyz.janboerman" % "ScalaLoader" % "0.17.16-SNAPSHOT" % "provided"
 ```
 
 ##### Maven
 ```xml
 <repository>
-    <id>jannyboy11-minecraft</id>
-    <name>Jannyboy11 Minecraft Repo</name>
-    <url>https://repo.repsy.io/mvn/jannyboy11/minecraft</url>
+    <id>codemc-snapshots</id>
+    <url>https://repo.codemc.io/repository/maven-snapshots/</url>
 </repository>
 
 <dependency>
