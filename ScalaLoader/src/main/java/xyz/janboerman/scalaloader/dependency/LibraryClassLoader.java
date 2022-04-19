@@ -47,6 +47,7 @@ public class LibraryClassLoader extends URLClassLoader {
         this.transformerRegistry = transformerRegistry;
     }
 
+    //override for public access
     @Override
     public void addURL(URL url) {
         super.addURL(url);

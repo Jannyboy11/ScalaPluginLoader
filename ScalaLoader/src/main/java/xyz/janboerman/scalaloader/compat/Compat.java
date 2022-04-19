@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -87,7 +86,7 @@ public class Compat {
 
     @SafeVarargs
     public static <K, V> Map<K, V> mapOf(Map.Entry<K, V>... entries) {
-        Map<K, V> map = new HashMap<>();
+        Map<K, V> map = new LinkedHashMap<>();
         for (Map.Entry<K, V> entry : entries) {
             map.put(entry.getKey(), entry.getValue());
         }

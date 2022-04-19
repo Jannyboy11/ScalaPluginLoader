@@ -362,6 +362,7 @@ public class ScalaPluginLoader implements PluginLoader {
      * @return the jar file
      * @throws IOException if a jarfile could not be created
      */
+    //TODO can be static. should getJarFile not be a method on ScalaPlugin itself though?
     public JarFile getJarFile(ScalaPlugin scalaPlugin) throws IOException {
         return Compat.jarFile(scalaPlugin.getClassLoader().getPluginJarFile());
     }
@@ -390,6 +391,7 @@ public class ScalaPluginLoader implements PluginLoader {
      * @param scalaPlugin the scala plugin
      * @param javaPlugin the java plugin
      */
+    //can be static, but this is a public api though, and I might want to change the implementation details again later, so I think it's good that this is a virtual method.
     public void openUpToJavaPlugin(ScalaPlugin scalaPlugin, JavaPlugin javaPlugin) {
         try {
             injectClassesIntoJavaPlugin(getAllClasses(scalaPlugin), javaPlugin);
@@ -404,6 +406,7 @@ public class ScalaPluginLoader implements PluginLoader {
      * @return an open stream that provides all classes that are in the ScalaPlugin's jar file
      * @throws IOException if the stream could not be opened for whatever reason
      */
+    //TODO can be static
     public Stream<? extends Class<?>> getAllClasses(ScalaPlugin scalaPlugin) throws IOException {
         JarFile jarFile = getJarFile(scalaPlugin);
         return jarFile.stream()
