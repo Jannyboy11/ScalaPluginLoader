@@ -22,9 +22,9 @@ object ExamplePlugin extends ScalaPlugin {
         JavaMapTest.test()
         ScalaMapTest.test()
 
-        val fourtyTwo: ZIO[Any, Nothing, Int] = ZIO.succeed(42)
+        val fortyTwo: ZIO[Any, Nothing, Int] = ZIO.succeed(42)
         val program = for
-            name <- fourtyTwo.map(number => s"Jannyboy${number}")
+            name <- fortyTwo.map(number => s"Jannyboy${number}")
             _ <- putStrLn(s"Hello $name, welcome to ZIO!")
         yield ()
         syncRuntime.unsafeRun(program)

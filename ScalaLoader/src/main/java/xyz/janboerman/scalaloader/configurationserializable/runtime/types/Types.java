@@ -1,6 +1,5 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
-import xyz.janboerman.scalaloader.bytecode.LocalVariableTable;
 import xyz.janboerman.scalaloader.bytecode.OperandStack;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.ArrayParameterType;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterType;

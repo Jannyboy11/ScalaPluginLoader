@@ -21,7 +21,7 @@ class ScalaCompatMap {
         final ScalaRelease compatVersion = scalaVersion.getCompatRelease();
         compatReleaseToLatestVersionMap.compute(compatVersion, (cv, latest) -> {
             if (latest == null || ScalaRelease.VERSION_COMPARATOR.compare(latest, versionString) < 0) return versionString;
-            return latest;
+            else return latest;
         });
 
         //special cases for the transition to scala 3

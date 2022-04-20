@@ -365,7 +365,6 @@ public class Tuple {
             methodVisitor.visitVarInsn(ASTORE, 2);
             Label label3 = new Label();
             methodVisitor.visitLabel(label3);
-            methodVisitor.visitLineNumber(113, label3);
             methodVisitor.visitVarInsn(ALOAD, 0);
             methodVisitor.visitFieldInsn(GETFIELD, generatedClassName, "tuple", tupleDescriptor);
             methodVisitor.visitVarInsn(ALOAD, 2);
@@ -400,7 +399,6 @@ public class Tuple {
             methodVisitor.visitCode();
             Label label0 = new Label();
             methodVisitor.visitLabel(label0);
-            methodVisitor.visitLineNumber(74, label0);
             methodVisitor.visitVarInsn(ALOAD, 0);
             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, generatedClassName, "getValue", "()" + tupleDescriptor, false);
             methodVisitor.visitInsn(ARETURN);
@@ -505,7 +503,6 @@ public class Tuple {
             methodVisitor.visitJumpInsn(IF_ICMPGT, label3);
             Label label4 = new Label();
             methodVisitor.visitLabel(label4);
-            methodVisitor.visitLineNumber(760, label4);
             methodVisitor.visitVarInsn(ALOAD, 1);
             methodVisitor.visitTypeInsn(NEW, "java/lang/StringBuilder");
             methodVisitor.visitInsn(DUP);
@@ -529,11 +526,9 @@ public class Tuple {
             methodVisitor.visitInsn(POP);
             Label label5 = new Label();
             methodVisitor.visitLabel(label5);
-            methodVisitor.visitLineNumber(759, label5);
             methodVisitor.visitIincInsn(2, 1);
             methodVisitor.visitJumpInsn(GOTO, label2);
             methodVisitor.visitLabel(label3);
-            methodVisitor.visitLineNumber(762, label3);
             methodVisitor.visitFrame(Opcodes.F_CHOP,1, null, 0, null);
             methodVisitor.visitVarInsn(ALOAD, 1);
             methodVisitor.visitInsn(ARETURN);
@@ -699,7 +694,6 @@ public class Tuple {
             methodVisitor.visitCode();
             Label label0 = new Label();
             methodVisitor.visitLabel(label0);
-            methodVisitor.visitLineNumber(742, label0);
             methodVisitor.visitVarInsn(ALOAD, 0);
             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, generatedClassName, "getValue", "()Lscala/runtime/TupleXXL;", false);
             methodVisitor.visitInsn(ARETURN);

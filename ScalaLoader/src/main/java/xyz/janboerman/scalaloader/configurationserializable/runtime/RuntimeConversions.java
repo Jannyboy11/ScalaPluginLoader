@@ -161,8 +161,9 @@ public class RuntimeConversions {
             return Either.serialize(live, type, pluginClassLoader);
         } else if (ScalaMap.isMap(live, pluginClassLoader)) {
             return ScalaMap.serialize(live, type, pluginClassLoader);
+        } else if (ScalaCollection.isCollection(live, pluginClassLoader)) {
+            return ScalaCollection.serialize(live, type, pluginClassLoader);
         }
-        //TODO scala collections (need to special-case Range, NumericRange, WrappedString and ArrayBuilder)
         //TODO scala.math.BigInt, scala.math.BigDecimal
 
         //check plugin registrations
@@ -218,6 +219,7 @@ public class RuntimeConversions {
 
         //if the type is not ConfigurationSerializable, warn the plugin author
         if (!(live instanceof ConfigurationSerializable)) {
+            //TODO only log this if enabled by DebugSettings
             pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + live.getClass().getName() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
             pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
         }
@@ -397,7 +399,6 @@ public class RuntimeConversions {
         } else if (Either.isSerializedEither(serialized)) {
             return Either.deserialize(serialized, type, pluginClassLoader);
         }
-        //TODO scala collections
         //TODO scala.math.BigInt, scala.math.BigDecimal
 
         //check plugin registrations
@@ -424,6 +425,7 @@ public class RuntimeConversions {
             //TODO maybe this should be configurable? or maybe I only want to log these messages when assertions are on?
             //TODO solution: make it configurable, and make the default value equal to (whether assertions are on);
             //TODO make sure that this setting works on a per-plugin basis.
+            //TODO use debugSettings :)
             pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + type.toString() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
             pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
         }
