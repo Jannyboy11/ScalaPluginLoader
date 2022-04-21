@@ -38,4 +38,5 @@ class TypeUtils {
 
         throw new IllegalArgumentException("Unrecognized type: " + type + ". Are you using a programming language that is not Java?");
     }
+    
 }
