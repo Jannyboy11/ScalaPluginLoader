@@ -177,7 +177,8 @@ public class Explicit {
                             return getCompanionObjectInstance(Class.forName(ORDERING + ".String", true, classLoader));
                         case "scala.Symbol":
                             return getCompanionObjectInstance(Class.forName(ORDERING + ".Symbol", true, classLoader));
-                        //can't know the orderings for Option, Seq, Either or Tuple, because we would need the ordering instances for the elements.
+                        //can't know the orderings for Option, Seq, Either or Tuple, because we would need the ordering instances for the elements,
+                        //and we don't know the type arguments sadly.
                     }
                     break;
                 case CLASSTAG:

@@ -513,6 +513,9 @@ public class ScalaPluginClassLoader extends URLClassLoader {
         return findResource(resourcePath);
     }
 
+    //TODO should probably override findResource and findResources as to include resources from the library loader
+    //TODO https://hub.spigotmc.org/jira/browse/SPIGOT-6904
+
     /**
      * Finds resources that are in the ScalaPlugin's jar file.
      *

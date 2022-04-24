@@ -26,11 +26,11 @@ object Cat {
     }
 }
 
-case class Dog(name: String)
+case class Dog(name: String, enemy: Cat)
 
 object Dog {
-    implicit def showDog(cat: Cat)(implicit showCat: Show[Cat]): Show[Dog] = new Show[Dog] {
-        override def show(dog: Dog): String = s"Dog(${dog.name},enemy=${showCat.show(cat)}"
+    implicit def showDog(implicit showCat: Show[Cat]): Show[Dog] = new Show[Dog] {
+        override def show(dog: Dog): String = s"Dog(${dog.name},enemy=${showCat.show(dog.enemy)}"
     }
 }
 

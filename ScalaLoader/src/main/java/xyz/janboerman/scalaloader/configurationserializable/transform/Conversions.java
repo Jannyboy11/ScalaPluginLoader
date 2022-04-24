@@ -11,6 +11,7 @@ import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.types.NumericRange;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
+import xyz.janboerman.scalaloader.util.ArrayOps;
 import xyz.janboerman.scalaloader.util.Pair;
 
 import java.util.*;
@@ -1319,8 +1320,12 @@ class ScalaConversions {
     private static final String RANGE_DESCRIPTOR = RANGE_TYPE.getDescriptor();
     private static final String NUMERIC_RANGE = "scala/collection/immutable/NumericRange";
     private static final Type NUMERIC_RANGE_TYPE = Type.getObjectType(NUMERIC_RANGE);
+    private static final String NUMERIC_RANGE_DESCRIPTOR = NUMERIC_RANGE_TYPE.getDescriptor();
+
     private static final String ARRAY_BUILDER = "scala/collection/mutable/ArrayBuilder";
     private static final Type ARRAY_BUILDER_TYPE = Type.getObjectType(ARRAY_BUILDER);
+    private static final String ARRAY_BUILDER_DESCRIPTOR = ARRAY_BUILDER_TYPE.getDescriptor();
+    //TODO ArraySeq (both immutable and mutable). Do I even want ArrayBuilder? because it isn't really a collection in itself.
 
     private static final Type SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE = Type.getType(NumericRange.OfInteger.class);
     private static final String SCALALOADER_NUMERICRANGE_OFINTEGER = SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE.getInternalName();
@@ -1332,6 +1337,29 @@ class ScalaConversions {
     private static final String RANGE_EXCLUSIVE = "scala/collection/immutable/Range$Exclusive";
     private static final String RANGE_INCLUSIVE_DESCRIPTOR = "L" + RANGE_INCLUSIVE + ";";
     private static final String RANGE_EXCLUSIVE_DESCRIPTOR = "L" + RANGE_EXCLUSIVE + ";";
+
+    private static final String BIGINT = "scala/math/BigInt";
+    private static final Type BIGINT_TYPE = Type.getObjectType(BIGINT);
+    private static final String BIGINT_DESCRIPTOR = BIGINT_TYPE.getDescriptor();
+    private static final Type SCALALOADER_NUMERICRANGE_TYPE = Type.getType(NumericRange.class);
+    private static final String SCALALOADER_NUMERICRANGE = SCALALOADER_NUMERICRANGE_TYPE.getInternalName();
+    private static final String SCALALOADER_NUMERICRANGE_DESCRIPTOR = SCALALOADER_NUMERICRANGE_TYPE.getDescriptor();
+    private static final Type SCALALOADER_NUMERICRANGE_OFBYTE_TYPE = Type.getType(NumericRange.OfByte.class);
+    private static final String SCALALOADER_NUMERICRANGE_OFBYTE = SCALALOADER_NUMERICRANGE_OFBYTE_TYPE.getInternalName();
+    private static final String SCALALOADER_NUMERICRANGE_OFBYTE_DESCRIPTOR = SCALALOADER_NUMERICRANGE_OFBYTE_TYPE.getDescriptor();
+    private static final Type SCALALOADER_NUMERICRANGE_OFSHORT_TYPE = Type.getType(NumericRange.OfShort.class);
+    private static final String SCALALOADER_NUMERICRANGE_OFSHORT = SCALALOADER_NUMERICRANGE_OFSHORT_TYPE.getInternalName();
+    private static final String SCALALOADER_NUMERICRANGE_OFSHORT_DESCRIPTOR = SCALALOADER_NUMERICRANGE_OFSHORT_TYPE.getDescriptor();
+    private static final Type SCALALOADER_NUMERICRANGE_OFLONG_TYPE = Type.getType(NumericRange.OfLong.class);
+    private static final String SCALALOADER_NUMERICRANGE_OFLONG = SCALALOADER_NUMERICRANGE_OFLONG_TYPE.getInternalName();
+    private static final String SCALALOADER_NUMERICRANGE_OFLONG_DESCRIPTOR = SCALALOADER_NUMERICRANGE_OFLONG_TYPE.getDescriptor();
+    private static final Type SCALALOADER_NUMERICRANGE_OFBIGINTEGER_TYPE = Type.getType(NumericRange.OfBigInteger.class);
+    private static final String SCALALOADER_NUMERICRANGE_OFBIGINTEGER = SCALALOADER_NUMERICRANGE_OFBIGINTEGER_TYPE.getInternalName();
+    private static final String SCALALOADER_NUMERICRANGE_OFBIGINTEGER_DESCRIPTOR = SCALALOADER_NUMERICRANGE_OFBIGINTEGER_TYPE.getDescriptor();
+
+    private static final String NUMERIC = "scala/math/Numeric";
+    private static final String INTEGRAL = "scala/math/Integral";
+
 
     private ScalaConversions() {
     }
@@ -1395,8 +1423,8 @@ class ScalaConversions {
             case "scala/collection/mutable/ArrayDeque":
             case "scala/collection/mutable/ArraySeq":
             case "scala/collection/mutable/BitSet":
-            case "scala/collection/mutable/Buffer":
-            case "scala/collection/mutable/Builder":
+            case "scala/collection/mutable/Buffer":     //TODO do I want to include these?
+            case "scala/collection/mutable/Builder":    //TODO do I want to include these?
                 //don't include Growable
             case "scala/collection/mutable/HashSet":
                 //don't include ImmutableBuilder
@@ -1550,7 +1578,7 @@ class ScalaConversions {
                 final int rangeIndex = localCounter.getSlotIndex(), rangeFrameIndex = localCounter.getFrameIndex();
                 final LocalVariable range = new LocalVariable("range", RANGE_DESCRIPTOR, null, rangeStartLabel, rangeEndLabel, rangeIndex, rangeFrameIndex);
                 methodVisitor.visitVarInsn(ASTORE, rangeIndex);             operandStack.pop();
-                localVariableTable.add(range); localCounter.add(RANGE_TYPE);
+                localVariableTable.add(range);      localCounter.add(RANGE_TYPE);
                 methodVisitor.visitLabel(rangeStartLabel);
 
                 //load a new NumericRange.OfInteger instance
@@ -1575,11 +1603,192 @@ class ScalaConversions {
                 localVariableTable.removeFramesFromIndex(rangeFrameIndex);  localCounter.reset(rangeIndex, rangeFrameIndex);
                 return;
 
+            case NUMERIC_RANGE:
+                methodVisitor.visitTypeInsn(CHECKCAST, NUMERIC_RANGE);      operandStack.replaceTop(NUMERIC_RANGE_TYPE);
+                //let's store it in a local variable
+                final Label numericRangeStartLabel = new Label(), numericRangeEndLabel = new Label();
+
+                final int numericRangeIndex = localCounter.getSlotIndex(), numericRangeFrameIndex = localCounter.getFrameIndex();
+                final LocalVariable numericRange = new LocalVariable("numericRange", NUMERIC_RANGE_DESCRIPTOR, null, numericRangeStartLabel, numericRangeEndLabel, numericRangeIndex, numericRangeFrameIndex);
+                methodVisitor.visitVarInsn(ASTORE, numericRangeIndex);      operandStack.pop();
+                localVariableTable.add(numericRange);   localCounter.add(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitLabel(numericRangeStartLabel);
+
+                //frames :D
+                final Object[] localsFrame = localVariableTable.frame();
+                final Object[] stackFrame = operandStack.frame();
+
+                //do some best-effort check on the type of 'start'
+                final Label byteLabel = new Label(), shortLabel = new Label(), integerLabel = new Label(), longLabel = new Label(), bigIntLabel = new Label();
+                //TODO make sure all of these labels are visited!
+
+                //Byte
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start", "Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(INSTANCEOF, "java/lang/Byte");                                          operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                methodVisitor.visitJumpInsn(IFNE, byteLabel);                                                               operandStack.pop();
+                //Short
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start","Ljava/lang/Object;", false);   operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(INSTANCEOF, "java/lang/Short");                                         operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                methodVisitor.visitJumpInsn(IFNE, shortLabel);                                                              operandStack.pop();
+                //Integer
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start", "Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(INSTANCEOF, "java/lang/Integer");                                       operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                methodVisitor.visitJumpInsn(IFNE, integerLabel);                                                            operandStack.pop();
+                //Long
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start", "Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(INSTANCEOF, "java/lang/Long");                                          operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                methodVisitor.visitJumpInsn(IFNE, longLabel);                                                               operandStack.pop();
+                //BigInt
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start", "Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(INSTANCEOF, BIGINT);                                                        operandStack.replaceTop(BIGINT_TYPE);
+                methodVisitor.visitJumpInsn(IFNE, bigIntLabel);                                                             operandStack.pop();
+
+                assert Arrays.equals(localsFrame, localVariableTable.frame());
+                assert Arrays.equals(stackFrame, operandStack.frame());
+
+                final Label joinLabel = new Label();
+
+                //Byte
+                methodVisitor.visitLabel(byteLabel);
+                methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+                //start, end, and step are all java.lang.Byte objects
+                //call the xyz.janboerman.scalaloader.configurationserialiable.runtime.types.NumericRange.OfByte constructor!
+                methodVisitor.visitTypeInsn(NEW, SCALALOADER_NUMERICRANGE_OFBYTE);                                          operandStack.push(SCALALOADER_NUMERICRANGE_OFBYTE_TYPE);
+                methodVisitor.visitInsn(DUP);                                                                               operandStack.push(SCALALOADER_NUMERICRANGE_OFBYTE_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Byte");                                           operandStack.replaceTop(Type.getType(Byte.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "step", "()Ljava/lang/Object;", false);     operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Byte");                                           operandStack.replaceTop(Type.getType(Byte.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "end", "()Ljava/lang/Object;", false);      operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Byte");                                           operandStack.replaceTop(Type.getType(Byte.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "isInclusive", "()Z", false);               operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                //invoke constructor, upcast to scalaloader.NumericRange, and jump to the join label
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, SCALALOADER_NUMERICRANGE_OFBYTE, "<init>", "(Ljava/lang/Byte;Ljava/lang/Byte;Ljava/lang/Byte;Z)V", false);         operandStack.pop(5);
+                methodVisitor.visitTypeInsn(CHECKCAST, SCALALOADER_NUMERICRANGE);                                           operandStack.replaceTop(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitJumpInsn(GOTO, joinLabel);
+
+                //Short
+                methodVisitor.visitLabel(shortLabel);
+                methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+                //start, end and step are all java.lang.Short objects
+                //call the xyz.janboerman.scalaloader.configurationserializable.runtime.types.NumericRange.OfShort constructor!
+                methodVisitor.visitTypeInsn(NEW, SCALALOADER_NUMERICRANGE_OFSHORT);                                         operandStack.push(SCALALOADER_NUMERICRANGE_OFSHORT_TYPE);
+                methodVisitor.visitInsn(DUP);                                                                               operandStack.push(SCALALOADER_NUMERICRANGE_OFSHORT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Short");                                          operandStack.replaceTop(Type.getType(Short.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "step", "()Ljava/lang/Object;", false);     operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Short");                                          operandStack.replaceTop(Type.getType(Short.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "end", "()Ljava/lang/Object;", false);      operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Short");                                          operandStack.replaceTop(Type.getType(Short.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "isInclusive", "()Z", false);               operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                //invoke constructor, upcast to scalaloader.NumericRange, and jump to the join label
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, SCALALOADER_NUMERICRANGE_OFSHORT, "<init>", "(Ljava/lang/Short;Ljava/lang/Short;Ljava/lang/Short;Z)V", false);     operandStack.pop(5);
+                methodVisitor.visitTypeInsn(CHECKCAST, SCALALOADER_NUMERICRANGE);                                           operandStack.replaceTop(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitJumpInsn(GOTO, joinLabel);
+
+                //Integer
+                methodVisitor.visitLabel(integerLabel);
+                methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+                //start, end and step are all java.lang.Integer objects
+                //call the xyz.janboerman.scalaloader.configurationserializable.runtime.types.NumericRange.OfInteger constructor!
+                methodVisitor.visitTypeInsn(NEW, SCALALOADER_NUMERICRANGE_OFINTEGER);                                       operandStack.push(SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE);
+                methodVisitor.visitInsn(DUP);                                                                               operandStack.push(SCALALOADER_NUMERICRANGE_OFINTEGER_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");                                            operandStack.replaceTop(Type.getType(Integer.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "step", "()Ljava/lang/Object;", false);     operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");                                            operandStack.replaceTop(Type.getType(Integer.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "end", "()Ljava/lang/Object;", false);      operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Integer");                                            operandStack.replaceTop(Type.getType(Integer.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "isInclusive", "()Z", false);               operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                //invoke constructor, upcast to scalaloader.NumericRange, and jump to the join label
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, SCALALOADER_NUMERICRANGE_OFINTEGER, "<init>", "(Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Z)V", false); operandStack.pop(5);
+                methodVisitor.visitTypeInsn(CHECKCAST, SCALALOADER_NUMERICRANGE);                                           operandStack.replaceTop(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitJumpInsn(GOTO, joinLabel);
+
+                //Long
+                methodVisitor.visitLabel(longLabel);
+                methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+                //start, end and step are all java.lang.Long objects
+                //call the xyz.janboerman.scalaloader.configurationserializable.runtime.types.NumericRange.OfLong constructor!
+                methodVisitor.visitTypeInsn(NEW, SCALALOADER_NUMERICRANGE_OFLONG);                                          operandStack.push(SCALALOADER_NUMERICRANGE_OFLONG_TYPE);
+                methodVisitor.visitInsn(DUP);                                                                               operandStack.push(SCALALOADER_NUMERICRANGE_OFLONG_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Long");                                            operandStack.replaceTop(Type.getType(Long.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "step", "()Ljava/lang/Object;", false);     operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Long");                                            operandStack.replaceTop(Type.getType(Long.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "end", "()Ljava/lang/Object;", false);      operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Long");                                            operandStack.replaceTop(Type.getType(Long.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "isInclusive", "()Z", false);               operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                //invoke constructor, upcast to scalaloader.NumericRange, and jump to the join label
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, SCALALOADER_NUMERICRANGE_OFLONG, "<init>", "(Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Z)V", false);     operandStack.pop(5);
+                methodVisitor.visitTypeInsn(CHECKCAST, SCALALOADER_NUMERICRANGE);                                           operandStack.replaceTop(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitJumpInsn(GOTO, joinLabel);
+
+                //BigInt
+                methodVisitor.visitLabel(longLabel);
+                methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, stackFrame.length, stackFrame);
+                //start, end and step are all scala.math.BigInt objects
+                //call the xyz.janboerman.scalaloader.configurationserializable.runtime.types.NumericRange.OfBigInteger constructor!
+                methodVisitor.visitTypeInsn(NEW, SCALALOADER_NUMERICRANGE_OFBIGINTEGER);                                    operandStack.push(SCALALOADER_NUMERICRANGE_OFBIGINTEGER_TYPE);
+                methodVisitor.visitInsn(DUP);                                                                               operandStack.push(SCALALOADER_NUMERICRANGE_OFBIGINTEGER_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "start", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, BIGINT);                                                             operandStack.replaceTop(BIGINT_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, BIGINT, "bigInteger", "()Ljava/math/BigInteger;", false);  operandStack.replaceTop(Type.getType(java.math.BigInteger.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "step", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, BIGINT);                                                             operandStack.replaceTop(BIGINT_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, BIGINT, "bigInteger", "()Ljava/math/BigInteger;", false);  operandStack.replaceTop(Type.getType(java.math.BigInteger.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "end", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, BIGINT);                                                             operandStack.replaceTop(BIGINT_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, BIGINT, "bigInteger", "()Ljava/math/BigInteger;", false);  operandStack.replaceTop(Type.getType(java.math.BigInteger.class));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                       operandStack.push(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE, "isInclusive", "()Z", false);               operandStack.replaceTop(Type.BOOLEAN_TYPE);
+                //invoke constructor, upcast to scalaloader.NumericRange, and jump to the join label
+                methodVisitor.visitMethodInsn(INVOKESPECIAL, SCALALOADER_NUMERICRANGE_OFBIGINTEGER, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;)V", false);   operandStack.pop(5);
+                methodVisitor.visitJumpInsn(GOTO, joinLabel);
+
+
+                final Object[] newStackFrame = ArrayOps.append(stackFrame, SCALALOADER_NUMERICRANGE);
+                assert Arrays.equals(localsFrame, localVariableTable.frame());
+                assert Arrays.equals(newStackFrame, operandStack.frame());
+                methodVisitor.visitLabel(joinLabel);
+                methodVisitor.visitFrame(F_FULL, localsFrame.length, localsFrame, newStackFrame.length, newStackFrame);
+
+                //TODO anything else to do here? at least I need to implmeent the deserialization code still.
+
+                methodVisitor.visitLabel(numericRangeEndLabel);
+                localVariableTable.removeFramesFromIndex(numericRangeFrameIndex);   localCounter.reset(numericRangeIndex, numericRangeFrameIndex);
+                return;
+
             //TODO NumericRange and ordered collections have the same problem - I need to summon their Integral and Ordering instances.
             //TODO usually these reside in the companion object of the type argument's class, so I need to write a bunch of bytecode
             //TODO that loads that 'gets' that companion object and gets the Integral or Ordering instance.
             //TODO which means I need to scan the companion object's class for method declarations.
             //TODO This will be a lot of fun to implement!!!
+
             //TODO if I really feel ambitious, I might implement recursive lookups too!
             //TODO I should probably factor this out to a separate "ImplicitSearch" class.
 
@@ -1588,8 +1797,10 @@ class ScalaConversions {
         //TODO special-case some collections:
         //TODO  - immutable.WrappedString   --- done!
         //TODO  - immutable.Range           --- done!
-        //TODO  - immutable.NumericRange    --- TODO requires ImplicitSearch
-        //TODO  - mutable.ArrayBuilder
+        //TODO  - immutable.NumericRange    --- done! (but not yet tested)
+        //TODO  - immutable.ArraySeq
+        //TODO  - mutable.ArraySeq
+        //TODO  - mutable.ArrayBuilder (debatable)
         //TODO
 
 
@@ -1730,8 +1941,12 @@ class ScalaConversions {
         //TODO special-case some collections:
         //TODO  - immutable.WrappedString   --- done!
         //TODO  - immutable.Range           --- done!
-        //TODO  - immutable.NumericRange
-        //TODO  - mutable.ArrayBuilder
+        //TODO  - immutable.NumericRange    --- TODO requires ImplicitSearch for deserialization.
+        //TODO                              --- TODO Also we need to generate instanceof bytecodes to check the runtime type of the elements
+        //TODO                              --- TODO and return the 'right' subclass of scalaloader.NumericRange accordingly.
+        //TODO  - immutable.ArraySeq
+        //TODO  - mutable.ArraySeq
+        //TODO  - mutable.ArrayBuilder (debatable)
         //TODO
 
 

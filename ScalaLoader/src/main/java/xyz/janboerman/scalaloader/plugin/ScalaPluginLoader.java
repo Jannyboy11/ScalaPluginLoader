@@ -173,12 +173,8 @@ public class ScalaPluginLoader implements PluginLoader {
         return scalaPluginsView;
     }
 
-    /**
-     * Get a set class names to debug-print when they are loaded.
-     *
-     * @return the set of class names
-     */
-    DebugSettings debugSettings() {
+
+    public DebugSettings debugSettings() {
         return getScalaLoader().getDebugSettings();
     }
 

@@ -8,6 +8,7 @@ import xyz.janboerman.scalaloader.configurationserializable.{ConfigurationSerial
 
 import java.lang.annotation.Annotation
 import scala.collection.immutable.{ArraySeq, SortedSet}
+import scala.collection.mutable
 
 object CollectionTest:
 
@@ -24,7 +25,7 @@ object CollectionTest:
         val floats = IndexedSeq(3.0F, 4.0F)
         val strings = ArraySeq("Hello, ", "World!")
         val chars = SortedSet('A', 'B', 'C', 'D', 'E', 'F')
-        val longs = ArraySeq(0L, 1L, 2L)
+        val longs = mutable.ArraySeq(0L, 1L, 2L)
 
         val testCase = CollectionTest(ints, booleans, floats, strings, chars, longs)
 
@@ -46,7 +47,7 @@ class CollectionTest(@Scan.IncludeProperty var integers: Seq[Int],
                      @Scan.IncludeProperty var floats: IndexedSeq[Float],
                      @Scan.IncludeProperty var strings: ArraySeq[String],
                      @Scan.IncludeProperty var chars: SortedSet[Char],
-                     @Scan.IncludeProperty var longs: ArraySeq[Long]):
+                     @Scan.IncludeProperty var longs: mutable.ArraySeq[Long]):
 
     override def equals(obj: Any): Boolean = obj match {
         case that: CollectionTest =>

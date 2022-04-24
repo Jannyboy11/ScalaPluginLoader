@@ -218,8 +218,7 @@ public class RuntimeConversions {
         }
 
         //if the type is not ConfigurationSerializable, warn the plugin author
-        if (!(live instanceof ConfigurationSerializable)) {
-            //TODO only log this if enabled by DebugSettings
+        if (!(live instanceof ConfigurationSerializable) && pluginClassLoader.getPluginLoader().debugSettings().logMissingCodecs()) {
             pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + live.getClass().getName() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
             pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
         }
@@ -418,14 +417,7 @@ public class RuntimeConversions {
         }
 
         //if the type is not ConfigurationSerializable, warn the plugin author
-        if (!(serialized instanceof ConfigurationSerializable)) {
-            //TODO do I really want to keep these error messages? right now I'm getting them in the scala3 example plugin for String and Object.
-            //TODO the scala compiler has a habit of just emitting rawtypes, so this occurs rather often.
-            //TODO but the types that I need are already handled correctly by SnakeYAML, so the warning is useless.
-            //TODO maybe this should be configurable? or maybe I only want to log these messages when assertions are on?
-            //TODO solution: make it configurable, and make the default value equal to (whether assertions are on);
-            //TODO make sure that this setting works on a per-plugin basis.
-            //TODO use debugSettings :)
+        if (!(serialized instanceof ConfigurationSerializable) && pluginClassLoader.getPluginLoader().debugSettings().logMissingCodecs()) {
             pluginClassLoader.getPlugin().getLogger().warning("No Codec found for " + type.toString() + ", please register one using " + RuntimeConversions.class.getName() + "#registerCodec");
             pluginClassLoader.getPlugin().getLogger().warning("If you don't do this, then behaviour might break in the future!");
         }

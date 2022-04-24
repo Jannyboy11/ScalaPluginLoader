@@ -26,6 +26,7 @@ import java.util.Objects;
  * @see OfLong
  * @see OfBigInteger
  */
+@Called
 public abstract class NumericRange<I> {
     public static void registerWithConfigurationSerialization() {
         OfByte.register();
@@ -64,6 +65,7 @@ public abstract class NumericRange<I> {
      * Get the lower bound of this range.
      * @return the lower bound
      */
+    @Called
     public I getStart() {
         return start;
     }
@@ -72,6 +74,7 @@ public abstract class NumericRange<I> {
      * Get the step size of this range.
      * @return the step size
      */
+    @Called
     public I getStep() {
         return step;
     }
@@ -80,6 +83,7 @@ public abstract class NumericRange<I> {
      * Get the upper bound of this range.
      * @return the upper bound
      */
+    @Called
     public I getEnd() {
         return end;
     }
@@ -88,6 +92,7 @@ public abstract class NumericRange<I> {
      * Get whether the upper bound is included in this range.
      * @return true if the upper bound is included, otherwise false
      */
+    @Called
     public boolean isInclusive() {
         return inclusive;
     }
@@ -114,10 +119,16 @@ public abstract class NumericRange<I> {
         return "NumericRange " + getStart() + (isInclusive() ? " to " : " until ") + getEnd() + " by " + getStep();
     }
 
+    @Called
     @SerializableAs("NumericRange.OfByte")
     public static class OfByte extends NumericRange<Byte> implements ConfigurationSerializable {
         private static void register() {
             ConfigurationSerialization.registerClass(OfByte.class, "NumericRange.OfByte");
+        }
+
+        @Called
+        public OfByte(Byte start, Byte step, Byte end, boolean inclusive) {
+            super(start, step, end, inclusive);
         }
 
         public OfByte(byte start, byte step, byte end, boolean inclusive) {
@@ -154,14 +165,20 @@ public abstract class NumericRange<I> {
             Integer end = (Integer) map.get(END);
             Boolean inclusive = (Boolean) map.get(INCLUSIVE);
 
-            return new OfByte(start.byteValue(), step.byteValue(), end.byteValue(), inclusive);
+            return new OfByte(start.byteValue(), step.byteValue(), end.byteValue(), inclusive.booleanValue());
         }
     }
 
+    @Called
     @SerializableAs("NumericRange.OfShort")
     public static class OfShort extends NumericRange<Short> implements ConfigurationSerializable {
         private static void register() {
             ConfigurationSerialization.registerClass(OfShort.class, "NumericRange.OfShort");
+        }
+
+        @Called
+        public OfShort(Short start, Short step, Short end, boolean inclusive) {
+            super(start, step, end, inclusive);
         }
 
         public OfShort(short start, short step, short end, boolean inclusive) {
@@ -198,14 +215,20 @@ public abstract class NumericRange<I> {
             Integer end = (Integer) map.get(END);
             Boolean inclusive = (Boolean) map.get(INCLUSIVE);
 
-            return new OfShort(start.shortValue(), step.shortValue(), end.shortValue(), inclusive);
+            return new OfShort(start.shortValue(), step.shortValue(), end.shortValue(), inclusive.booleanValue());
         }
     }
 
+    @Called
     @SerializableAs("NumericRange.OfInteger")
     public static class OfInteger extends NumericRange<Integer> implements ConfigurationSerializable {
         private static void register() {
             ConfigurationSerialization.registerClass(OfInteger.class, "NumericRange.OfInteger");
+        }
+
+        @Called
+        public OfInteger(Integer start, Integer step, Integer end, boolean inclusive) {
+            super(start, step, end, inclusive);
         }
 
         @Called
@@ -246,14 +269,20 @@ public abstract class NumericRange<I> {
             Integer end = (Integer) map.get(END);
             Boolean inclusive = (Boolean) map.get(INCLUSIVE);
 
-            return new OfInteger(start, step, end, inclusive);
+            return new OfInteger(start.intValue(), step.intValue(), end.intValue(), inclusive.booleanValue());
         }
     }
 
+    @Called
     @SerializableAs("NumericRange.OfLong")
     public static class OfLong extends NumericRange<Long> implements ConfigurationSerializable {
         private static void register() {
             ConfigurationSerialization.registerClass(OfLong.class, "NumericRange.OfLong");
+        }
+
+        @Called
+        public OfLong(Long start, Long step, Long end, boolean inclusive) {
+            super(start, step, end, inclusive);
         }
 
         public OfLong(long start, long step, long end, boolean inclusive) {
@@ -290,16 +319,18 @@ public abstract class NumericRange<I> {
             String end = (String) map.get(END);
             Boolean inclusive = (Boolean) map.get(INCLUSIVE);
 
-            return new OfLong(Long.parseLong(start), Long.parseLong(step), Long.parseLong(end), inclusive);
+            return new OfLong(Long.parseLong(start), Long.parseLong(step), Long.parseLong(end), inclusive.booleanValue());
         }
     }
 
+    @Called
     @SerializableAs("NumericRange.OfBigInteger")
     public static class OfBigInteger extends NumericRange<BigInteger> implements ConfigurationSerializable {
         private static void register() {
             ConfigurationSerialization.registerClass(OfBigInteger.class, "NumericRange.OfBigInteger");
         }
 
+        @Called
         public OfBigInteger(BigInteger start, BigInteger step, BigInteger end, boolean inclusive) {
             super(start, step, end, inclusive);
         }
