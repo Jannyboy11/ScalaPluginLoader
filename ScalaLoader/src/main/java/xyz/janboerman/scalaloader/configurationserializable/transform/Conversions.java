@@ -1943,7 +1943,7 @@ class ScalaConversions {
         //TODO  - immutable.Range           --- done!
         //TODO  - immutable.NumericRange    --- TODO requires ImplicitSearch for deserialization.
         //TODO                              --- TODO Also we need to generate instanceof bytecodes to check the runtime type of the elements
-        //TODO                              --- TODO and return the 'right' subclass of scalaloader.NumericRange accordingly.
+        //TODO                              --- TODO and use the correct component types for the start, end and step values of the NumericRange.
         //TODO  - immutable.ArraySeq
         //TODO  - mutable.ArraySeq
         //TODO  - mutable.ArrayBuilder (debatable)
