@@ -1966,7 +1966,7 @@ class ScalaConversions {
                 //TODO make sure these are all visited.
 
                 //prepare for .apply or .inclusive method invocation
-                methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC_RANGE_COMPANION, MODULE$, NUMERIC_RANGE_COMPANION_DESCRIPTOR);      operandStack(NUMERIC_RANGE_COMPANION_TYPE);
+                methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC_RANGE_COMPANION, MODULE$, NUMERIC_RANGE_COMPANION_DESCRIPTOR);      operandStack.push(NUMERIC_RANGE_COMPANION_TYPE);
 
                 //load the scalaloader.NumericRange again and get the properties
                 methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
@@ -2067,7 +2067,7 @@ class ScalaConversions {
                 methodVisitor.visitTypeInsn(CHECKCAST, NUMERIC_RANGE);                              operandStack.replaceTop(NUMERIC_RANGE_TYPE);
                 methodVisitor.visitJumpInsn(GOTO, numericRangeJoinLabel);
 
-                
+
                 //TODO other integral types
 
 
