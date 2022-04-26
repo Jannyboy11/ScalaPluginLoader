@@ -14,4 +14,10 @@ public class ArrayOps {
         return result;
     }
 
+    public static <T> T[] init(T[] array) {
+        int length = array.length;
+        assert length > 0 : "array must have length > 0";
+        return Arrays.copyOf(array, length - 1);
+    }
+
 }

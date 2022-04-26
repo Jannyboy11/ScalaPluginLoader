@@ -38,65 +38,65 @@ public class Explicit {
                 case NUMERIC:
                     switch (instanceFor.getName()) {
                         case "scala.math.BigInt":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".BigIntIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$BigIntIsIntegral", true, classLoader));
                         case "scala.Int":
                         case "int":
                         case "java.lang.Integer":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".IntIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$IntIsIntegral", true, classLoader));
                         case "scala.Short":
                         case "short":
                         case "java.lang.Short":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".ShortIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$ShortIsIntegral", true, classLoader));
                         case "scala.Byte":
                         case "byte":
                         case "java.lang.Byte":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".ByteIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$ByteIsIntegral", true, classLoader));
                         case "scala.Char":
                         case "char":
                         case "java.lang.Character":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".CharIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$CharIsIntegral", true, classLoader));
                         case "scala.Long":
                         case "long":
                         case "java.lang.Long":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".LongIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$LongIsIntegral", true, classLoader));
                         case "scala.Float":
                         case "float":
                         case "java.lang.Float":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".FloatIsFractional", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$FloatIsFractional", true, classLoader));
                         case "scala.Double":
                         case "double":
                         case "java.lang.Double":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".DoubleIsFractional", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$DoubleIsFractional", true, classLoader));
                         case "scala.math.BigDecimal":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".BigDecimalIsFractional", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$BigDecimalIsFractional", true, classLoader));
                     }
                     break;
                 case INTEGRAL:
                     switch (instanceFor.getName()) {
                         case "scala.math.BigInt":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".BigIntIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$BigIntIsIntegral", true, classLoader));
                         case "scala.Int":
                         case "int":
                         case "java.lang.Integer":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".IntIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$IntIsIntegral", true, classLoader));
                         case "scala.Short":
                         case "short":
                         case "java.lang.Short":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".ShortIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$ShortIsIntegral", true, classLoader));
                         case "scala.Byte":
                         case "byte":
                         case "java.lang.Byte":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".ByteIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$ByteIsIntegral", true, classLoader));
                         case "scala.Char":
                         case "char":
                         case "java.lang.Character":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".CharIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$CharIsIntegral", true, classLoader));
                         case "scala.Long":
                         case "long":
                         case "java.lang.Long":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".LongIsIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$LongIsIntegral", true, classLoader));
                         case "scala.BigDecimal":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".BigDecimalAsIfIntegral", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$BigDecimalAsIfIntegral", true, classLoader));
                     }
                     break;
                 case FRACTIONAl:
@@ -104,51 +104,51 @@ public class Explicit {
                         case "scala.Float":
                         case "float":
                         case "java.lang.Float":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".FloatIsFractional", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$FloatIsFractional", true, classLoader));
                         case "scala.Double":
                         case "double":
                         case "java.lang.Double":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".DoubleIsFractional", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$DoubleIsFractional", true, classLoader));
                         case "scala.math.BigDecimal":
-                            return getCompanionObjectInstance(Class.forName(NUMERIC + ".BigDecimalIsFractional", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(NUMERIC + "$BigDecimalIsFractional", true, classLoader));
                     }
                     break;
                 case ORDERING:
                     switch (instanceFor.getName()) {
                         case "scala.Unit":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".Unit", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$Unit", true, classLoader));
                         case "scala.Boolean":
                         case "boolean":
                         case "java.lang.Boolean":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".Boolean", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$Boolean", true, classLoader));
                         case "scala.Byte":
                         case "byte":
                         case "java.lang.Byte":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".Byte", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$Byte", true, classLoader));
                         case "scala.Char":
                         case "char":
                         case "java.lang.Character":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".Char", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$Char", true, classLoader));
                         case "scala.Short":
                         case "short":
                         case "java.lang.Short":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".Short", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$Short", true, classLoader));
                         case "scala.Int":
                         case "int":
                         case "java.lang.Integer":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".Int", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$Int", true, classLoader));
                         case "scala.Long":
                         case "long":
                         case "java.lang.Long":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".Long", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$Long", true, classLoader));
                         case "scala.Float":
                         case "float":
                         case "java.lang.Float":
                             try { //Scala 2.13.x and later
-                                return getCompanionObjectInstance(Class.forName(ORDERING + ".Float" + ".TotalOrdering", true, classLoader));
+                                return getCompanionObjectInstance(Class.forName(ORDERING + "$Float" + "$TotalOrdering", true, classLoader));
                             } catch (Exception e1) {
                                 try { //Scala 2.12.x and earlier
-                                    return getCompanionObjectInstance(Class.forName(ORDERING + ".Float", true, classLoader));
+                                    return getCompanionObjectInstance(Class.forName(ORDERING + "$Float", true, classLoader));
                                 } catch (Exception e2) {
                                     ex.addSuppressed(e1);
                                     ex.addSuppressed(e2);
@@ -159,10 +159,10 @@ public class Explicit {
                         case "double":
                         case "java.lang.Double":
                             try { //Scala 2.13.x and later
-                                return getCompanionObjectInstance(Class.forName(ORDERING + ".Double" + ".TotalOrdering", true, classLoader));
+                                return getCompanionObjectInstance(Class.forName(ORDERING + "$Double" + "$TotalOrdering", true, classLoader));
                             } catch (Exception e1) {
                                 try { //Scala 2.12.x and earlier
-                                    return getCompanionObjectInstance(Class.forName(ORDERING + ".Double", true, classLoader));
+                                    return getCompanionObjectInstance(Class.forName(ORDERING + "$Double", true, classLoader));
                                 } catch (Exception e2) {
                                     ex.addSuppressed(e1);
                                     ex.addSuppressed(e2);
@@ -170,13 +170,13 @@ public class Explicit {
                             }
                             break;
                         case "scala.BigInt":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".BigInt", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$BigInt", true, classLoader));
                         case "scala.BigDecimal":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".BigDecimal", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$BigDecimal", true, classLoader));
                         case "java.lang.String":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".String", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$String", true, classLoader));
                         case "scala.Symbol":
-                            return getCompanionObjectInstance(Class.forName(ORDERING + ".Symbol", true, classLoader));
+                            return getCompanionObjectInstance(Class.forName(ORDERING + "$Symbol", true, classLoader));
                         //can't know the orderings for Option, Seq, Either or Tuple, because we would need the ordering instances for the elements,
                         //and we don't know the type arguments sadly.
                     }

@@ -66,7 +66,7 @@ public abstract class NumericRange<I> {
      * @return the lower bound
      */
     @Called
-    public I getStart() {
+    public final I getStart() {
         return start;
     }
 
@@ -75,7 +75,7 @@ public abstract class NumericRange<I> {
      * @return the step size
      */
     @Called
-    public I getStep() {
+    public final I getStep() {
         return step;
     }
 
@@ -84,7 +84,7 @@ public abstract class NumericRange<I> {
      * @return the upper bound
      */
     @Called
-    public I getEnd() {
+    public final I getEnd() {
         return end;
     }
 
@@ -93,7 +93,7 @@ public abstract class NumericRange<I> {
      * @return true if the upper bound is included, otherwise false
      */
     @Called
-    public boolean isInclusive() {
+    public final boolean isInclusive() {
         return inclusive;
     }
 
@@ -368,5 +368,12 @@ public abstract class NumericRange<I> {
             return new OfBigInteger(new BigInteger(start), new BigInteger(step), new BigInteger(end), inclusive);
         }
     }
+
+    // TODO support user-defined integral types:
+    // TODO static class OfCustom<I> extends NumericRange<I> implements ConfigurationSerializable {
+    // TODO     OfCustom(I start, I step, I end, boolean inclusive, TypeClassInstance integralInstance) {
+    // TODO
+    // TODO     }
+    // TODO }
 
 }

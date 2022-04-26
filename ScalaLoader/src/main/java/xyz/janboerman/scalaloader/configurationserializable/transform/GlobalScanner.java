@@ -67,7 +67,7 @@ public class GlobalScanner extends ClassVisitor {
                         return new AnnotationVisitor(ASM_API) {
                             @Override
                             public void visitEnum(String name, String descriptor, String value) {
-                                if ("value".equals(name) && SCALALAODER_SCANTYPE_DESCRIPTOR.equals(descriptor)) {
+                                if ("value".equals(name) && SCALALOADER_SCANTYPE_DESCRIPTOR.equals(descriptor)) {
                                     result.scanType = Scan.Type.valueOf(value);
                                 }
                             }
