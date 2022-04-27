@@ -152,6 +152,8 @@ class Conversions {
                 operandStack.replaceTop(STRING_TYPE);
                 break;
             //TODO java.util.Date maybe? anything else?
+            //TODO scala.math.BigInt
+            //TODO scala.math.BigDecimal
 
             //unsupported type - attempt runtime serialization!
             default:
@@ -1350,6 +1352,11 @@ class ScalaConversions {
     private static final String BIGINT = "scala/math/BigInt";
     private static final Type BIGINT_TYPE = Type.getObjectType(BIGINT);
     private static final String BIGINT_DESCRIPTOR = BIGINT_TYPE.getDescriptor();
+    private static final String BIGINTEGER = BIGINTEGER_TYPE.getInternalName();
+    private static final String BIGINTEGER_DESCRIPTOR = BIGINTEGER_TYPE.getDescriptor();
+    private static final String BIGINT_COMPANION = BIGINT + "$";
+    private static final Type BIGINT_COMPANION_TYPE = Type.getObjectType(BIGINT_COMPANION);
+    private static final String BIGINT_COMPANION_DESCRIPTOR = BIGINT_COMPANION_TYPE.getDescriptor();
     private static final Type SCALALOADER_NUMERICRANGE_TYPE = Type.getType(NumericRange.class);
     private static final String SCALALOADER_NUMERICRANGE = SCALALOADER_NUMERICRANGE_TYPE.getInternalName();
     private static final String SCALALOADER_NUMERICRANGE_DESCRIPTOR = SCALALOADER_NUMERICRANGE_TYPE.getDescriptor();
@@ -1968,16 +1975,6 @@ class ScalaConversions {
                 //prepare for .apply or .inclusive method invocation
                 methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC_RANGE_COMPANION, MODULE$, NUMERIC_RANGE_COMPANION_DESCRIPTOR);      operandStack.push(NUMERIC_RANGE_COMPANION_TYPE);
 
-                //load the scalaloader.NumericRange again and get the properties
-                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStart", "()Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
-                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getEnd", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
-                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStep", "()Ljava/lang/Object;", false);   operandStack.replaceTop(OBJECT_TYPE);
-                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
-                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "isInclusive", "()Z", false);                operandStack.replaceTop(BOOLEAN_TYPE);
-
                 localFrame = localVariableTable.frame();
                 stackFrame = operandStack.frame();
 
@@ -2014,13 +2011,17 @@ class ScalaConversions {
                 //byte
                 methodVisitor.visitLabel(byteLabel);
                 methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
-                //load the Integral instance
-                methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC + "$ByteIsIntegral$", MODULE$, "L" + NUMERIC + "$ByteIsIntegral$" + ";");   operandStack.push(Type.getObjectType(NUMERIC + "$ByteIsIntegral$"));
-                //swap, so we get the isInclusive boolean back on top of the stack
-                methodVisitor.visitInsn(SWAP);  operandStack.pop(2);    operandStack.push(Type.getObjectType(NUMERIC + "$ByteIsIntegral$"));    operandStack.push(BOOLEAN_TYPE);
-
                 final Label byteExclusiveLabel = new Label();
-                methodVisitor.visitJumpInsn(IFEQ, byteExclusiveLabel);                              operandStack.pop();
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStart", "()Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getEnd", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStep", "()Ljava/lang/Object;", false);   operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC + "$ByteIsIntegral$", MODULE$, "L" + NUMERIC + "$ByteIsIntegral$" + ";");       operandStack.push(Type.getObjectType(NUMERIC + "$ByteIsIntegral$"));
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "isInclusive", "()Z", false);                operandStack.replaceTop(BOOLEAN_TYPE);
+                methodVisitor.visitJumpInsn(IFEQ, byteExclusiveLabel);                                                                                          operandStack.pop();
                 final Object[] byteLocalFrame = localVariableTable.frame();
                 final Object[] byteStackFrame = operandStack.frame();
                 final Label joinByteLabel = new Label();
@@ -2037,18 +2038,23 @@ class ScalaConversions {
                 stackFrame = operandStack.frame();
                 methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
                 methodVisitor.visitTypeInsn(CHECKCAST, NUMERIC_RANGE);                              operandStack.replaceTop(NUMERIC_RANGE_TYPE);
+                assert Arrays.equals(ArrayOps.append(nrBaseStackFrame, NUMERIC_RANGE), operandStack.frame());
                 methodVisitor.visitJumpInsn(GOTO, numericRangeJoinLabel);
 
                 //short
                 methodVisitor.visitLabel(shortLabel);
                 methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
-                //local the Integral instance
-                methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC + "$ShortIsIntegral$", MODULE$, "L" + NUMERIC + "$ShortIsIntegral$" + ";");     operandStack.push(Type.getObjectType(NUMERIC + "$ShortIsIntegral$"));
-                //swap so we get the isInclusive boolean back on top of the stack
-                methodVisitor.visitInsn(SWAP);  operandStack.pop(2);    operandStack.push(Type.getObjectType(NUMERIC + "$ShortIsIntegral$" + ";"));     operandStack.push(BOOLEAN_TYPE);
-
                 final Label shortExclusiveLabel = new Label();
-                methodVisitor.visitJumpInsn(IFEQ, shortExclusiveLabel);                             operandStack.pop();
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStart", "()Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getEnd", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStep", "()Ljava/lang/Object;", false);   operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC + "$ShortIsIntegral$", MODULE$, "L" + NUMERIC + "$ShortIsIntegral$" + ";");     operandStack.push(Type.getObjectType(NUMERIC + "$ShortIsIntegral$"));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "isInclusive", "()Z", false);                operandStack.replaceTop(BOOLEAN_TYPE);
+                methodVisitor.visitJumpInsn(IFEQ, shortExclusiveLabel);                                                                                         operandStack.pop();
                 final Object[] shortLocalFrame = localVariableTable.frame();
                 final Object[] shortStackFrame = operandStack.frame();
                 final Label joinShortLabel = new Label();
@@ -2064,16 +2070,122 @@ class ScalaConversions {
                 methodVisitor.visitLabel(joinShortLabel);
                 stackFrame = operandStack.frame();
                 methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
-                methodVisitor.visitTypeInsn(CHECKCAST, NUMERIC_RANGE);                              operandStack.replaceTop(NUMERIC_RANGE_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, NUMERIC_RANGE);                                                                                      operandStack.replaceTop(NUMERIC_RANGE_TYPE);
+                assert Arrays.equals(ArrayOps.append(nrBaseStackFrame, NUMERIC_RANGE), operandStack.frame());
+                methodVisitor.visitJumpInsn(GOTO, numericRangeJoinLabel);
+
+                //integer
+                methodVisitor.visitLabel(integerLabel);
+                methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
+                final Label integerExclusiveLabel = new Label();
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStart", "()Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getEnd", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStep", "()Ljava/lang/Object;", false);   operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC + "$IntIsIntegral$", MODULE$, "L" + NUMERIC + "$IntIsIntegral$" + ";");         operandStack.push(Type.getObjectType(NUMERIC + "$IntIsIntegral$"));
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "isInclusive", "()Z", false);                operandStack.replaceTop(BOOLEAN_TYPE);
+                methodVisitor.visitJumpInsn(IFEQ, integerExclusiveLabel);                                                                                       operandStack.pop();
+                final Object[] intLocalFrame = localVariableTable.frame();
+                final Object[] intStackFrame = operandStack.frame();
+                final Label joinIntegerLabel = new Label();
+                {   //inclusive
+                    methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE_COMPANION, "inclusive", inclusiveMethodDescriptor, false);   operandStack.replaceTop(5, NUMERIC_RANGE_INCLUSIVE_TYPE);
+                    methodVisitor.visitJumpInsn(GOTO, joinIntegerLabel);
+                }
+                methodVisitor.visitLabel(integerExclusiveLabel);
+                {   //exclusive
+                    methodVisitor.visitFrame(F_FULL, intLocalFrame.length, intLocalFrame, intStackFrame.length, intStackFrame);
+                    methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE_COMPANION, "apply", exclusiveMethodDescriptor, false);   operandStack.replaceTop(5, NUMERIC_RANGE_EXCLUSIVE_TYPE);
+                }
+                methodVisitor.visitLabel(joinIntegerLabel);
+                stackFrame = operandStack.frame();
+                methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
+                methodVisitor.visitTypeInsn(CHECKCAST, NUMERIC_RANGE);                                                                                      operandStack.replaceTop(NUMERIC_RANGE_TYPE);
+                assert Arrays.equals(ArrayOps.append(nrBaseStackFrame, NUMERIC_RANGE), operandStack.frame());
+                methodVisitor.visitJumpInsn(GOTO, numericRangeJoinLabel);
+
+                //long
+                methodVisitor.visitLabel(longLabel);
+                methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
+                final Label longExclusiveLabel = new Label();
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStart", "()Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getEnd", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStep", "()Ljava/lang/Object;", false);   operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC + "$LongIsIntegral$", MODULE$, "L" + NUMERIC + "$LongIsIntegral$" + ";");       operandStack.push(Type.getObjectType(NUMERIC + "$LongIsIntegral$"));
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "isInclusive", "()Z", false);                operandStack.replaceTop(BOOLEAN_TYPE);
+                methodVisitor.visitJumpInsn(IFEQ, longExclusiveLabel);                                                                                          operandStack.pop();
+                final Object[] longLocalFrame = localVariableTable.frame();
+                final Object[] longStackFrame = operandStack.frame();
+                final Label joinLongLabel = new Label();
+                {   //inclusive
+                    methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE_COMPANION, "inclusive", inclusiveMethodDescriptor, false);   operandStack.replaceTop(5, NUMERIC_RANGE_INCLUSIVE_TYPE);
+                    methodVisitor.visitJumpInsn(GOTO, joinLongLabel);
+                }
+                methodVisitor.visitLabel(longExclusiveLabel);
+                {   //exclusive
+                    methodVisitor.visitFrame(F_FULL, longLocalFrame.length, longLocalFrame, longStackFrame.length, longStackFrame);
+                    methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE_COMPANION, "apply", exclusiveMethodDescriptor, false);   operandStack.replaceTop(5, NUMERIC_RANGE_EXCLUSIVE_TYPE);
+                }
+                methodVisitor.visitLabel(joinLongLabel);
+                stackFrame = operandStack.frame();
+                methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
+                methodVisitor.visitTypeInsn(CHECKCAST, NUMERIC_RANGE);                                                                                      operandStack.replaceTop(NUMERIC_RANGE_TYPE);
+                assert Arrays.equals(ArrayOps.append(nrBaseStackFrame, NUMERIC_RANGE), operandStack.frame());
                 methodVisitor.visitJumpInsn(GOTO, numericRangeJoinLabel);
 
 
-                //TODO other integral types
+                //big integer
+                methodVisitor.visitLabel(bigIntegerLabel);
+                methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
+                final Label bigIntegerExclusiveLabel = new Label();
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStart", "()Ljava/lang/Object;", false);  operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, BIGINTEGER);                                                                                             operandStack.replaceTop(BIGINTEGER_TYPE);
+                methodVisitor.visitFieldInsn(GETSTATIC, BIGINT_COMPANION, MODULE$, BIGINT_COMPANION_DESCRIPTOR);                                                operandStack.push(BIGINT_COMPANION_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, BIGINT_COMPANION, "apply", "(" + BIGINTEGER_DESCRIPTOR + ")" + BIGINT_DESCRIPTOR, false);  operandStack.replaceTop(2, BIGINT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getEnd", "()Ljava/lang/Object;", false);    operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, BIGINTEGER);                                                                                             operandStack.replaceTop(BIGINTEGER_TYPE);
+                methodVisitor.visitFieldInsn(GETSTATIC, BIGINT_COMPANION, MODULE$, BIGINT_COMPANION_DESCRIPTOR);                                                operandStack.push(BIGINT_COMPANION_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, BIGINT_COMPANION, "apply", "(" + BIGINTEGER_DESCRIPTOR + ")" + BIGINT_DESCRIPTOR, false);  operandStack.replaceTop(2, BIGINT_TYPE);
+                methodVisitor.visitVarInsn(ALOAD, numericRangeIndex);                                                                                           operandStack.push(SCALALOADER_NUMERICRANGE_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "getStep", "()Ljava/lang/Object;", false);   operandStack.replaceTop(OBJECT_TYPE);
+                methodVisitor.visitTypeInsn(CHECKCAST, BIGINTEGER);                                                                                             operandStack.replaceTop(BIGINTEGER_TYPE);
+                methodVisitor.visitFieldInsn(GETSTATIC, BIGINT_COMPANION, MODULE$, BIGINT_COMPANION_DESCRIPTOR);                                                operandStack.push(BIGINT_COMPANION_TYPE);
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, BIGINT_COMPANION, "apply", "(" + BIGINTEGER_DESCRIPTOR + ")" + BIGINT_DESCRIPTOR, false);  operandStack.replaceTop(2, BIGINT_TYPE);
+                methodVisitor.visitFieldInsn(GETSTATIC, NUMERIC + "$BigIntIsIntegral$", MODULE$, "L" + NUMERIC + "$BigIntIsIntegral$" + ";");       operandStack.push(Type.getObjectType(NUMERIC + "$BigIntIsIntegral$"));
+                methodVisitor.visitMethodInsn(INVOKEVIRTUAL, SCALALOADER_NUMERICRANGE, "isInclusive", "()Z", false);                operandStack.replaceTop(BOOLEAN_TYPE);
+                methodVisitor.visitJumpInsn(IFEQ, bigIntegerExclusiveLabel);                                                                                    operandStack.pop();
+                final Object[] bigIntLocalFrame = localVariableTable.frame();
+                final Object[] bigIntStackFrame = operandStack.frame();
+                final Label joinBigIntLabel = new Label();
+                {   //inclusive
+                    methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE_COMPANION, "inclusive", inclusiveMethodDescriptor, false);   operandStack.replaceTop(5, NUMERIC_RANGE_INCLUSIVE_TYPE);
+                    methodVisitor.visitJumpInsn(GOTO, joinBigIntLabel);
+                }
+                methodVisitor.visitLabel(bigIntegerExclusiveLabel);
+                {   //exclusive
+                    methodVisitor.visitFrame(F_FULL, longLocalFrame.length, longLocalFrame, longStackFrame.length, longStackFrame);
+                    methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE_COMPANION, "apply", exclusiveMethodDescriptor, false);   operandStack.replaceTop(5, NUMERIC_RANGE_EXCLUSIVE_TYPE);
+                }
+                methodVisitor.visitLabel(joinBigIntLabel);
+                stackFrame = operandStack.frame();
+                methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);
+                methodVisitor.visitTypeInsn(CHECKCAST, NUMERIC_RANGE);                                                                                      operandStack.replaceTop(NUMERIC_RANGE_TYPE);
+                assert Arrays.equals(ArrayOps.append(nrBaseStackFrame, NUMERIC_RANGE), operandStack.frame());
+                methodVisitor.visitJumpInsn(GOTO, numericRangeJoinLabel);
 
+                //TODO other integral types (Custom)
 
                 methodVisitor.visitLabel(numericRangeJoinLabel);
                 assert Arrays.equals(nrBaseLocalFrame, localVariableTable.frame());
-                assert Arrays.equals(ArrayOps.append(nrBaseStackFrame, SCALALOADER_NUMERICRANGE), operandStack.frame());
+                assert Arrays.equals(ArrayOps.append(nrBaseStackFrame, NUMERIC_RANGE), operandStack.frame());
                 stackFrame = operandStack.frame();
                 methodVisitor.visitFrame(F_FULL, nrBaseLocalFrame.length, nrBaseLocalFrame, stackFrame.length, stackFrame);
                 
