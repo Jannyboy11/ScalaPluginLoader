@@ -2171,7 +2171,7 @@ class ScalaConversions {
                 }
                 methodVisitor.visitLabel(bigIntegerExclusiveLabel);
                 {   //exclusive
-                    methodVisitor.visitFrame(F_FULL, longLocalFrame.length, longLocalFrame, longStackFrame.length, longStackFrame);
+                    methodVisitor.visitFrame(F_FULL, bigIntLocalFrame.length, bigIntLocalFrame, bigIntStackFrame.length, bigIntStackFrame);
                     methodVisitor.visitMethodInsn(INVOKEVIRTUAL, NUMERIC_RANGE_COMPANION, "apply", exclusiveMethodDescriptor, false);   operandStack.replaceTop(5, NUMERIC_RANGE_EXCLUSIVE_TYPE);
                 }
                 methodVisitor.visitLabel(joinBigIntLabel);
