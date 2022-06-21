@@ -28,6 +28,7 @@ public enum ScalaVersion {
     v2_12_13("2.12.13"),
     v2_12_14("2.12.14"),
     v2_12_15("2.12.15"),
+    v2_12_16("2.12.16"),
 
     //2.13.x
     v2_13_0("2.13.0"),
@@ -48,7 +49,8 @@ public enum ScalaVersion {
     //3.1.x
     v3_1_0("3.1.0"),
     v3_1_1("3.1.1"),
-    v3_1_2("3.1.2");
+    v3_1_2("3.1.2"),
+    v3_1_3("3.1.3");
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
 
