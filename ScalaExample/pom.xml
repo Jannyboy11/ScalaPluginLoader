@@ -12,7 +12,7 @@
     <artifactId>ScalaExample</artifactId>
 
     <properties>
-        <scala.version>2.13.8</scala.version>
+        <scala.version>2.13.9</scala.version>
     </properties>
 
     <build>
