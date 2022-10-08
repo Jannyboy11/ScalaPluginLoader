@@ -70,8 +70,8 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCo
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion, Api, ApiVersion}
 
-@Scala(version = ScalaVersion.v2_13_7)
-@Api(ApiVersion.v1_18)
+@Scala(version = ScalaVersion.v2_13_8)
+@Api(ApiVersion.v1_19)
 object ExamplePlugin
     extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "1.0")
         .commands(new SPCommand("foo")
@@ -149,7 +149,7 @@ public final class DummyPlugin extends JavaPlugin {
 ## Compiling
 It's a [maven](https://maven.apache.org/) project, so just run `mvn package` and you're good to go.
 The jar file will be built at `./ScalaLoader/target/ScalaLoader-<version>.jar`
-Note that while ScalaLoader can run on Java 8, it requires JDK-18 to compile.
+Note that while ScalaLoader can run on Java 8, it requires JDK-19 to compile.
 
 ### Pre-built plugin jar file?
 Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
