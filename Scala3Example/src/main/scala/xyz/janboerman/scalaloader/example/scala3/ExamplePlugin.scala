@@ -4,12 +4,12 @@ import xyz.janboerman.scalaloader.configurationserializable.runtime.{Codec, Runt
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import zio.ZIO
-import zio.console.*
+import zio.Console
 
 @Scala(ScalaVersion.v3_2_0)
 object ExamplePlugin extends ScalaPlugin {
 
-    val syncRuntime = new BukkitRuntime(this).syncRuntime
+    var syncRuntime = new BukkitRuntime(this).syncRuntime
 
     override def onEnable(): Unit =
         getLogger.info("Hello from Scala 3!")
@@ -25,7 +25,7 @@ object ExamplePlugin extends ScalaPlugin {
         val fortyTwo: ZIO[Any, Nothing, Int] = ZIO.succeed(42)
         val program = for
             name <- fortyTwo.map(number => s"Jannyboy${number}")
-            _ <- putStrLn(s"Hello $name, welcome to ZIO!")
+            _ <- Console.printLine(s"Hello $name, welcome to ZIO!")
         yield ()
         syncRuntime.unsafeRun(program)
 
