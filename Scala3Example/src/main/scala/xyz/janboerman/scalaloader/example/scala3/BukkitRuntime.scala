@@ -40,10 +40,10 @@ private[scala3] class BukkitRuntime[P <: Plugin](plugin: P) {
     private val syncLayer: ZLayer[Any, Nothing, Unit] = Runtime.setExecutor(syncExecutor)
     private val asyncLayer: ZLayer[Any, Nothing, Unit] = Runtime.setExecutor(asyncExecutor)
 
-    //given zio.Unsafe = new zio.Unsafe {} //can't subclass a sealed trait.
+    given zio.Unsafe = null //TODO how to obtain an instance of zio.Unsafe? I can't implement my own because it's a sealed trait.
 
-    val syncRuntime = Runtime.unsafe.fromLayer(layer = syncLayer)   //no given instance Unsafe not found
-    val asyncRuntime = Runtime.unsafe.fromLayer(layer = asyncLayer) //idem
+    val syncRuntime = Runtime.unsafe.fromLayer(layer = syncLayer)
+    val asyncRuntime = Runtime.unsafe.fromLayer(layer = asyncLayer)
 
 }
 

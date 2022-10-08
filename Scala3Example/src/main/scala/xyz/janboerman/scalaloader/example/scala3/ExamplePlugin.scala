@@ -27,7 +27,7 @@ object ExamplePlugin extends ScalaPlugin {
             name <- fortyTwo.map(number => s"Jannyboy${number}")
             _ <- Console.printLine(s"Hello $name, welcome to ZIO!")
         yield ()
-        syncRuntime.unsafeRun(program)
+        syncRuntime.run(program)
 
 
     def assertionsEnabled: Boolean =
