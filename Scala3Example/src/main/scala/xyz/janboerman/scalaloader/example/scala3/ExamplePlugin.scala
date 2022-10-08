@@ -6,7 +6,7 @@ import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import zio.ZIO
 import zio.console.*
 
-@Scala(ScalaVersion.v3_1_2)
+@Scala(ScalaVersion.v3_2_0)
 object ExamplePlugin extends ScalaPlugin {
 
     val syncRuntime = new BukkitRuntime(this).syncRuntime

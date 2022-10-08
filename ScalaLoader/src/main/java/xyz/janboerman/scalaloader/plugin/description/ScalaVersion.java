@@ -41,8 +41,7 @@ public enum ScalaVersion {
     v2_13_6("2.13.6"),
     v2_13_7("2.13.7"),
     v2_13_8("2.13.8"),
-    @Deprecated v2_13_9("2.13.9"),
-    v2_13_10("2.13.10"),
+    v2_13_9("2.13.9", false), //https://github.com/scala/bug/issues/12650
 
     //3.0.x
     v3_0_0("3.0.0"),
@@ -94,7 +93,7 @@ public enum ScalaVersion {
                     mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(scalaVersion)),
                     mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(scalaVersion))
             );
-        } else if (scalaVersion.startsWith("3.0.") || scalaVersion.startsWith("3.1.")) {
+        } else if (scalaVersion.startsWith("3.0.") || scalaVersion.startsWith("3.1.") || scalaVersion.startsWith("3.2.")) {
             return mapOf(
                     mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(latest_2_13.getVersion())),
                     mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(latest_2_13.getVersion())),
@@ -102,7 +101,7 @@ public enum ScalaVersion {
                     mapEntry(PluginScalaVersion.TASTY_CORE_URL, mavenCentralScala3TastyCoreAdditions(scalaVersion))
             );
         } else {
-            assert false : "Scala 3.2+ not yet supported";
+            assert false : "Scala 3.3+ not yet supported";
             return null;
         }
     }
