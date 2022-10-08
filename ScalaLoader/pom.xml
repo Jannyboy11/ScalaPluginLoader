@@ -12,7 +12,7 @@
     <artifactId>ScalaLoader</artifactId>
 
     <properties>
-        <bukkitVersion>1.18.2-R0.1-SNAPSHOT</bukkitVersion>
+        <bukkitVersion>1.19.2-R0.1-SNAPSHOT</bukkitVersion>
         <asmVersion>9.3</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>

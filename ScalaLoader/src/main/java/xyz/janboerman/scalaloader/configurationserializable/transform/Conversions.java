@@ -2139,7 +2139,6 @@ class ScalaConversions {
                 assert Arrays.equals(ArrayOps.append(nrBaseStackFrame, NUMERIC_RANGE), operandStack.frame());
                 methodVisitor.visitJumpInsn(GOTO, numericRangeJoinLabel);
 
-
                 //big integer
                 methodVisitor.visitLabel(bigIntegerLabel);
                 methodVisitor.visitFrame(F_FULL, localFrame.length, localFrame, stackFrame.length, stackFrame);

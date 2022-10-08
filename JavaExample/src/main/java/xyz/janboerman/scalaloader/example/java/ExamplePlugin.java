@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @CustomScala(@Version(value = "2.13.0",
         scalaLibraryUrl = "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-library/2.13.0/scala-library-2.13.0.jar",
         scalaReflectUrl = "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-reflect/2.13.0/scala-reflect-2.13.0.jar"))
-@Api(ApiVersion.v1_18)
+@Api(ApiVersion.v1_19)
 public class ExamplePlugin extends ScalaPlugin {
 
     private final Random random = new Random();

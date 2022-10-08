@@ -29,6 +29,7 @@ public enum ScalaVersion {
     v2_12_14("2.12.14"),
     v2_12_15("2.12.15"),
     v2_12_16("2.12.16"),
+    v2_12_17("2.12.17"),
 
     //2.13.x
     v2_13_0("2.13.0"),
@@ -40,6 +41,8 @@ public enum ScalaVersion {
     v2_13_6("2.13.6"),
     v2_13_7("2.13.7"),
     v2_13_8("2.13.8"),
+    @Deprecated v2_13_9("2.13.9"),
+    v2_13_10("2.13.10"),
 
     //3.0.x
     v3_0_0("3.0.0"),
@@ -50,7 +53,10 @@ public enum ScalaVersion {
     v3_1_0("3.1.0"),
     v3_1_1("3.1.1"),
     v3_1_2("3.1.2"),
-    v3_1_3("3.1.3");
+    v3_1_3("3.1.3"),
+
+    //3.2.x
+    v3_2_0("3.2.0");
 
     //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
 

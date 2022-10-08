@@ -9,7 +9,7 @@ import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 
 @Scala(version = ScalaVersion.v2_13_8)
-@Api(ApiVersion.v1_16)
+@Api(ApiVersion.v1_19)
 object ExamplePlugin
     extends ScalaPlugin(new ScalaPluginDescription("ScalaExample", "0.17.16-SNAPSHOT")
         .addCommand(new SPCommand("foo") permission "scalaexample.foo")
