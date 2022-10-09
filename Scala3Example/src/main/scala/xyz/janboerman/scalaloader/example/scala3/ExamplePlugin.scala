@@ -3,8 +3,7 @@ package xyz.janboerman.scalaloader.example.scala3
 import xyz.janboerman.scalaloader.configurationserializable.runtime.{Codec, RuntimeConversions}
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
-import zio.ZIO
-import zio.Console
+import zio.{ZIO, Console}
 
 @Scala(ScalaVersion.v3_2_0)
 object ExamplePlugin extends ScalaPlugin {
