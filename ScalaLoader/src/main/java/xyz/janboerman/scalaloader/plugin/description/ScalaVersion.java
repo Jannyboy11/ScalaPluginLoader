@@ -42,6 +42,7 @@ public enum ScalaVersion {
     v2_13_7("2.13.7"),
     v2_13_8("2.13.8"),
     v2_13_9("2.13.9", false), //https://github.com/scala/bug/issues/12650
+    v2_13_10("2.13.10"),
 
     //3.0.x
     v3_0_0("3.0.0"),
