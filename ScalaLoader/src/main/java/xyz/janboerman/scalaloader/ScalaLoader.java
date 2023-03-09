@@ -128,6 +128,8 @@ public final class ScalaLoader extends JavaPlugin {
             for (File file : scalaPluginsFolder.listFiles((File dir, String name) -> name.endsWith(".jar"))) {
                 try {
                     getServer().getPluginManager().loadPlugin(file);    //will now use our own ScalaPluginLoader to load the plugin
+                    //TODO: Problematic on Paper-405 and later (the "PaperPlugin" update: https://github.com/PaperMC/Paper/pull/8108)
+                    //TODO probably a bug in Paper itself: https://github.com/Jannyboy11/ScalaPluginLoader/issues/20
                 } catch (UnknownDependencyException ude) {
                     ScalaPluginLoader.getInstance().loadWhenDependenciesComeAvailable(file);
                     scalaPluginsWaitingOnJavaPlugins.put(file, ude);

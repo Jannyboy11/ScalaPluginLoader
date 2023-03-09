@@ -31,13 +31,17 @@ public enum ApiVersion {
     /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.20 */
     v1_20("1.20"),
     /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.21 */
-    v1_21("1.21");
+    v1_21("1.21"),
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.22 */
+    v1_22("1.22");
 
     private static final ApiVersion LATEST_VERSION;
     static {
         ApiVersion runningOn;
         String bukkitVersion = Bukkit.getBukkitVersion();
-        if (bukkitVersion.startsWith("1.21")) {
+        if (bukkitVersion.startsWith("1.22")) {
+            runningOn = v1_22;
+        } else if (bukkitVersion.startsWith("1.21")) {
             runningOn = v1_21;
         } else if (bukkitVersion.startsWith("1.20")) {
             runningOn = v1_20;
