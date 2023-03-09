@@ -76,6 +76,8 @@ public class ClassLoaderUtils {
             }
         }
 
+        //TODO paper transformations
+
         //apply bukkit bytecode transformations
         try {
             classBytes = platform.transform(path, classBytes, plugin);

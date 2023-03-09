@@ -12,8 +12,8 @@
     <artifactId>ScalaLoader</artifactId>
 
     <properties>
-        <bukkitVersion>1.19.2-R0.1-SNAPSHOT</bukkitVersion>
-        <asmVersion>9.3</asmVersion>
+        <bukkitVersion>1.19.3-R0.1-SNAPSHOT</bukkitVersion>
+        <asmVersion>9.4</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
         <mavenResolverProviderVersion>3.8.1</mavenResolverProviderVersion>
@@ -45,7 +45,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.0</version>
+                <version>3.11.0</version>
                 <configuration>
                     <release>8</release>
                     <parameters>true</parameters>
@@ -110,7 +110,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.3.0</version>
                 <configuration>
                     <archive>
                         <manifestEntries>
@@ -261,10 +261,15 @@
     </build>
 
     <repositories>
-        <!-- Spigot repo -->
+<!--        &lt;!&ndash; Spigot repo &ndash;&gt;-->
+<!--        <repository>-->
+<!--            <id>spigotmc-repo</id>-->
+<!--            <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>-->
+<!--        </repository>-->
+        <!-- Paper repo -->
         <repository>
-            <id>spigotmc-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+            <id>papermc-repo</id>
+            <url> https://repo.papermc.io/repository/maven-public/</url>
         </repository>
     </repositories>
 
@@ -273,6 +278,13 @@
             <!-- depend on spigot-api instead of bukkit here because newer versions of bukkit aren't hosted on SpigotMC's maven -->
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
+            <version>${bukkitVersion}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <!-- depend on paper-api instead of spigot-api because of Paper's new PaperPlugin loading system -->
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
             <version>${bukkitVersion}</version>
             <scope>provided</scope>
         </dependency>

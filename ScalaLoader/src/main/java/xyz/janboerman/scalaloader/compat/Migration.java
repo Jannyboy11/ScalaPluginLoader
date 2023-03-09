@@ -3,10 +3,18 @@ package xyz.janboerman.scalaloader.compat;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 import xyz.janboerman.scalaloader.bytecode.AsmConstants;
+import xyz.janboerman.scalaloader.bytecode.Called;
 import static xyz.janboerman.scalaloader.compat.Compat.*;
+import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
+import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.Permission;
+
+import java.util.Collection;
 
 /**
  * This class is NOT part of the public API!
@@ -26,12 +34,17 @@ public class Migration {
         ClassVisitor combinedTransformer = classWriter;
 
         combinedTransformer = new NumericRangeUpdater(combinedTransformer);
+        combinedTransformer = new PermissionGetChildrenReplacer(combinedTransformer);
         //there is room for more here.
 
         new ClassReader(byteCode).accept(combinedTransformer, ClassReader.EXPAND_FRAMES);
         return classWriter.toByteArray();
     }
 
+    @Called
+    public static Collection<Permission> legacyGetChildren(Permission permission) {
+        return permission.getChildren().keySet();
+    }
 }
 
 class NumericRangeUpdater extends ClassRemapper {
@@ -70,6 +83,33 @@ class NumericRangeUpdater extends ClassRemapper {
                     mapEntry(OLD_BIG_INTEGER_RANGE, NEW_BIG_INTEGER_RANGE)
             ));
         }
+    }
+
+}
+
+class PermissionGetChildrenReplacer extends ClassVisitor {
+
+    private static final String SCALALOADER_PERMISSION_NAME = Type.getInternalName(ScalaPluginDescription.Permission.class);
+    private static final String GETCHILDREN_NAME = "getChildren";
+    private static final String GETCHILDREN_DESCRIPTOR = "()" + Type.getDescriptor(Collection.class);
+    private static final String LEGACYGETCHILDREN_DESCRIPTOR = "(" + Type.getDescriptor(ScalaPluginDescription.Permission.class) + ")" + Type.getDescriptor(Collection.class);
+
+    PermissionGetChildrenReplacer(ClassVisitor delegate) {
+        super(AsmConstants.ASM_API, delegate);
+    }
+
+    @Override
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        return new MethodVisitor(AsmConstants.ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+            @Override
+            public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                if (SCALALOADER_PERMISSION_NAME.equals(owner) && GETCHILDREN_NAME.equals(name) && GETCHILDREN_DESCRIPTOR.equals(descriptor)) {
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Migration.class), "legacyGetChildren", LEGACYGETCHILDREN_DESCRIPTOR, false);
+                } else {
+                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                }
+            }
+        };
     }
 
 }

@@ -1,3 +1,5 @@
+//TODO there seems to be a maven bug: the java compiler can't find module xyz.janboerman.scalaloader
+//TODO re-enable this module thing again when the maven bug is fixed.
 module xyz.janboerman.scalaloader.javaexample {
     requires java.logging;
     requires org.bukkit;

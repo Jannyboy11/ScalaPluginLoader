@@ -33,6 +33,7 @@ import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
 import xyz.janboerman.scalaloader.commands.ResetScalaUrls;
 import xyz.janboerman.scalaloader.commands.SetDebug;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
@@ -46,7 +47,7 @@ import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
  *
  * @note undocumented methods are unintended for use outside of this plugin.
  */
-public final class ScalaLoader extends JavaPlugin {
+public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
     private final DebugSettings debugSettings = new DebugSettings(this);
@@ -66,9 +67,7 @@ public final class ScalaLoader extends JavaPlugin {
         }
 
         //dirty hack to override the previous pattern.
-
         boolean myHackWorked; //try to get hold of the pattern. k thnx
-
         Server server = Bukkit.getServer();
         try {
             SimplePluginManager pluginManager = (SimplePluginManager) server.getPluginManager();
@@ -102,10 +101,17 @@ public final class ScalaLoader extends JavaPlugin {
         }
     }
 
+    @Override
+    public boolean isPaperPlugin() {
+        return false;
+    }
+
+    @Override
     public DebugSettings getDebugSettings() {
         return debugSettings;
     }
 
+    @Override
     public File getScalaPluginsFolder() {
         return scalaPluginsFolder;
     }
@@ -205,34 +211,6 @@ public final class ScalaLoader extends JavaPlugin {
     @Override
     public void onDisable() {
         //Do we want to disable the scala plugins? I don't think so
-    }
-
-    /**
-     * Runs a task on the server's main thread.
-     *
-     * @deprecated This method is only used by deprecated methods, and thus is no longer needed.
-     *             Should you need equivalent functionality, then use the following snippet:
-     *             <pre>
-     *                 <code>
-     *                     if (Bukkit.isPrimaryThread()) {
-     *                         runnable.run();
-     *                     } else {
-     *                         Bukkit.getScheduler().runTask(scalaLoader, runnable);
-     *                     }
-     *                 </code>
-     *             </pre>
-     *
-     * @param runnable the task to run on the main thread
-     */
-    @Deprecated
-    public void runInMainThread(Runnable runnable) {
-        Server server = getServer();
-
-        if (server.isPrimaryThread()) {
-            runnable.run();
-        } else {
-            server.getScheduler().runTask(this, runnable);
-        }
     }
 
     private void configure() {

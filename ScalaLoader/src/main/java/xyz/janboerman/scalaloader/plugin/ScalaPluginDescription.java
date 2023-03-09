@@ -62,6 +62,12 @@ public class ScalaPluginDescription {
         this.addYaml = yaml;
     }
 
+    /** @deprecated internal use only */
+    @Deprecated
+    public String getMain() {
+        return main;
+    }
+
     public String getName() {
         return pluginName;
     }
@@ -313,16 +319,33 @@ public class ScalaPluginDescription {
         permission.getDescription().ifPresent(description -> currentPermission.put("description", description));
         PermissionDefault permissionDefault = permission.getDefault().orElse(parentDefault);
         currentPermission.put("default", permissionDefault.name());
-        Collection<Permission> children = permission.getChildren();
+        Map<Permission, Boolean> children = permission.getChildren();
         if (!children.isEmpty()) {
             Map<String, Object> childrenMap = new HashMap<>();
-            for (Permission child : children) {
-                childrenMap.put(child.getName(), createPermissionMap(child, permissionDefault));
+            for (Map.Entry<Permission, Boolean> entry : children.entrySet()) {
+                Permission child = entry.getKey();
+                Boolean enabled = entry.getValue();
+                childrenMap.put(child.getName(), createPermissionMap(child, permissionDefault(permissionDefault, !enabled.booleanValue())));
             }
             currentPermission.put("children", childrenMap);
         }
 
         return currentPermission;
+    }
+
+    private static PermissionDefault permissionDefault(PermissionDefault permissionDefault, boolean inverse) {
+        if (inverse) {
+            switch (permissionDefault) {
+                case NOT_OP: return PermissionDefault.OP;
+                case OP: return PermissionDefault.NOT_OP;
+                case TRUE: return PermissionDefault.FALSE;
+                case FALSE: return PermissionDefault.TRUE;
+                default:
+                    throw new RuntimeException("Unknown PermissionDefault: " + permissionDefault);
+            }
+        } else {
+            return permissionDefault;
+        }
     }
 
     protected void readFromPluginYamlData(Map<String, Object> pluginYaml) {
@@ -507,7 +530,7 @@ public class ScalaPluginDescription {
         private final String name;
         private String description;
         private PermissionDefault permissionDefault;
-        private LinkedHashSet<Permission> children;
+        private LinkedHashMap<Permission, Boolean> children;
 
         public Permission(String name) {
             this.name = Objects.requireNonNull(name, "Permission name cannot be null");
@@ -524,13 +547,20 @@ public class ScalaPluginDescription {
         }
 
         public Permission children(Permission... children) {
-            this.children = new LinkedHashSet<>(Arrays.asList(children));
+            for (Permission child : children) {
+                addChild(child);
+            }
             return this;
         }
 
         public Permission addChild(Permission child) {
-            if (children == null) children = new LinkedHashSet<>();
-            children.add(child);
+            addChild(child, true);
+            return this;
+        }
+
+        public Permission addChild(Permission child, boolean enabled) {
+            if (children == null) children = new LinkedHashMap<>();
+            children.put(child, enabled);
             return this;
         }
 
@@ -546,8 +576,8 @@ public class ScalaPluginDescription {
             return Optional.ofNullable(permissionDefault);
         }
 
-        public Collection<Permission> getChildren() {
-            return children == null ? Compat.emptySet() : Collections.unmodifiableSet(children);
+        public Map<Permission, Boolean> getChildren() {
+            return children == null ? Compat.emptyMap() : Collections.unmodifiableMap(children);
         }
 
         @Override

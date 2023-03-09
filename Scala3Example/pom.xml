@@ -12,8 +12,8 @@
     <artifactId>Scala3Example</artifactId>
 
     <properties>
-        <scala.boostrapVersion>2.13.8</scala.boostrapVersion>
-        <scala.version>3.2.0</scala.version>
+        <scala.boostrapVersion>2.13.10</scala.boostrapVersion>
+        <scala.version>3.2.2</scala.version>
     </properties>
 
     <build>
@@ -109,7 +109,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.19.2-R0.1-SNAPSHOT</version>
+            <version>1.19.3-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 

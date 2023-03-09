@@ -1,0 +1,60 @@
+name: ScalaLoader
+version: ${project.version}
+main: xyz.janboerman.scalaloader.paper.ScalaLoader
+api-version: 1.19
+load: STARTUP
+author: Jannyboy11
+website: https://github.com/Jannyboy11/ScalaPluginLoader
+description:
+  >
+  API to create plugins in Scala more easily.
+  Supports multiple versions of Scala concurrently.
+  No need for a plugin.yml file.
+  Can load plugins from Scala singleton 'object's.
+  Loads only the necessary Scala classes at runtime.
+  Provides a boilerplate-free event api.
+  Provides a boilerplate-free configuration-serialization api.
+
+commands:
+  listScalaPlugins:
+    usage: "/<command>"
+    description: Outputs the scala plugins, grouped by their version of Scala.
+    permission: scalaloader.listscalaplugins
+    aliases: [scalaplugins]
+  resetScalaUrls:
+    usage: "/<command> all|[<scala version>]"
+    description:
+      >
+      Resets the config URL of the built-in scala version.
+      Useful if you overwrote some of the urls.
+      If 'all' is provided as a scala version, this command resets the URLs of all the built-in scala versions.
+    permission: scalaloader.resetscalaurls
+  dumpClass:
+    usage: "/<command> <plugin> <class file> <format>?"
+    description:
+      >
+      Dumps a class definition to the console/logs.
+      The class can be printed in ASM format or in the regular text format for Java bytecode.
+    permission: scalaloader.dumpclass
+  setDebug:
+    usage: "/<command> <class name>"
+    description:
+      >
+      Adds a class name to the debug configuration, causing the classloader to dump the transformed class to the logs/console
+      the next time the class is loaded.
+    permission: scalaloader.setdebug
+
+
+permissions:
+  scalaloader.resetscalaurls:
+    description: Allows users to reset the scala url configs.
+    default: op
+  scalaloader.dumpclass:
+    description: Allows users to dump a class to the console/logs.
+    default: op
+  scalaloader.setdebug:
+    description: Allows users to debug classloading.
+    default: op
+  scalaloader.listscalaplugins:
+    description: Allows users to see the scala plugins by their scala version.
+    default: op
