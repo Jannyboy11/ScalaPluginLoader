@@ -232,7 +232,7 @@
                     <failOnError>false</failOnError>
 
                     <!-- so that proper hyperlinks to standard jdk classes are generated -->
-                    <additionalOptions>-source 18</additionalOptions>
+                    <additionalOptions>-source 19</additionalOptions>
                 </configuration>
 
                 <!-- I don't even get why this workaround is required.
