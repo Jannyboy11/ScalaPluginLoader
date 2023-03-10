@@ -18,6 +18,7 @@ import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.dependency.LibraryClassLoader;
 import xyz.janboerman.scalaloader.util.ClassLoaderUtils;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
@@ -46,7 +47,7 @@ import java.util.jar.*;
  * The {@link ScalaPluginLoader} will create instances per scala plugin.
  */
 @Called
-public class ScalaPluginClassLoader extends URLClassLoader {
+public class ScalaPluginClassLoader extends URLClassLoader implements IScalaPluginClassLoader {
 
     static {
         registerAsParallelCapable();

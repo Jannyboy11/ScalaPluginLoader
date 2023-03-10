@@ -138,6 +138,11 @@ public abstract class ScalaPlugin implements IScalaPlugin {
         return classLoader;
     }
 
+    @Override
+    public final ScalaPluginClassLoader classLoader() {
+        return getClassLoader();
+    }
+
     /**
      * Get the ScalaLoader's EventBus! This event bus allows you to call {@link xyz.janboerman.scalaloader.event.Event}s,
      * which will allow you to write less boilerplate.

@@ -9,8 +9,7 @@ import java.io.File;
 public interface IScalaPlugin extends Plugin {
 
     public EventBus getEventBus();
-
-
+    
     public String getScalaVersion();
 
     public ScalaRelease getScalaRelease();
@@ -19,5 +18,7 @@ public interface IScalaPlugin extends Plugin {
     public String getDeclaredScalaVersion();
 
     public String getName();
+    
+    public IScalaPluginClassLoader classLoader();
 
 }
