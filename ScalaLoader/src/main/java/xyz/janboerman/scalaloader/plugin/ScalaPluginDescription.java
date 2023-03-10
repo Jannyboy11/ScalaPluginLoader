@@ -35,8 +35,8 @@ public class ScalaPluginDescription {
     private final LinkedHashSet<String> softDependencies = new LinkedHashSet<>(); { addSoftDepend("ScalaLoader"); }
     private final LinkedHashSet<String> inverseDependencies = new LinkedHashSet<>();
     private final LinkedHashSet<String> provides = new LinkedHashSet<>();
+    private final LinkedHashSet<String> mavenDependencies = new LinkedHashSet<>();
     private PermissionDefault permissionDefault = PERMISSION_DEFAULT;
-
     private final LinkedHashSet<Command> commands = new LinkedHashSet<>();
     private final LinkedHashSet<Permission> permissions = new LinkedHashSet<>();
 
@@ -216,6 +216,31 @@ public class ScalaPluginDescription {
         return Collections.unmodifiableSet(provides);
     }
 
+    /**
+     * Sets the maven dependencies of the ScalaPlugin. This method only supports maven dependencies available on Maven Central.
+     * @param mavenDependencies the dependencies in GAV format, e.g. "com.example.foo:foo:1.0"
+     * @return this ScalaPluginDescription
+     */
+    public ScalaPluginDescription mavenDependencies(String... mavenDependencies) {
+        this.mavenDependencies.clear();
+        Collections.addAll(this.mavenDependencies, mavenDependencies);
+        return this;
+    }
+
+    /**
+     * Adds a maven dependency to the ScalaPlugin. This method only supports maven dependencies available on Maven Central.
+     * @param mavenDependency the dependency in GAV format, e.g. "com.example.foo:foo:1.0"
+     * @return this ScalaPluginDescription
+     */
+    public ScalaPluginDescription addMavenDependency(String mavenDependency) {
+        this.mavenDependencies.add(mavenDependency);
+        return this;
+    }
+
+    public Set<String> getMavenDependencies() {
+        return Collections.unmodifiableSet(mavenDependencies);
+    }
+
     public ScalaPluginDescription permissionDefault(PermissionDefault permissionDefault) {
         this.permissionDefault = permissionDefault;
         return this;
@@ -276,6 +301,7 @@ public class ScalaPluginDescription {
         if (!softDependencies.isEmpty()) pluginData.put("softdepend", Compat.listCopy(softDependencies));
         if (!inverseDependencies.isEmpty()) pluginData.put("loadbefore", Compat.listCopy(inverseDependencies));
         if (!provides.isEmpty()) pluginData.put("provides", Compat.listCopy(provides));
+        if (!mavenDependencies.isEmpty()) pluginData.put("libraries", Compat.listCopy(mavenDependencies));
         if (!commands.isEmpty()) {
             Map<String, Map<String, Object>> commandsMap = new HashMap<>();
             for (Command command : getCommands()) {
@@ -394,6 +420,9 @@ public class ScalaPluginDescription {
         List<String> provides = (List<String>) pluginYaml.get("provides");
         if (provides != null)
             provides(provides.toArray(new String[0]));
+        List<String> mavenDeps = (List<String>) pluginYaml.get("libraries");
+        if (mavenDeps != null)
+            mavenDependencies(mavenDeps.toArray(new String[0]));
         Map<String, Map<String, Object>> commands = (Map) pluginYaml.get("commands");
         if (commands != null) {
             for (Map.Entry<String, Map<String, Object>> entry : commands.entrySet()) {

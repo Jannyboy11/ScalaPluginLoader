@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.compat;
 
 import org.bukkit.Server;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 import xyz.janboerman.scalaloader.DebugSettings;

@@ -12,9 +12,6 @@ import org.bukkit.plugin.UnknownDependencyException;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
 
-import org.bstats.bukkit.Metrics;
-import org.bstats.charts.DrilldownPie;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,11 +25,6 @@ import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import xyz.janboerman.scalaloader.commands.DumpClass;
-import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
-import xyz.janboerman.scalaloader.commands.ResetScalaUrls;
-import xyz.janboerman.scalaloader.commands.SetDebug;
-import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
@@ -40,6 +32,7 @@ import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
+import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 /**
  * The ScalaLoader plugin's main class! ScalaLoader enables you to write plugins in Scala. Just depend on ScalaLoader,
@@ -129,7 +122,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @SuppressWarnings("unchecked")
     public void onLoad() {
         //setup config
-        configure();
+        ScalaLoaderUtils.initConfiguration(this);
 
         //try to load scala plugins in the same plugin load phase as java plugins
         if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
@@ -162,10 +155,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @Override
     public void onEnable() {
         //ScalaLoader commands
-        getCommand("resetScalaUrls").setExecutor(new ResetScalaUrls(this));
-        getCommand("dumpClass").setExecutor(new DumpClass(this));
-        getCommand("setDebug").setExecutor(new SetDebug(getDebugSettings()));
-        getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins());
+        ScalaLoaderUtils.initCommands(this);
 
         //if the ".jar"-pluginloader is overridden, then check for unloaded plugins. otherwise just enable the scalaplugins now.
         if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
@@ -193,50 +183,12 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             }
         }
 
-        //initialize bStats
-        final int pluginId = 9150;
-        Metrics metrics = new Metrics(this, pluginId);
-        metrics.addCustomChart(new DrilldownPie("declared_scala_version", () -> {
-            Map<String /*compat-release version*/, Map<String /*actual version*/, Integer /*amount*/>> stats = new HashMap<>();
-
-            for (ScalaPlugin scalaPlugin : ScalaPluginLoader.getInstance().getScalaPlugins()) {
-                String scalaVersion = scalaPlugin.getDeclaredScalaVersion();
-                String compatVersion = ScalaRelease.fromScalaVersion(scalaVersion).getCompatVersion();
-
-                stats.computeIfAbsent(compatVersion, k -> new HashMap<>())
-                        .compute(scalaVersion, (v, amount) -> amount == null ? 1 : amount + 1);
-            }
-
-            return stats;
-        }));
-        //TODO track used features of the ScalaLoader plugin -> ConfigurationSerializable api?, Event api? (could make these drilldowns!)
-        //TODO track popular third-party libraries (once we include a third-party library loading api) (using advanced pie!)
+        ScalaLoaderUtils.initBStats(this);
     }
 
     @Override
     public void onDisable() {
         //Do we want to disable the scala plugins? I don't think so
-    }
-
-    private void configure() {
-        //ScalaLoader config stuff
-        saveDefaultConfig();
-        PluginScalaVersion.register();
-        ClassFile.register();
-        FileConfiguration config = getConfig();
-        if (!config.isList("scala-versions")) {
-            getConfig().set("scala-versions", Arrays.stream(ScalaVersion.values()).map(PluginScalaVersion::fromScalaVersion).collect(Collectors.toList()));
-            saveConfig();
-        }
-
-        //ScalaPlugin config stuff
-        xyz.janboerman.scalaloader.configurationserializable.runtime.types.Primitives.registerWithConfigurationSerialization();
-        xyz.janboerman.scalaloader.configurationserializable.runtime.types.NumericRange.registerWithConfigurationSerialization();
-        xyz.janboerman.scalaloader.configurationserializable.runtime.types.UUID.registerWithConfigurationSerialization();
-        xyz.janboerman.scalaloader.configurationserializable.runtime.types.BigInteger.registerWithConfigurationSerialization();
-        xyz.janboerman.scalaloader.configurationserializable.runtime.types.BigDecimal.registerWithConfigurationSerialization();
-        xyz.janboerman.scalaloader.configurationserializable.runtime.types.Option.registerWithConfigurationSerialization();
-        xyz.janboerman.scalaloader.configurationserializable.runtime.types.Either.registerWithConfigurationSerialization();
     }
 
     private boolean downloadScalaJarFiles() {

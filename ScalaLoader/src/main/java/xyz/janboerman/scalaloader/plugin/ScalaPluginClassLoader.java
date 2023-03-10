@@ -27,7 +27,7 @@ import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassGenerator;
 import xyz.janboerman.scalaloader.plugin.runtime.PersistentClasses;
-import xyz.janboerman.scalaloader.util.PluginUtils;
+import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -112,7 +112,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                                                     this,
                                                     transformerRegistry);
         try {
-            this.plugin = PluginUtils.createPluginInstance((Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this));
+            this.plugin = ScalaLoaderUtils.createScalaPluginInstance((Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this));
         } catch (ClassNotFoundException e) {
             throw new ScalaPluginLoaderException("Could not find plugin's main class: " + mainClassName, e);
         }

@@ -1,22 +1,12 @@
 package xyz.janboerman.scalaloader.plugin.paper;
 
-import org.bstats.bukkit.Metrics;
-import org.bstats.charts.DrilldownPie;
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.janboerman.scalaloader.DebugSettings;
-import xyz.janboerman.scalaloader.ScalaRelease;
-import xyz.janboerman.scalaloader.commands.DumpClass;
-import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
-import xyz.janboerman.scalaloader.commands.ResetScalaUrls;
-import xyz.janboerman.scalaloader.commands.SetDebug;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
-import xyz.janboerman.scalaloader.compat.IScalaPlugin;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
+import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
@@ -53,46 +43,15 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     @Override
     public void onLoad() {
-        initConfigurations();
+        ScalaLoaderUtils.initConfiguration(this);
         loadScalaPlugins();
     }
 
     @Override
     public void onEnable() {
-        initCommands();
-
-        //TODO enable ScalaPlugins
-
-        initBStats();
-    }
-
-    private void initConfigurations() {
-        //TODO
-    }
-
-    private void initCommands() {
-        getCommand("resetScalaUrls").setExecutor(new ResetScalaUrls(this));
-        getCommand("dumpClass").setExecutor(new DumpClass(this));
-        getCommand("setDebug").setExecutor(new SetDebug(getDebugSettings()));
-        getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins());
-    }
-
-    private void initBStats() {
-        final int pluginId = 9150;
-        Metrics metrics = new Metrics(this, pluginId);
-        metrics.addCustomChart(new DrilldownPie("declared_scala_version", () -> {
-            Map<String /*compat-release version*/, Map<String /*actual version*/, Integer /*amount*/>> stats = new HashMap<>();
-
-            for (IScalaPlugin scalaPlugin : getScalaPlugins()) {
-                String scalaVersion = scalaPlugin.getDeclaredScalaVersion();
-                String compatVersion = ScalaRelease.fromScalaVersion(scalaVersion).getCompatVersion();
-
-                stats.computeIfAbsent(compatVersion, k -> new HashMap<>())
-                        .compute(scalaVersion, (v, amount) -> amount == null ? 1 : amount + 1);
-            }
-
-            return stats;
-        }));
+        ScalaLoaderUtils.initCommands(this);
+        enableScalaPlugins();
+        ScalaLoaderUtils.initBStats(this);
     }
 
     private void loadScalaPlugins() {
@@ -100,6 +59,10 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
         for (File file : scalaPluginsFolder.listFiles((File dir, String name) -> name.endsWith(".jar"))) {
             //loadScalaPlugin(file);
         }
-
     }
+
+    private void enableScalaPlugins() {
+        //TODO
+    }
+
 }

@@ -6,12 +6,18 @@ import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 
-public class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
+public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
 
-    private ScalaPluginDescription description;
+    private final ScalaPluginDescription description;
 
-    public ScalaPlugin(ScalaPluginDescription description) {
+    protected ScalaPlugin(ScalaPluginDescription description) {
         this.description = description;
+    }
+
+    protected ScalaPlugin() {
+        //TODO get ScalaPlugin description from the ScalaPluginClassLoader.
+        //TODO there must be either a paper-plugin.yml or plugin.yml in the plugin's jar file.
+        this.description = null;
     }
 
     ScalaPluginDescription getScalaDescription() {
