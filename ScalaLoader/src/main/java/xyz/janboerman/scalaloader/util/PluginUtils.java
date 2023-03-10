@@ -8,9 +8,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
-public class CommonUtils {
+public class PluginUtils {
 
-    private CommonUtils() {
+    private PluginUtils() {
     }
 
     //TODO move code for registering commands, configuration and bStats here (for now)

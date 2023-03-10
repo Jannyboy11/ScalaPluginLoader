@@ -4,7 +4,7 @@ import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import io.papermc.paper.plugin.bootstrap.PluginProviderContext;
 import org.jetbrains.annotations.NotNull;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
-import xyz.janboerman.scalaloader.util.CommonUtils;
+import xyz.janboerman.scalaloader.util.PluginUtils;
 
 public class ScalaPluginBootstrap implements PluginBootstrap {
 
@@ -31,7 +31,7 @@ public class ScalaPluginBootstrap implements PluginBootstrap {
 
         try {
             Class<? extends ScalaPlugin> scalaPluginClazz = (Class<? extends ScalaPlugin>) Class.forName(main, false, classLoader);
-            return CommonUtils.createPluginInstance(scalaPluginClazz);
+            return PluginUtils.createPluginInstance(scalaPluginClazz);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not find plugin main class: " + main, e);
         } catch (ScalaPluginLoaderException e) {

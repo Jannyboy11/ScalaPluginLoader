@@ -2,7 +2,9 @@ package xyz.janboerman.scalaloader.plugin.paper;
 
 import java.io.File;
 
-public class ScalaPluginClassLoader extends ClassLoader {
+//import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
+
+public class ScalaPluginClassLoader extends ClassLoader /*PaperPluginClassLoader*/ {
 
     static {
         registerAsParallelCapable();

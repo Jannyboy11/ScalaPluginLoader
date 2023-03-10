@@ -17,27 +17,21 @@ import org.objectweb.asm.util.*;
 import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
-import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.bytecode.Called;
-import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.dependency.LibraryClassLoader;
 import xyz.janboerman.scalaloader.util.ClassLoaderUtils;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
-import xyz.janboerman.scalaloader.compat.Platform;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassGenerator;
 import xyz.janboerman.scalaloader.plugin.runtime.PersistentClasses;
-import xyz.janboerman.scalaloader.util.CommonUtils;
+import xyz.janboerman.scalaloader.util.PluginUtils;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSigner;
@@ -118,7 +112,7 @@ public class ScalaPluginClassLoader extends URLClassLoader {
                                                     this,
                                                     transformerRegistry);
         try {
-            this.plugin = CommonUtils.createPluginInstance((Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this));
+            this.plugin = PluginUtils.createPluginInstance((Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this));
         } catch (ClassNotFoundException e) {
             throw new ScalaPluginLoaderException("Could not find plugin's main class: " + mainClassName, e);
         }
