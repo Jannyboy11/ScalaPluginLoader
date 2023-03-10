@@ -26,7 +26,7 @@ public class ScalaPluginBootstrap implements PluginBootstrap {
 
         ScalaPluginMeta description = (ScalaPluginMeta) context.getConfiguration();
 
-        ScalaPluginClassLoader classLoader = new ScalaPluginClassLoader(); //TODO
+        ScalaPluginClassLoader classLoader = null; //TODO new ScalaPluginClassLoader();
         String main = description.getMainClass();
 
         try {

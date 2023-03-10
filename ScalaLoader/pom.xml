@@ -267,11 +267,11 @@
     </build>
 
     <repositories>
-<!--        &lt;!&ndash; Spigot repo &ndash;&gt;-->
-<!--        <repository>-->
-<!--            <id>spigotmc-repo</id>-->
-<!--            <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>-->
-<!--        </repository>-->
+        <!-- Spigot repo -->
+        <repository>
+            <id>spigotmc-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+        </repository>
         <!-- Paper repo -->
         <repository>
             <id>papermc-repo</id>
@@ -280,27 +280,28 @@
     </repositories>
 
     <dependencies>
-<!--        <dependency>-->
-<!--            &lt;!&ndash; depend on spigot-api instead of bukkit here because newer versions of bukkit aren't hosted on SpigotMC's maven &ndash;&gt;-->
-<!--            <groupId>org.spigotmc</groupId>-->
-<!--            <artifactId>spigot-api</artifactId>-->
-<!--            <version>${bukkitVersion}</version>-->
-<!--            <scope>provided</scope>-->
-<!--        </dependency>-->
         <dependency>
-            <!-- depend on paper-server because of Paper's new PaperPlugin loading system -->
+            <!-- depend on spigot-api instead of bukkit here because newer versions of bukkit aren't hosted on SpigotMC's maven -->
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>${bukkitVersion}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- TODO probably in the future I will have to create separate submodules for loading ScalaLoader on CraftBukkit/Spigot and on Paper -->
+        <dependency>
+            <!-- depend on paper-api because of Paper's new PaperPlugin loading system -->
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
             <version>${bukkitVersion}</version>
             <scope>provided</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            &lt;!&ndash; depend on paper-server because of Paper's new PaperPlugin loading system &ndash;&gt;-->
-<!--            <groupId>io.papermc.paper</groupId>-->
-<!--            <artifactId>paper-server</artifactId>-->
-<!--            <version>${bukkitVersion}</version>-->
-<!--            <scope>provided</scope>-->
-<!--        </dependency>-->
+        <dependency>
+            <!-- depend on paper-server because of Paper's new PaperPlugin loading system -->
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-server</artifactId>
+            <version>${bukkitVersion}</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- needed for bytecode transformations & debugging functionality -->
         <dependency>
