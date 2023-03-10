@@ -20,6 +20,4 @@ public interface IScalaPlugin extends Plugin {
 
     public String getName();
 
-    public File getConfigFile();
-
 }

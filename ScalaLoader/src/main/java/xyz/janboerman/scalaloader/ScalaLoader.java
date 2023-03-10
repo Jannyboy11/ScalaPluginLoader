@@ -116,6 +116,11 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         return scalaPluginsFolder;
     }
 
+    @Override
+    public Collection<ScalaPlugin> getScalaPlugins() {
+        return ScalaPluginLoader.getInstance().getScalaPlugins();
+    }
+
     public Pattern[] getJavaPluginLoaderPatterns() {
         return javaPluginLoaderPatterns;
     }
@@ -134,8 +139,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             for (File file : scalaPluginsFolder.listFiles((File dir, String name) -> name.endsWith(".jar"))) {
                 try {
                     getServer().getPluginManager().loadPlugin(file);    //will now use our own ScalaPluginLoader to load the plugin
-                    //TODO: Problematic on Paper-405 and later (the "PaperPlugin" update: https://github.com/PaperMC/Paper/pull/8108)
-                    //TODO probably a bug in Paper itself: https://github.com/Jannyboy11/ScalaPluginLoader/issues/20
+                    //TODO Problematic on Paper-405 and later (the "PaperPlugin" update: https://github.com/PaperMC/Paper/pull/8108)
+                    //TODO This is an intentional breaking change by PaperMC: https://github.com/Jannyboy11/ScalaPluginLoader/issues/20#issuecomment-1462187112
                 } catch (UnknownDependencyException ude) {
                     ScalaPluginLoader.getInstance().loadWhenDependenciesComeAvailable(file);
                     scalaPluginsWaitingOnJavaPlugins.put(file, ude);
@@ -345,21 +350,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             if (rbc != null) try { rbc.close(); } catch (IOException e) { e.printStackTrace(); }
             if (fos != null) try { fos.close(); } catch (IOException e) { e.printStackTrace(); }
         }
-    }
-
-
-    /**
-     * Add new versions of Scala to ScalaLoader's config.
-     * @param versions the scala versions
-     * @return whether a new version was added to the config
-     */
-    public boolean saveScalaVersionsToConfig(PluginScalaVersion... versions) {
-        FileConfiguration config = getConfig();
-        Set<PluginScalaVersion> scalaVersions = new LinkedHashSet<>(Compat.listOf(versions));
-        boolean wasAdded = scalaVersions.addAll((List<PluginScalaVersion>) config.getList("scala-versions", Compat.emptyList()));
-        config.set("scala-versions", Compat.listCopy(scalaVersions));
-        saveConfig();
-        return wasAdded;
     }
 
 }

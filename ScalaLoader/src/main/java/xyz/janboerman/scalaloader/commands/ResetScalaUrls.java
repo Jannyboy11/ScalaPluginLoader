@@ -6,6 +6,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 
@@ -16,9 +17,9 @@ import java.util.stream.Collectors;
 
 public class ResetScalaUrls implements TabExecutor {
 
-    private final ScalaLoader scalaLoader;
+    private final IScalaLoader scalaLoader;
 
-    public ResetScalaUrls(ScalaLoader scalaLoader){
+    public ResetScalaUrls(IScalaLoader scalaLoader){
         this.scalaLoader = scalaLoader;
     }
 

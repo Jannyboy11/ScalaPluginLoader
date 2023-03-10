@@ -15,6 +15,7 @@ import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
@@ -39,9 +40,9 @@ public class DumpClass implements TabExecutor {
     private static final String TEXTIFIED = "Textified";
     private static final String ASMIFIED = "ASMified";
 
-    private final ScalaLoader scalaLoader;
+    private final IScalaLoader scalaLoader;
 
-    public DumpClass(ScalaLoader scalaLoader) {
+    public DumpClass(IScalaLoader scalaLoader) {
         this.scalaLoader = scalaLoader;
     }
 
@@ -186,7 +187,11 @@ public class DumpClass implements TabExecutor {
             ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
             ScalaPluginClassLoader classLoader = scalaPlugin.getClassLoader();
             jarFile = classLoader.getPluginJarFile();
-        } /*TODO else if (plugin instanceof KotlinPlugin) (see https://github.com/steenooo/KotlinLoader)*/
+        } else if (plugin instanceof xyz.janboerman.scalaloader.plugin.paper.ScalaPlugin) {
+            xyz.janboerman.scalaloader.plugin.paper.ScalaPlugin scalaPlugin = (xyz.janboerman.scalaloader.plugin.paper.ScalaPlugin) plugin;
+            xyz.janboerman.scalaloader.plugin.paper.ScalaPluginClassLoader classLoader = scalaPlugin.classLoader();
+            jarFile = classLoader.getPluginJarFile();
+        }
 
         else {
             jarFile = null;

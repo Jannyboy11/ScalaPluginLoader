@@ -1,10 +1,16 @@
 package xyz.janboerman.scalaloader.compat;
 
 import org.bukkit.Server;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 import xyz.janboerman.scalaloader.DebugSettings;
+import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public interface IScalaLoader extends Plugin {
 
@@ -40,6 +46,22 @@ public interface IScalaLoader extends Plugin {
         } else {
             server.getScheduler().runTask(this, runnable);
         }
+    }
+
+    public Collection<? extends IScalaPlugin> getScalaPlugins();
+
+    /**
+     * Add new versions of Scala to ScalaLoader's config.
+     * @param versions the scala versions
+     * @return whether a new version was added to the config
+     */
+    public default boolean saveScalaVersionsToConfig(PluginScalaVersion... versions) {
+        FileConfiguration config = getConfig();
+        Set<PluginScalaVersion> scalaVersions = new LinkedHashSet<>(Compat.listOf(versions));
+        boolean wasAdded = scalaVersions.addAll((List<PluginScalaVersion>) config.getList("scala-versions", Compat.emptyList()));
+        config.set("scala-versions", Compat.listCopy(scalaVersions));
+        saveConfig();
+        return wasAdded;
     }
 
 }

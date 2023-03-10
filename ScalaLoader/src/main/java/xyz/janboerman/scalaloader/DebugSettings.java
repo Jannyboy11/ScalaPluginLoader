@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaLoader;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class DebugSettings {
         }
     }
 
-    private final ScalaLoader scalaLoader;
+    private final IScalaLoader scalaLoader;
     private File saveFile;
 
     //Synchronized because the ScalaPluginClassLoader is parallel capable! Some classes may be loaded in a different thread than the server's primary thread!
@@ -78,7 +79,7 @@ public class DebugSettings {
     private MissingCodecLog missingCodecLog = MissingCodecLog.Default();
     private boolean logMissingCodecs = true;
 
-    public DebugSettings(ScalaLoader scalaLoader) {
+    public DebugSettings(IScalaLoader scalaLoader) {
         this.scalaLoader = scalaLoader;
         this.saveFile = new File(scalaLoader.getDataFolder(), FILE_NAME);
         if (saveFile.exists()) try {
