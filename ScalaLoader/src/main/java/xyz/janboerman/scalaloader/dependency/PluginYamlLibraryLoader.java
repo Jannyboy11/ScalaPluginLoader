@@ -36,8 +36,8 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
  */
 public class PluginYamlLibraryLoader {
 
-    private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2").build();
-    private static final RemoteRepository CODE_MC = new RemoteRepository.Builder("CodeMC", "default", "https://repo.codemc.org/repository/maven-public/").build();
+    public static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2").build();
+    public static final RemoteRepository CODE_MC = new RemoteRepository.Builder("CodeMC", "default", "https://repo.codemc.org/repository/maven-public/").build();
 
     private final Logger logger;
     private final RepositorySystem system;

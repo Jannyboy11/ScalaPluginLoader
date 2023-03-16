@@ -302,6 +302,13 @@
             <version>${bukkitVersion}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <!-- paper server dependency: org.spongepowered:configurate-yaml:4.1.2 -->
+            <groupId>org.spongepowered</groupId>
+            <artifactId>configurate-yaml</artifactId>
+            <version>4.1.2</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- needed for bytecode transformations & debugging functionality -->
         <dependency>

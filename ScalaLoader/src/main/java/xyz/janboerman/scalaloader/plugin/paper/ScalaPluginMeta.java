@@ -1,12 +1,15 @@
 package xyz.janboerman.scalaloader.plugin.paper;
 
 import io.papermc.paper.plugin.configuration.PluginMeta;
+import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
+import io.papermc.paper.plugin.provider.configuration.type.DependencyConfiguration;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.PluginLoadOrder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 
 import java.util.ArrayList;
@@ -15,14 +18,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-public class ScalaPluginMeta implements PluginMeta {
+public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
 
     private final ScalaPluginDescription description;
 
     public ScalaPluginMeta(ScalaPluginDescription description) {
         this.description = Objects.requireNonNull(description);
     }
+
+    //PluginMeta overrides
 
     @Override
     public @NotNull String getDisplayName() {
@@ -133,6 +139,37 @@ public class ScalaPluginMeta implements PluginMeta {
             result.put(childPermission.getName(), enabled);
         }
         return result;
+    }
+
+    //PaperPluginMeta overrides
+
+    @Override
+    public String getBootstrapper() {
+        return ScalaPluginBootstrap.class.getName();
+    }
+
+    @Override
+    public String getLoader() {
+        return ScalaPluginLoader.class.getName();
+    }
+
+    @Override
+    public boolean hasOpenClassloader() {
+        //super.hasOpenClassLoader() is always false. why?
+        return true;
+    }
+
+    @Override
+    public List<DependencyConfiguration> getDependencies() {
+        return description.getMavenDependencies().stream()
+                .map(mavenDep -> new DependencyConfiguration(mavenDep, true, true))
+                .collect(Collectors.toList());
+    }
+
+    //ScalaPluginMeta-specific
+
+    public String getScalaVersion() {
+        return description.getScalaVersion();
     }
 
 }

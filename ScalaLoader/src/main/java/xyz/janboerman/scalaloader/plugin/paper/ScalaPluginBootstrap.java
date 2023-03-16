@@ -10,7 +10,7 @@ public class ScalaPluginBootstrap implements PluginBootstrap {
 
     @Override
     public void bootstrap(@NotNull PluginProviderContext context) {
-        //TODO don't think I have anything to do here.
+        //I don't think we have anything to do here.
     }
 
     @Override

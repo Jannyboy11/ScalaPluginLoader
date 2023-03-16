@@ -23,6 +23,7 @@ public class DescriptionScanner extends ClassVisitor {
     private static final String SCALAPLUGIN_CLASS_NAME = Type.getInternalName(ScalaPlugin.class);
     private static final String JAVAPLUGIN_CLASS_NAME = Type.getInternalName(JavaPlugin.class);
     private static final String JAVA_LANG_OBJECT_CLASS_NAME = Type.getInternalName(Object.class);
+    private static final String SCALAPAPERPLUGIN_CLASS_NAME = Type.getInternalName(xyz.janboerman.scalaloader.plugin.paper.ScalaPlugin.class);
 
     private static final String SCALA_ANNOTATION_DESCRIPTOR = Type.getDescriptor(Scala.class);
     private static final String CUSTOMSCALA_ANNOTATION_DESCRIPTOR = Type.getDescriptor(CustomScala.class);
@@ -93,7 +94,7 @@ public class DescriptionScanner extends ClassVisitor {
         isAbstract = (access & Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
         isModule = (access & Opcodes.ACC_MODULE) == Opcodes.ACC_MODULE;
         isObject = name.endsWith("$") && (access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL;
-        if (SCALAPLUGIN_CLASS_NAME.equals(superName)) {
+        if (SCALAPLUGIN_CLASS_NAME.equals(superName) || SCALAPAPERPLUGIN_CLASS_NAME.equals(superName)) {
             extendsScalaPlugin = true;
         } else if (JAVAPLUGIN_CLASS_NAME.equals(superName)) {
             extendsJavaPlugin = true;

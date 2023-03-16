@@ -24,6 +24,7 @@ public class ScalaPluginDescription {
     private String apiVersion;
     private String main;
     private Map<String, Object> addYaml;
+    private String scalaVersion;
 
     private String pluginDescription;
     private List<String> authors = new LinkedList<>();
@@ -40,9 +41,9 @@ public class ScalaPluginDescription {
     private final LinkedHashSet<Command> commands = new LinkedHashSet<>();
     private final LinkedHashSet<Permission> permissions = new LinkedHashSet<>();
 
-    //TODO awareness?? use a List<PluginAwareness> ??
-    //TODO idea: use awareness for Scala version!! That would only work if the Yaml instance from PluginDescriptionFile was accessible.
-    //TODO see: https://hub.spigotmc.org/jira/browse/SPIGOT-6410
+    //awareness?? use a List<PluginAwareness> ??
+    //idea: use awareness for Scala version!! That would only work if the Yaml instance from PluginDescriptionFile was accessible.
+    //see: https://hub.spigotmc.org/jira/browse/SPIGOT-6410
     
     public ScalaPluginDescription(String pluginName, String pluginVersion) {
         this.pluginName = Objects.requireNonNull(pluginName, "Plugin name cannot be null!");
@@ -60,6 +61,18 @@ public class ScalaPluginDescription {
 
     protected void addYaml(Map<String, Object> yaml) {
         this.addYaml = yaml;
+    }
+
+    /** @deprecated internal use only */
+    @Deprecated
+    public void setScalaVersion(String scalaVersion) {
+        this.scalaVersion = scalaVersion;
+    }
+
+    /** @deprecated internal use only */
+    @Deprecated
+    public String getScalaVersion() {
+        return scalaVersion;
     }
 
     /** @deprecated internal use only */
@@ -295,6 +308,7 @@ public class ScalaPluginDescription {
         if (website != null) pluginData.put("website", getWebsite());
         if (prefix != null) pluginData.put("prefix", prefix);
         if (apiVersion != null) pluginData.put("api-version", apiVersion);
+        if (scalaVersion != null) pluginData.put("scala-version", scalaVersion);
         if (loadOrder != null) pluginData.put("load", loadOrder.name());
         if (permissionDefault != null) pluginData.put("default-permission", permissionDefault.name());
         if (!hardDependencies.isEmpty()) pluginData.put("depend", Compat.listCopy(hardDependencies));
@@ -380,6 +394,9 @@ public class ScalaPluginDescription {
         Object apiVersion = pluginYaml.get("api-version");
         if (apiVersion != null)
             setApiVersion(String.valueOf(apiVersion));
+        Object scalaVersion = pluginYaml.get("scala-version");
+        if (scalaVersion != null)
+            setScalaVersion(String.valueOf(scalaVersion));
         description((String) pluginYaml.get("description"));
         String author = (String) pluginYaml.get("author");
         if (author != null)
