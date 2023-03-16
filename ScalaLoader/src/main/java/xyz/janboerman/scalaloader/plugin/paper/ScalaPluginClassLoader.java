@@ -5,11 +5,15 @@ import java.io.IOException;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.logging.Logger;
+import java.util.jar.JarFile;
 
 import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
 import io.papermc.paper.plugin.entrypoint.classloader.group.PaperPluginClassLoaderStorage;
 import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
+
 import org.bukkit.plugin.java.JavaPlugin;
+
+import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
@@ -22,7 +26,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
     }
 
     private final File pluginJarFile;
-    private final ScalaPlugin plugin;
+    private final JarFile jarFile;
 
     public ScalaPluginClassLoader(Logger logger,
                                   Path source,
@@ -39,10 +43,11 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         //PaperPluginClassLoaderStorage.instance().registerOpenGroup(this);
 
         this.pluginJarFile = pluginJarFile;
+        this.jarFile = Compat.jarFile(pluginJarFile);
 
         try {
             Class<? extends ScalaPlugin> mainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this);
-            this.plugin = ScalaLoaderUtils.createScalaPluginInstance(mainClass);
+            ScalaLoaderUtils.createScalaPluginInstance(mainClass); //sets the loadedPlugin
 
         } catch (ClassNotFoundException e) {
             throw new ScalaPluginLoaderException("Could not find plugin's main class: " + mainClassName, e);
@@ -54,6 +59,18 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
     public File getPluginJarFile() {
         return pluginJarFile;
+    }
+
+    //TODO
+    public String getScalaVersion() {
+        //TODO dependency-inject
+        return null;
+    }
+
+    //TODO
+    public ScalaRelease getScalaRelease() {
+        //TODO dependency-inject (or compute from getScalaVersion())
+        return null;
     }
 
     //TODO loadClass

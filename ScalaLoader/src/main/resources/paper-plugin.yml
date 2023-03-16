@@ -2,6 +2,7 @@ name: ScalaLoader
 version: ${project.version}
 main: xyz.janboerman.scalaloader.paper.ScalaLoader
 api-version: 1.19
+folia-supported: true
 load: STARTUP
 author: Jannyboy11
 website: https://github.com/Jannyboy11/ScalaPluginLoader

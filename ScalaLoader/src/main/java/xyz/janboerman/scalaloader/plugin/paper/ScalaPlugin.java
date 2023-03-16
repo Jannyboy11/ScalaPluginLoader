@@ -5,6 +5,8 @@ import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
+import xyz.janboerman.scalaloader.plugin.description.Scala;
+import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 
 public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
 
@@ -31,26 +33,37 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
 
     @Override
     public EventBus getEventBus() {
-        //TODO
-        return null;
+        return ScalaPluginLoader.getInstance().getEventBus();
     }
 
     @Override
     public String getScalaVersion() {
-        //TODO
-        return null;
+        return classLoader().getScalaVersion();
     }
 
     @Override
     public ScalaRelease getScalaRelease() {
-        //TODO
-        return null;
+        return classLoader().getScalaRelease();
     }
 
+    //TODO factor out to ScalaLoaderUtils?
     @Override
-    public String getDeclaredScalaVersion() {
-        //TODO
-        return null;
+    public final String getDeclaredScalaVersion() {
+        Class<?> mainClass = getClass();
+
+        Scala scala = mainClass.getDeclaredAnnotation(Scala.class);
+        if (scala != null) {
+            return scala.version().getVersion();
+        }
+
+        CustomScala customScala = mainClass.getDeclaredAnnotation(CustomScala.class);
+        if (customScala != null) {
+            return customScala.value().value();
+        }
+
+        assert false : "ScalaPlugin defined its Scala version, but not via the @Scala or @CustomScala annotation";
+
+        return getScalaVersion(); //fallback - to make this more robust in production
     }
 
 }

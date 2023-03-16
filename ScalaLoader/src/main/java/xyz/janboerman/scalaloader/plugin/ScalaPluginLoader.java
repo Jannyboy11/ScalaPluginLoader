@@ -14,6 +14,7 @@ import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions;
 import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariantTransformer;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanResult;
@@ -43,7 +44,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-public class ScalaPluginLoader implements PluginLoader {
+public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
     private static ScalaPluginLoader INSTANCE;
 
