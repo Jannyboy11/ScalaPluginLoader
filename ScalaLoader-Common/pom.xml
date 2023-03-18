@@ -15,8 +15,6 @@
         <bukkitVersion>1.19.4-R0.1-SNAPSHOT</bukkitVersion> <!-- TODO install paper server into local maven repo -->
         <asmVersion>9.4</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
-        <mavenResolverVersion>1.6.2</mavenResolverVersion>
-        <mavenResolverProviderVersion>3.8.1</mavenResolverProviderVersion>
         <junitVersion>5.7.1</junitVersion>
 
         <java11.sourceDirectory>${project.basedir}/src/main/java11</java11.sourceDirectory>
@@ -258,16 +256,19 @@
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
             <version>${asmVersion}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-commons</artifactId>
             <version>${asmVersion}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-util</artifactId>
             <version>${asmVersion}</version>
+            <scope>compile</scope>
         </dependency>
 
         <!-- this is not yet used -->
@@ -275,6 +276,7 @@
 <!--            <groupId>org.ow2.asm</groupId>-->
 <!--            <artifactId>asm-analysis</artifactId>-->
 <!--            <version>${asmVersion}</version>-->
+<!--            <scope>compile</scope>-->
 <!--        </dependency>-->
 
         <!-- for debugging only -->
@@ -296,26 +298,6 @@
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
             <version>${bstatsVersion}</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <!-- runtime library loading -->
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-resolver-provider</artifactId>
-            <version>${mavenResolverProviderVersion}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-connector-basic</artifactId>
-            <version>${mavenResolverVersion}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-transport-http</artifactId>
-            <version>${mavenResolverVersion}</version>
             <scope>compile</scope>
         </dependency>
 

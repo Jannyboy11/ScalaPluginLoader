@@ -41,6 +41,17 @@
                                     <include>com.janboerman.scalaloader:ScalaLoader-Paper</include>
                                 </includes>
                             </artifactSet>
+
+                            <relocations>
+                                <relocation>
+                                    <pattern>org.objectweb.asm</pattern>
+                                    <shadedPattern>xyz.janboerman.scalaloader.libs.asm</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.bstats</pattern>
+                                    <shadedPattern>xyz.janboerman.scalaloader.libs.bstats</shadedPattern>
+                                </relocation>
+                            </relocations>
                         </configuration>
                     </execution>
                 </executions>

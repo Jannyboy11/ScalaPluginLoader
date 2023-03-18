@@ -14,6 +14,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <bukkit.version>1.19.4-R0.1-SNAPSHOT</bukkit.version>
+
+        <mavenResolverVersion>1.6.2</mavenResolverVersion>
+        <mavenResolverProviderVersion>3.8.1</mavenResolverProviderVersion>
     </properties>
 
     <build>
@@ -39,15 +42,9 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+
                             <relocations>
-                                <relocation>
-                                    <pattern>org.objectweb.asm</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.asm</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.bstats</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.bstats</shadedPattern>
-                                </relocation>
                                 <relocation>
                                     <pattern>org.apache</pattern>
                                     <shadedPattern>xyz.janboerman.scalaloader.libs.apache</shadedPattern>
@@ -69,7 +66,6 @@
                                     <shadedPattern>xyz.janboerman.scalaloader.libs.sonatype</shadedPattern>
                                 </relocation>
                             </relocations>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
                         </configuration>
                     </execution>
                 </executions>
@@ -90,7 +86,7 @@
             <groupId>com.janboerman.scalaloader</groupId>
             <artifactId>ScalaLoader-Common</artifactId>
             <version>${project.version}</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -98,6 +94,26 @@
             <artifactId>spigot-api</artifactId>
             <version>${bukkit.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- runtime library loading -->
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-resolver-provider</artifactId>
+            <version>${mavenResolverProviderVersion}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-connector-basic</artifactId>
+            <version>${mavenResolverVersion}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-transport-http</artifactId>
+            <version>${mavenResolverVersion}</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
