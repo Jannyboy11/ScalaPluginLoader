@@ -34,6 +34,8 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+
                             <artifactSet>
                                 <includes>
                                     <include>com.janboerman.scalaloader:ScalaLoader-Common</include>

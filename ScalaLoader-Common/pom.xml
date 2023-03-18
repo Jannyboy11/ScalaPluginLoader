@@ -12,7 +12,7 @@
     <artifactId>ScalaLoader-Common</artifactId>
 
     <properties>
-        <bukkitVersion>1.19.4-R0.1-SNAPSHOT</bukkitVersion> <!-- TODO install paper server into local maven repo -->
+        <bukkitVersion>1.19.4-R0.1-SNAPSHOT</bukkitVersion>
         <asmVersion>9.4</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <junitVersion>5.7.1</junitVersion>
@@ -27,11 +27,6 @@
             <id>apache-snapshots</id>
             <url>https://repository.apache.org/content/repositories/snapshots/</url>
         </pluginRepository>
-<!--        &lt;!&ndash; paper-nms-plugin &ndash;&gt;-->
-<!--        <pluginRepository>-->
-<!--            <id>bytecode.space</id>-->
-<!--            <url>https://repo.bytecode.space/repository/maven-public/</url>-->
-<!--        </pluginRepository>-->
     </pluginRepositories>
 
     <build>
