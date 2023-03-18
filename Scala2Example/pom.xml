@@ -9,40 +9,20 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>Scala3Example</artifactId>
+    <artifactId>Scala2Example</artifactId>
 
     <properties>
-        <scala.boostrapVersion>2.13.10</scala.boostrapVersion>
-        <scala.version>3.2.2</scala.version>
+        <scala.version>2.13.10</scala.version>
     </properties>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version>
-                <configuration>
-                    <release>8</release>
-                    <parameters>true</parameters>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
                 <version>4.7.2</version>
                 <configuration>
-                    <args>
-<!--                        <arg>-rewrite</arg><arg>-indent</arg>-->
-                        <arg>-rewrite</arg><arg>-new-syntax</arg>
-                    </args>
+                    <recompileMode>incremental</recompileMode>
                 </configuration>
                 <executions>
                     <execution>
@@ -54,6 +34,26 @@
                 </executions>
             </plugin>
 
+            <!--
+            javac won't compile a module.info because the "package xyz.janboerman.scalaloader.example.scala does not exist or is empty"!
+            This is a bug because obviously it exists (albeit with only Scala sources).
+            Best we can do for now is to wait for this bug getting patched, or Scala getting support for Java modules.
+
+            This would be the module-info.java file:
+            module xyz.janboerman.scalaloader.scalaexample {
+
+                requires java.logging;
+                requires org.bukkit;
+                requires transitive scala.library;
+                requires xyz.janboerman.scalaloader;
+
+                exports xyz.janboerman.scalaloader.example.scala;
+                opens xyz.janboerman.scalaloader.example.scala to org.bukkit;
+
+            }
+
+            So for now, as a workaround, keep using an automatic module.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -61,11 +61,22 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Automatic-Module-Name>xyz.janboerman.scalaloader.scala3example</Automatic-Module-Name>
+                            <Automatic-Module-Name>xyz.janboerman.scalaloader.scalaexample</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
+
+<!--            And this would be the java compiler plugin declaration-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                <version>3.8.1</version>-->
+<!--                <configuration>-->
+<!--                    <release>16</release>-->
+<!--                    <compilerArgs>&#45;&#45;enable-preview</compilerArgs>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
 
         </plugins>
     </build>
@@ -81,23 +92,9 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>${scala.boostrapVersion}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala3-library_3</artifactId>
             <version>${scala.version}</version>
             <scope>provided</scope>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>org.scala-lang</groupId>-->
-<!--            <artifactId>tasty-core3_${scala.version}</artifactId>-->
-<!--            <version>${scala.version}</version>-->
-<!--            <scope>provided</scope>-->
-<!--        </dependency>-->
 
         <dependency>
             <groupId>com.janboerman.scalaloader</groupId>
@@ -112,14 +109,6 @@
             <version>1.19.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
-
-        <dependency>
-            <groupId>dev.zio</groupId>
-            <artifactId>zio_3</artifactId>
-            <version>2.0.2</version>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
-
 
 </project>

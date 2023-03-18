@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>xyz.janboerman</groupId>
+    <groupId>com.janboerman.scalaloader</groupId>
     <artifactId>ScalaPluginLoader</artifactId>
     <packaging>pom</packaging>
     <version>0.17.19-SNAPSHOT</version>
@@ -15,9 +15,13 @@
     </properties>
 
     <modules>
-        <module>JavaExample</module>
+        <module>ScalaLoader-Common</module>
+        <module>ScalaLoader-Bukkit</module>
+        <module>ScalaLoader-Paper</module>
         <module>ScalaLoader</module>
-        <module>ScalaExample</module>
+
+        <module>Scala2Example</module>
+        <module>JavaExample</module>
         <module>Scala3Example</module>
     </modules>
 

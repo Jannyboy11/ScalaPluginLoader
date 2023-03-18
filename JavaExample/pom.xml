@@ -3,8 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
+        <groupId>com.janboerman.scalaloader</groupId>
         <artifactId>ScalaPluginLoader</artifactId>
-        <groupId>xyz.janboerman</groupId>
         <version>0.17.19-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -25,6 +25,14 @@
                 <configuration>
                     <release>19</release>
                     <compilerArgs>--enable-preview</compilerArgs>
+                    <!-- work around a bug in the maven-compiler-plugin:
+                    Got the following error:
+                        Bad service configuration file, or exception thrown while constructing Processor object: javax.annotation.processing.Processor: Provider org.eclipse.sisu.space.SisuIndexAPT6 not found
+
+                    However we don't want to run any annotation processors, and I don't understand why any were picked up.
+                    Let's tell the compiler to run without any annotation processors explicitly!
+                    -->
+                    <compilerArgument>-proc:none</compilerArgument>
                 </configuration>
             </plugin>
 
@@ -100,16 +108,17 @@
 
     <dependencies>
         <dependency>
-            <groupId>xyz.janboerman</groupId>
+            <groupId>com.janboerman.scalaloader</groupId>
             <artifactId>ScalaLoader</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>xyz.janboerman</groupId>
-            <artifactId>ScalaExample</artifactId>
+            <groupId>com.janboerman.scalaloader</groupId>
+            <artifactId>Scala2Example</artifactId>
             <version>${project.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -122,7 +131,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.19.3-R0.1-SNAPSHOT</version>
+            <version>1.19.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

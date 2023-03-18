@@ -3,116 +3,49 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
+        <groupId>com.janboerman.scalaloader</groupId>
         <artifactId>ScalaPluginLoader</artifactId>
-        <groupId>xyz.janboerman</groupId>
         <version>0.17.19-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ScalaLoader</artifactId>
 
-    <properties>
-        <bukkitVersion>1.19.3-R0.1-SNAPSHOT</bukkitVersion> <!-- TODO install paper server into local maven repo -->
-        <asmVersion>9.4</asmVersion>
-        <bstatsVersion>3.0.0</bstatsVersion>
-        <mavenResolverVersion>1.6.2</mavenResolverVersion>
-        <mavenResolverProviderVersion>3.8.1</mavenResolverProviderVersion>
-        <junitVersion>5.7.1</junitVersion>
-
-        <java11.sourceDirectory>${project.basedir}/src/main/java11</java11.sourceDirectory>
-        <java11.build.outputDirectory>${project.build.directory}/classes-java11</java11.build.outputDirectory>
-    </properties>
-
-    <pluginRepositories>
-        <!-- for more recent versions of the maven-shade-plugin -->
-        <pluginRepository>
-            <id>apache-snapshots</id>
-            <url>https://repository.apache.org/content/repositories/snapshots/</url>
-        </pluginRepository>
-<!--        &lt;!&ndash; paper-nms-plugin &ndash;&gt;-->
-<!--        <pluginRepository>-->
-<!--            <id>bytecode.space</id>-->
-<!--            <url>https://repo.bytecode.space/repository/maven-public/</url>-->
-<!--        </pluginRepository>-->
-    </pluginRepositories>
-
     <build>
-        <defaultGoal>clean package</defaultGoal>
-
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-
         <plugins>
-            <!-- compile for java 8 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <release>8</release>
+                    <release>17</release>
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
 
-			<!-- TODO try some better options for creating Multi-Release jar files -->
-            <!-- TODO e.g.: https://www.baeldung.com/maven-multi-release-jars -->
-            <!-- TODO or: http://www.russgold.net/sw/2018/04/easier-than-it-looks/ https://github.com/meterware/multirelease-parent (but requires a toolchains.xml) -->
-
-            <!-- compile java 11 sources -->
-            <!-- as described at: https://in.relation.to/2017/02/13/building-multi-release-jars-with-maven/ -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.0.0</version>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.4.1</version>
                 <executions>
                     <execution>
-                        <id>compile-java11</id>
-                        <phase>compile</phase>
-                        <configuration>
-                            <target>
-                                <mkdir dir="${java11.build.outputDirectory}" />
-                                <javac srcdir="${java11.sourceDirectory}" destdir="${java11.build.outputDirectory}"
-                                       classpath="${project.build.outputDirectory}" includeantruntime="false"
-                                       release="11"/> <!-- how do we get maven dependencies on the classpath (or module-path) of this compiler invocation? -->
-                            </target>
-                        </configuration>
+                        <phase>package</phase>
                         <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- move java 11 classes to the correct output directory -->
-            <!-- as described at: https://in.relation.to/2017/02/13/building-multi-release-jars-with-maven/ -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <id>copy-resources</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
+                            <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/META-INF/versions/11</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${java11.build.outputDirectory}</directory>
-                                </resource>
-                            </resources>
+                            <artifactSet>
+                                <includes>
+                                    <include>com.janboerman.scalaloader:ScalaLoader-Common</include>
+                                    <include>com.janboerman.scalaloader:ScalaLoader-Bukkit</include>
+                                    <include>com.janboerman.scalaloader:ScalaLoader-Paper</include>
+                                </includes>
+                            </artifactSet>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
 
-            <!-- define our automatic module name, and define the jar as Multi-Release -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -121,273 +54,34 @@
                     <archive>
                         <manifestEntries>
                             <Automatic-Module-Name>xyz.janboerman.scalaloader</Automatic-Module-Name>
-                            <!-- use an automatic module until we migrate to Java 11 (or newer!) in a future release
-                            module xyz.janboerman.scalaloader {
-                                requires java.logging;
-                                requires org.bukkit;
-                                requires org.yaml.snakeyaml;
-                                requires bstats.bukkit;     //filename-based because bStats does not provide a module yet. (I expect this to become org.bstats.bukkit in the future)
-                                requires org.objectweb.asm;
-                                requires org.objectweb.asm.commons;
-                                requires org.objectweb.asm.util;
-                                //requires org.objectweb.asm.tree; //for debugging
-                                //requires scala.library; //for debugging
-
-                                exports xyz.janboerman.scalaloader.configurationserializable;
-                                exports xyz.janboerman.scalaloader.configurationserializable.runtime;
-                                exports xyz.janboerman.scalaloader.configurationserializable.runtime.types;
-                                exports xyz.janboerman.scalaloader.event;
-                                exports xyz.janboerman.scalaloader.event.plugin;
-                                exports xyz.janboerman.scalaloader.plugin;
-                                exports xyz.janboerman.scalaloader.plugin.description;
-                                exports xyz.janboerman.scalaloader;
-
-                                opens xyz.janboerman.scalaloader to org.bukkit;
-                            }
-                            -->
                             <Multi-Release>true</Multi-Release>
                         </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.3.1-SNAPSHOT</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <relocations>
-                                <relocation>
-                                    <pattern>org.objectweb.asm</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.asm</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.bstats</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.bstats</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.apache</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.apache</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.eclipse</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.eclipse</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.codehaus</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.codehaus</shadedPattern>
-                                </relocation>
-<!--                                <relocation>-->
-<!--                                    <pattern>org.slf4j</pattern>-->
-<!--                                    <shadedPattern>xyz.janboerman.scalaloader.libs.slf4j</shadedPattern>-->
-<!--                                </relocation>-->
-                                <relocation>
-                                    <pattern>org.sonatype</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.sonatype</shadedPattern>
-                                </relocation>
-                            </relocations>
-                            <minimizeJar>true</minimizeJar>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.2.0</version>
-                <configuration>
-                    <!-- spigot api javadoc -->
-                    <links>
-                        <link>https://hub.spigotmc.org/javadocs/spigot/</link>
-                    </links>
-
-                    <!-- make the javadoc tool stop complain about unrecognised tags -->
-                    <tags>
-                        <tag>
-                            <name>apiNote</name>
-                            <placement>a</placement>
-                            <head>API Note:</head>
-                        </tag>
-                        <tag>
-                            <name>implNote</name>
-                            <placement>a</placement>
-                            <head>Implementation Note:</head>
-                        </tag>
-                        <tag>
-                            <name>note</name>
-                            <placement>a</placement>
-                            <head>Note:</head>
-                        </tag>
-                    </tags>
-
-                    <!-- only show protected and public stuff -->
-                    <show>protected</show>
-
-                    <!-- who needs help, anyway? -->
-                    <nohelp>true</nohelp>
-
-                    <!-- the javadoc tool is too picky for me -->
-                    <failOnError>false</failOnError>
-
-                    <!-- so that proper hyperlinks to standard jdk classes are generated -->
-                    <additionalOptions>-source 19</additionalOptions>
-                </configuration>
-
-                <!-- I don't even get why this workaround is required.
-                    Why is the javadoc plugin reading bytecode anyway?
-                    link to the bugtracker: https://issues.apache.org/jira/projects/MJAVADOC/issues/MJAVADOC-542 -->
-                <!-- TODO is this still needed? -->
-                <dependencies>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                        <version>${asmVersion}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
-            </plugin>
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.0.0-M5</version>
-            </plugin>
         </plugins>
-
     </build>
-
-    <repositories>
-        <!-- Spigot repo -->
-        <repository>
-            <id>spigotmc-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
-        </repository>
-        <!-- Paper repo -->
-        <repository>
-            <id>papermc-repo</id>
-            <url> https://repo.papermc.io/repository/maven-public/</url>
-        </repository>
-    </repositories>
 
     <dependencies>
         <dependency>
-            <!-- depend on spigot-api instead of bukkit here because newer versions of bukkit aren't hosted on SpigotMC's maven -->
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>${bukkitVersion}</version>
-            <scope>provided</scope>
-        </dependency>
-        <!-- TODO probably in the future I will have to create separate submodules for loading ScalaLoader on CraftBukkit/Spigot and on Paper -->
-        <dependency>
-            <!-- depend on paper-api because of Paper's new PaperPlugin loading system -->
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-api</artifactId>
-            <version>${bukkitVersion}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <!-- depend on paper-server because of Paper's new PaperPlugin loading system -->
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-server</artifactId>
-            <version>${bukkitVersion}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <!-- paper server dependency: org.spongepowered:configurate-yaml:4.1.2 -->
-            <groupId>org.spongepowered</groupId>
-            <artifactId>configurate-yaml</artifactId>
-            <version>4.1.2</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- needed for bytecode transformations & debugging functionality -->
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm</artifactId>
-            <version>${asmVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-commons</artifactId>
-            <version>${asmVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-util</artifactId>
-            <version>${asmVersion}</version>
-        </dependency>
-
-        <!-- this is not yet used -->
-<!--        <dependency>-->
-<!--            <groupId>org.ow2.asm</groupId>-->
-<!--            <artifactId>asm-analysis</artifactId>-->
-<!--            <version>${asmVersion}</version>-->
-<!--        </dependency>-->
-
-        <!-- for debugging only -->
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala3-library_3</artifactId>
-            <version>3.2.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>2.13.10</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- stats! -->
-        <dependency>
-            <groupId>org.bstats</groupId>
-            <artifactId>bstats-bukkit</artifactId>
-            <version>${bstatsVersion}</version>
+            <groupId>com.janboerman.scalaloader</groupId>
+            <artifactId>ScalaLoader-Common</artifactId>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
 
-        <!-- runtime library loading -->
         <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-resolver-provider</artifactId>
-            <version>${mavenResolverProviderVersion}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-connector-basic</artifactId>
-            <version>${mavenResolverVersion}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-transport-http</artifactId>
-            <version>${mavenResolverVersion}</version>
+            <groupId>com.janboerman.scalaloader</groupId>
+            <artifactId>ScalaLoader-Bukkit</artifactId>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
 
-        <!-- testing -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>${junitVersion}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junitVersion}</version>
-            <scope>test</scope>
+            <groupId>com.janboerman.scalaloader</groupId>
+            <artifactId>ScalaLoader-Paper</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 

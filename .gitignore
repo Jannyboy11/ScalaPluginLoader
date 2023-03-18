@@ -5,9 +5,13 @@
 #Maven
 target/*
 ScalaLoader/target/*
-ScalaExample/target/*
-JavaExample/target/*
+ScalaLoader/dependency-reduced-pom.xml
+ScalaLoader-Common/target/*
+ScalaLoader-Bukkit/target/*
+ScalaLoader-Paper/target/*
+Scala2Example/target/*
 Scala3Example/target/*
+JavaExample/target/*
 
 #Eclipse
 .settings/*
