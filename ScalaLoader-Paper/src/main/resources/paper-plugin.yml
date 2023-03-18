@@ -8,13 +8,13 @@ author: Jannyboy11
 website: https://github.com/Jannyboy11/ScalaPluginLoader
 description:
   >
-  API to create plugins in Scala more easily.
-  Supports multiple versions of Scala concurrently.
-  No need for a plugin.yml file.
-  Can load plugins from Scala singleton 'object's.
-  Loads only the necessary Scala classes at runtime.
-  Provides a boilerplate-free event api.
-  Provides a boilerplate-free configuration-serialization api.
+    API to create plugins in Scala more easily.
+    Supports multiple versions of Scala concurrently.
+    No need for a plugin.yml file.
+    Can load plugins from Scala singleton 'object's.
+    Loads only the necessary Scala classes at runtime.
+    Provides a boilerplate-free event api.
+    Provides a boilerplate-free configuration-serialization api.
 
 commands:
   listScalaPlugins:
@@ -26,23 +26,23 @@ commands:
     usage: "/<command> all|[<scala version>]"
     description:
       >
-      Resets the config URL of the built-in scala version.
-      Useful if you overwrote some of the urls.
-      If 'all' is provided as a scala version, this command resets the URLs of all the built-in scala versions.
+        Resets the config URL of the built-in scala version.
+        Useful if you overwrote some of the urls.
+        If 'all' is provided as a scala version, this command resets the URLs of all the built-in scala versions.
     permission: scalaloader.resetscalaurls
   dumpClass:
     usage: "/<command> <plugin> <class file> <format>?"
     description:
       >
-      Dumps a class definition to the console/logs.
-      The class can be printed in ASM format or in the regular text format for Java bytecode.
+        Dumps a class definition to the console/logs.
+        The class can be printed in ASM format or in the regular text format for Java bytecode.
     permission: scalaloader.dumpclass
   setDebug:
     usage: "/<command> <class name>"
     description:
       >
-      Adds a class name to the debug configuration, causing the classloader to dump the transformed class to the logs/console
-      the next time the class is loaded.
+        Adds a class name to the debug configuration, causing the classloader to dump the transformed class to the logs/console
+        the next time the class is loaded.
     permission: scalaloader.setdebug
 
 

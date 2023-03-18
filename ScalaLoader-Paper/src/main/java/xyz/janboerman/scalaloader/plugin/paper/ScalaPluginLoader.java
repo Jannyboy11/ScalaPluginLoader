@@ -69,7 +69,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
         //TODO if the scala libraries were delcared using @CustomScala, download them and add jar libraries to the classpath
         //TODO      classpathBuilder.addLibrary(new JarLibrary(donloadedFile.toPath())
 
-        //TODO for the first and second approach, implement bytecode scaning in ScalaLibraryScanner
+        //TODO for the first and second approach, implement bytecode scanning in ScalaLibraryScanner
         //TODO for the second approach, make sure to use the same download location that the 'bukkit' ScalaLoader plugin uses.
         //TODO the folder to which these should be downloaded is: File scalaLibsFolder = new File(getScalaLoader().getDataFolder(), "scalalibraries");
 

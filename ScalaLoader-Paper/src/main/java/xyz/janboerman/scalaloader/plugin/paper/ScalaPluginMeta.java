@@ -9,7 +9,6 @@ import org.bukkit.plugin.PluginLoadOrder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import xyz.janboerman.scalaloader.compat.Compat;
-import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 
 import java.util.ArrayList;
