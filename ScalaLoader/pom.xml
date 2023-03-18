@@ -12,7 +12,7 @@
     <artifactId>ScalaLoader</artifactId>
 
     <properties>
-        <bukkitVersion>1.19.3-R0.1-SNAPSHOT</bukkitVersion>
+        <bukkitVersion>1.19.3-R0.1-SNAPSHOT</bukkitVersion> <!-- TODO install paper server into local maven repo -->
         <asmVersion>9.4</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
