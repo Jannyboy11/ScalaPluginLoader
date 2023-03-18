@@ -4,7 +4,6 @@ import org.bukkit.Server;
 import org.bukkit.UnsafeValues;
 import org.bukkit.plugin.PluginDescriptionFile;
 import static xyz.janboerman.scalaloader.compat.Compat.getPackageName;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 
 import java.io.StringReader;
@@ -22,7 +21,7 @@ public enum Platform {
         private boolean attempted = false;
 
         @Override
-        public byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
+        public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
             if (!attempted) {
                 attempted = true;
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -59,7 +58,7 @@ public enum Platform {
     private Boolean conversionMethodExists = null;
 
     @SuppressWarnings("deprecation")
-    public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
+    public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
         if (conversionMethodExists == null || conversionMethodExists) {
             try {
                 Server server = currentPluginClassLoader.getServer();

@@ -4,13 +4,13 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.compat.Migration;
 import xyz.janboerman.scalaloader.compat.Platform;
 import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableError;
 import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations;
 import xyz.janboerman.scalaloader.event.transform.EventError;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
 import java.util.List;
 import java.util.function.Function;
@@ -22,16 +22,12 @@ public class ClassLoaderUtils {
     private ClassLoaderUtils() {
     }
 
-    public static byte[] transform(final String className, byte[] classBytes, final ClassLoader definer, final TransformerRegistry registry, final ScalaPluginClassLoader plugin, final Logger logger) {
+    public static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(
+            final String className, byte[] classBytes, final ClassLoader definer,
+            final TransformerRegistry registry, final ScalaPluginClassLoader plugin, final Logger logger) {
+
         final String path = className.replace('.', '/') + ".class";
         final Platform platform = Platform.detect(plugin.getServer());
-
-        //apply migration bytecode transformations
-        try {
-            classBytes = Migration.transform(classBytes, definer);
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "An unexpected error occurred when updating bytecode to work with new references to classes that have been moved or otherwise refactored.", e);
-        }
 
         //apply event bytecode transformations
         try {
@@ -74,6 +70,13 @@ public class ClassLoaderUtils {
                 classreader.accept(classVisitor, 0);
                 classBytes = classWriter.toByteArray();
             }
+        }
+
+        //apply migration bytecode transformations
+        try {
+            classBytes = Migration.transform(classBytes, definer);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "An unexpected error occurred when updating bytecode to work with new references to classes that have been moved or otherwise refactored.", e);
         }
 
         //TODO paper transformations

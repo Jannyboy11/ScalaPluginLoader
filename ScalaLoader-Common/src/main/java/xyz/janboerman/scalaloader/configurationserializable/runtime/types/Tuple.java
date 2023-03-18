@@ -3,9 +3,9 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 import org.bukkit.configuration.serialization.*;
 import xyz.janboerman.scalaloader.bytecode.*;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
 import static xyz.janboerman.scalaloader.configurationserializable.runtime.types.Types.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
 
 import java.lang.reflect.Constructor;
@@ -65,7 +65,7 @@ public class Tuple {
         }
     }
 
-    public static ConfigurationSerializable serialize(Object scalaTuple, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
+    public static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> ConfigurationSerializable serialize(Object scalaTuple, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
         final int arity = getArity(scalaTuple.getClass());
         assert arity != 0 : "Not a scala tuple";
 
@@ -124,7 +124,7 @@ public class Tuple {
         throw new RuntimeException("Could not serialize tuple: " + scalaTuple + ", of type: " + type);
     }
 
-    private static byte[] makeTupleN(String generatedClassName, final List<? extends ParameterType> tupleTypeArguments, final ScalaPluginClassLoader plugin) {
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] makeTupleN(String generatedClassName, final List<? extends ParameterType> tupleTypeArguments, final ScalaPluginClassLoader plugin) {
         final int arity = tupleTypeArguments.size();
 
         ClassWriter classWriter = new ClassWriter(0);
@@ -231,7 +231,7 @@ public class Tuple {
                 methodVisitor.visitMethodInsn(INVOKESTATIC,
                         Type.getInternalName(RuntimeConversions.class),
                         "serialize",
-                        "(" + AsmConstants.javaLangObject_DESCRIPTOR + Type.getDescriptor(ParameterType.class) + Type.getDescriptor(ScalaPluginClassLoader.class) + ")" + AsmConstants.javaLangObject_DESCRIPTOR,
+                        "(" + AsmConstants.javaLangObject_DESCRIPTOR + Type.getDescriptor(ParameterType.class) + Type.getDescriptor(Object.class) + ")" + AsmConstants.javaLangObject_DESCRIPTOR,
                         false);                                         operandStack.replaceTop(3, Type.getType(Object.class));
                 methodVisitor.visitMethodInsn(INVOKEINTERFACE,
                         Type.getInternalName(Map.class),
@@ -289,7 +289,7 @@ public class Tuple {
                 methodVisitor.visitMethodInsn(INVOKESTATIC,
                         Type.getInternalName(RuntimeConversions.class),
                         "deserialize",
-                        Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class), Type.getType(ParameterType.class), Type.getType(ScalaPluginClassLoader.class)),
+                        Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class), Type.getType(ParameterType.class), Type.getType(Object.class)),
                         false);                                         operandStack.replaceTop(3, Type.getType(Object.class));
                 methodVisitor.visitVarInsn(ASTORE, a);                              operandStack.pop();
                 //methodVisitor.visitLocalVariable("_1", "Ljava/lang/Object;", "TT1;", label1, label3, 1);
@@ -414,7 +414,7 @@ public class Tuple {
     }
 
 
-    private static byte[] makeTupleXXL(String generatedClassName, ScalaPluginClassLoader plugin) {
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] makeTupleXXL(String generatedClassName, ScalaPluginClassLoader plugin) {
 
         ClassWriter classWriter = new ClassWriter(0);
         FieldVisitor fieldVisitor;
@@ -521,7 +521,7 @@ public class Tuple {
             methodVisitor.visitLdcInsn(Type.getType("Ljava/lang/Object;"));
             methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType", "from", "(Ljava/lang/reflect/Type;)Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;", false);
             genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-            methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+            methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
             methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
             methodVisitor.visitInsn(POP);
             Label label5 = new Label();
@@ -596,7 +596,7 @@ public class Tuple {
             methodVisitor.visitLdcInsn(Type.getType("Ljava/lang/Object;"));
             methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType", "from", "(Ljava/lang/reflect/Type;)Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;", false);
             genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-            methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+            methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
             methodVisitor.visitInsn(AASTORE);
             Label label7 = new Label();
             methodVisitor.visitLabel(label7);

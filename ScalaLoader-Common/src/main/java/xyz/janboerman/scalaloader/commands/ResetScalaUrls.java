@@ -4,7 +4,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
-import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
@@ -19,7 +18,7 @@ public class ResetScalaUrls implements TabExecutor {
 
     private final IScalaLoader scalaLoader;
 
-    public ResetScalaUrls(IScalaLoader scalaLoader){
+    public ResetScalaUrls(IScalaLoader scalaLoader) {
         this.scalaLoader = scalaLoader;
     }
 

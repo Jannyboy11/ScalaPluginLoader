@@ -6,8 +6,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.Compat;
-import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
+import xyz.janboerman.scalaloader.compat.IScalaPlugin;
+import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,22 +19,28 @@ import java.util.TreeMap;
 
 public class ListScalaPlugins implements TabExecutor {
 
+    private IScalaPluginLoader scalaPluginLoader;
+
+    public ListScalaPlugins(IScalaPluginLoader pluginLoader) {
+        this.scalaPluginLoader = pluginLoader;
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        Collection<? extends ScalaPlugin> scalaPlugins = ScalaPluginLoader.getInstance().getScalaPlugins();
+        Collection<? extends IScalaPlugin> scalaPlugins = scalaPluginLoader.getScalaPlugins();
 
-        Map<ScalaRelease, List<ScalaPlugin>> pluginNamesByScalaRelease = new TreeMap<>(Comparator.reverseOrder());
-        for (ScalaPlugin scalaPlugin : scalaPlugins) {
+        Map<ScalaRelease, List<IScalaPlugin>> pluginNamesByScalaRelease = new TreeMap<>(Comparator.reverseOrder());
+        for (IScalaPlugin scalaPlugin : scalaPlugins) {
             pluginNamesByScalaRelease.computeIfAbsent(scalaPlugin.getScalaRelease(), k -> new ArrayList<>(2)).add(scalaPlugin);
         }
 
         sender.sendMessage(ChatColor.GREEN + "=== ScalaPlugins by major Scala version ===");
-        for (Map.Entry<ScalaRelease, List<ScalaPlugin>> entry : pluginNamesByScalaRelease.entrySet()) {
+        for (Map.Entry<ScalaRelease, List<IScalaPlugin>> entry : pluginNamesByScalaRelease.entrySet()) {
             ScalaRelease scalaRelease = entry.getKey();
-            List<ScalaPlugin> plugins = entry.getValue();
+            List<IScalaPlugin> plugins = entry.getValue();
 
             StringJoiner pluginsPart = new StringJoiner(", ");
-            for (ScalaPlugin scalaPlugin : plugins) {
+            for (IScalaPlugin scalaPlugin : plugins) {
                 pluginsPart.add((scalaPlugin.isEnabled() ? ChatColor.AQUA : ChatColor.RED) + scalaPlugin.getName()
                         + ChatColor.AQUA + " (" + ChatColor.DARK_AQUA + scalaPlugin.getDeclaredScalaVersion() + ChatColor.AQUA + ")");
             }

@@ -3,7 +3,7 @@ package xyz.janboerman.scalaloader.plugin.runtime;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import xyz.janboerman.scalaloader.compat.Compat;
-import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
+import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,7 +17,7 @@ public class PersistentClasses {
     private static final String FILE_NAME = "generated-classes.yml";
     private static final String CLASS_FILES = "class-files";
 
-    private final ScalaPlugin plugin;
+    private final IScalaPlugin plugin;
     private File saveFile;
 
     //this set is not meant to be accessible from the outside world.
@@ -25,7 +25,7 @@ public class PersistentClasses {
     //and it does so through the #save and #load methods.
     private final Set<ClassFile> classFiles = new HashSet<>();
 
-    public PersistentClasses(ScalaPlugin plugin) {
+    public PersistentClasses(IScalaPlugin plugin) {
         assert plugin != null : "plugin cannot be null";
 
         this.plugin = plugin;

@@ -13,13 +13,10 @@ import org.objectweb.asm.util.ASMifier;
 import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
-import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
-import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
 import java.io.File;
 import java.io.IOException;

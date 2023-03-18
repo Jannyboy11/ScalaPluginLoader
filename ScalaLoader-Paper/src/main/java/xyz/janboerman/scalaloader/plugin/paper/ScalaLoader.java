@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader.plugin.paper;
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
+import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 import java.io.File;
@@ -65,4 +66,8 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
         //TODO
     }
 
+    @Override
+    public ScalaPluginLoader getScalaPluginLoader() {
+        return ScalaPluginLoader.getInstance();
+    }
 }

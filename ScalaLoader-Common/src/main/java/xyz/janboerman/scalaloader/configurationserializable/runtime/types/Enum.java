@@ -3,9 +3,9 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.Adapter;
 import static xyz.janboerman.scalaloader.configurationserializable.runtime.types.Types.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
 import org.objectweb.asm.*;
 import static org.objectweb.asm.Opcodes.*;
@@ -31,7 +31,7 @@ public abstract class Enum<E extends java.lang.Enum<E>> implements Adapter<E> {
      * @return the configuration-serializable enum value.
      */
     //if we had sum types we would write: <E extends java.lang.Enum<E>> E | Enum<E>
-    public static ConfigurationSerializable forEnum(java.lang.Enum<?> enumValue, ScalaPluginClassLoader classLoader) {
+    public static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> ConfigurationSerializable forEnum(java.lang.Enum<?> enumValue, ScalaPluginClassLoader classLoader) {
         Class<?> enumClazz = enumValue.getDeclaringClass();
 
         if (enumValue instanceof ConfigurationSerializable) {

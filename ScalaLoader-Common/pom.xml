@@ -5,14 +5,14 @@
     <parent>
         <groupId>com.janboerman.scalaloader</groupId>
         <artifactId>ScalaPluginLoader</artifactId>
-        <version>0.17.19-SNAPSHOT</version>
+        <version>0.18.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ScalaLoader-Common</artifactId>
 
     <properties>
-        <bukkitVersion>1.19.3-R0.1-SNAPSHOT</bukkitVersion> <!-- TODO install paper server into local maven repo -->
+        <bukkitVersion>1.19.4-R0.1-SNAPSHOT</bukkitVersion> <!-- TODO install paper server into local maven repo -->
         <asmVersion>9.4</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
@@ -162,36 +162,6 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <relocations>
-                                <relocation>
-                                    <pattern>org.objectweb.asm</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.asm</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.bstats</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.bstats</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.apache</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.apache</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.eclipse</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.eclipse</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.codehaus</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.codehaus</shadedPattern>
-                                </relocation>
-<!--                                <relocation>-->
-<!--                                    <pattern>org.slf4j</pattern>-->
-<!--                                    <shadedPattern>xyz.janboerman.scalaloader.libs.slf4j</shadedPattern>-->
-<!--                                </relocation>-->
-                                <relocation>
-                                    <pattern>org.sonatype</pattern>
-                                    <shadedPattern>xyz.janboerman.scalaloader.libs.sonatype</shadedPattern>
-                                </relocation>
-                            </relocations>
                             <minimizeJar>true</minimizeJar>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                         </configuration>
@@ -272,11 +242,6 @@
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
         </repository>
-        <!-- Paper repo -->
-        <repository>
-            <id>papermc-repo</id>
-            <url> https://repo.papermc.io/repository/maven-public/</url>
-        </repository>
     </repositories>
 
     <dependencies>
@@ -285,28 +250,6 @@
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>${bukkitVersion}</version>
-            <scope>provided</scope>
-        </dependency>
-        <!-- TODO probably in the future I will have to create separate submodules for loading ScalaLoader on CraftBukkit/Spigot and on Paper -->
-        <dependency>
-            <!-- depend on paper-api because of Paper's new PaperPlugin loading system -->
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-api</artifactId>
-            <version>${bukkitVersion}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <!-- depend on paper-server because of Paper's new PaperPlugin loading system -->
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-server</artifactId>
-            <version>${bukkitVersion}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <!-- paper server dependency: org.spongepowered:configurate-yaml:4.1.2 -->
-            <groupId>org.spongepowered</groupId>
-            <artifactId>configurate-yaml</artifactId>
-            <version>4.1.2</version>
             <scope>provided</scope>
         </dependency>
 

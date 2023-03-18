@@ -2,9 +2,10 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.types.*;
 import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableError;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.util.Maybe;
 
 import java.lang.reflect.Array;
@@ -25,58 +26,58 @@ import java.math.BigInteger;
 /**
  * <p>
  *     This class servers as a fallback for the configuration serialization framework.
- *     Generated serialize and deserializion methods may emit calls to {@link #serialize(Object, ParameterType, ScalaPluginClassLoader)}
- *     and {@link #deserialize(Object, ParameterType, ScalaPluginClassLoader)} if at classload-time it could not be established how an object should be (de)serialized.
+ *     Generated serialize and deserializion methods may emit calls to {@link #serialize(Object, ParameterType, ClassLoader)}
+ *     and {@link #deserialize(Object, ParameterType, ClassLoader)} if at classload-time it could not be established how an object should be (de)serialized.
  * </p>
  * <p>
  *     To adjust the runtime serialization and deserialization behaviour, you can register a {@link Codec}
  * </p>
  *
- * @see #registerCodec(ScalaPluginClassLoader, Class, Codec)
+ * @see #registerCodec(IScalaPluginClassLoader, Class, Codec)
  * @see xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable
  * @see xyz.janboerman.scalaloader.configurationserializable.DelegateSerialization
  * @see Codec
  */
 public class RuntimeConversions {
 
-    private static final Map<ScalaPluginClassLoader, Registrations> registrations = new HashMap<>();
+    private static final Map<IScalaPluginClassLoader, Registrations> registrations = new HashMap<>();
 
     private RuntimeConversions() {
     }
 
     /**
-     * Register a codec that will be used by {@link #serialize(Object, ParameterType, ScalaPluginClassLoader)} and {@link #deserialize(Object, ParameterType, ScalaPluginClassLoader)}.
+     * Register a codec that will be used by {@link #serialize(Object, ParameterType, ClassLoader)} and {@link #deserialize(Object, ParameterType, ClassLoader)}.
      * @param pluginClassLoader the classloader of your ScalaPlugin
      * @param type the live type of the objects the codec should work with
      * @param codec the serializer and deserializer
      * @return true if the codec was registered, otherwise false
      */
-    public static boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, ParameterType type, Codec<?, ?> codec) {
+    public static boolean registerCodec(IScalaPluginClassLoader pluginClassLoader, ParameterType type, Codec<?, ?> codec) {
         Objects.requireNonNull(pluginClassLoader, "plugin classloader cannot be null!");
         return registrations.computeIfAbsent(pluginClassLoader, Registrations::new).register(type, codec);
     }
 
     /**
-     * Register a codec that will be used by {@link #serialize(Object, ParameterType, ScalaPluginClassLoader)} and {@link #deserialize(Object, ParameterType, ScalaPluginClassLoader)}.
+     * Register a codec that will be used by {@link #serialize(Object, ParameterType, ClassLoader)} and {@link #deserialize(Object, ParameterType, ClassLoader)}.
      * @param pluginClassLoader the classloader of your ScalaPlugin
      * @param whenToUse a predicate that will be tested once an object is serialized or deserialized
      * @param codecFactory a generator for a codec that is called once the predicate test succeeds.
      * @return true if the codec factory was registered, otherwise false
      */
-    public static boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, Predicate<? super ParameterType> whenToUse, Function<? super ParameterType, ? extends Codec<?, ?>> codecFactory) {
+    public static boolean registerCodec(IScalaPluginClassLoader pluginClassLoader, Predicate<? super ParameterType> whenToUse, Function<? super ParameterType, ? extends Codec<?, ?>> codecFactory) {
         Objects.requireNonNull(pluginClassLoader, "plugin classloader cannot be null!");
         return registrations.computeIfAbsent(pluginClassLoader, Registrations::new).register(whenToUse, codecFactory);
     }
 
     /**
-     * Register a codec that will be used by {@link #serialize(Object, ParameterType, ScalaPluginClassLoader)} and {@link #deserialize(Object, ParameterType, ScalaPluginClassLoader)}.
+     * Register a codec that will be used by {@link #serialize(Object, ParameterType, ClassLoader)} and {@link #deserialize(Object, ParameterType, ClassLoader)}.
      * @param pluginClassLoader the classloader of your ScalaPlugin
      * @param clazz the live type of objects your codec should work with
      * @param codec the codec
      * @param <T> the type of the objects in their live form.
      * @return true if the codec was registered, otherwise false
      */
-    public static <T> boolean registerCodec(ScalaPluginClassLoader pluginClassLoader, Class<T> clazz, Codec<T, ?> codec) {
+    public static <T> boolean registerCodec(IScalaPluginClassLoader pluginClassLoader, Class<T> clazz, Codec<T, ?> codec) {
         return registerCodec(pluginClassLoader, ParameterType.from(clazz), codec);
     }
 
@@ -84,7 +85,7 @@ public class RuntimeConversions {
      * @deprecated internal use only.
      */
     @Deprecated
-    public static void clearCodecs(ScalaPluginClassLoader scalaPlugin) {
+    public static void clearCodecs(IScalaPluginClassLoader scalaPlugin) {
         registrations.remove(scalaPlugin);
     }
 
@@ -92,14 +93,14 @@ public class RuntimeConversions {
 
     /**
      * This method will be called by configuration serializable types for which ScalaLoader does not know how to handle them out of the box.
-     * You can register a {@link Codec} using {@link #registerCodec(ScalaPluginClassLoader, ParameterType, Codec)} or its overloads so you can specify the behaviour at runtime.
+     * You can register a {@link Codec} using {@link #registerCodec(IScalaPluginClassLoader, ParameterType, Codec)} or its overloads so you can specify the behaviour at runtime.
      * @param live the object that is going to be serialized
      * @param type the type of the live object
      * @param pluginClassLoader the classloader of your plugin
      * @return the object in its serialized form
      */
     @Called
-    public static Object serialize(Object live, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
+    public static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> Object serialize(Object live, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
         if (live == null) return null;
         Class<?> rawType = type.getRawType();
         assert rawType.isInstance(live) : "live object is not an instance of " + type;
@@ -227,7 +228,7 @@ public class RuntimeConversions {
         return live;
     }
 
-    private static Object serializeArray(Object live, ArrayParameterType arrayType, ScalaPluginClassLoader plugin) {
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> Object serializeArray(Object live, ArrayParameterType arrayType, ScalaPluginClassLoader plugin) {
         if (live instanceof byte[]) {
             byte[] bytes = (byte[]) live;
             ArrayList<Integer> list = new ArrayList<>(bytes.length);
@@ -296,7 +297,7 @@ public class RuntimeConversions {
         }
     }
 
-    private static Object serializeCollection(Object live, ParameterizedParameterType type, ScalaPluginClassLoader plugin) {
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> Object serializeCollection(Object live, ParameterizedParameterType type, ScalaPluginClassLoader plugin) {
         if (live instanceof Set) {
             Set<?> sourceSet = (Set<?>) live;
             Set<Object> resultSet = new LinkedHashSet<>();
@@ -321,7 +322,7 @@ public class RuntimeConversions {
         }
     }
 
-    private static Object serializeMap(Object live, ParameterizedParameterType type, ScalaPluginClassLoader plugin) {
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> Object serializeMap(Object live, ParameterizedParameterType type, ScalaPluginClassLoader plugin) {
         Map<?, ?> sourceMap = (Map<?, ?>) live;
         LinkedHashMap resultMap = new LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : sourceMap.entrySet()) {
@@ -337,14 +338,14 @@ public class RuntimeConversions {
 
     /**
      * This method will be called by configuration serializable types for which ScalaLoader does not know how to handle them out of the box.
-     * You can register a {@link Codec} using {@link #registerCodec(ScalaPluginClassLoader, ParameterType, Codec)} or its overloads so you can specify the behaviour at runtime.
+     * You can register a {@link Codec} using {@link #registerCodec(IScalaPluginClassLoader, ParameterType, Codec)} or its overloads so you can specify the behaviour at runtime.
      * @param serialized the object that is going to be deserialized
      * @param type the type of the live object
      * @param pluginClassLoader the classloader of your plugin
      * @return object in its live form
      */
     @Called
-    public static Object deserialize(Object serialized, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
+    public static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> Object deserialize(Object serialized, ParameterType type, ScalaPluginClassLoader pluginClassLoader) {
         if (serialized == null) return null;
         Class<?> rawType = type.getRawType();
 
@@ -426,7 +427,7 @@ public class RuntimeConversions {
         return serialized;
     }
 
-    private static Object deserializeArray(List<?> serialized, ArrayParameterType type, ScalaPluginClassLoader plugin) {
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> Object deserializeArray(List<?> serialized, ArrayParameterType type, ScalaPluginClassLoader plugin) {
         ParameterType componentType = type.getComponentType();
         Class<?> componentClass = Array.newInstance(componentType.getRawType(), 0).getClass();
 
@@ -440,7 +441,7 @@ public class RuntimeConversions {
         return array;
     }
 
-    private static Object deserializeCollection(Collection<?> serialized, ParameterizedParameterType type, ScalaPluginClassLoader plugin) {
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> Object deserializeCollection(Collection<?> serialized, ParameterizedParameterType type, ScalaPluginClassLoader plugin) {
         Class<?> rawType = type.getRawType();
         Collection<Object> resultCollection;
 
@@ -492,7 +493,7 @@ public class RuntimeConversions {
         return resultCollection;
     }
 
-    private static Object deserializeMap(Map<?, ?> serialized, ParameterizedParameterType type, ScalaPluginClassLoader plugin) {
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> Object deserializeMap(Map<?, ?> serialized, ParameterizedParameterType type, ScalaPluginClassLoader plugin) {
         Class<?> rawType = type.getRawType();
         Map<Object, Object> resultMap;
 
@@ -540,12 +541,12 @@ public class RuntimeConversions {
     // ======================================================
 
     private static class Registrations {
-        private final ScalaPluginClassLoader classLoader;
+        private final IScalaPluginClassLoader classLoader;
 
         private final Map<ParameterType, Codec<?, ?>> absoluteCodecs = new HashMap<>();
         private final Map<Predicate<? super ParameterType>, Function<? super ParameterType, ? extends Codec<?, ?>>> bestEffortCodecs = new LinkedHashMap<>();
 
-        private Registrations(ScalaPluginClassLoader classLoader) {
+        private Registrations(IScalaPluginClassLoader classLoader) {
             this.classLoader = classLoader;
         }
 

@@ -11,8 +11,8 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 import xyz.janboerman.scalaloader.DebugSettings;
+import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
-import xyz.janboerman.scalaloader.dependency.PluginYamlLibraryLoader;
 import xyz.janboerman.scalaloader.event.EventBus;
 
 import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
@@ -23,6 +23,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
+import java.util.Collections;
+
 public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
     private static final ScalaPluginLoader INSTANCE = new ScalaPluginLoader();
@@ -32,6 +35,10 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
     private ScalaLoader scalaLoader;
     private EventBus eventBus;
+
+    //TODO
+    //TODO private final Collection<ScalaPlugin> scalaPlugins = new HashSet<>();
+
 
     public static ScalaPluginLoader getInstance() {
         return INSTANCE;
@@ -97,5 +104,10 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
     }
 
 
+    @Override
+    public Collection<ScalaPlugin> getScalaPlugins() {
+        //TODO!
 
+        return Compat.emptyList();
+    }
 }

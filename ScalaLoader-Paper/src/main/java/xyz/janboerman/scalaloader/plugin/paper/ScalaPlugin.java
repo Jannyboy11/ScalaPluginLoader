@@ -26,6 +26,11 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
         return description;
     }
 
+    @Override
+    public String getPrefix() {
+        return getScalaDescription().getPrefix();
+    }
+
     public ScalaPluginClassLoader classLoader() {
         //TODO is this implementation correct? who knows!
         return (ScalaPluginClassLoader) super.getClassLoader();

@@ -4,7 +4,6 @@ import org.bstats.bukkit.Metrics;
 import org.bstats.charts.DrilldownPie;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.commands.DumpClass;
 import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
@@ -13,7 +12,6 @@ import xyz.janboerman.scalaloader.commands.SetDebug;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
-import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
@@ -57,7 +55,7 @@ public class ScalaLoaderUtils {
         scalaLoader.getCommand("resetScalaUrls").setExecutor(new ResetScalaUrls(scalaLoader));
         scalaLoader.getCommand("dumpClass").setExecutor(new DumpClass(scalaLoader));
         scalaLoader.getCommand("setDebug").setExecutor(new SetDebug(scalaLoader.getDebugSettings()));
-        scalaLoader.getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins());
+        scalaLoader.getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins(scalaLoader.getScalaPluginLoader()));
     }
 
     public static <ScalaLoader extends JavaPlugin & IScalaLoader> void initBStats(ScalaLoader scalaLoader) {

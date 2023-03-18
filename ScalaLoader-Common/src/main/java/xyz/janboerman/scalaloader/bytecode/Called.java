@@ -6,7 +6,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.event.EventBus;
 
 import java.lang.annotation.ElementType;
@@ -18,8 +17,8 @@ import java.lang.reflect.Type;
 /**
  * Indicates that methods annotated with this annotation can be called by ScalaPlugins as a result of bytecode transformation.
  * 
- * @see RuntimeConversions#serialize(Object, ParameterType, ScalaPluginClassLoader)
- * @see RuntimeConversions#deserialize(Object, ParameterType, ScalaPluginClassLoader)
+ * @see RuntimeConversions#serialize(Object, ParameterType, ClassLoader)
+ * @see RuntimeConversions#deserialize(Object, ParameterType, ClassLoader)
  * @see EventBus#callEvent(Event)
  * @see EventBus#registerEvent(Class, Listener, EventPriority, EventExecutor, Plugin)
  * @see EventBus#registerEvent(Class, Listener, EventPriority, EventExecutor, Plugin, boolean)

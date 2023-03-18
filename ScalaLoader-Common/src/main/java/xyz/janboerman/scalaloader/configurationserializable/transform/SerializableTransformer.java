@@ -8,12 +8,12 @@ import xyz.janboerman.scalaloader.bytecode.LocalVariable;
 import xyz.janboerman.scalaloader.bytecode.LocalVariableTable;
 import xyz.janboerman.scalaloader.bytecode.MethodHeader;
 import xyz.janboerman.scalaloader.bytecode.OperandStack;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.DeserializationMethod;
 import xyz.janboerman.scalaloader.configurationserializable.InjectionPoint;
 import xyz.janboerman.scalaloader.configurationserializable.Scan;
 import xyz.janboerman.scalaloader.configurationserializable.Scan.ExcludeProperty;
 import xyz.janboerman.scalaloader.configurationserializable.Scan.IncludeProperty;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.util.Pair;
 
 import static xyz.janboerman.scalaloader.configurationserializable.DeserializationMethod.*;
@@ -35,7 +35,7 @@ import static xyz.janboerman.scalaloader.configurationserializable.transform.Con
 class SerializableTransformer extends ClassVisitor {
 
     private final LocalScanResult result;
-    private final ScalaPluginClassLoader pluginClassLoader;
+    private final IScalaPluginClassLoader pluginClassLoader;
 
     private String className;       //uses slashes, not dots:                   foo/bar/SomeClass
     private String classDescriptor; //uses the nominal descriptor notation:     Lfoo/bar/SomeClass;
@@ -67,7 +67,7 @@ class SerializableTransformer extends ClassVisitor {
 
     private final Set<FieldDeclaration> allInstanceFields = new HashSet<>();
 
-    SerializableTransformer(ClassVisitor classVisitor, LocalScanResult scanResult, ScalaPluginClassLoader pluginClassLoader) {
+    SerializableTransformer(ClassVisitor classVisitor, LocalScanResult scanResult, IScalaPluginClassLoader pluginClassLoader) {
         super(ASM_API, classVisitor);
         this.result = scanResult;
         this.pluginClassLoader = pluginClassLoader;

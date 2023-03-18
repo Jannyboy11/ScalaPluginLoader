@@ -218,6 +218,14 @@ public abstract class ScalaPlugin implements IScalaPlugin {
     }
 
     /**
+     * Get the log prefix of this ScalaPlugin.
+     * @return the prefix
+     */
+    public String getPrefix() {
+        return getScalaDescription().getPrefix();
+    }
+
+    /**
      * Get the description of this ScalaPlugin.
      * @return the description
      */

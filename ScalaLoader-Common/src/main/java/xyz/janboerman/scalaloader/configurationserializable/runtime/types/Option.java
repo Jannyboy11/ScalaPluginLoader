@@ -2,8 +2,8 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
 import org.bukkit.configuration.serialization.*;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
 import java.lang.reflect.*;
 import java.util.Map;
@@ -22,7 +22,7 @@ public abstract class Option<T> implements ConfigurationSerializable {
         None.register();
     }
     
-    public static boolean isOption(Object live, ScalaPluginClassLoader classLoader) {
+    public static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> boolean isOption(Object live, ScalaPluginClassLoader classLoader) {
         try {
             Class<?> optionClass = Class.forName(OPTION, false, classLoader);
             return optionClass.isInstance(live);
@@ -31,7 +31,7 @@ public abstract class Option<T> implements ConfigurationSerializable {
         }
     }
 
-    public static ConfigurationSerializable serialize(Object scalaOption, ParameterType type, ScalaPluginClassLoader plugin) {
+    public static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> ConfigurationSerializable serialize(Object scalaOption, ParameterType type, ScalaPluginClassLoader plugin) {
         assert isOption(scalaOption, plugin) : "Not a " + OPTION;
 
         final RuntimeException ex = new RuntimeException("Could not serialize option: " + scalaOption + ", of type: " + type);
@@ -61,7 +61,7 @@ public abstract class Option<T> implements ConfigurationSerializable {
         return o instanceof Some || o instanceof None;
     }
 
-    public static Object deserialize(Object serializedOption, ParameterType type, ScalaPluginClassLoader plugin) {
+    public static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> Object deserialize(Object serializedOption, ParameterType type, ScalaPluginClassLoader plugin) {
         if (serializedOption instanceof Some) {
             Some some = (Some) serializedOption;
 

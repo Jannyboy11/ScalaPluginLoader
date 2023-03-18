@@ -11,12 +11,17 @@ import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
 import io.papermc.paper.plugin.entrypoint.classloader.group.PaperPluginClassLoaderStorage;
 import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
 
+import org.bukkit.Server;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
+import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
+import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
+import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
+import xyz.janboerman.scalaloader.plugin.runtime.ClassGenerator;
 import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IScalaPluginClassLoader {
@@ -27,6 +32,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
     private final File pluginJarFile;
     private final JarFile jarFile;
+    private final String mainClassName;
 
     public ScalaPluginClassLoader(Logger logger,
                                   Path source,
@@ -44,6 +50,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
         this.pluginJarFile = pluginJarFile;
         this.jarFile = Compat.jarFile(pluginJarFile);
+        this.mainClassName = mainClassName;
 
         try {
             Class<? extends ScalaPlugin> mainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this);
@@ -61,6 +68,29 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         return pluginJarFile;
     }
 
+    @Override
+    public String getMainClassName() {
+        return mainClassName;
+    }
+
+    @Override
+    public ApiVersion getApiVersion() {
+        //TODO dependency-inject
+        return null;
+    }
+
+    @Override
+    public ClassDefineResult getOrDefineClass(String className, ClassGenerator classGenerator, boolean persist) {
+        //TODO
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public Server getServer() {
+        //TODO dependency-inject
+        return null;
+    }
+
     //TODO
     public String getScalaVersion() {
         //TODO dependency-inject
@@ -73,6 +103,17 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         return null;
     }
 
+    @Override
+    public ScalaPlugin getPlugin() {
+        return (ScalaPlugin) super.getPlugin();
+    }
+
+    @Override
+    public ScalaPluginLoader getPluginLoader() {
+        //TODO dependency-inject
+        return null;
+    }
+
     //TODO loadClass
 
     //TODO findClass
@@ -81,7 +122,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
     @Override
     public void init(JavaPlugin plugin) {
-        assert plugin instanceof ScalaPlugin;
+        assert plugin instanceof ScalaPlugin : "Used ScalaPluginClassLoader to initialise a plugin that is not a ScalaPlugin: " + plugin;
 
         // overriding this method just us the ability to do it *during* instantiation,
         // meaning that the bodies of ScalaPlugin subclasses' constructors are experiencing a fully initialised ScalaPlugin.
@@ -89,11 +130,6 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
         //TODO anything else to do here? perhaps we want to 'set' the ScalaPluginDescription or something?
 
-    }
-
-    @Override
-    public ScalaPlugin getPlugin() {
-        return (ScalaPlugin) super.getPlugin();
     }
 
 }

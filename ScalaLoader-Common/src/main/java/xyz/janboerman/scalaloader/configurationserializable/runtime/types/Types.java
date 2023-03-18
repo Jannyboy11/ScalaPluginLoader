@@ -1,14 +1,13 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
 import xyz.janboerman.scalaloader.bytecode.OperandStack;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.ArrayParameterType;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterType;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterizedParameterType;
 
 import org.objectweb.asm.*;
 import static org.objectweb.asm.Opcodes.*;
-import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterizedParameterType;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
-
 import java.util.List;
 
 class Types {
@@ -19,16 +18,16 @@ class Types {
     private Types() {}
 
     //adapted from Conversions#genScalaPluginClassLoader
-    static void genScalaPluginClassLoader(MethodVisitor methodVisitor, ScalaPluginClassLoader plugin, OperandStack operandStack) {
+    static void genScalaPluginClassLoader(MethodVisitor methodVisitor, IScalaPluginClassLoader plugin, OperandStack operandStack) {
         String main = plugin.getMainClassName();
         Type mainType = Type.getType("L" + main.replace('.', '/') + ";");
 
         methodVisitor.visitLdcInsn(mainType);
         operandStack.push(Type.getType(Class.class));
-        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Class.class), "getClassLoader", "()" + Type.getDescriptor(ClassLoader.class), false);
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Class.class), "classLoader", "()" + Type.getDescriptor(IScalaPluginClassLoader.class), false);
         operandStack.replaceTop(Type.getType(ClassLoader.class));
-        methodVisitor.visitTypeInsn(CHECKCAST, Type.getInternalName(ScalaPluginClassLoader.class));
-        operandStack.replaceTop(Type.getType(ScalaPluginClassLoader.class));
+        methodVisitor.visitTypeInsn(CHECKCAST, Type.getInternalName(IScalaPluginClassLoader.class));
+        operandStack.replaceTop(Type.getType(IScalaPluginClassLoader.class));
     }
 
     //adapted from Conversions#genParameterType

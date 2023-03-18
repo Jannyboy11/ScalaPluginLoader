@@ -2,6 +2,8 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
 import org.bukkit.configuration.serialization.SerializableAs;
 import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
+import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.types.ScalaCollection.ScalaSeq;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.types.ScalaCollection.ScalaSet;
@@ -9,7 +11,6 @@ import static xyz.janboerman.scalaloader.configurationserializable.runtime.types
 import xyz.janboerman.scalaloader.configurationserializable.runtime.Adapter;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterType;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterizedParameterType;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -39,43 +40,43 @@ public abstract class ScalaCollection {
         return ("scala.collection.immutable.Set$Set" + N).equals(setClassName);
     }
 
-    private static boolean is(Object live, String className, ScalaPluginClassLoader plugin) {
+    private static boolean is(Object live, String className, ClassLoader pluginClassLoader) {
         try {
-            return Class.forName(className, false, plugin).isInstance(live);
+            return Class.forName(className, false, pluginClassLoader).isInstance(live);
         } catch (ClassNotFoundException e) {
             return false;
         }
     }
 
-    private static boolean isWrappedString(Object live, ScalaPluginClassLoader plugin) {
+    private static boolean isWrappedString(Object live, ClassLoader plugin) {
         return is(live, SCALA_IMMUTABLE_WRAPPED_STRING, plugin);
     }
 
-    private static boolean isRange(Object live, ScalaPluginClassLoader plugin) {
+    private static boolean isRange(Object live, ClassLoader plugin) {
         return is(live, SCALA_IMMUTABLE_RANGE, plugin);
     }
 
-    private static boolean isImmutableArraySeq(Object live, ScalaPluginClassLoader plugin) {
+    private static boolean isImmutableArraySeq(Object live, ClassLoader plugin) {
         return is(live, SCALA_IMMUTABLE_ARRAY_SEQ, plugin);
     }
 
-    private static boolean isMutableArraySeq(Object live, ScalaPluginClassLoader plugin) {
+    private static boolean isMutableArraySeq(Object live, ClassLoader plugin) {
         return is(live, SCALA_MUTABLE_ARRAY_SEQ, plugin);
     }
 
-    private static boolean isList(Object live, ScalaPluginClassLoader plugin) {
+    private static boolean isList(Object live, ClassLoader plugin) {
         return is(live, SCALA_IMMUTABLE_LIST, plugin);
     }
 
-    private static Class<?> getScalaSeqClass(ScalaPluginClassLoader plugin) throws ClassNotFoundException {
+    private static Class<?> getScalaSeqClass(ClassLoader plugin) throws ClassNotFoundException {
         return Class.forName(SCALA_SEQ, false, plugin);
     }
 
-    private static Class<?> getScalaSetClass(ScalaPluginClassLoader plugin) throws ClassNotFoundException {
+    private static Class<?> getScalaSetClass(ClassLoader plugin) throws ClassNotFoundException {
         return Class.forName(SCALA_SET, false, plugin);
     }
 
-    private static boolean isSeq(Object live, ScalaPluginClassLoader plugin) {
+    private static boolean isSeq(Object live, ClassLoader plugin) {
         try {
             return getScalaSeqClass(plugin).isInstance(live);
         } catch (ClassNotFoundException e) {
@@ -83,7 +84,7 @@ public abstract class ScalaCollection {
         }
     }
 
-    private static boolean isSet(Object live, ScalaPluginClassLoader plugin) {
+    private static boolean isSet(Object live, ClassLoader plugin) {
         try {
             return getScalaSetClass(plugin).isInstance(live);
         } catch (ClassNotFoundException e) {
@@ -91,11 +92,11 @@ public abstract class ScalaCollection {
         }
     }
 
-    public static boolean isCollection(Object live, ScalaPluginClassLoader plugin) {
+    public static boolean isCollection(Object live, ClassLoader plugin) {
         return isSeq(live, plugin) || isSet(live, plugin);
     }
 
-    public static ScalaCollection serialize(Object live, ParameterType type, ScalaPluginClassLoader plugin) {
+    public static ScalaCollection serialize(Object live, ParameterType type, ClassLoader plugin) {
         assert isCollection(live, plugin) : "Not a " + SCALA_SEQ + " or " + SCALA_SET;
 
         final ParameterType elementType = type instanceof ParameterizedParameterType ? ((ParameterizedParameterType) type).getTypeParameter(0) : ParameterType.from(Object.class);
@@ -209,6 +210,7 @@ public abstract class ScalaCollection {
     }
 }
 
+//TODO do I still need this?
 @SerializableAs("THE_SEQ_IMPLEMENTATION_CLASS_NAME")
 /*public*/ final class SeqAdapter extends ScalaSeq {
     private final scala.collection.Seq seq;
@@ -234,7 +236,7 @@ public abstract class ScalaCollection {
 
         scala.collection.Iterator iterator = seq.iterator();
         while (iterator.hasNext()) {
-            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, (ScalaPluginClassLoader) null));
+            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, (ClassLoader & IScalaPluginClassLoader) null));
             //in bytecode we generate the ParameterType and ScalaPluginLoder using the genXXX methods.
         }
 
@@ -248,7 +250,7 @@ public abstract class ScalaCollection {
         //in bytecode use the companion object of the actual seq type to get the builder
 
         for (Object element : serialized) {
-            builder.addOne(RuntimeConversions.deserialize(element, (ParameterType) null, (ScalaPluginClassLoader) null));
+            builder.addOne(RuntimeConversions.deserialize(element, (ParameterType) null, (ClassLoader & IScalaPluginClassLoader) null));
             //idem
         }
 
@@ -332,7 +334,7 @@ public abstract class ScalaCollection {
     public java.util.Map<String, Object> serialize() {
         java.util.List<Object> serialized = new java.util.ArrayList<>(arraySeq.length());
         for (int i = 0; i < arraySeq.length(); ++i) {
-            serialized.add(RuntimeConversions.serialize(arraySeq.apply(i), (ParameterType) null, (ScalaPluginClassLoader) null));
+            serialized.add(RuntimeConversions.serialize(arraySeq.apply(i), (ParameterType) null, /*ScalaPluginClassLoader*/ null));
         }
         Class<?> elemClazz = arraySeq.elemTag().runtimeClass();
 
@@ -343,10 +345,10 @@ public abstract class ScalaCollection {
     }
 
     public static ImmutableArraySeqAdapter deserialize(java.util.Map<String, Object> map) throws ClassNotFoundException {
-        scala.collection.mutable.Builder builder = scala.collection.immutable.ArraySeq$.MODULE$.newBuilder(scala.reflect.ClassTag$.MODULE$.apply(Class.forName((String) map.get("tag"), false, (ScalaPluginClassLoader) null)));
+        scala.collection.mutable.Builder builder = scala.collection.immutable.ArraySeq$.MODULE$.newBuilder(scala.reflect.ClassTag$.MODULE$.apply(Class.forName((String) map.get("tag"), false, (ClassLoader & IScalaPluginLoader) null)));
         //in bytecode generate the ScalaPluginClassLoader instance
         for (Object serializedElement : (java.util.List<Object>) map.get("array")) {
-            builder.addOne(RuntimeConversions.deserialize(serializedElement, (ParameterType) null, (ScalaPluginClassLoader) null));
+            builder.addOne(RuntimeConversions.deserialize(serializedElement, (ParameterType) null, /*ScalaPluginClassLoader*/ null));
         }
         return new ImmutableArraySeqAdapter((scala.collection.immutable.ArraySeq) builder.result());
     }
@@ -370,7 +372,7 @@ public abstract class ScalaCollection {
     public java.util.Map<String, Object> serialize() {
         java.util.List<Object> serialized = new java.util.ArrayList<>(arraySeq.length());
         for (int i = 0; i < arraySeq.length(); ++i) {
-            serialized.add(RuntimeConversions.serialize(arraySeq.apply(i), (ParameterType) null, (ScalaPluginClassLoader) null));
+            serialized.add(RuntimeConversions.serialize(arraySeq.apply(i), (ParameterType) null, /*ClassLoader*/ null));
         }
         Class<?> elemClazz = arraySeq.elemTag().runtimeClass();
 
@@ -381,10 +383,10 @@ public abstract class ScalaCollection {
     }
 
     public static MutableArraySeqAdapter deserialize(java.util.Map<String, Object> map) throws ClassNotFoundException {
-        scala.collection.mutable.Builder builder = scala.collection.mutable.ArraySeq$.MODULE$.newBuilder(scala.reflect.ClassTag$.MODULE$.apply(Class.forName((String) map.get("tag"), false, (ScalaPluginClassLoader) null)));
+        scala.collection.mutable.Builder builder = scala.collection.mutable.ArraySeq$.MODULE$.newBuilder(scala.reflect.ClassTag$.MODULE$.apply(Class.forName((String) map.get("tag"), false, (ClassLoader & IScalaPluginClassLoader) null)));
         //in bytecode generate the ScalaPluginClassLoader instance
         for (Object serializedElement : (java.util.List<Object>) map.get("array")) {
-            builder.addOne(RuntimeConversions.deserialize(serializedElement, (ParameterType) null, (ScalaPluginClassLoader) null));
+            builder.addOne(RuntimeConversions.deserialize(serializedElement, (ParameterType) null, /*ClassLoader*/ null));
         }
         return new MutableArraySeqAdapter((scala.collection.mutable.ArraySeq) builder.result());
     }
@@ -408,7 +410,7 @@ public abstract class ScalaCollection {
     public java.util.Map<String, Object> serialize() {
         java.util.List<Object> serialized = new java.util.ArrayList<>();
         for (scala.collection.Iterator iterator = list.iterator(); iterator.hasNext(); ) {
-            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, (ScalaPluginClassLoader) null));
+            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, /*IScalaPlugin ClassLoader*/ null));
         }
         return Collections.singletonMap("list", serialized);
     }
@@ -416,7 +418,7 @@ public abstract class ScalaCollection {
     public static ListAdapter deserialize(java.util.Map<String, Object> map) {
         scala.collection.mutable.Builder builder = scala.collection.immutable.List$.MODULE$.newBuilder();
         for (Object serializedElement : (java.util.List<Object>) map.get("list")) {
-            builder.addOne(RuntimeConversions.deserialize(serializedElement, (ParameterType) null, (ScalaPluginClassLoader) null));
+            builder.addOne(RuntimeConversions.deserialize(serializedElement, (ParameterType) null, /*IScalaPlugin ClassLoader*/ null));
         }
         return new ListAdapter((scala.collection.immutable.List) builder.result());
     }
@@ -442,7 +444,7 @@ public abstract class ScalaCollection {
 
         scala.collection.Iterator iterator = set.iterator();
         while (iterator.hasNext()) {
-            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, (ScalaPluginClassLoader) null));
+            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, /*IScalaPlugin ClassLoader*/ null));
             //use genXXX methods to get the ParameterType and ScalaPluginClassLoader in the bytecode
         }
 
@@ -456,7 +458,7 @@ public abstract class ScalaCollection {
         //in bytecode use the companion object of the actual set type to get the builder
 
         for (Object element : serialized) {
-            builder.addOne(RuntimeConversions.deserialize(element, (ParameterType) null, (ScalaPluginClassLoader) null));
+            builder.addOne(RuntimeConversions.deserialize(element, (ParameterType) null, /*IScalaPlugin ClassLoader*/ null));
             //idem for ParameterType and ScalaPluginClassLoader
         }
 
@@ -483,7 +485,7 @@ public abstract class ScalaCollection {
 
         scala.collection.Iterator iterator = set.iterator();
         while (iterator.hasNext()) {
-            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, (ScalaPluginClassLoader) null));
+            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, /*IScalaPlugin ClassLoader*/ null));
             //gen ParameterType and gen ScalaPluginClassLoader
         }
 
@@ -495,7 +497,7 @@ public abstract class ScalaCollection {
 
         java.util.Iterator<Object> iterator = serialized.iterator();
         //for (int k = 1; k <= N; k++) {
-            RuntimeConversions.deserialize(iterator.next(), (ParameterType) null, (ScalaPluginClassLoader) null);
+            RuntimeConversions.deserialize(iterator.next(), (ParameterType) null, /*IScalaPlugin classLoader*/ null);
             //in bytecode, don't pop this, just leave it on the stack.
 
             //k++

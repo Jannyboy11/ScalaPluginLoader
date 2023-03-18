@@ -11,6 +11,8 @@ import org.objectweb.asm.commons.SimpleRemapper;
 import xyz.janboerman.scalaloader.bytecode.AsmConstants;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import static xyz.janboerman.scalaloader.compat.Compat.*;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterType;
+import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.Permission;
 
@@ -35,6 +37,8 @@ public class Migration {
 
         combinedTransformer = new NumericRangeUpdater(combinedTransformer);
         combinedTransformer = new PermissionGetChildrenReplacer(combinedTransformer);
+        combinedTransformer = new RuntimeConversionsReplacer(combinedTransformer);
+        combinedTransformer = new PluginEventReplacer(combinedTransformer);
         //there is room for more here.
 
         new ClassReader(byteCode).accept(combinedTransformer, ClassReader.EXPAND_FRAMES);
@@ -112,4 +116,67 @@ class PermissionGetChildrenReplacer extends ClassVisitor {
         };
     }
 
+}
+
+class RuntimeConversionsReplacer extends ClassVisitor {
+
+    private static final String RUNTIMECONVERSIONS_NAME = Type.getInternalName(RuntimeConversions.class);
+    private static final String OLD_DESCRIPTOR = "(" + AsmConstants.javaLangObject_DESCRIPTOR + Type.getDescriptor(ParameterType.class) + "Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)" + AsmConstants.javaLangObject_DESCRIPTOR;
+    private static final String NEW_DESCRIPTOR = "(" + AsmConstants.javaLangObject_DESCRIPTOR + Type.getDescriptor(ParameterType.class) + Type.getDescriptor(ClassLoader.class) + ")" + AsmConstants.javaLangObject_DESCRIPTOR;
+
+    RuntimeConversionsReplacer(ClassVisitor delegate) {
+        super(AsmConstants.ASM_API, delegate);
+    }
+
+    @Override
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        return new MethodVisitor(AsmConstants.ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+            @Override
+            public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                if (opcode == Opcodes.INVOKESTATIC
+                        && RUNTIMECONVERSIONS_NAME.equals(owner)
+                        && ("serialize".equals(name) || "deserialize".equals(name))  //both methods use the same signature.
+                        && OLD_DESCRIPTOR.equals(descriptor)) {
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, RUNTIMECONVERSIONS_NAME, name, NEW_DESCRIPTOR, isInterface);
+                } else {
+                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                }
+            }
+        };
+    }
+}
+
+class PluginEventReplacer extends ClassVisitor {
+
+    private static final String ENABLE_EVENT = "xyz/janboerman/scalaloader/event/plugin/ScalaPluginEnableEvent";
+    private static final String DISABLE_EVENT = "xyz/janboerman/scalaloader/event/plugin/ScalaPluginDisableEvent";
+    private static final String OLD_GETPLUGIN_DESCRIPTOR = "()Lxyz/janboerman/scalaloader/plugin/ScalaPlugin;";
+    private static final String NEW_GETPLUGIN_DESCRIPTOR = Type.getMethodDescriptor(Type.getType(IScalaPlugin.class));
+    private static final String GETPLUGIN_NAME = "getPlugin";
+
+    PluginEventReplacer(ClassVisitor delegate) {
+        super(AsmConstants.ASM_API, delegate);
+    }
+
+    @Override
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        //if a plugin calls ScalaPluginEnableEvent#getPlugin() -> ScalaPlugin, replace the call by calling to ScalaPluginEnableEvent#getPlugin() -> IScalaPlugin instead.
+        //to keep compatibility, cast to ScalaPlugin again. This is a best-effort approach, it will fail if the plugin in a paper.ScalaPlugin.
+
+        return new MethodVisitor(AsmConstants.ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+            @Override
+            public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                if (opcode == Opcodes.INVOKEVIRTUAL
+                        && (ENABLE_EVENT.equals(owner) || DISABLE_EVENT.equals(owner))
+                        && GETPLUGIN_NAME.equals(name)
+                        && OLD_GETPLUGIN_DESCRIPTOR.equals(descriptor)
+                        && !isInterface) {
+                    super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, GETPLUGIN_NAME, NEW_GETPLUGIN_DESCRIPTOR, false);
+                    super.visitTypeInsn(Opcodes.CHECKCAST, "xyz/janboerman/scalaloader/plugin/ScalaPlugin");
+                } else {
+                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                }
+            }
+        };
+    }
 }

@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.plugin;
 
 import org.bukkit.Server;
+import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -14,9 +15,9 @@ class ScalaPluginLogger extends Logger {
 
     private final String logPrefix;
 
-    ScalaPluginLogger(ScalaPlugin scalaPlugin) {
+    ScalaPluginLogger(IScalaPlugin scalaPlugin) {
         super(scalaPlugin.getClass().getCanonicalName(), null);
-        this.logPrefix = "[" + scalaPlugin.getScalaDescription().getPrefix() + "] ";
+        this.logPrefix = "[" + scalaPlugin.getPrefix() + "] ";
         Server server = scalaPlugin.getServer();
         if (server != null) {   //IntelliJ's got it wrong here because ScalaPlugin#getServer() can in fact return null in rare circumstances!
             setParent(server.getLogger());

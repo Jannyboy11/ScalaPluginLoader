@@ -7,10 +7,10 @@ import static org.objectweb.asm.Opcodes.*;
 import static xyz.janboerman.scalaloader.bytecode.AsmConstants.*;
 import xyz.janboerman.scalaloader.bytecode.*;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.types.NumericRange;
 import static xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableTransformations.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.util.ArrayOps;
 import xyz.janboerman.scalaloader.util.Pair;
 
@@ -24,7 +24,7 @@ class Conversions {
 
     private Conversions() {}
 
-    static void toSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalCounter localCounter, LocalVariableTable localVariables, OperandStack operandStack) {
+    static void toSerializedType(IScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalCounter localCounter, LocalVariableTable localVariables, OperandStack operandStack) {
 
         final TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
 
@@ -33,17 +33,17 @@ class Conversions {
                 //convert array to java.util.List.
                 arrayToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
-            } else if (isJavaUtilCollection(typeSignature, pluginClassLoader)) {
+            } else if (isJavaUtilCollection(typeSignature, (ClassLoader) pluginClassLoader)) {
                 //convert collection to ArrayList or LinkedHashSet
                 collectionToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
-            } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
+            } else if (isJavaUtilMap(typeSignature, (ClassLoader) pluginClassLoader)) {
                 mapToSerializedType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
             }
         }
 
-        else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
+        else if (ScalaConversions.isScalaCollection(typeSignature, (ClassLoader) pluginClassLoader)) {
             //some of the scala collections don't have type parameters.
             ScalaConversions.serializeCollection(pluginClassLoader, methodVisitor, typeSignature, localCounter, localVariables, operandStack);
             return;
@@ -167,7 +167,7 @@ class Conversions {
                         "serialize",
                         "(" + OBJECT_TYPE.getDescriptor()
                                 + Type.getType(ParameterType.class).getDescriptor()
-                                + Type.getType(ScalaPluginClassLoader.class).getDescriptor()
+                                + OBJECT_TYPE.getDescriptor()
                                 + ")" + OBJECT_TYPE.getDescriptor(),
                         false);
                 operandStack.replaceTop(3, OBJECT_TYPE);
@@ -176,7 +176,7 @@ class Conversions {
 
     }
 
-    private static void arrayToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
+    private static void arrayToSerializedType(IScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
 
         assert arrayTypeSignature.isArray() : "not an array";
         final TypeSignature componentTypeSignature = arrayTypeSignature.getTypeArgument(0);
@@ -275,7 +275,7 @@ class Conversions {
         localVariableTable.removeFramesFromIndex(arrayFrameIndex);      localCounter.reset(arrayIndex, arrayFrameIndex);
     }
 
-    private static void collectionToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
+    private static void collectionToSerializedType(IScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
         final String rawTypeName = typeSignature.getTypeName();
         final TypeSignature elementTypeSignature = typeSignature.getTypeArgument(0);
 
@@ -371,7 +371,7 @@ class Conversions {
         localVariableTable.removeFramesFromIndex(oldCollectionFrameIndex);  localCounter.reset(oldCollectionIndex, oldCollectionFrameIndex);
     }
 
-    private static void mapToSerializedType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
+    private static void mapToSerializedType(IScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
         final String rawTypeName = typeSignature.getTypeName();
 
         final TypeSignature keyTypeSignature = typeSignature.getTypeArgument(0);
@@ -505,7 +505,7 @@ class Conversions {
 
     // ==================================================================================================================================================================
 
-    static void toLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalCounter localCounter, LocalVariableTable localVariables, OperandStack operandStack) {
+    static void toLiveType(IScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, String descriptor, String signature, LocalCounter localCounter, LocalVariableTable localVariables, OperandStack operandStack) {
 
         final TypeSignature typeSignature = signature != null ? TypeSignature.ofSignature(signature) : TypeSignature.ofDescriptor(descriptor);
 
@@ -514,16 +514,16 @@ class Conversions {
                 //generate code for transforming arrays to lists and their elements
                 arrayToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
-            } else if (isJavaUtilCollection(typeSignature, pluginClassLoader)) {
+            } else if (isJavaUtilCollection(typeSignature, (ClassLoader) pluginClassLoader)) {
                 collectionToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
-            } else if (isJavaUtilMap(typeSignature, pluginClassLoader)) {
+            } else if (isJavaUtilMap(typeSignature, (ClassLoader) pluginClassLoader)) {
                 mapToLiveType(pluginClassLoader, methodVisitor, typeSignature, operandStack, localCounter, localVariables);
                 return;
             }
         }
 
-        else if (ScalaConversions.isScalaCollection(typeSignature, pluginClassLoader)) {
+        else if (ScalaConversions.isScalaCollection(typeSignature, (ClassLoader) pluginClassLoader)) {
             ScalaConversions.deserializeCollection(pluginClassLoader, methodVisitor, typeSignature, localCounter, localVariables, operandStack);
             return;
         } //TODO else if Scala Map
@@ -690,7 +690,7 @@ class Conversions {
                         "deserialize",
                         "(" + OBJECT_TYPE.getDescriptor()
                                 + Type.getType(ParameterType.class).getDescriptor()
-                                + Type.getType(ScalaPluginClassLoader.class).getDescriptor()
+                                + OBJECT_TYPE.getDescriptor()
                                 + ")" + OBJECT_TYPE.getDescriptor(),
                         false);
                 operandStack.replaceTop(3, OBJECT_TYPE);
@@ -700,7 +700,7 @@ class Conversions {
         }
     }
 
-    private static void arrayToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
+    private static void arrayToLiveType(IScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
 
         assert arrayTypeSignature.isArray() : "not an array";
 
@@ -798,7 +798,7 @@ class Conversions {
     }
 
 
-    private static void collectionToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
+    private static void collectionToLiveType(IScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
         final String collectionTypeName = typeSignature.getTypeName();
 
         //determine implementation class for the live type.
@@ -921,7 +921,7 @@ class Conversions {
         localCounter.reset(serializedCollectionIndex, serializedCollectionFrameIndex);
     }
 
-    private static void mapToLiveType(ScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
+    private static void mapToLiveType(IScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
 
         final String mapTypeName = typeSignature.getTypeName();
 
@@ -1214,13 +1214,13 @@ class Conversions {
 
     // ==================================================================================================================================================================
 
-    private static void genScalaPluginClassLoader(MethodVisitor methodVisitor, ScalaPluginClassLoader plugin, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
+    private static void genScalaPluginClassLoader(MethodVisitor methodVisitor, IScalaPluginClassLoader plugin, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
         String main = plugin.getMainClassName();
         Type mainType = Type.getType("L" + main.replace('.', '/') + ";");
 
         methodVisitor.visitLdcInsn(mainType);                                                                                                                   operandStack.push(Type.getType(Class.class));
         methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader", "()Ljava/lang/ClassLoader;", false);      operandStack.replaceTop(Type.getType(ClassLoader.class));
-        methodVisitor.visitTypeInsn(CHECKCAST, "xyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader");                                                     operandStack.replaceTop(Type.getType(ScalaPluginClassLoader.class));
+        methodVisitor.visitTypeInsn(CHECKCAST, "xyz/janboerman/scalaloader/compat/IScalaPluginClassLoader");                                                    operandStack.replaceTop(Type.getType(IScalaPluginClassLoader.class));
     }
 
     private static void genParameterType(MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
@@ -1544,7 +1544,7 @@ class ScalaConversions {
 
     //immutable collections
 
-    static void serializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    static void serializeCollection(IScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         //this is really a best effort.
         //the standard library may evolve again in 3.1 or 3.2
         //but for now this method is compatible the 2.12 and 2.13 (and thus 3.0) standard library
@@ -1878,7 +1878,7 @@ class ScalaConversions {
         localVariableTable.removeFramesFromIndex(iteratorFrameIndex);   localCounter.reset(iteratorIndex, iteratorFrameIndex);
     }
 
-    static void deserializeCollection(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    static void deserializeCollection(IScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         //this is really a best effort.
         //the standard library may evolve again in 3.1 or 3.2
         //but for now this method is compatible the 2.12 and 2.13 (and thus 3.0) standard library
@@ -2269,7 +2269,7 @@ class ScalaConversions {
     }
 
 
-    private static void generateNewBuilderCall(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    private static void generateNewBuilderCall(IScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature typeSignature, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         final String companion = typeSignature.getTypeName() + '$';
 
         //push the companion object on the stack and then we will call .newBuilder(), .newBuilder(Ordering) or .newBuilder(ClassTag).
@@ -2315,7 +2315,7 @@ class ScalaConversions {
 
     }
 
-    private static void generateOrdering(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    private static void generateOrdering(IScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         switch(elementType.internalName()) {
             //java primitives
             case "B":
@@ -2467,7 +2467,7 @@ class ScalaConversions {
     }
 
 
-    private static final void generateClassTag(ScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
+    private static final void generateClassTag(IScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
         methodVisitor.visitFieldInsn(GETSTATIC, CLASSTAG_COMPANION, MODULE$, CLASSTAG_COMPANION_DESCRIPTOR);                    operandStack.push(CLASSTAG_COMPANION_TYPE);
         final String internalName = elementType.internalName();
         switch (internalName) {

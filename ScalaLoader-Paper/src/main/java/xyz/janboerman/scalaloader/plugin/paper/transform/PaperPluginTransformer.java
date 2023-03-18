@@ -15,30 +15,30 @@ import java.util.Map;
 
 public class PaperPluginTransformer extends ClassRemapper {
 
-    private static final String SCALAPLUGIN_CLASS = xyz.janboerman.scalaloader.plugin.ScalaPlugin.class.getName();
-    private static final String SCALAPLUGIN_NAME = Type.getInternalName(xyz.janboerman.scalaloader.plugin.ScalaPlugin.class);
-    private static final String SCALAPLUGIN_DESCRIPTOR = Type.getDescriptor(xyz.janboerman.scalaloader.plugin.ScalaPlugin.class);
+    private static final String SCALAPLUGIN_CLASS = "xyz.janboerman.scalaloader.plugin.ScalaPlugin";
+    private static final String SCALAPLUGIN_NAME = SCALAPLUGIN_CLASS.replace('.', '/');
+    private static final String SCALAPLUGIN_DESCRIPTOR = "L" + SCALAPLUGIN_NAME + ";";
     private static final String SCALAPAPERPLUGIN_CLASS = ScalaPlugin.class.getName();
     private static final String SCALAPAPERPLUGIN_NAME = Type.getInternalName(ScalaPlugin.class);
     private static final String SCALAPAPERPLUGIN_DESCRIPTOR = Type.getDescriptor(ScalaPlugin.class);
 
-    private static final String SCALALOADER_CLASS = xyz.janboerman.scalaloader.ScalaLoader.class.getName();
-    private static final String SCALALOADER_NAME = Type.getInternalName(xyz.janboerman.scalaloader.ScalaLoader.class);
-    private static final String SCALALOADER_DESCRIPTOR = Type.getDescriptor(xyz.janboerman.scalaloader.ScalaLoader.class);
+    private static final String SCALALOADER_CLASS = "xyz.janboerman.scalaloader.ScalaLoader";
+    private static final String SCALALOADER_NAME = SCALALOADER_CLASS.replace('.', '/');
+    private static final String SCALALOADER_DESCRIPTOR = "L" + SCALALOADER_NAME + ";";
     private static final String SCALAPAPERLOADER_CLASS = ScalaLoader.class.getName();
     private static final String SCALAPAPERLOADER_NAME = Type.getInternalName(ScalaLoader.class);
     private static final String SCALAPAPERLOADER_DESCRIPTOR = Type.getDescriptor(ScalaLoader.class);
 
-    private static final String SCALAPLUGINCLASSLOADER_CLASS = xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.class.getName();
-    private static final String SCALAPLUGINCLASSLOADER_NAME = Type.getInternalName(xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.class);
-    private static final String SCALAPLUGINCLASSLOADER_DESCRIPTOR = Type.getDescriptor(xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader.class);
+    private static final String SCALAPLUGINCLASSLOADER_CLASS = "xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader";
+    private static final String SCALAPLUGINCLASSLOADER_NAME = SCALAPLUGINCLASSLOADER_CLASS.replace(".", "/");
+    private static final String SCALAPLUGINCLASSLOADER_DESCRIPTOR = "L" + SCALAPLUGINCLASSLOADER_NAME + ";";
     private static final String SCALAPAPERPLUGINCLASSLOADER_CLASS = ScalaPluginClassLoader.class.getName();
     private static final String SCALAPAPERPLUGINCLASSLOADER_NAME = Type.getInternalName(ScalaPluginClassLoader.class);
     private static final String SCALAPAPERPLUGINCLASSLOADER_DESCRIPTOR = Type.getInternalName(ScalaPluginClassLoader.class);
 
-    private static final String SCALAPLUGINLOADER_CLASS = xyz.janboerman.scalaloader.plugin.ScalaPluginLoader.class.getName();
-    private static final String SCALAPLUGINLOADER_NAME = Type.getInternalName(xyz.janboerman.scalaloader.plugin.ScalaPluginLoader.class);
-    private static final String SCALAPLUGINLOADER_DESCRIPTOR = Type.getDescriptor(xyz.janboerman.scalaloader.plugin.ScalaPluginLoader.class);
+    private static final String SCALAPLUGINLOADER_CLASS = "xyz.janboerman.scalaloader.plugin.ScalaPluginLoader";
+    private static final String SCALAPLUGINLOADER_NAME = SCALAPLUGINLOADER_CLASS.replace('.', '/');
+    private static final String SCALAPLUGINLOADER_DESCRIPTOR = "L" + SCALAPLUGINLOADER_NAME + ";";
     private static final String SCALAPAPERPLUGINLOADER_CLASS = ScalaPluginLoader.class.getName();
     private static final String SCALAPAPERPLUGINLOADER_NAME = Type.getInternalName(ScalaPluginLoader.class);
     private static final String SCALAPAPERPLUGINLOADER_DESCRIPTOR = Type.getDescriptor(ScalaPluginLoader.class);

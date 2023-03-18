@@ -8,8 +8,6 @@ import org.bukkit.plugin.PluginManager;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.bytecode.Replaced;
 import xyz.janboerman.scalaloader.event.transform.EventError;
-import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 
 /**
  * An event bus for ScalaPlugin {@link Event}s.
@@ -28,7 +26,7 @@ public class EventBus {
     /**
      * Construct the event bus.
      *
-     * @deprecated not meant to be constructed explicitly. Use {@link ScalaPlugin#getEventBus()} or {@link ScalaPluginLoader#getEventBus()}.
+     * @deprecated not meant to be constructed explicitly. Use {@link xyz.janboerman.scalaloader.compat.IScalaPlugin#getEventBus()} or {@link xyz.janboerman.scalaloader.compat.IScalaPluginLoader#getEventBus()}.
      * @param pluginManager the server's PluginManager
      */
     @Deprecated

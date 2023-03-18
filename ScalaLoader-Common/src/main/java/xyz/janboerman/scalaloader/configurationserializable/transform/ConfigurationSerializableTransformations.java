@@ -4,8 +4,8 @@ import org.bukkit.configuration.serialization.SerializableAs;
 import org.objectweb.asm.*;
 
 import xyz.janboerman.scalaloader.bytecode.AsmConstants;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -114,7 +114,7 @@ public class ConfigurationSerializableTransformations {
     private ConfigurationSerializableTransformations() {}
 
     //TODO javadoc this!
-    public static byte[] transform(byte[] clazz, ClassLoader definer, ScalaPluginClassLoader pluginClassLoader) throws ConfigurationSerializableError {
+    public static byte[] transform(byte[] clazz, ClassLoader definer, IScalaPluginClassLoader pluginClassLoader) throws ConfigurationSerializableError {
         LocalScanResult localResult = new LocalScanner().scan(new ClassReader(clazz));
         if (!localResult.annotatedByConfigurationSerializable && !localResult.annotatedByDelegateSerialization) return clazz;
 

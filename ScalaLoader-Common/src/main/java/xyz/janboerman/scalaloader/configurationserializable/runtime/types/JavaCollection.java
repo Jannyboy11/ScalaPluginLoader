@@ -3,9 +3,9 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.bytecode.OperandStack;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
 import static xyz.janboerman.scalaloader.configurationserializable.runtime.types.Types.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
 
 import java.lang.reflect.Constructor;
@@ -30,7 +30,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
         return live instanceof Collection && ParameterType.class.equals(type.getClass());
     }
 
-    public static <T> JavaCollection<T> serialize(Object live, ParameterType type, ScalaPluginClassLoader plugin) {
+    public static <T> JavaCollection<T> serialize(Object live, ParameterType type, IScalaPluginClassLoader plugin) {
 
         ParameterType elementType = type instanceof ParameterizedParameterType ? ((ParameterizedParameterType) type).getTypeParameter(0) : ParameterType.from(Object.class);
 
@@ -80,7 +80,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
         throw new RuntimeException("Could not serialize java collection: " + live + " of type: " + live.getClass().getName());
     }
 
-    private static byte[] makeForGeneric(final String alias, String generatedClassName, Class<? extends Collection> wrappedCollectionType, final ParameterType elementType, ScalaPluginClassLoader plugin) {
+    private static byte[] makeForGeneric(final String alias, String generatedClassName, Class<? extends Collection> wrappedCollectionType, final ParameterType elementType, IScalaPluginClassLoader plugin) {
         final String classNameUsingDots = generatedClassName;
         generatedClassName = generatedClassName.replace('.', '/');
         final String generatedClassDescriptor = "L" + generatedClassName + ";";
@@ -205,7 +205,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
         methodVisitor.visitVarInsn(ALOAD, 3);
         genParameterType(methodVisitor, elementType, new OperandStack());
         genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "add", "(Ljava/lang/Object;)Z", true);
         methodVisitor.visitInsn(POP);
         Label label5 = new Label();
@@ -318,7 +318,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
         methodVisitor.visitVarInsn(ALOAD, 0);
         genParameterType(methodVisitor, elementType, new OperandStack());
         genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
         methodVisitor.visitInsn(ARETURN);
         Label label1 = new Label();
         methodVisitor.visitLabel(label1);
@@ -331,7 +331,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
         return classWriter.toByteArray();
     }
 
-    private static byte[] makeForEnumSet(String generatedClassName, final ParameterType elementType, ScalaPluginClassLoader plugin) {
+    private static byte[] makeForEnumSet(String generatedClassName, final ParameterType elementType, IScalaPluginClassLoader plugin) {
 
         final String generatedClassNameUsingDots = generatedClassName;
         generatedClassName = generatedClassName.replace('.', '/');
@@ -547,7 +547,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
         methodVisitor.visitVarInsn(ALOAD, 0);
         genParameterType(methodVisitor, elementType, new OperandStack());
         genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
         methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Enum");
         methodVisitor.visitInsn(ARETURN);
         Label label1 = new Label();
@@ -564,7 +564,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
         methodVisitor.visitVarInsn(ALOAD, 0);
         genParameterType(methodVisitor, elementType, new OperandStack());
         genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
         methodVisitor.visitInsn(ARETURN);
         Label label1 = new Label();
         methodVisitor.visitLabel(label1);

@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
+import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
@@ -112,6 +113,11 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @Override
     public Collection<ScalaPlugin> getScalaPlugins() {
         return ScalaPluginLoader.getInstance().getScalaPlugins();
+    }
+
+    @Override
+    public ScalaPluginLoader getScalaPluginLoader() {
+        return ScalaPluginLoader.getInstance();
     }
 
     public Pattern[] getJavaPluginLoaderPatterns() {

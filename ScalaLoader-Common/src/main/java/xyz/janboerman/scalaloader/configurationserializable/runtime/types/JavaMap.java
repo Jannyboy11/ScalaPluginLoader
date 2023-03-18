@@ -1,12 +1,11 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
-import org.bukkit.configuration.serialization.SerializableAs;
 import xyz.janboerman.scalaloader.bytecode.Called;
 import xyz.janboerman.scalaloader.bytecode.OperandStack;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
 import static xyz.janboerman.scalaloader.configurationserializable.runtime.types.Types.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
 
 import java.lang.reflect.Constructor;
@@ -29,8 +28,7 @@ public abstract class JavaMap<K, V> implements Adapter<Map<? extends K, ? extend
         return o instanceof Map && ParameterType.class.equals(paramType.getClass());
     }
 
-    public static <K, V> JavaMap<K, V> serialize(Object live, ParameterType type, ScalaPluginClassLoader plugin) {
-
+    public static <K, V, ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> JavaMap<K, V> serialize(Object live, ParameterType type, ScalaPluginClassLoader plugin) {
         ParameterType keyType, valueType;
         if (type instanceof ParameterizedParameterType) {
             ParameterizedParameterType ppt = (ParameterizedParameterType) type;
@@ -67,7 +65,7 @@ public abstract class JavaMap<K, V> implements Adapter<Map<? extends K, ? extend
     }
 
 
-    private static byte[] makeForGeneric(final String alias, String generatedClassName, final Class<? extends Map> mapClass,
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] makeForGeneric(final String alias, String generatedClassName, final Class<? extends Map> mapClass,
                                          final ParameterType keyType, final ParameterType valueType, final ScalaPluginClassLoader plugin) {
         final String classNameUsingDots = generatedClassName;
         generatedClassName = generatedClassName.replace('.', '/');
@@ -168,14 +166,14 @@ public abstract class JavaMap<K, V> implements Adapter<Map<? extends K, ? extend
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map$Entry", "getKey", "()Ljava/lang/Object;", true);
         genParameterType(methodVisitor, keyType, new OperandStack());
         genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
         methodVisitor.visitVarInsn(ALOAD, 3);
         Label label6 = new Label();
         methodVisitor.visitLabel(label6);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map$Entry", "getValue", "()Ljava/lang/Object;", true);
         genParameterType(methodVisitor, valueType, new OperandStack());
         genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
         Label label7 = new Label();
         methodVisitor.visitLabel(label7);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
@@ -237,14 +235,14 @@ public abstract class JavaMap<K, V> implements Adapter<Map<? extends K, ? extend
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map$Entry", "getKey", "()Ljava/lang/Object;", true);
         genParameterType(methodVisitor, keyType, new OperandStack());
         genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
         methodVisitor.visitVarInsn(ALOAD, 4);
         Label label6 = new Label();
         methodVisitor.visitLabel(label6);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map$Entry", "getValue", "()Ljava/lang/Object;", true);
         genParameterType(methodVisitor, valueType, new OperandStack());
         genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;)Ljava/lang/Object;", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
         Label label7 = new Label();
         methodVisitor.visitLabel(label7);
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);

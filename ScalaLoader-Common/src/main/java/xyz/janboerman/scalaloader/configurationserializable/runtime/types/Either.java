@@ -2,8 +2,8 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
 import org.bukkit.configuration.serialization.*;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
 import java.lang.reflect.*;
 import java.util.Map;
@@ -22,36 +22,36 @@ public abstract class Either<L, R> implements ConfigurationSerializable {
         Right.register();
     }
 
-    public static boolean isEither(Object live, ScalaPluginClassLoader plugin) {
+    public static boolean isEither(Object live, ClassLoader pluginClassLoader) {
         try {
-            Class<?> eitherClazz = Class.forName(EITHER, false, plugin);
+            Class<?> eitherClazz = Class.forName(EITHER, false, pluginClassLoader);
             return eitherClazz.isInstance(live);
         } catch (ClassNotFoundException cnfe) {
             return false;
         }
     }
 
-    public static ConfigurationSerializable serialize(Object scalaEither, ParameterType type, ScalaPluginClassLoader plugin) {
-        assert isEither(scalaEither, plugin) : "Not a " + EITHER;
+    public static <SPCL extends ClassLoader & IScalaPluginClassLoader> ConfigurationSerializable serialize(Object scalaEither, ParameterType type, SPCL pluginClassLoader) {
+        assert isEither(scalaEither, pluginClassLoader) : "Not a " + EITHER;
 
         final RuntimeException ex = new RuntimeException("Could not serialize either: " + scalaEither + ", of type: " + type);
 
         try {
-            Class<?> leftClass = Class.forName(LEFT, false, plugin);
+            Class<?> leftClass = Class.forName(LEFT, false, pluginClassLoader);
             if (leftClass.isInstance(scalaEither)) {
                 Method method = leftClass.getMethod("value");
                 Object liveValue = method.invoke(scalaEither);
                 ParameterType elementType = type instanceof ParameterizedParameterType ? ((ParameterizedParameterType) type).getTypeParameter(0) : ParameterType.from(Object.class);
-                Object serializedValue = RuntimeConversions.serialize(liveValue, elementType, plugin);
+                Object serializedValue = RuntimeConversions.serialize(liveValue, elementType, pluginClassLoader);
                 return new Left(serializedValue);
             }
 
-            Class<?> rightClass = Class.forName(RIGHT, false, plugin);
+            Class<?> rightClass = Class.forName(RIGHT, false, pluginClassLoader);
             if (rightClass.isInstance(scalaEither)) {
                 Method method = rightClass.getMethod("value");
                 Object liveValue = method.invoke(scalaEither);
                 ParameterType elementType = type instanceof ParameterizedParameterType ? ((ParameterizedParameterType) type).getTypeParameter(1) : ParameterType.from(Object.class);
-                Object serializedValue = RuntimeConversions.serialize(liveValue, elementType, plugin);
+                Object serializedValue = RuntimeConversions.serialize(liveValue, elementType, pluginClassLoader);
                 return new Right(serializedValue);
             }
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
@@ -65,7 +65,7 @@ public abstract class Either<L, R> implements ConfigurationSerializable {
         return o instanceof Left || o instanceof Right;
     }
 
-    public static Object deserialize(Object serializedEither, ParameterType type, ScalaPluginClassLoader plugin) {
+    public static <SPCL extends ClassLoader & IScalaPluginClassLoader> Object deserialize(Object serializedEither, ParameterType type, SPCL plugin) {
         if (serializedEither instanceof Left) {
             Left left = (Left) serializedEither;
 
