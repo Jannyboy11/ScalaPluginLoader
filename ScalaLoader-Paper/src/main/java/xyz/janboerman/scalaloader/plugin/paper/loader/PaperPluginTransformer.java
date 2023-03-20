@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper.transform;
+package xyz.janboerman.scalaloader.plugin.paper.loader;
 
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.ClassRemapper;

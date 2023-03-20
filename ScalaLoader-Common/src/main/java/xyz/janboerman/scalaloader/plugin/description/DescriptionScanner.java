@@ -191,7 +191,7 @@ public class DescriptionScanner extends ClassVisitor {
                 new AnnotationVisitor(ASM_API) {
                     @Override
                     public void visit(String name, Object value) {
-                        switch(name) {
+                        switch (name) {
                             case "value":               version = value.toString();                                         break;
                             case "scalaLibraryUrl":     urls.put(PluginScalaVersion.SCALA2_LIBRARY_URL, value.toString());  break;
                             case "scalaReflectUrl":     urls.put(PluginScalaVersion.SCALA2_REFLECT_URL, value.toString());  break;
