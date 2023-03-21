@@ -18,7 +18,7 @@ public class UnionFind<T> {
     private final Map<T, T> parents = new HashMap<>();
     private final Set<T> roots = new HashSet<>();
 
-    private T getParent(T value) {
+    public T getParent(T value) {
         validate(value);
 
         return parents.get(value);
@@ -36,17 +36,20 @@ public class UnionFind<T> {
     public void setParent(T child, T parent) {
         validate(child);
 
-        add(parent);
-        parents.put(child, parent);
-        roots.remove(child);
+        add(parent);                    //parent is added as root if it is new.
+        parents.put(child, parent);     //if the parent was not new, then either it already was its own representative, or there is a different representative.
+
+        if (!child.equals(parent)) {    //if the child is not its own parent,
+            roots.remove(child);        //then it's definitely not a root.
+        }
     }
 
     public T getRepresentative(T value) {
         T parent = getParent(value);
-        if (Objects.equals(parent, value)) return value;
+        if (Objects.equals(parent, value)) return value;    //if a value is its own parent, then it is a representative
 
-        T rep = getRepresentative(parent);
-        setParent(value, rep);  //path compression
+        T rep = getRepresentative(parent);                  //if not, get the representative of the parent
+        setParent(value, rep);                              //path compression
         return rep;
     }
 

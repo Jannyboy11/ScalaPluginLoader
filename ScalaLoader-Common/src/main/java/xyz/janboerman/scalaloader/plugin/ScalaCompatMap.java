@@ -10,8 +10,8 @@ import java.util.StringJoiner;
 
 public class ScalaCompatMap {
 
-    private final UnionFind<String/*ScalaVersion*/> scalaVersions = new UnionFind<>();                          //e.g. ["2.13.0"->"3.3.0", "2.12.1"->"2.12.12", "3.3.0"->"3.3.0", "2.12.12"->"2.12.12"]
-    private final Map</*ScalaVersion*/String, PluginScalaVersion> scalaMap = new HashMap<>();                   //e.g. ["2.12.11"->PluginScalaVersion("2.12.11", stdLibUrl, stdReflectUrl)]
+    private final UnionFind<String/*ScalaVersion*/> scalaVersions = new UnionFind<>();  /*representatives are latest compatible version*/   //e.g. ["2.13.0"->"3.3.0", "2.12.1"->"2.12.12", "3.3.0"->"3.3.0", "2.12.12"->"2.12.12"]
+    private final Map</*ScalaVersion*/String, PluginScalaVersion> scalaMap = new HashMap<>();                                               //e.g. ["2.12.11"->PluginScalaVersion("2.12.11", stdLibUrl, stdReflectUrl)]
 
     public ScalaCompatMap() {
     }
@@ -29,7 +29,7 @@ public class ScalaCompatMap {
                 } else {
                     oldest = versionString; newest = existingLatest;
                 }
-                scalaVersions.unite(newest, oldest);
+                scalaVersions.setParent(oldest, newest);
             }
         }
     }
