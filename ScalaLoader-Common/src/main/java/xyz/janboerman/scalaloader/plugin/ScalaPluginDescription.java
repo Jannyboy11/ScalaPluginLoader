@@ -468,6 +468,14 @@ public class ScalaPluginDescription {
                     addHardDepend(paperDependency.get("name").toString());
                 else
                     addSoftDepend(paperDependency.get("name").toString());
+        List<Map<String, Object>> paperLoadBefores = (List<Map<String, Object>>) pluginYaml.get("load-before");
+        if (paperLoadBefores != null)
+            for (Map<String, Object> paperLoadBefore : paperLoadBefores)
+                addLoadBefore(paperLoadBefore.get("name").toString());
+        List<Map<String, Object>> paperLoadAfters = (List<Map<String, Object>>) pluginYaml.get("load-after");
+        if (paperLoadAfters != null)
+            for (Map<String, Object> paperLoadAfter : paperLoadAfters)
+                addSoftDepend(paperLoadAfter.get("name").toString());
         List<String> provides = (List<String>) pluginYaml.get("provides");
         if (provides != null)
             provides(provides.toArray(new String[0]));

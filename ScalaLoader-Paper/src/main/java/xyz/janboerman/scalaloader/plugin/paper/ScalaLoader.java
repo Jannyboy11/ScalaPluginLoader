@@ -4,6 +4,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
 import xyz.janboerman.scalaloader.DebugSettings;
+import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
@@ -47,8 +48,11 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
     private EventBus eventBus;
     private DebugSettings debugSettings = new DebugSettings(this);
     private File scalaPluginsFolder;
+
     private Set<ScalaPlugin> scalaPlugins = new HashSet<>();
+
     private final ScalaCompatMap<ScalaDependency> scalaCompatMap = new ScalaCompatMap();
+    private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
 
     public ScalaLoader() {
         this.scalaPluginsFolder = new File(getDataFolder(), "scalaplugins");
@@ -116,10 +120,14 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
         for (File file : files) {
             try {
                 PluginJarScanResult scanResult = read(Compat.jarFile(file));
-                addScala(scalaCompatMap, scanResult.getScalaVersion());
+                ScalaDependency scalaDependency = scanResult.getScalaVersion();
+                if (scalaDependency == null)
+                    throw new ScalaPluginLoaderException("Could not find Scala dependency. Please annotate your main class with @Scala or @CustomScala.");
+
+                scalaCompatMap.add(scalaDependency);
 
                 //Now, we instantiate the DescriptionPlugin
-                DescriptionClassLoader classLoader = new DescriptionClassLoader(file, getClassLoader());
+                DescriptionClassLoader classLoader = new DescriptionClassLoader(file, getOrCreateScalaLibrary(scalaDependency));
                 String mainClassName = scanResult.getMainClass();
                 Class<? extends DescriptionPlugin> descriptionClass = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, false, classLoader);
                 DescriptionPlugin dummyPlugin = ScalaLoaderUtils.createScalaPluginInstance(descriptionClass);
@@ -129,7 +137,7 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 if (description != null) {
                     description.setMain(mainClassName);
                     description.setApiVersion(scanResult.getApiVersion().getVersionString());
-                    description.setScalaVersion(scanResult.getScalaVersion().getVersionString());
+                    description.setScalaVersion(scalaDependency.getVersionString());
                 } else {
                     String pluginName = scanResult.pluginYaml.get("name").toString();
                     String version = scanResult.pluginYaml.get("version").toString();
@@ -152,6 +160,8 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
         //all ScalaPlugins have been scanned.
         //let's instantiate them!
+
+        //TODO take load-order into account? :O
 
         for (File file : files) {
             //the process will look as follows:
@@ -240,22 +250,32 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
         );
     }
 
-    private static void addScala(ScalaCompatMap store, ScalaDependency scalaDep) {
-        PluginScalaVersion scalaVersion;
-        if (scalaDep instanceof ScalaDependency.Builtin builtin) {
-            scalaVersion = PluginScalaVersion.fromScalaVersion(builtin.scalaVersion());
-        } else if (scalaDep instanceof ScalaDependency.Custom custom) {
-            scalaVersion = new PluginScalaVersion(custom.scalaVersion(), custom.urls());
-        } else if (scalaDep instanceof ScalaDependency.YamlDefined yamlDefined) {
-            scalaVersion = PluginScalaVersion.fromScalaVersion(ScalaVersion.fromVersionString(yamlDefined.scalaVersion()));
-        } else {
-            throw new IllegalArgumentException("Could not detect Scala dependency. Please annotate your main class with @Scala or @CustomScala.");
-        }
-        store.add(scalaVersion);
-    }
-
     ScalaCompatMap<ScalaDependency> getScalaVersions() {
         return scalaCompatMap;
+    }
+
+    private boolean downloadScalaJarFiles() {
+        return getConfig().getBoolean("load-libraries-from-disk", true);
+    }
+
+    private ScalaLibraryClassLoader getOrCreateScalaLibrary(ScalaDependency scalaDependency) throws ScalaPluginLoaderException{
+        PluginScalaVersion scalaVersion;
+
+        if (scalaDependency instanceof ScalaDependency.Builtin builtin) {
+            scalaVersion = PluginScalaVersion.fromScalaVersion(builtin.scalaVersion());
+        } else if (scalaDependency instanceof ScalaDependency.Custom custom) {
+            scalaVersion = new PluginScalaVersion(custom.scalaVersion(), custom.urls());
+        } else if (scalaDependency instanceof ScalaDependency.YamlDefined yamlDefined) {
+            scalaVersion = PluginScalaVersion.fromScalaVersion(ScalaVersion.fromVersionString(yamlDefined.scalaVersion()));
+        } else {
+            scalaVersion = PluginScalaVersion.fromScalaVersion(ScalaVersion.fromVersionString(scalaDependency.getVersionString()));
+        }
+
+        return loadOrGetScalaVersion(scalaVersion);
+    }
+
+    public ScalaLibraryClassLoader loadOrGetScalaVersion(PluginScalaVersion scalaVersion) throws ScalaPluginLoaderException {
+        return ScalaLoaderUtils.loadOrGetScalaVersion(scalaLibraryClassLoaders, scalaVersion, downloadScalaJarFiles(), this);
     }
 
 }
