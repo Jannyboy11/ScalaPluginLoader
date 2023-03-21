@@ -4,6 +4,8 @@ import com.google.common.graph.MutableGraph;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
+import org.bukkit.event.server.PluginDisableEvent;
+import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
@@ -359,8 +361,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
      * @return the jar file
      * @throws IOException if a jarfile could not be created
      */
-    //TODO can be static. should getJarFile not be a method on ScalaPlugin itself though?
-    public JarFile getJarFile(ScalaPlugin scalaPlugin) throws IOException {
+    public static JarFile getJarFile(ScalaPlugin scalaPlugin) throws IOException {
         return Compat.jarFile(scalaPlugin.getClassLoader().getPluginJarFile());
     }
 
@@ -403,8 +404,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
      * @return an open stream that provides all classes that are in the ScalaPlugin's jar file
      * @throws IOException if the stream could not be opened for whatever reason
      */
-    //TODO can be static
-    public Stream<? extends Class<?>> getAllClasses(ScalaPlugin scalaPlugin) throws IOException {
+    public static Stream<? extends Class<?>> getAllClasses(ScalaPlugin scalaPlugin) throws IOException {
         JarFile jarFile = getJarFile(scalaPlugin);
         return jarFile.stream()
                 .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
@@ -450,7 +450,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
      *             This method will be removed in a future version!
      */
     @Deprecated
-    public void forceLoadAllClasses(ScalaPlugin scalaPlugin) {
+    public static void forceLoadAllClasses(ScalaPlugin scalaPlugin) {
         try {
             getAllClasses(scalaPlugin).forEach(noop -> {});
         } catch (IOException e) {
@@ -590,6 +590,9 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
             server.getPluginManager().callEvent(event);
             if (event.isCancelled()) return;
 
+            PluginEnableEvent bukkitEvent = new PluginEnableEvent(scalaPlugin);
+            server.getPluginManager().callEvent(bukkitEvent);
+
             plugin.getLogger().info("Enabling " + scalaPlugin.getScalaDescription().getFullName());
             scalaPlugin.setEnabled(true);
             scalaPlugin.onEnable();
@@ -605,9 +608,13 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
             ScalaPlugin scalaPlugin = (ScalaPlugin) plugin;
             if (!scalaPlugin.isEnabled()) return;
 
+            //call the Scala event first
             ScalaPluginDisableEvent event = new ScalaPluginDisableEvent(scalaPlugin);
             server.getPluginManager().callEvent(event);
             if (event.isCancelled()) return;
+
+            PluginDisableEvent bukkitEvent = new PluginDisableEvent(scalaPlugin);
+            server.getPluginManager().callEvent(bukkitEvent);
 
             plugin.getLogger().info("Disabling " + scalaPlugin.getScalaDescription().getFullName());
             scalaPlugin.onDisable();

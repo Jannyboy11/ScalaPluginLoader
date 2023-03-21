@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper.loader;
+package xyz.janboerman.scalaloader.plugin.paper.description;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
@@ -11,8 +11,8 @@ import xyz.janboerman.scalaloader.plugin.description.Scala;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 import xyz.janboerman.scalaloader.plugin.description.Version;
 import xyz.janboerman.scalaloader.plugin.description.Version.ScalaLibrary;
-import xyz.janboerman.scalaloader.plugin.paper.loader.ScalaDependency.Builtin;
-import xyz.janboerman.scalaloader.plugin.paper.loader.ScalaDependency.Custom;
+import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency.Builtin;
+import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency.Custom;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -9,6 +9,8 @@ import java.io.File;
 
 public interface IScalaPlugin extends Plugin {
 
+    public File getConfigFile();
+
     public EventBus getEventBus();
     
     public String getScalaVersion();

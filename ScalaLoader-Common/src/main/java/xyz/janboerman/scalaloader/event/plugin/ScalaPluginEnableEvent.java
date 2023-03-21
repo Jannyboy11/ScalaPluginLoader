@@ -9,7 +9,10 @@ import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 /**
  * ScalaPluginEnable event is called by the {@link IScalaPluginLoader} when {@link IScalaPlugin}s are enabled.
  * In contrast to regular {@link PluginEnableEvent} for {@link org.bukkit.plugin.java.JavaPlugin}s, this event CAN in fact be cancelled.
+ *
+ * @deprecated this event will not be called on Paper servers. Use regular {@link PluginEnableEvent} instead.
  */
+@Deprecated
 public class ScalaPluginEnableEvent extends PluginEnableEvent implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();

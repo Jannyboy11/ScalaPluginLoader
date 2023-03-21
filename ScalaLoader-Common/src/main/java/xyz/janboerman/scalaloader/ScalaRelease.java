@@ -67,9 +67,13 @@ public final class ScalaRelease implements Comparable<ScalaRelease> {
     /** The Scala 3.1.x series */
     public static final ScalaRelease SCALA_3_1 = new ScalaRelease("3.1");
     /** The Scala 3.2.x series */
-    private static final ScalaRelease SCALA_3_2 = new ScalaRelease("3.2");
+    public static final ScalaRelease SCALA_3_2 = new ScalaRelease("3.2");
     /** The Scala 3.3.x series */
-    private static final ScalaRelease SCALA_3_3 = new ScalaRelease("3.3");
+    public static final ScalaRelease SCALA_3_3 = new ScalaRelease("3.3");
+    /** The Scala 3.4.x series */
+    public static final ScalaRelease SCALA_3_4 = new ScalaRelease("3.4");
+    /** The Scala 3.5.x series */
+    public static final ScalaRelease SCALA_3_5 = new ScalaRelease("3.5");
 
     private final String compatVersion;
 
@@ -105,6 +109,10 @@ public final class ScalaRelease implements Comparable<ScalaRelease> {
             return SCALA_3_2;
         } else if (scalaVersion.startsWith("3.3.")) {
             return SCALA_3_3;
+        } else if (scalaVersion.startsWith("3.4.")) {
+            return SCALA_3_4;
+        } else if (scalaVersion.startsWith("3.5.")) {
+            return SCALA_3_5;
         }
 
         else {
@@ -119,6 +127,14 @@ public final class ScalaRelease implements Comparable<ScalaRelease> {
 
             return new ScalaRelease(compatVersion);
         }
+    }
+
+    public boolean isScala2() {
+        return compatVersion.startsWith("2.");
+    }
+
+    public boolean isScala3() {
+        return compatVersion.startsWith("3.");
     }
 
     /**

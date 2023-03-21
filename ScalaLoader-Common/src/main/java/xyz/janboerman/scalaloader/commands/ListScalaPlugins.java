@@ -6,8 +6,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
-import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,15 +19,15 @@ import java.util.TreeMap;
 
 public class ListScalaPlugins implements TabExecutor {
 
-    private IScalaPluginLoader scalaPluginLoader;
+    private IScalaLoader scalaLoader;
 
-    public ListScalaPlugins(IScalaPluginLoader pluginLoader) {
-        this.scalaPluginLoader = pluginLoader;
+    public ListScalaPlugins(IScalaLoader scalaLoader) {
+        this.scalaLoader = scalaLoader;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        Collection<? extends IScalaPlugin> scalaPlugins = scalaPluginLoader.getScalaPlugins();
+        Collection<? extends IScalaPlugin> scalaPlugins = scalaLoader.getScalaPlugins();
 
         Map<ScalaRelease, List<IScalaPlugin>> pluginNamesByScalaRelease = new TreeMap<>(Comparator.reverseOrder());
         for (IScalaPlugin scalaPlugin : scalaPlugins) {

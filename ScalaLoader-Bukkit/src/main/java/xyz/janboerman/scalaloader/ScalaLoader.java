@@ -2,7 +2,6 @@ package xyz.janboerman.scalaloader;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
@@ -23,16 +22,12 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
-import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
-import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
-import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
 import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 /**
@@ -40,6 +35,8 @@ import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
  * extend {@link xyz.janboerman.scalaloader.plugin.ScalaPlugin}, and ScalaLoader will provide the Scala runtime classes!
  *
  * @note undocumented methods are unintended for use outside of this plugin.
+ *
+ * @author Jannyboy11
  */
 public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
@@ -113,11 +110,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @Override
     public Collection<ScalaPlugin> getScalaPlugins() {
         return ScalaPluginLoader.getInstance().getScalaPlugins();
-    }
-
-    @Override
-    public ScalaPluginLoader getScalaPluginLoader() {
-        return ScalaPluginLoader.getInstance();
     }
 
     public Pattern[] getJavaPluginLoaderPatterns() {

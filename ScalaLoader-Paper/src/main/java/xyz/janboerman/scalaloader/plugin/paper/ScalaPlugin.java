@@ -8,6 +8,8 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.description.Scala;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 
+import java.io.File;
+
 public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
 
     private final ScalaPluginDescription description;
@@ -37,8 +39,15 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
     }
 
     @Override
+    public File getConfigFile() {
+        //TODO implement this.
+        //TODO might want to respect Paper's PluginProviderContext.
+        return null;
+    }
+
+    @Override
     public EventBus getEventBus() {
-        return ScalaPluginLoader.getInstance().getEventBus();
+        return ScalaLoader.getInstance().getEventBus();
     }
 
     @Override
@@ -69,6 +78,13 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
         assert false : "ScalaPlugin defined its Scala version, but not via the @Scala or @CustomScala annotation";
 
         return getScalaVersion(); //fallback - to make this more robust in production
+    }
+
+
+
+    @Override
+    public String toString() {
+        return getName();
     }
 
 }

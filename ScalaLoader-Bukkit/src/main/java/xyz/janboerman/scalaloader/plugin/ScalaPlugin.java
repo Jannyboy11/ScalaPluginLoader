@@ -149,6 +149,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
      *
      * @return the event bus
      */
+    @Override
     public final EventBus getEventBus() {
         return getPluginLoader().getEventBus();
     }
@@ -157,6 +158,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
      * Get the version of Scala this plugin.
      * @return the version of Scala, as per the {@link ScalaPluginClassLoader} used for this plugin
      */
+    @Override
     public final String getScalaVersion() {
         return getClassLoader().getScalaVersion();
     }
@@ -165,6 +167,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
      * Get the compatibility-release version of Scala used by this plugin.
      * @return the compatibility release
      */
+    @Override
     public final ScalaRelease getScalaRelease() {
         return getClassLoader().getScalaRelease();
     }
@@ -174,6 +177,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
      * At runtime a newer compatible version of Scala could be used instead.
      * @return the defined scala version
      */
+    @Override
     public final String getDeclaredScalaVersion() {
         Class<?> mainClass = getClass();
 
@@ -196,6 +200,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
      * Get the name of the plugin.
      * @return the plugin's name
      */
+    @Override
     public String getName() {
         return description.getName();
     }
@@ -221,6 +226,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
      * Get the log prefix of this ScalaPlugin.
      * @return the prefix
      */
+    @Override
     public String getPrefix() {
         return getScalaDescription().getPrefix();
     }
@@ -271,6 +277,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
      * Get the default configuration file used for this plugin.
      * @return the configuration file
      */
+    @Override
     public File getConfigFile() {
         return lazyConfigFile == null ? lazyConfigFile = new File(getDataFolder(), "config.yml") : lazyConfigFile;
     }

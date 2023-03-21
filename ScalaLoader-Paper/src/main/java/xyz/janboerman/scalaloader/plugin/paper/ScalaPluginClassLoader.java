@@ -30,6 +30,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         ClassLoader.registerAsParallelCapable();
     }
 
+    private final ScalaPluginLoader pluginLoader;
     private final File pluginJarFile;
     private final JarFile jarFile;
     private final String mainClassName;
@@ -41,6 +42,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
                                   ClassLoader parent,
                                   URLClassLoader libraryLoader,
 
+                                  ScalaPluginLoader pluginLoader,
                                   String mainClassName) throws IOException, ScalaPluginLoaderException {
         super(logger, source, Compat.jarFile(pluginJarFile), configuration, parent, libraryLoader);
 
@@ -51,8 +53,10 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         this.pluginJarFile = pluginJarFile;
         this.jarFile = Compat.jarFile(pluginJarFile);
         this.mainClassName = mainClassName;
+        this.pluginLoader = pluginLoader;
 
         try {
+            //TODO probably don't want to do this here - this is done by the Bootstrap.
             Class<? extends ScalaPlugin> mainClass = (Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this);
             ScalaLoaderUtils.createScalaPluginInstance(mainClass); //sets the loadedPlugin
 
@@ -110,8 +114,8 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
     @Override
     public ScalaPluginLoader getPluginLoader() {
-        //TODO dependency-inject
-        return null;
+        //TODO maybe we use a ScalaPluginLoader instance per ScalaPlugin?
+        return pluginLoader;
     }
 
     //TODO loadClass

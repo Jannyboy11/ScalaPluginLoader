@@ -1,8 +1,8 @@
-package xyz.janboerman.scalaloader.plugin.paper.loader;
+package xyz.janboerman.scalaloader.plugin.paper.description;
 
 import org.bukkit.configuration.Configuration;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
-import static xyz.janboerman.scalaloader.plugin.paper.loader.ScalaDependency.*;
+import static xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency.*;
 
 import java.util.Map;
 

@@ -96,15 +96,16 @@ public enum ScalaVersion {
                     mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(scalaVersion)),
                     mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(scalaVersion))
             );
-        } else if (scalaVersion.startsWith("3.0.") || scalaVersion.startsWith("3.1.") || scalaVersion.startsWith("3.2.")) {
+        } else if (scalaVersion.startsWith("3.")) {
             return mapOf(
                     mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(latest_2_13.getVersion())),
                     mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(latest_2_13.getVersion())),
                     mapEntry(PluginScalaVersion.SCALA3_LIBRARY_URL, mavenCentralScala3LibraryAdditions(scalaVersion)),
                     mapEntry(PluginScalaVersion.TASTY_CORE_URL, mavenCentralScala3TastyCoreAdditions(scalaVersion))
             );
+            //TODO if Scala 3 ever stops depending on Scala 2.13, then we need to update this code!
         } else {
-            assert false : "Scala 3.3+ not yet supported";
+            assert false : "Scala 4 not yet supported";
             return null;
         }
     }

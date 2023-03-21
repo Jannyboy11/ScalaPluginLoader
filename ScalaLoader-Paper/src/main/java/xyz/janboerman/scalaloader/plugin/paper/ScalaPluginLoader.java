@@ -11,38 +11,42 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 import xyz.janboerman.scalaloader.DebugSettings;
-import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
-import xyz.janboerman.scalaloader.event.EventBus;
 
 import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
 import io.papermc.paper.plugin.loader.PluginLoader;
 
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.io.File;
 
 public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
-    private static final ScalaPluginLoader INSTANCE = new ScalaPluginLoader();
+    //TODO should there be a ScalaPluginLoader instance per ScalaPlugin?
+    //TODO there could be, but that is not strictly required.
+    //TODO for now: YES.
+    //TODO Paper's own implementation does exactly this though (see PaperPluginProviderFactory).
+    //TODO We don't need to copy this behaviour necessarily, since the #classloader method is called for each plugin.
 
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2").build();
     private static final RemoteRepository CODE_MC = new RemoteRepository.Builder("CodeMC", "default", "https://repo.codemc.org/repository/maven-public/").build();
 
-    private ScalaLoader scalaLoader;
-    private EventBus eventBus;
 
-    //TODO
-    //TODO private final Collection<ScalaPlugin> scalaPlugins = new HashSet<>();
+    private final ScalaLoader scalaLoader;
 
-
-    public static ScalaPluginLoader getInstance() {
-        return INSTANCE;
+    ScalaPluginLoader(ScalaLoader scalaLoader, File pluginJarFile) {
+        this.scalaLoader = scalaLoader;
     }
+
+    ScalaLoader getScalaLoader() {
+        return scalaLoader;
+    }
+
+    @Override
+    public DebugSettings debugSettings() {
+        return getScalaLoader().getDebugSettings();
+    }
+
 
     @Override
     public void classloader(@NotNull PluginClasspathBuilder classpathBuilder) {
@@ -83,31 +87,4 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
         classpathBuilder.addLibrary(mavenLibraryResolver);
     }
 
-    //TODO much like the xyz.janboerman.scalaloader.plugin.ScalaPluginLoader,
-    //TODO this class is responsible for scanning the jar file for classes, collecting ScanResults,
-    //TODO and detecting the main class (in case a plugin.yml or paper-plugin.yml is absent)
-    //TODO additionally, the scala standard library must be appended to the plugin's classpath.
-
-
-    ScalaLoader getScalaLoader() {
-        return scalaLoader == null ? scalaLoader = JavaPlugin.getPlugin(ScalaLoader.class) : scalaLoader;
-    }
-
-    public DebugSettings debugSettings() {
-        return getScalaLoader().getDebugSettings();
-    }
-
-    //TODO getScalaPlugins()
-
-    public EventBus getEventBus() {
-        return eventBus == null ? eventBus = new EventBus(Bukkit.getPluginManager()) : eventBus;
-    }
-
-
-    @Override
-    public Collection<ScalaPlugin> getScalaPlugins() {
-        //TODO!
-
-        return Compat.emptyList();
-    }
 }

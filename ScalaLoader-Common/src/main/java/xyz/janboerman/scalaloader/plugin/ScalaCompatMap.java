@@ -1,47 +1,47 @@
 package xyz.janboerman.scalaloader.plugin;
 
 import xyz.janboerman.scalaloader.ScalaRelease;
+import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.util.UnionFind;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.StringJoiner;
 
-class ScalaCompatMap {
+public class ScalaCompatMap {
 
-    private final Map<ScalaRelease, String> compatReleaseToLatestVersionMap = new HashMap<>();  //e.g. ["2.12"->"2.12.11", "2.13"->"2.13.4"]
-    private final Map<String, PluginScalaVersion> scalaMap = new HashMap<>();                   //e.g. ["2.12.11"->PluginScalaVersion("2.12.11", stdLibUrl, stdReflectUrl)]
+    private final UnionFind<String/*ScalaVersion*/> scalaVersions = new UnionFind<>();                          //e.g. ["2.13.0"->"3.3.0", "2.12.1"->"2.12.12", "3.3.0"->"3.3.0", "2.12.12"->"2.12.12"]
+    private final Map</*ScalaVersion*/String, PluginScalaVersion> scalaMap = new HashMap<>();                   //e.g. ["2.12.11"->PluginScalaVersion("2.12.11", stdLibUrl, stdReflectUrl)]
 
-    ScalaCompatMap() {
+    public ScalaCompatMap() {
     }
 
-    void add(PluginScalaVersion scalaVersion) {
+    public void add(PluginScalaVersion scalaVersion) {
         final String versionString = scalaVersion.getScalaVersion();
         scalaMap.putIfAbsent(versionString, scalaVersion);
-        final ScalaRelease compatVersion = scalaVersion.getCompatRelease();
-        compatReleaseToLatestVersionMap.compute(compatVersion, (cv, latest) -> {
-            if (latest == null || ScalaRelease.VERSION_COMPARATOR.compare(latest, versionString) < 0) return versionString;
-            else return latest;
-        });
+        scalaVersions.add(versionString);
 
-        //special cases for the transition to scala 3
-        if (versionString.length() > 4) {
-            switch (versionString.substring(0, 4)) {
-                case "3.1.":
-                    //According to https://github.com/lampepfl/dotty/releases/tag/3.1.0-RC1:
-                    //"Scala 3.1 is backwards binary-compatible with Scala 3.0: libraries compiled with 3.0.x can be used from 3.1 without change."
-                    compatReleaseToLatestVersionMap.compute(ScalaRelease.SCALA_3_0, (cv, latest) -> {
-                        if (latest == null || ScalaRelease.VERSION_COMPARATOR.compare(latest, versionString) < 0) return versionString;
-                        return latest;
-                    });
-                case "3.0.": //intentional fall-through: Scala 3.1.x still uses 2_13 as a base: https://search.maven.org/artifact/org.scala-lang/scala3-library_3/3.1.0/jar
-                    //if we detect that scala 3.0.x is present, then mark it as highest compatible version for scala 2.13.x
-                    compatReleaseToLatestVersionMap.compute(ScalaRelease.SCALA_2_13, (cv, latest) -> {
-                        if (latest == null || ScalaRelease.VERSION_COMPARATOR.compare(latest, versionString) < 0) return versionString;
-                        return latest;
-                    });
+        for (String existingLatest : Compat.setCopy(scalaVersions.representatives())) {
+            if (isCompatible(existingLatest, versionString)) {
+                String oldest, newest;
+                if (ScalaRelease.VERSION_COMPARATOR.compare(existingLatest, versionString) < 0) {
+                    oldest = existingLatest; newest = versionString;
+                } else {
+                    oldest = versionString; newest = existingLatest;
+                }
+                scalaVersions.unite(newest, oldest);
             }
         }
+    }
+
+    private static boolean isCompatible(String one, String two) {
+        ScalaRelease release1 = ScalaRelease.fromScalaVersion(one);
+        ScalaRelease release2 = ScalaRelease.fromScalaVersion(two);
+        if (release1.equals(release2)) return true;
+        if (release1.isScala3() && release2.isScala3()) return true;
+        if (release1.equals(ScalaRelease.SCALA_2_13) && release2.isScala3()) return true;
+        if (release2.equals(ScalaRelease.SCALA_2_13) && release1.isScala3()) return true;
+        return false;
     }
 
     /**
@@ -49,33 +49,18 @@ class ScalaCompatMap {
      * @param scalaVersion the version of Scala
      * @return the latest compatible version of Scala
      */
-    PluginScalaVersion getLatestVersion(final PluginScalaVersion scalaVersion) {
+    public PluginScalaVersion getLatestVersion(final PluginScalaVersion scalaVersion) {
         final String versionString = scalaVersion.getScalaVersion();
-        final ScalaRelease compatVersion = scalaVersion.getCompatRelease();
-
-        String latestVersion = compatReleaseToLatestVersionMap.get(compatVersion);
-        if (latestVersion == null) {
-            latestVersion = versionString;
-            compatReleaseToLatestVersionMap.put(compatVersion, versionString);
-        }
-
-        PluginScalaVersion latest = scalaMap.get(latestVersion);
-        if (latest == null || ScalaRelease.VERSION_COMPARATOR.compare(latest.getScalaVersion(), scalaVersion.getScalaVersion()) < 0) {
-            latest = scalaVersion;
-            scalaMap.put(versionString, scalaVersion);
-        }
-
-        return latest;
+        final String latestVersionString = scalaVersions.getRepresentative(versionString);
+        return scalaMap.get(latestVersionString);
     }
 
     @Override
     public String toString() {
         final StringJoiner sj = new StringJoiner(", ", "[", "]");
-        for (Entry<ScalaRelease, String> compatLatestEntry : compatReleaseToLatestVersionMap.entrySet()) {
-            final ScalaRelease compatVersion = compatLatestEntry.getKey();
-            final String latestVersionForCompat = compatLatestEntry.getValue();
-            final PluginScalaVersion latestScalaVersion = scalaMap.get(latestVersionForCompat);
-            sj.add(compatVersion.getCompatVersion() + "->" + latestScalaVersion);
+        for (String scalaVersion : scalaVersions.values()) {
+            String latestScalaVersion = scalaVersions.getRepresentative(scalaVersion);
+            sj.add(scalaVersion + "->" + latestScalaVersion);
         }
         return sj.toString();
     }

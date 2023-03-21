@@ -65,6 +65,4 @@ public interface IScalaLoader extends Plugin {
         return wasAdded;
     }
 
-    public IScalaPluginLoader getScalaPluginLoader();
-
 }
