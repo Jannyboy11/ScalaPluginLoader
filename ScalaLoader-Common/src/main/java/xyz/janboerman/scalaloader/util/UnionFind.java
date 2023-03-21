@@ -45,6 +45,13 @@ public class UnionFind<T> {
     }
 
     public T getRepresentative(T value) {
+        if (!values().contains(value))
+            throw new IllegalStateException("Union-Find does not contain " + value);
+
+        return rep(value);
+    }
+
+    private T rep(T value) {
         T parent = getParent(value);
         if (Objects.equals(parent, value)) return value;    //if a value is its own parent, then it is a representative
 
