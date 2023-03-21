@@ -58,7 +58,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
     private final ConcurrentMap<ScalaRelease, ConcurrentMap<String, Class<?>>> sharedScalaPluginClasses = new ConcurrentHashMap<>();
     private final ConcurrentMap<ScalaRelease, CopyOnWriteArrayList<ScalaPluginClassLoader>> sharedScalaPluginClassLoaders = new ConcurrentHashMap<>();
-    private final ScalaCompatMap scalaCompatMap = new ScalaCompatMap();
+    private final ScalaCompatMap<PluginScalaVersion> scalaCompatMap = new ScalaCompatMap();
     private final Map<Path, PluginJarScanResult> preScannedPluginJars = new ConcurrentHashMap<>();
 
     private final Map<String, ScalaPlugin> scalaPlugins = new HashMap<>();
@@ -323,6 +323,11 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
             //get the ScalaPlugin from the class loader!
             ScalaPlugin plugin = scalaPluginClassLoader.getPlugin();
+
+            //band-aid fix ScalaPluginDescription fields whose values are detected from scanning the classes.
+            plugin.getScalaDescription().setMain(mainClass);
+            plugin.getScalaDescription().setApiVersion(apiVersion.getVersionString());
+            plugin.getScalaDescription().setScalaVersion(scalaVersion.getScalaVersion());
 
             if (scalaPlugins.putIfAbsent(plugin.getName().toLowerCase(), plugin) != null) {
                 throw new InvalidDescriptionException("Duplicate plugin names found: " + plugin.getName());

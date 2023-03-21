@@ -2,6 +2,9 @@ package xyz.janboerman.scalaloader.plugin.description;
 
 import org.bukkit.Bukkit;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Representions for different versions of bukkit's API.
  *
@@ -35,6 +38,7 @@ public enum ApiVersion {
     /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.22 */
     v1_22("1.22");
 
+    private static final Map<String, ApiVersion> BY_VERSION = new HashMap<>();
     private static final ApiVersion LATEST_VERSION;
     static {
         ApiVersion runningOn;
@@ -63,6 +67,10 @@ public enum ApiVersion {
             runningOn = LEGACY;
         }
         LATEST_VERSION = runningOn;
+
+        for (ApiVersion apiVersion : ApiVersion.values()) {
+            BY_VERSION.put(apiVersion.getVersionString(), apiVersion);
+        }
     }
 
     private final String versionString;
@@ -85,6 +93,15 @@ public enum ApiVersion {
      */
     public static ApiVersion latest() {
         return LATEST_VERSION;
+    }
+
+    /**
+     * Get the ApiVersion from the version string.
+     * @param versionString the api-version string as defined in the plugin.yml
+     * @return the ApiVersion
+     */
+    public static ApiVersion byVersion(String versionString) {
+        return BY_VERSION.get(versionString);
     }
 
 }

@@ -1,5 +1,5 @@
 name: ScalaLoader
-version: ${project.version}
+version: ${project.scalaVersion}
 main: xyz.janboerman.scalaloader.paper.ScalaLoader
 api-version: 1.19
 folia-supported: true
@@ -19,11 +19,11 @@ description:
 commands:
   listScalaPlugins:
     usage: "/<command>"
-    description: Outputs the scala plugins, grouped by their version of Scala.
+    description: Outputs the scala plugins, grouped by their scalaVersion of Scala.
     permission: scalaloader.listscalaplugins
     aliases: [scalaplugins]
   resetScalaUrls:
-    usage: "/<command> all|[<scala version>]"
+    usage: "/<command> all|[<scala scalaVersion>]"
     description:
       >
         Resets the config URL of the built-in scala version.
@@ -57,5 +57,5 @@ permissions:
     description: Allows users to debug classloading.
     default: op
   scalaloader.listscalaplugins:
-    description: Allows users to see the scala plugins by their scala version.
+    description: Allows users to see the scala plugins by their scala scalaVersion.
     default: op

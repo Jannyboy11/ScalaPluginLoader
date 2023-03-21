@@ -16,6 +16,7 @@ import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConve
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.Permission;
 
+import java.net.URL;
 import java.util.Collection;
 
 /**
@@ -39,6 +40,7 @@ public class Migration {
         combinedTransformer = new PermissionGetChildrenReplacer(combinedTransformer);
         combinedTransformer = new RuntimeConversionsReplacer(combinedTransformer);
         combinedTransformer = new PluginEventReplacer(combinedTransformer);
+        combinedTransformer = new AddUrlReplacer(combinedTransformer);
         //there is room for more here.
 
         new ClassReader(byteCode).accept(combinedTransformer, ClassReader.EXPAND_FRAMES);
@@ -179,4 +181,29 @@ class PluginEventReplacer extends ClassVisitor {
             }
         };
     }
+}
+
+class AddUrlReplacer extends ClassVisitor {
+
+    private static final String SCALAPLUGINCLASSLOADER_NAME = "xyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader";
+    private static final String ADDURL_DESCRIPTOR = Type.getMethodDescriptor(Type.getType(void.class), Type.getType(URL.class));
+
+    AddUrlReplacer(ClassVisitor delegate) {
+        super(AsmConstants.ASM_API);
+    }
+
+    @Override
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        return new MethodVisitor(AsmConstants.ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+            @Override
+            public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                if (SCALAPLUGINCLASSLOADER_NAME.equals(owner) && "addUrl".equals(name) && ADDURL_DESCRIPTOR.equals(descriptor)) {
+                    super.visitMethodInsn(opcode, SCALAPLUGINCLASSLOADER_NAME, "addURL", ADDURL_DESCRIPTOR, isInterface);
+                } else {
+                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                }
+            }
+        };
+    }
+
 }

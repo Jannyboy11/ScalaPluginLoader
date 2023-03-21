@@ -94,8 +94,8 @@
 
 <!--        <dependency>-->
 <!--            <groupId>org.scala-lang</groupId>-->
-<!--            <artifactId>tasty-core3_${scala.version}</artifactId>-->
-<!--            <version>${scala.version}</version>-->
+<!--            <artifactId>tasty-core3_${scala.scalaVersion}</artifactId>-->
+<!--            <scalaVersion>${scala.scalaVersion}</scalaVersion>-->
 <!--            <scope>provided</scope>-->
 <!--        </dependency>-->
 

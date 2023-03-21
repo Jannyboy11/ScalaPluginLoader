@@ -13,6 +13,8 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.event.EventBus;
+import xyz.janboerman.scalaloader.plugin.description.Api;
+import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 import xyz.janboerman.scalaloader.plugin.description.Scala;
 
@@ -81,6 +83,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
             this.server = classLoader.getServer();
             this.description.addYaml(classLoader.getExtraPluginYaml());
             this.description.setApiVersion(classLoader.getApiVersion().getVersionString());
+            this.description.setScalaVersion(getDeclaredScalaVersion());
             this.pluginLoader = classLoader.getPluginLoader();
             this.file = classLoader.getPluginJarFile();
         } else {
@@ -105,6 +108,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
             this.description = new ScalaPluginDescription(name, version);
             this.description.setMain(getClass().getName());
             this.description.setApiVersion(classLoader.getApiVersion().getVersionString());
+            this.description.setScalaVersion(getDeclaredScalaVersion());
             this.description.readFromPluginYamlData(pluginYaml);
         } else {
             throw new IllegalStateException("ScalaPlugin nullary constructor can only be used when loaded by a " + ScalaPluginClassLoader.class.getSimpleName() + ".");
@@ -121,6 +125,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
     protected ScalaPlugin(ScalaPluginDescription pluginDescription, Server server, File file) {
         this.description = pluginDescription;
         this.description.setMain(getClass().getName());
+        this.description.setApiVersion(getDeclaredApiVersion());
         this.server = server;
         this.file = file;
     }
@@ -191,9 +196,25 @@ public abstract class ScalaPlugin implements IScalaPlugin {
             return customScala.value().value();
         }
 
-        assert false : "ScalaPlugin defined its Scala version, but not via the @Scala or @CustomScala annotation";
+        Object yamlDefinedScalaVersion = getClassLoader().getExtraPluginYaml().get("scala-version");
+        if (yamlDefinedScalaVersion != null) {
+            return yamlDefinedScalaVersion.toString();
+        }
+
+        assert false : "ScalaPlugin defined its Scala version, but not via the @Scala or @CustomScala annotation, or in plugin.yml";
 
         return getScalaVersion(); //fallback - to make this more robust in production
+    }
+
+    public final String getDeclaredApiVersion() {
+        Class<?> mainClass = getClass();
+
+        Api api = mainClass.getDeclaredAnnotation(Api.class);
+        if (api != null) {
+            return api.value().getVersionString();
+        }
+
+        return null;
     }
 
     /**

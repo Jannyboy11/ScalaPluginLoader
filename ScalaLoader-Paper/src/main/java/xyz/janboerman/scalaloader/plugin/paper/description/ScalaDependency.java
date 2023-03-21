@@ -1,23 +1,34 @@
 package xyz.janboerman.scalaloader.plugin.paper.description;
 
-import org.bukkit.configuration.Configuration;
+import xyz.janboerman.scalaloader.compat.IScalaVersion;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 import static xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency.*;
 
 import java.util.Map;
 
-public sealed interface ScalaDependency permits Builtin, Custom, YamlDefined {
+public sealed interface ScalaDependency extends IScalaVersion permits Builtin, Custom, YamlDefined {
+
+    public String getVersionString();
 
     public static record Builtin(ScalaVersion scalaVersion) implements ScalaDependency {
-
+        @Override
+        public String getVersionString() {
+            return scalaVersion().getVersion();
+        }
     }
 
-    public static record Custom(String version, Map<String, String> urls) implements ScalaDependency {
-
+    public static record Custom(String scalaVersion, Map<String, String> urls) implements ScalaDependency {
+        @Override
+        public String getVersionString() {
+            return scalaVersion();
+        }
     }
 
-    public static record YamlDefined(Configuration configuration) implements ScalaDependency {
-
+    public static record YamlDefined(String scalaVersion) implements ScalaDependency {
+        @Override
+        public String getVersionString() {
+            return scalaVersion();
+        }
     }
 
 }

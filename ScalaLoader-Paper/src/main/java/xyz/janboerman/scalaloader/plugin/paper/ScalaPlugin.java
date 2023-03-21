@@ -60,22 +60,10 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
         return classLoader().getScalaRelease();
     }
 
-    //TODO factor out to ScalaLoaderUtils?
     @Override
     public final String getDeclaredScalaVersion() {
-        Class<?> mainClass = getClass();
-
-        Scala scala = mainClass.getDeclaredAnnotation(Scala.class);
-        if (scala != null) {
-            return scala.version().getVersion();
-        }
-
-        CustomScala customScala = mainClass.getDeclaredAnnotation(CustomScala.class);
-        if (customScala != null) {
-            return customScala.value().value();
-        }
-
-        assert false : "ScalaPlugin defined its Scala version, but not via the @Scala or @CustomScala annotation";
+        String scalaVersion = getScalaDescription().getScalaVersion(); //TODO make sure the scalaVersion is set in the description
+        if (scalaVersion != null) return scalaVersion;
 
         return getScalaVersion(); //fallback - to make this more robust in production
     }

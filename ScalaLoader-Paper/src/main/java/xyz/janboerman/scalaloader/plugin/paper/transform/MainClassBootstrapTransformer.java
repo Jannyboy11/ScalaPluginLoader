@@ -37,11 +37,8 @@ public class MainClassBootstrapTransformer extends ClassRemapper {
             Compat.mapEntry(SCALAPAPERPLUGIN_DESCRIPTOR, DESCRIPTIONPLUGIN_DESCRIPTOR)
     );
 
-    //TODO let the ScalaPluginClassLoader call this. (actually, call this in ClassLoaderUtils, only if we are loaded as a PaperPlugin)
-    //TODO alternatively: implement a custom PaperScalaPluginClassLoader.
-    MainClassBootstrapTransformer(ClassVisitor delegate) {
+    public MainClassBootstrapTransformer(ClassVisitor delegate) {
         super(AsmConstants.ASM_API, delegate, new SimpleRemapper(MAPPINGS));
     }
-
 
 }

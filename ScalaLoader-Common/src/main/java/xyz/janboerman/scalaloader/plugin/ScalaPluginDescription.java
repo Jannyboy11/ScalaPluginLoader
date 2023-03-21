@@ -25,6 +25,7 @@ public class ScalaPluginDescription {
     private String main;
     private Map<String, Object> addYaml;
     private String scalaVersion;
+    private boolean foliaSupported;
 
     private String pluginDescription;
     private List<String> authors = new LinkedList<>();
@@ -50,12 +51,17 @@ public class ScalaPluginDescription {
         this.pluginVersion = Objects.requireNonNull(pluginVersion, "Plugin scalaVersion cannot be null!");
     }
 
-
-    protected void setApiVersion(String bukkitApiVersion) {
+    /** @deprecated internal use only */
+    @Deprecated
+    public void setApiVersion(String bukkitApiVersion) {
+        if (bukkitApiVersion == null) return;
         this.apiVersion = bukkitApiVersion;
     }
 
-    protected void setMain(String mainClass) {
+    /** @deprecated internal use only */
+    @Deprecated
+    public void setMain(String mainClass) {
+        if (mainClass == null) return;
         this.main = mainClass;
     }
 
@@ -66,6 +72,7 @@ public class ScalaPluginDescription {
     /** @deprecated internal use only */
     @Deprecated
     public void setScalaVersion(String scalaVersion) {
+        if (scalaVersion == null) return;
         this.scalaVersion = scalaVersion;
     }
 
@@ -73,6 +80,19 @@ public class ScalaPluginDescription {
     @Deprecated
     public String getScalaVersion() {
         return scalaVersion;
+    }
+
+    public ScalaPluginDescription foliaSupported() {
+        return setFoliaSupported(true);
+    }
+
+    public ScalaPluginDescription setFoliaSupported(boolean supportFolia) {
+        this.foliaSupported = foliaSupported;
+        return this;
+    }
+
+    public boolean isFoliaSupported() {
+        return foliaSupported;
     }
 
     /** @deprecated internal use only */
@@ -302,6 +322,7 @@ public class ScalaPluginDescription {
         pluginData.put("version", pluginVersion);
         pluginData.put("main", main);
 
+        if (foliaSupported) pluginData.put("folia-supported", true);
         if (pluginDescription != null) pluginData.put("description", pluginDescription);
         if (authors != null && !authors.isEmpty()) pluginData.put("authors", Compat.listCopy(authors));
         if (contributors != null && !contributors.isEmpty()) pluginData.put("contributors", Compat.listCopy(contributors));
@@ -388,7 +409,7 @@ public class ScalaPluginDescription {
         }
     }
 
-    protected void readFromPluginYamlData(Map<String, Object> pluginYaml) {
+    public void readFromPluginYamlData(Map<String, Object> pluginYaml) {
         addYaml(pluginYaml);
 
         Object apiVersion = pluginYaml.get("api-version");
@@ -397,6 +418,12 @@ public class ScalaPluginDescription {
         Object scalaVersion = pluginYaml.get("scala-version");
         if (scalaVersion != null)
             setScalaVersion(String.valueOf(scalaVersion));
+        Object mainClass = pluginYaml.get("main");
+        if (mainClass != null)
+            setMain(mainClass.toString());
+        Object foliaSupported = pluginYaml.get("folia-supported");
+        if (foliaSupported != null)
+            setFoliaSupported(Boolean.parseBoolean(foliaSupported.toString()));
         description((String) pluginYaml.get("description"));
         String author = (String) pluginYaml.get("author");
         if (author != null)
@@ -434,6 +461,13 @@ public class ScalaPluginDescription {
             for (String inverseDep : inverseDepend)
                 if (inverseDep != null)
                     addLoadBefore(inverseDep);
+        List<Map<String, Object>> paperDependencies = (List<Map<String, Object>>) pluginYaml.get("dependencies");
+        if (paperDependencies != null)
+            for (Map<String, Object> paperDependency : paperDependencies)
+                if (Boolean.parseBoolean(paperDependency.get("required").toString()))
+                    addHardDepend(paperDependency.get("name").toString());
+                else
+                    addSoftDepend(paperDependency.get("name").toString());
         List<String> provides = (List<String>) pluginYaml.get("provides");
         if (provides != null)
             provides(provides.toArray(new String[0]));

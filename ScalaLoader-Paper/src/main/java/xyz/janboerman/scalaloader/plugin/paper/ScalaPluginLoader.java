@@ -3,7 +3,6 @@ package xyz.janboerman.scalaloader.plugin.paper;
 import io.papermc.paper.plugin.bootstrap.PluginProviderContext;
 import io.papermc.paper.plugin.loader.library.impl.MavenLibraryResolver;
 import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
-import io.papermc.paper.plugin.provider.configuration.type.DependencyConfiguration;
 import io.papermc.paper.plugin.provider.type.PluginTypeFactory;
 import io.papermc.paper.plugin.provider.type.paper.PaperPluginParent;
 import org.eclipse.aether.artifact.Artifact;
@@ -18,8 +17,10 @@ import io.papermc.paper.plugin.loader.PluginLoader;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 
+/*  According to https://docs.papermc.io/paper/dev/getting-started/paper-plugins#loaders
+ *  The purpose of a plugin loader is to create the (expected/dynamic) environment for the plugin to load into.
+ */
 public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
     //TODO should there be a ScalaPluginLoader instance per ScalaPlugin?
@@ -32,19 +33,9 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
     private static final RemoteRepository CODE_MC = new RemoteRepository.Builder("CodeMC", "default", "https://repo.codemc.org/repository/maven-public/").build();
 
 
-    private final ScalaLoader scalaLoader;
-
-    ScalaPluginLoader(ScalaLoader scalaLoader, File pluginJarFile) {
-        this.scalaLoader = scalaLoader;
-    }
-
-    ScalaLoader getScalaLoader() {
-        return scalaLoader;
-    }
-
     @Override
     public DebugSettings debugSettings() {
-        return getScalaLoader().getDebugSettings();
+        return ScalaLoader.getInstance().getDebugSettings();
     }
 
 
@@ -68,7 +59,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
         //add scala libraries
         //TODO if the scala libraries were declared using @Scala, then resolve it using maven,
-        //TODO OR if the scala libraries were declared in the plugin.yml or paper-plugin.yml with the scala-version property:
+        //TODO OR if the scala libraries were declared in the plugin.yml or paper-plugin.yml with the scala-scalaVersion property:
         //TODO      mavenLibraryResolver.addDependency(new Dependency(new DefaultArtifact(gav), "compile"))
         //TODO if the scala libraries were delcared using @CustomScala, download them and add jar libraries to the classpath
         //TODO      classpathBuilder.addLibrary(new JarLibrary(donloadedFile.toPath())
@@ -78,8 +69,9 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
         //TODO the folder to which these should be downloaded is: File scalaLibsFolder = new File(getScalaLoader().getDataFolder(), "scalalibraries");
 
         //add plugin-declared maven dependencies
-        for (DependencyConfiguration dependencyConfig : scalaPluginMeta.getDependencies()) {
-            Artifact artifact = new DefaultArtifact(dependencyConfig.name());
+        //TODO should we do this in the bootstrapper?
+        for (String gav : scalaPluginMeta.getMavenDependencies()) {
+            Artifact artifact = new DefaultArtifact(gav);
             Dependency dependency = new Dependency(artifact, "compile");
             mavenLibraryResolver.addDependency(dependency);
         }

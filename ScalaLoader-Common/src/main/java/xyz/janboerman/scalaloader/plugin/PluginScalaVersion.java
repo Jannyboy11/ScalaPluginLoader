@@ -5,6 +5,7 @@ import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.configuration.serialization.SerializableAs;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import static xyz.janboerman.scalaloader.compat.Compat.*;
+import xyz.janboerman.scalaloader.compat.IScalaVersion;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 
 import java.util.Collections;
@@ -13,7 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @SerializableAs("ScalaVersion")
-public final class PluginScalaVersion implements ConfigurationSerializable {
+public final class PluginScalaVersion implements ConfigurationSerializable, IScalaVersion {
     public static void register() {
         ConfigurationSerialization.registerClass(PluginScalaVersion.class, "ScalaVersion");
     }
@@ -123,4 +124,10 @@ public final class PluginScalaVersion implements ConfigurationSerializable {
                 scalaVersion.getVersion(),
                 scalaVersion.getUrls());
     }
+
+    @Override
+    public String getVersionString() {
+        return getScalaVersion();
+    }
+
 }

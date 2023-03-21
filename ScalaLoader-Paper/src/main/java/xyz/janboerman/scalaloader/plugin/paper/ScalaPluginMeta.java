@@ -17,11 +17,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
 
-    private final ScalaPluginDescription description;
+    final ScalaPluginDescription description;
 
     public ScalaPluginMeta(ScalaPluginDescription description) {
         this.description = Objects.requireNonNull(description);
@@ -158,17 +158,14 @@ public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
         return true;
     }
 
-    @Override
-    public List<DependencyConfiguration> getDependencies() {
-        return description.getMavenDependencies().stream()
-                .map(mavenDep -> new DependencyConfiguration(mavenDep, true, true))
-                .collect(Collectors.toList());
-    }
-
     //ScalaPluginMeta-specific
 
     public String getScalaVersion() {
         return description.getScalaVersion();
+    }
+
+    public Set<String> getMavenDependencies() {
+        return description.getMavenDependencies();
     }
 
 }

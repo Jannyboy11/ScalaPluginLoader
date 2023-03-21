@@ -21,10 +21,6 @@ public class DescriptionPlugin extends JavaPlugin implements IScalaPlugin {
         this.description = null;
     }
 
-    public boolean hasDescription() {
-        return description != null;
-    }
-
     public ScalaPluginDescription getScalaDescription() {
         return description;
     }

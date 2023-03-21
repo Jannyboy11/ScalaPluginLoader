@@ -5,14 +5,14 @@ import xyz.janboerman.scalaloader.plugin.description.DescriptionScanner;
 
 import java.util.Map;
 
-public class PluginJarScanResult {
+class PluginJarScanResult {
 
-    public DescriptionScanner mainClassCandidate;
-    public Map<String, Object> pluginYaml;
-    public boolean isJavaPluginExplicitly;
-    public TransformerRegistry transformerRegistry;
+    DescriptionScanner mainClassCandidate;
+    Map<String, Object> pluginYaml;
+    boolean isJavaPluginExplicitly;
+    TransformerRegistry transformerRegistry;
 
-    public PluginJarScanResult() {
+    PluginJarScanResult() {
     }
 
     public String toString() {

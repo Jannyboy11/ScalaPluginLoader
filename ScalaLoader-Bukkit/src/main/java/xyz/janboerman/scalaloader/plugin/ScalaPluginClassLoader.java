@@ -674,20 +674,8 @@ public class ScalaPluginClassLoader extends URLClassLoader implements IScalaPlug
      */
     @Deprecated
     //in the future when the dependency api is added, annotate this with @Deprecated and @Replaced and redirect calls at class-load time
-    public final void addUrl(URL url) {
+    public final void addURL(URL url) {
         libraryLoader.addURL(url);
-    }
-
-    /**
-     * If you are calling this (which is only possible reflectively on JDK 16 and earlier), then you already know that what you are doing is considered bad practice.
-     * <br>
-     * If you are using some kind of dependency loader framework, please update it to use {@link #addUrl(URL)} instead, or better: don't even use it at all because it's doing hacky stuff!
-     * @param url the location of the dependency
-     */
-    @Deprecated
-    @Override
-    protected void addURL(URL url) {
-        addUrl(url);
     }
 
     @Override

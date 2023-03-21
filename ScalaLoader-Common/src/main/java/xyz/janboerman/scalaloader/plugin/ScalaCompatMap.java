@@ -2,22 +2,27 @@ package xyz.janboerman.scalaloader.plugin;
 
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaVersion;
 import xyz.janboerman.scalaloader.util.UnionFind;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
-public class ScalaCompatMap {
+public class ScalaCompatMap<SV extends IScalaVersion> {
 
     private final UnionFind<String/*ScalaVersion*/> scalaVersions = new UnionFind<>();  /*representatives are latest compatible version*/   //e.g. ["2.13.0"->"3.3.0", "2.12.1"->"2.12.12", "3.3.0"->"3.3.0", "2.12.12"->"2.12.12"]
-    private final Map</*ScalaVersion*/String, PluginScalaVersion> scalaMap = new HashMap<>();                                               //e.g. ["2.12.11"->PluginScalaVersion("2.12.11", stdLibUrl, stdReflectUrl)]
+    private final Map</*ScalaVersion*/String, SV> scalaMap = new HashMap<>();                                                               //e.g. ["2.12.11"->PluginScalaVersion("2.12.11", stdLibUrl, stdReflectUrl)]
 
     public ScalaCompatMap() {
     }
 
-    public void add(PluginScalaVersion scalaVersion) {
-        final String versionString = scalaVersion.getScalaVersion();
+    /**
+     * Registers a Scala version configuration to this ScalaCompatMap.
+     * @param scalaVersion the scala configuration
+     */
+    public void add(SV scalaVersion) {
+        final String versionString = scalaVersion.getVersionString();
         scalaMap.putIfAbsent(versionString, scalaVersion);
         scalaVersions.add(versionString);
 
@@ -49,10 +54,18 @@ public class ScalaCompatMap {
      * @param scalaVersion the version of Scala
      * @return the latest compatible version of Scala
      */
-    public PluginScalaVersion getLatestVersion(final PluginScalaVersion scalaVersion) {
-        final String versionString = scalaVersion.getScalaVersion();
-        final String latestVersionString = scalaVersions.getRepresentative(versionString);
-        return scalaMap.get(latestVersionString);
+    public SV getLatestVersion(final PluginScalaVersion scalaVersion) {
+        return getLatestVersion(scalaVersion.getScalaVersion());
+    }
+
+    /**
+     * Looks up the latest version of Scala that is binary compatible with {@code scalaVersion}.
+     * @param scalaVersion the version of Scala
+     * @return the latest compatible version of Scala
+     */
+    public SV getLatestVersion(final String scalaVersion) {
+        String latest = scalaVersions.getRepresentative(scalaVersion);
+        return scalaMap.get(latest);
     }
 
     @Override

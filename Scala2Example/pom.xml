@@ -71,7 +71,7 @@
 <!--            <plugin>-->
 <!--                <groupId>org.apache.maven.plugins</groupId>-->
 <!--                <artifactId>maven-compiler-plugin</artifactId>-->
-<!--                <version>3.8.1</version>-->
+<!--                <scalaVersion>3.8.1</scalaVersion>-->
 <!--                <configuration>-->
 <!--                    <release>16</release>-->
 <!--                    <compilerArgs>&#45;&#45;enable-preview</compilerArgs>-->

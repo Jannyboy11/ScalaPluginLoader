@@ -7,11 +7,9 @@ import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
 import io.papermc.paper.plugin.entrypoint.classloader.PaperSimplePluginClassLoader;
 import io.papermc.paper.plugin.loader.PaperClasspathBuilder;
 import io.papermc.paper.plugin.loader.PluginLoader;
-import io.papermc.paper.plugin.provider.type.PluginTypeFactory;
 import io.papermc.paper.plugin.provider.type.paper.PaperPluginParent;
 import io.papermc.paper.plugin.provider.util.ProviderUtil;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -19,7 +17,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.logging.Logger;
 
-public class ScalaPluginProviderFactory {
+/** @deprecated this class is likely not necessary anymore soon. */
+@Deprecated
+public class ScalaPluginProviderFactory/* implements PluginTypeFactory<PaperPluginParent, ScalaPluginMeta> */{
 
     public PaperPluginParent build(JarFile file, ScalaPluginMeta configuration, Path source) throws Exception {
         Logger jul = PaperPluginLogger.getLogger(configuration);
@@ -39,11 +39,13 @@ public class ScalaPluginProviderFactory {
             }
         }
 
+        //TODO build ScalaPluginClassLoader instead.
         PaperPluginClassLoader classLoader = builder.buildClassLoader(jul, source, file, configuration);
+
         return new PaperPluginParent(source, file, configuration, classLoader, context);
     }
 
-    public ScalaPluginMeta create(JarFile jarFile) throws Exception {
+    public ScalaPluginMeta create(JarFile jarFile/*, JarEntry config*/) throws Exception {
         JarEntry paperPluginConfig = jarFile.getJarEntry("paper-plugin.yml");
         if (paperPluginConfig != null) {
             //TODO

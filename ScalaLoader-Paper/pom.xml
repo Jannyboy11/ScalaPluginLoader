@@ -13,7 +13,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.version>1.19.3-R0.1-SNAPSHOT</paper.version> <!-- TODO install paper server version 1.19.4 into local maven repo -->
+        <paper.version>1.19.3-R0.1-SNAPSHOT</paper.version> <!-- TODO install paper server scalaVersion 1.19.4 into local maven repo -->
 
         <!-- paper server dependencies -->
         <mavenResolverVersion>1.7.3</mavenResolverVersion>
