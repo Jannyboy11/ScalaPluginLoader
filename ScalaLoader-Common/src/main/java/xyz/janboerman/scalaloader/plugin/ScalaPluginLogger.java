@@ -11,11 +11,11 @@ import java.util.logging.Logger;
  * The ScalaPluginLogger - an alternative to {@link org.bukkit.plugin.PluginLogger}
  * that doesn't need a ScalaPlugin's {@link org.bukkit.plugin.PluginDescriptionFile} to work.
  */
-class ScalaPluginLogger extends Logger {
+public class ScalaPluginLogger extends Logger {
 
     private final String logPrefix;
 
-    ScalaPluginLogger(IScalaPlugin scalaPlugin) {
+    public ScalaPluginLogger(IScalaPlugin scalaPlugin) {
         super(scalaPlugin.getClass().getCanonicalName(), null);
         this.logPrefix = "[" + scalaPlugin.getPrefix() + "] ";
         Server server = scalaPlugin.getServer();

@@ -14,9 +14,11 @@ import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 import xyz.janboerman.scalaloader.DebugSettings;
+import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.plugin.paper.ScalaLoader;
+import xyz.janboerman.scalaloader.plugin.paper.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.plugin.paper.ScalaPluginMeta;
 import xyz.janboerman.scalaloader.plugin.paper.transform.MainClassBootstrapTransformer;
 
@@ -41,7 +43,7 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
     private DescriptionPlugin plugin;
     private PluginClassLoaderGroup classLoaderGroup;
 
-    public DescriptionClassLoader(File jarFile, ClassLoader parent) throws IOException {
+    public DescriptionClassLoader(File jarFile, ScalaLibraryClassLoader parent) throws IOException {
         super(new URL[] {jarFile.toURI().toURL()}, parent);
         this.jarFile = Compat.jarFile(jarFile);
     }
@@ -151,6 +153,11 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
     @Override
     public URL getResource(String name) {
         return findResource(name);
+    }
+
+    public String getScalaVersion() {
+        ScalaPluginClassLoader parent = (ScalaPluginClassLoader) getParent();
+        return parent.getScalaVersion();
     }
 
 }

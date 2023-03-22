@@ -310,7 +310,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
         MainClassScanner bestCandidate = null;
         TransformerRegistry transformerRegistry = new TransformerRegistry();
-        Map<String, Object> pluginYamlData = null;
+        Map<String, Object> pluginYamlData = Compat.emptyMap();
 
         //generic bytecode transformers (apply to every class)
         transformerRegistry.addUnspecificTransformer(PaperPluginTransformer::new);
