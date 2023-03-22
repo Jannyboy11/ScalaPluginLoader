@@ -18,6 +18,7 @@ import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScan
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanner;
 import xyz.janboerman.scalaloader.configurationserializable.transform.PluginTransformer;
 import xyz.janboerman.scalaloader.event.EventBus;
+import xyz.janboerman.scalaloader.event.plugin.ScalaPluginEnableEvent;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaCompatMap;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
@@ -279,6 +280,13 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     private void enableScalaPlugins() {
         for (ScalaPlugin plugin : getScalaPlugins()) {
+            if (!plugin.isEnabled()) {
+                ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(plugin);
+                getServer().getPluginManager().callEvent(event);
+                if (event.isCancelled())
+                    continue;
+            }
+
             PaperHacks.getPaperPluginManager().enablePlugin(plugin);
         }
     }

@@ -6,21 +6,28 @@ import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.description.Scala;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
+import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionClassLoader;
 
 import java.io.File;
 
 public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
 
     private final ScalaPluginDescription description;
+    private File configFile;
 
     protected ScalaPlugin(ScalaPluginDescription description) {
         this.description = description;
     }
 
     protected ScalaPlugin() {
-        //TODO get ScalaPlugin description from the ScalaPluginClassLoader.
-        //TODO there must be either a paper-plugin.yml or plugin.yml in the plugin's jar file.
-        this.description = null;
+        if (getClass().getClassLoader() instanceof ScalaPluginClassLoader classLoader) {
+            this.description = classLoader.getConfiguration().description;
+        } else {
+            if (!(getClass().getClassLoader() instanceof DescriptionClassLoader)) {
+                ScalaLoader.getInstance().getLogger().warning("ScalaPlugin nullary constructor called without ScalaPluginLoader. This will likely result in unexpected behaviour!");
+            }
+            this.description = null;
+        }
     }
 
     ScalaPluginDescription getScalaDescription() {
@@ -39,9 +46,7 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
 
     @Override
     public File getConfigFile() {
-        //TODO implement this.
-        //TODO might want to respect Paper's PluginProviderContext.
-        return null;
+        return configFile == null ? configFile = new File(classLoader().getDataDirectory().toFile(), "config.yml") : configFile;
     }
 
     @Override

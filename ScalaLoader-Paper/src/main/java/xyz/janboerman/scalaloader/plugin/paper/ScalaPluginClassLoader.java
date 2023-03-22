@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader.plugin.paper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -32,6 +33,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
     private final String mainClassName;
     private final Map<String, Object> pluginYaml;
     private final TransformerRegistry transformerRegistry;
+    private final Path dataDirectory;
 
     public ScalaPluginClassLoader(Logger logger,
                                   File pluginJarFile,
@@ -41,7 +43,8 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
                                   ScalaPluginLoader pluginLoader,
                                   Map<String, Object> pluginYaml,
-                                  TransformerRegistry transformerRegistry) throws IOException {
+                                  TransformerRegistry transformerRegistry,
+                                  Path dataDirectory) throws IOException {
         super(logger, pluginJarFile.toPath(), Compat.jarFile(pluginJarFile), configuration, parent, libraryLoader);
 
         this.pluginJarFile = pluginJarFile;
@@ -50,6 +53,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         this.pluginLoader = pluginLoader;
         this.pluginYaml = pluginYaml;
         this.transformerRegistry = transformerRegistry;
+        this.dataDirectory = dataDirectory;
 
         //TODO persistentClasses
     }
@@ -81,17 +85,21 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         return ApiVersion.byVersion(getConfiguration().getAPIVersion());
     }
 
+    public String getScalaVersion() {
+        return getConfiguration().getScalaVersion();
+    }
+
     public Map<String, Object> getExtraPluginYaml() {
         return Collections.unmodifiableMap(pluginYaml);
+    }
+
+    public Path getDataDirectory() {
+        return dataDirectory;
     }
 
     @Override
     public Server getServer() {
         return ScalaLoader.getInstance().getServer();
-    }
-
-    public String getScalaVersion() {
-        return getConfiguration().getScalaVersion();
     }
 
     @Override

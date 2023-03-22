@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-
 /*  According to https://docs.papermc.io/paper/dev/getting-started/paper-plugins#loaders
  *  The purpose of a plugin loader is to create the (expected/dynamic) environment for the plugin to load into.
  */

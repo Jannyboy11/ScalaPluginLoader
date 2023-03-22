@@ -1,8 +1,6 @@
 package xyz.janboerman.scalaloader.plugin.paper;
 
-import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
-import io.papermc.paper.plugin.provider.configuration.type.DependencyConfiguration;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.PluginLoadOrder;
