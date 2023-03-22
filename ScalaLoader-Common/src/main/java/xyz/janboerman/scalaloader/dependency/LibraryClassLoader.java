@@ -1,10 +1,9 @@
 package xyz.janboerman.scalaloader.dependency;
 
-import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
+import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.util.ClassLoaderUtils;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
-import xyz.janboerman.scalaloader.plugin.ScalaPluginClassLoader;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +24,7 @@ import java.util.logging.Logger;
  * This class is NOT part of the public API!
  * <br>
  * This classloader is used to classload classes defined by libraries.
- * @see PluginYamlLibraryLoader
+ * See PluginYamlLibraryLoader
  */
 public class LibraryClassLoader extends URLClassLoader {
 
@@ -36,15 +35,21 @@ public class LibraryClassLoader extends URLClassLoader {
     private final ConcurrentHashMap<String, Class<?>> classes = new ConcurrentHashMap<>();
     private final File[] jarFiles;
     private final Logger logger;
-    private final ScalaPluginClassLoader plugin;
+    private IScalaPluginClassLoader plugin;
     private final TransformerRegistry transformerRegistry;
 
-    public LibraryClassLoader(File[] jarFiles, ScalaLibraryClassLoader parent, Logger logger, ScalaPluginClassLoader plugin, TransformerRegistry transformerRegistry) {
+    public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> LibraryClassLoader(File[] jarFiles, ClassLoader parent, Logger logger, ScalaPluginClassLoader plugin, TransformerRegistry transformerRegistry) {
         super(urls(jarFiles), parent);
         this.jarFiles = jarFiles;
         this.logger = logger;
         this.plugin = plugin;
         this.transformerRegistry = transformerRegistry;
+    }
+
+    public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> void setPlugin(ScalaPluginClassLoader pluginClassLoader) {
+        if (this.plugin != null) throw new IllegalStateException("Can't override pluginClassLoader");
+
+        this.plugin = pluginClassLoader;
     }
 
     //override for public access
@@ -63,6 +68,9 @@ public class LibraryClassLoader extends URLClassLoader {
      */
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
+        if (plugin == null)
+            throw new IllegalStateException("plugin classloader not initialised!");
+
         //search in cache
         Class<?> found = classes.get(name);
         if (found != null) return found;
@@ -80,7 +88,7 @@ public class LibraryClassLoader extends URLClassLoader {
                         URL url = file.toURI().toURL();
 
                         //transform the bytecode
-                        classBytes = ClassLoaderUtils.transform(name, classBytes, this, transformerRegistry, plugin, logger);
+                        classBytes = ClassLoaderUtils.transform(name, classBytes, this, transformerRegistry, (ClassLoader & IScalaPluginClassLoader) plugin, logger);
 
                         //define the package
                         int dotIndex = name.lastIndexOf('.');

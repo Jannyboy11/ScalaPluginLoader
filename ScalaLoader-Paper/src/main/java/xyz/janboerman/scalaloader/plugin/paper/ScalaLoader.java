@@ -1,8 +1,10 @@
 package xyz.janboerman.scalaloader.plugin.paper;
 
+import com.destroystokyo.paper.utils.PaperPluginLogger;
 import com.google.common.graph.GraphBuilder;
-import com.google.common.graph.Graphs;
 import com.google.common.graph.MutableGraph;
+import io.papermc.paper.plugin.manager.PaperPluginManagerImpl;
+import io.papermc.paper.plugin.provider.type.paper.PaperPluginParent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
@@ -50,7 +52,7 @@ import java.util.stream.Collectors;
 /**
  * @author Jannyboy11
  */
-public class ScalaLoader extends JavaPlugin implements IScalaLoader {
+public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     private EventBus eventBus;
     private final DebugSettings debugSettings = new DebugSettings(this);
@@ -211,17 +213,33 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
             File file = byName.get(pluginName);
             PluginJarScanResult scanResult = scanResults.get(file);
             ScalaPluginDescription description = descriptions.get(file);
-            ScalaPluginProviderContext context = new ScalaPluginProviderContext(description);
 
-            //TODO do the loading thing!
+            ScalaPluginProviderContext context = new ScalaPluginProviderContext(description);
+            ScalaPluginBootstrap bootstrapper = new ScalaPluginBootstrap();
+            ScalaPluginLoader loader = new ScalaPluginLoader();
+            ScalaPluginClasspathBuilder pluginClasspathBuilder = new ScalaPluginClasspathBuilder(context);
+
+            bootstrapper.bootstrap(context);
+            loader.classloader(pluginClasspathBuilder);
+
+            ScalaPlugin plugin;
+
+            try {
+                ScalaPluginClassLoader pluginClassLoader = pluginClasspathBuilder.buildClassLoader(PaperPluginLogger.getLogger(context.getConfiguration()), getClassLoader(), file, scanResult.transformerRegistry, loader, scanResult.pluginYaml);
+                context.setPluginClassLoader(pluginClassLoader);
+                plugin = bootstrapper.createPlugin(context);
+                //don't think I need this currently:
+                //PaperPluginParent parent = new PaperPluginParent(file.toPath(), Compat.jarFile(file), context.getConfiguration(), pluginClassLoader, context);
+            } catch (IOException e) {
+                getLogger().log(Level.SEVERE, "could not instantiate ScalaPlugin " + pluginName, e);
+                continue;
+            }
+
+            PaperPluginManagerImpl.getInstance().loadPlugin(plugin); //calls PaperPluginInstanceManager#loadPlugin(Plugin provided)
+            //this correctly takes dependencies and softdependencies into account, but not inverse dependencies. should I make the distinction between dependency graph and load graph?
+            plugin.onLoad();
         }
 
-
-        //TODO make sure to register the plugins with Paper's PluginInstanceManager.
-        //TODO make sure that plugin dependencies are registered correctly.
-        //TODO call PaperPluginInstanceManager#loadPlugin(Plugin provided) - it does both of the above!
-
-        //TODO for every ScalaPlugin, make sure to call Plugin.onLoad().
     }
 
     private static Comparator<String> dependencyOrder(MutableGraph<String> dependencies) {
@@ -238,7 +256,7 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
                     return 0; //cyclic dependency, or no dependency.
                 }
             }
-        }.thenComparing(Comparator.naturalOrder());
+        }.thenComparing(String.CASE_INSENSITIVE_ORDER);
     }
 
     private static boolean dependsOn(MutableGraph<String> dependencies, String plugin1, String plugin2) {
@@ -331,7 +349,7 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
         return getConfig().getBoolean("load-libraries-from-disk", true);
     }
 
-    private ScalaLibraryClassLoader getOrCreateScalaLibrary(ScalaDependency scalaDependency) throws ScalaPluginLoaderException{
+    private ScalaLibraryClassLoader getOrCreateScalaLibrary(ScalaDependency scalaDependency) throws ScalaPluginLoaderException {
         PluginScalaVersion scalaVersion;
 
         if (scalaDependency instanceof ScalaDependency.Builtin builtin) {

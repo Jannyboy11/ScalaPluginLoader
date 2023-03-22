@@ -11,6 +11,7 @@ import java.nio.file.Path;
 public class ScalaPluginProviderContext implements PluginProviderContext {
 
     private final ScalaPluginMeta configuration;
+    private ScalaPluginClassLoader pluginClassLoader;
 
     public ScalaPluginProviderContext(ScalaPluginDescription description) {
         this.configuration = new ScalaPluginMeta(description);
@@ -30,4 +31,19 @@ public class ScalaPluginProviderContext implements PluginProviderContext {
     public @NotNull ComponentLogger getLogger() {
         return ComponentLogger.logger(getConfiguration().getMainClass());
     }
+
+    void setPluginClassLoader(ScalaPluginClassLoader pluginClassLoader) {
+        if (this.pluginClassLoader != null)
+            throw new IllegalStateException("pluginClassLoader already set");
+
+        this.pluginClassLoader = pluginClassLoader;
+    }
+
+    ScalaPluginClassLoader getPluginClassLoader() {
+        if (this.pluginClassLoader == null)
+            throw new IllegalStateException("pluginClassLoader not yet set");
+
+        return pluginClassLoader;
+    }
+
 }

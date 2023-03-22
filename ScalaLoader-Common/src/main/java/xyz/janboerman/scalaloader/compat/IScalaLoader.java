@@ -1,9 +1,9 @@
 package xyz.janboerman.scalaloader.compat;
 
 import org.bukkit.Server;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 
@@ -14,6 +14,11 @@ import java.util.List;
 import java.util.Set;
 
 public interface IScalaLoader extends Plugin {
+
+    public static IScalaLoader getInstance() {
+        JavaPlugin whoLoadedThis = JavaPlugin.getProvidingPlugin(IScalaLoader.class);
+        return (IScalaLoader) whoLoadedThis;
+    }
 
     public boolean isPaperPlugin();
 

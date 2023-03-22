@@ -29,21 +29,9 @@ public class ScalaPluginBootstrap implements PluginBootstrap {
 
     @Override
     public @NotNull ScalaPlugin createPlugin(@NotNull PluginProviderContext context) {
-
-        //TODO do I want a different classloader for ScalaPaperPlugins? There are good reasons why I would want this! (the whole dependency thing is completely overhauled)
-        //TODO might not need a different classloader, because Paper's PaperSimplePluginClassLoader uses the ServiceLoader api to load a ClassLaoderBytecodeModifier!
-        //TODO the bytecode modifier that will be used, is the modifier that is found first by the classloader's getResources method.
-        //TODO there seems to be a bug in Paper's current implementation: it does not uses the Platforms bytecode modifier yet (UnsafeValues#processClass or Commodore#convert)
-
-        //TODO keep in mind that that I need to do bytecode transformations! See ScalaPluginClassLoader, ClassLoaderUtils
-        //TODO and I should not forget ScalaPluginUserTransformer
-
-        ScalaPluginMeta description = (ScalaPluginMeta) context.getConfiguration();
-
-        //TODO set up PaperPluginParent?
-
-        ScalaPluginClassLoader classLoader = null; //TODO new ScalaPluginClassLoader();
-        String main = description.getMainClass();
+        ScalaPluginProviderContext scalaContext = (ScalaPluginProviderContext) context;
+        ScalaPluginClassLoader classLoader = scalaContext.getPluginClassLoader();
+        String main = context.getConfiguration().getMainClass();
 
         try {
             Class<? extends ScalaPlugin> scalaPluginClazz = (Class<? extends ScalaPlugin>) Class.forName(main, false, classLoader);

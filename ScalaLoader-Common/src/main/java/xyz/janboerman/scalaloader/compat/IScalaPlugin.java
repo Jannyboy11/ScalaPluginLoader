@@ -15,8 +15,9 @@ public interface IScalaPlugin extends Plugin {
     
     public String getScalaVersion();
 
-    public ScalaRelease getScalaRelease();
-
+    public default ScalaRelease getScalaRelease() {
+        return ScalaRelease.fromScalaVersion(getScalaVersion());
+    }
 
     public String getDeclaredScalaVersion();
 

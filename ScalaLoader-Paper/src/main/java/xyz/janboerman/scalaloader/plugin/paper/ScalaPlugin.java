@@ -1,7 +1,6 @@
 package xyz.janboerman.scalaloader.plugin.paper;
 
 import org.bukkit.plugin.java.JavaPlugin;
-import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
@@ -33,8 +32,8 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
         return getScalaDescription().getPrefix();
     }
 
+    @Override
     public ScalaPluginClassLoader classLoader() {
-        //TODO is this implementation correct? who knows!
         return (ScalaPluginClassLoader) super.getClassLoader();
     }
 
@@ -56,14 +55,23 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
     }
 
     @Override
-    public ScalaRelease getScalaRelease() {
-        return classLoader().getScalaRelease();
-    }
-
-    @Override
     public final String getDeclaredScalaVersion() {
-        String scalaVersion = getScalaDescription().getScalaVersion(); //TODO make sure the scalaVersion is set in the description
-        if (scalaVersion != null) return scalaVersion;
+        Class<?> mainClass = getClass();
+
+        Scala scala = mainClass.getDeclaredAnnotation(Scala.class);
+        if (scala != null) {
+            return scala.version().getVersion();
+        }
+
+        CustomScala customScala = mainClass.getDeclaredAnnotation(CustomScala.class);
+        if (customScala != null) {
+            return customScala.value().value();
+        }
+
+        Object yamlDefinedScalaVersion = classLoader().getExtraPluginYaml().get("scala-version");
+        if (yamlDefinedScalaVersion != null) {
+            return yamlDefinedScalaVersion.toString();
+        }
 
         return getScalaVersion(); //fallback - to make this more robust in production
     }
