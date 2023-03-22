@@ -297,7 +297,7 @@ public class ScalaPluginClassLoader extends URLClassLoader implements IScalaPlug
                 case DebugSettings.ASMIFIED: debugPrinter = new ASMifier(); break;
                 default: debugPrinter = new Textifier();
             }
-            getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] Dumping bytecode for class " + className);
+            getPluginLoader().getScalaLoader().getLogger().info("[DEBUG] [ScalaPluginClassLoader] Dumping bytecode for class " + className);
             ClassReader debugReader = new ClassReader(bytecode);
             TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter, new PrintWriter(System.out));
             debugReader.accept(traceClassVisitor, 0);

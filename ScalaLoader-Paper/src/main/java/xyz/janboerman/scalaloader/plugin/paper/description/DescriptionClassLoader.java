@@ -9,13 +9,21 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.util.ASMifier;
+import org.objectweb.asm.util.Printer;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceClassVisitor;
+import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.compat.Compat;
+import xyz.janboerman.scalaloader.compat.IScalaLoader;
+import xyz.janboerman.scalaloader.plugin.paper.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.paper.ScalaPluginMeta;
 import xyz.janboerman.scalaloader.plugin.paper.transform.MainClassBootstrapTransformer;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSigner;
@@ -79,8 +87,7 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
                     }
                 }
 
-                //TODO if class loader debuggin is on, dump the generated class.
-                //TODO maybe log that we are coming from the DescriptionClassLoader.
+                debugClass(className, byteCode);
 
                 //define the class
                 CodeSigner[] codeSigners = jarEntry.getCodeSigners();
@@ -93,6 +100,21 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
             }
         } else {
             throw new ClassNotFoundException(className);
+        }
+    }
+
+    private void debugClass(String className, byte[] bytecode) {
+        IScalaLoader scalaLoader = IScalaLoader.getInstance();
+        DebugSettings debugSettings = scalaLoader.getDebugSettings();
+        if (debugSettings.isDebuggingClassLoadOf(className)) {
+            Printer debugPrinter = switch (debugSettings.getFormat()) {
+                case DebugSettings.ASMIFIED -> new ASMifier();
+                default -> new Textifier();
+            };
+            scalaLoader.getLogger().info("[DEBUG] [DescriptionClassLoader] Dumping bytecode for class " + className);
+            ClassReader debugReader = new ClassReader(bytecode);
+            TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter, new PrintWriter(System.out));
+            debugReader.accept(traceClassVisitor, 0);
         }
     }
 

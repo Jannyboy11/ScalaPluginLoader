@@ -8,7 +8,6 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 
 import java.io.File;
 
-//TODO use this at boot-strap time (make the plugin extend DescriptionPlugin) just so we can extract the description!
 public class DescriptionPlugin extends JavaPlugin implements IScalaPlugin {
 
     private final ScalaPluginDescription description;

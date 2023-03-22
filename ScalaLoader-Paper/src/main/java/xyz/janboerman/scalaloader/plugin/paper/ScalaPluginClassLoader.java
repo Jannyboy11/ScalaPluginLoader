@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader.plugin.paper;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.security.CodeSigner;
@@ -28,6 +29,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.util.ASMifier;
+import org.objectweb.asm.util.Printer;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceClassVisitor;
+import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
@@ -142,7 +148,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
     //now that scala library classes are handled by the library classoader, this should simplify a whole lot. I think.
 
-    //probably don't have to override loadClass because the PaperPluginClassLoader implementation is already perfect for us? :D
+    //probably don't have to override loadClass because the PaperPluginClassLoader implementation is already perfect for us? :D //TODO check whether this is true.
 
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
@@ -161,7 +167,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         }
 
         classBytes = transformBytecode(name, classBytes);
-        //TODO debugClass
+        debugClass(name, classBytes);
 
         int dot = name.lastIndexOf('.');
         if (dot != -1) {
@@ -191,6 +197,19 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         return this.defineClass(name, classBytes, 0, classBytes.length, source);
     }
 
+    private void debugClass(String className, byte[] bytecode) {
+        DebugSettings debugSettings = getPluginLoader().debugSettings();
+        if (debugSettings.isDebuggingClassLoadOf(className)) {
+            Printer debugPrinter = switch (debugSettings.getFormat()) {
+                case DebugSettings.ASMIFIED -> new ASMifier();
+                default -> new Textifier();
+            };
+            ScalaLoader.getInstance().getLogger().info("[DEBUG] [ScalaPluginClassLoader] Dumping bytecode for class " + className);
+            ClassReader debugReader = new ClassReader(bytecode);
+            TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, debugPrinter, new PrintWriter(System.out));
+            debugReader.accept(traceClassVisitor, 0);
+        }
+    }
 
     private byte[] transformBytecode(String className, byte[] byteCode) {
         //Paper-supported bytecode transformer via ServiceLoader api!
@@ -240,7 +259,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         }
 
         byte[] byteCode = classGenerator.generate(className);
-        //debugClass(className, byteCode); //TODO implement dumping.
+        debugClass(className, byteCode);
 
         boolean isNew;
         Class<?> clazz;
