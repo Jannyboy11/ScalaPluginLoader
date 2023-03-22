@@ -231,7 +231,7 @@ public class Tuple {
                 methodVisitor.visitMethodInsn(INVOKESTATIC,
                         Type.getInternalName(RuntimeConversions.class),
                         "serialize",
-                        "(" + AsmConstants.javaLangObject_DESCRIPTOR + Type.getDescriptor(ParameterType.class) + Type.getDescriptor(Object.class) + ")" + AsmConstants.javaLangObject_DESCRIPTOR,
+                        "(" + AsmConstants.javaLangObject_DESCRIPTOR + Type.getDescriptor(ParameterType.class) + Type.getDescriptor(ClassLoader.class) + ")" + AsmConstants.javaLangObject_DESCRIPTOR,
                         false);                                         operandStack.replaceTop(3, Type.getType(Object.class));
                 methodVisitor.visitMethodInsn(INVOKEINTERFACE,
                         Type.getInternalName(Map.class),
@@ -289,7 +289,7 @@ public class Tuple {
                 methodVisitor.visitMethodInsn(INVOKESTATIC,
                         Type.getInternalName(RuntimeConversions.class),
                         "deserialize",
-                        Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class), Type.getType(ParameterType.class), Type.getType(Object.class)),
+                        Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class), Type.getType(ParameterType.class), Type.getType(ClassLoader.class)),
                         false);                                         operandStack.replaceTop(3, Type.getType(Object.class));
                 methodVisitor.visitVarInsn(ASTORE, a);                              operandStack.pop();
                 //methodVisitor.visitLocalVariable("_1", "Ljava/lang/Object;", "TT1;", label1, label3, 1);

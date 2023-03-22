@@ -166,8 +166,8 @@ class Conversions {
                         Type.getType(RuntimeConversions.class).getInternalName(),
                         "serialize",
                         "(" + OBJECT_TYPE.getDescriptor()
-                                + Type.getType(ParameterType.class).getDescriptor()
-                                + OBJECT_TYPE.getDescriptor()
+                                + Type.getDescriptor(ParameterType.class)
+                                + Type.getDescriptor(ClassLoader.class)
                                 + ")" + OBJECT_TYPE.getDescriptor(),
                         false);
                 operandStack.replaceTop(3, OBJECT_TYPE);
@@ -689,8 +689,8 @@ class Conversions {
                         Type.getType(RuntimeConversions.class).getInternalName(),
                         "deserialize",
                         "(" + OBJECT_TYPE.getDescriptor()
-                                + Type.getType(ParameterType.class).getDescriptor()
-                                + OBJECT_TYPE.getDescriptor()
+                                + Type.getDescriptor(ParameterType.class)
+                                + Type.getDescriptor(ClassLoader.class)
                                 + ")" + OBJECT_TYPE.getDescriptor(),
                         false);
                 operandStack.replaceTop(3, OBJECT_TYPE);
