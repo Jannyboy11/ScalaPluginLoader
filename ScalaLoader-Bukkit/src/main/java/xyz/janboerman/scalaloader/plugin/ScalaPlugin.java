@@ -138,14 +138,22 @@ public abstract class ScalaPlugin implements IScalaPlugin {
      * Can only be used when the ScalaPlugin is loaded by the ScalaPluginLoader.
      * Otherwise use {@code scalaPlugin.getClass().getClassLoader()}.
      * @return the ScalaPluginClassLoader that loaded classes from this plugin
+     *
+     * @deprecated This method *WILL NOT EXIST* at runtime when running your plugin on Paper. Use {@link #classLoader()} instead.
      */
+    @Deprecated //TODO at the next deprecation clean up spree, make this method protected and final.
     public ScalaPluginClassLoader getClassLoader() {
-        return classLoader;
+        return classLoader();
     }
 
+    /**
+     * Can only be used when the ScalaPlugin is loaded by the ScalaPluginLoader.
+     * Otherwise use {@code scalaPlugin.getClass().getClassLoader()}.
+     * @return the ScalaPluginClassLoader that loaded classes from this plugin
+     */
     @Override
     public final ScalaPluginClassLoader classLoader() {
-        return getClassLoader();
+        return classLoader;
     }
 
     /**
