@@ -30,8 +30,6 @@
     </pluginRepositories>
 
     <build>
-        <defaultGoal>clean package</defaultGoal>
-
         <resources>
             <resource>
                 <directory>src/main/resources</directory>

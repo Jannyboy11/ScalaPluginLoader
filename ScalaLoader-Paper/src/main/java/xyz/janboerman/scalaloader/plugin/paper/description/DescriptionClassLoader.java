@@ -66,7 +66,7 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
                     }
                 };
                 ClassReader classReader = new ClassReader(byteCode);
-                classReader.accept(new MainClassBootstrapTransformer(classWriter), 0);
+                classReader.accept(new MainClassBootstrapTransformer(classWriter), ClassReader.EXPAND_FRAMES);
                 byteCode = classWriter.toByteArray();
 
                 //define the package

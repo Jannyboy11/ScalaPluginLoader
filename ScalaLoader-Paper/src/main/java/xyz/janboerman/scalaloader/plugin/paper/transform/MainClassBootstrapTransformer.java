@@ -1,7 +1,5 @@
 package xyz.janboerman.scalaloader.plugin.paper.transform;
 
-
-import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.ClassRemapper;

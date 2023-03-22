@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.security.CodeSigner;
@@ -227,7 +228,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
     }
 
     private byte[] transformMainClass(byte[] byteCode, List<BiFunction<ClassVisitor, String, ClassVisitor>> transformers) {
-        if (transformers.isEmpty())
+        if (transformers == null || transformers.isEmpty())
             //short-circuit
             return byteCode;
 
@@ -284,6 +285,14 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         } else {
             return ClassDefineResult.oldClass(clazz);
         }
+    }
+
+    @Override
+    @Deprecated
+    public void addURL(URL url) {
+        //do I even want this metohd?
+        //if yes, should the URL be added to the LibraryClassLoader? or to this one?
+        super.addURL(url);
     }
 
 }

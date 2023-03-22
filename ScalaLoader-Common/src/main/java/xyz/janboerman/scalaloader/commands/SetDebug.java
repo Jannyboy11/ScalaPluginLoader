@@ -32,4 +32,6 @@ public class SetDebug implements CommandExecutor {
         return true;
     }
 
+    //TODO can we do tabcompletion? I guess we can, but just for JavaPlugins and ScalaPlugins.
+
 }

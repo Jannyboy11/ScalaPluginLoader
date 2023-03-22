@@ -12,7 +12,6 @@ import xyz.janboerman.scalaloader.configurationserializable.transform.Configurat
 import xyz.janboerman.scalaloader.event.transform.EventError;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -29,6 +28,13 @@ public class ClassLoaderUtils {
 
         final String path = className.replace('.', '/') + ".class";
         final Platform platform = Platform.detect(plugin.getServer());
+
+        //apply migration bytecode transformations
+        try {
+            classBytes = Migration.transform(classBytes, definer);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "An unexpected error occurred when updating bytecode to work with new references to classes that have been moved or otherwise refactored.", e);
+        }
 
         //apply event bytecode transformations
         try {
@@ -55,7 +61,7 @@ public class ClassLoaderUtils {
 
             ClassVisitor classVisitor = classWriter;
 
-            //can't apply main class transformations, because the plugin's main class is never loaded through this classloader
+            //can't apply main class transformations, because the defining classloader might not be a ScalaPluginClassLoader.
 
             //apply target transformations
             List<Function<ClassVisitor, ClassVisitor>> targetedTransformers = ListOps.concat(
@@ -73,13 +79,6 @@ public class ClassLoaderUtils {
                 classreader.accept(classVisitor, 0);
                 classBytes = classWriter.toByteArray();
             }
-        }
-
-        //apply migration bytecode transformations
-        try {
-            classBytes = Migration.transform(classBytes, definer);
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "An unexpected error occurred when updating bytecode to work with new references to classes that have been moved or otherwise refactored.", e);
         }
 
         //apply bukkit bytecode transformations

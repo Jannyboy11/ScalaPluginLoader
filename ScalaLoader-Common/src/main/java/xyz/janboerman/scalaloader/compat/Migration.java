@@ -13,16 +13,23 @@ import xyz.janboerman.scalaloader.bytecode.Called;
 import static xyz.janboerman.scalaloader.compat.Compat.*;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterType;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions;
+import xyz.janboerman.scalaloader.event.plugin.ScalaPluginDisableEvent;
+import xyz.janboerman.scalaloader.event.plugin.ScalaPluginEnableEvent;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.Permission;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
 
 /**
  * This class is NOT part of the public API!
  */
 public class Migration {
+
+    private static final List<Function<ClassVisitor, ClassVisitor>> transformers = new ArrayList<>(1);
 
     private Migration() {}
 
@@ -35,16 +42,21 @@ public class Migration {
         };
 
         ClassVisitor combinedTransformer = classWriter;
-
+        for (Function<ClassVisitor, ClassVisitor> migrator : transformers) {
+            combinedTransformer = migrator.apply(combinedTransformer);
+        }
         combinedTransformer = new NumericRangeUpdater(combinedTransformer);
         combinedTransformer = new PermissionGetChildrenReplacer(combinedTransformer);
         combinedTransformer = new RuntimeConversionsReplacer(combinedTransformer);
         combinedTransformer = new PluginEventReplacer(combinedTransformer);
         combinedTransformer = new AddUrlReplacer(combinedTransformer);
-        //there is room for more here.
 
         new ClassReader(byteCode).accept(combinedTransformer, ClassReader.EXPAND_FRAMES);
         return classWriter.toByteArray();
+    }
+
+    public static void addMigrator(Function<ClassVisitor, ClassVisitor> migrator) {
+        transformers.add(migrator);
     }
 
     @Called
@@ -98,6 +110,7 @@ class PermissionGetChildrenReplacer extends ClassVisitor {
     private static final String SCALALOADER_PERMISSION_NAME = Type.getInternalName(ScalaPluginDescription.Permission.class);
     private static final String GETCHILDREN_NAME = "getChildren";
     private static final String GETCHILDREN_DESCRIPTOR = "()" + Type.getDescriptor(Collection.class);
+    private static final String MIGRATION_NAME = Type.getInternalName(Migration.class);
     private static final String LEGACYGETCHILDREN_DESCRIPTOR = "(" + Type.getDescriptor(ScalaPluginDescription.Permission.class) + ")" + Type.getDescriptor(Collection.class);
 
     PermissionGetChildrenReplacer(ClassVisitor delegate) {
@@ -109,8 +122,8 @@ class PermissionGetChildrenReplacer extends ClassVisitor {
         return new MethodVisitor(AsmConstants.ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                if (SCALALOADER_PERMISSION_NAME.equals(owner) && GETCHILDREN_NAME.equals(name) && GETCHILDREN_DESCRIPTOR.equals(descriptor)) {
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Migration.class), "legacyGetChildren", LEGACYGETCHILDREN_DESCRIPTOR, false);
+                if (opcode == Opcodes.INVOKEVIRTUAL && SCALALOADER_PERMISSION_NAME.equals(owner) && GETCHILDREN_NAME.equals(name) && GETCHILDREN_DESCRIPTOR.equals(descriptor) && !isInterface) {
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, MIGRATION_NAME, "legacyGetChildren", LEGACYGETCHILDREN_DESCRIPTOR, false);
                 } else {
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 }
@@ -150,8 +163,8 @@ class RuntimeConversionsReplacer extends ClassVisitor {
 
 class PluginEventReplacer extends ClassVisitor {
 
-    private static final String ENABLE_EVENT = "xyz/janboerman/scalaloader/event/plugin/ScalaPluginEnableEvent";
-    private static final String DISABLE_EVENT = "xyz/janboerman/scalaloader/event/plugin/ScalaPluginDisableEvent";
+    private static final String ENABLE_EVENT = Type.getInternalName(ScalaPluginEnableEvent.class);
+    private static final String DISABLE_EVENT = Type.getInternalName(ScalaPluginDisableEvent.class);
     private static final String OLD_GETPLUGIN_DESCRIPTOR = "()Lxyz/janboerman/scalaloader/plugin/ScalaPlugin;";
     private static final String NEW_GETPLUGIN_DESCRIPTOR = Type.getMethodDescriptor(Type.getType(IScalaPlugin.class));
     private static final String GETPLUGIN_NAME = "getPlugin";
@@ -174,7 +187,11 @@ class PluginEventReplacer extends ClassVisitor {
                         && OLD_GETPLUGIN_DESCRIPTOR.equals(descriptor)
                         && !isInterface) {
                     super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, GETPLUGIN_NAME, NEW_GETPLUGIN_DESCRIPTOR, false);
-                    super.visitTypeInsn(Opcodes.CHECKCAST, "xyz/janboerman/scalaloader/plugin/ScalaPlugin");
+                    if (IScalaLoader.getInstance().isPaperPlugin()) {
+                        super.visitTypeInsn(Opcodes.CHECKCAST, "xyz/janboerman/scalaloader/plugin/paper/ScalaPlugin");
+                    } else {
+                        super.visitTypeInsn(Opcodes.CHECKCAST, "xyz/janboerman/scalaloader/plugin/ScalaPlugin");
+                    }
                 } else {
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 }
@@ -186,10 +203,11 @@ class PluginEventReplacer extends ClassVisitor {
 class AddUrlReplacer extends ClassVisitor {
 
     private static final String SCALAPLUGINCLASSLOADER_NAME = "xyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader";
+    private static final String SCALAPAPERPLUGINCLASSLOADER_NAME = "xyz/janboerman/scalaloder/plugin/paper/ScalaPluginClassLoader";
     private static final String ADDURL_DESCRIPTOR = Type.getMethodDescriptor(Type.getType(void.class), Type.getType(URL.class));
 
     AddUrlReplacer(ClassVisitor delegate) {
-        super(AsmConstants.ASM_API);
+        super(AsmConstants.ASM_API, delegate);
     }
 
     @Override
@@ -198,7 +216,11 @@ class AddUrlReplacer extends ClassVisitor {
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
                 if (SCALAPLUGINCLASSLOADER_NAME.equals(owner) && "addUrl".equals(name) && ADDURL_DESCRIPTOR.equals(descriptor)) {
-                    super.visitMethodInsn(opcode, SCALAPLUGINCLASSLOADER_NAME, "addURL", ADDURL_DESCRIPTOR, isInterface);
+                    if (IScalaLoader.getInstance().isPaperPlugin()) {
+                        super.visitMethodInsn(opcode, SCALAPAPERPLUGINCLASSLOADER_NAME, "addURL", ADDURL_DESCRIPTOR, isInterface);
+                    } else {
+                        super.visitMethodInsn(opcode, SCALAPLUGINCLASSLOADER_NAME, "addURL", ADDURL_DESCRIPTOR, isInterface);
+                    }
                 } else {
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 }

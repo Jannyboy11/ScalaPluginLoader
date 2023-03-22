@@ -33,7 +33,7 @@ public class ScalaPluginBootstrap implements PluginBootstrap {
         String main = context.getConfiguration().getMainClass();
 
         try {
-            Class<? extends ScalaPlugin> scalaPluginClazz = (Class<? extends ScalaPlugin>) Class.forName(main, false, classLoader);
+            Class<? extends ScalaPlugin> scalaPluginClazz = (Class<? extends ScalaPlugin>) Class.forName(main, true, classLoader);
             ScalaPlugin plugin = ScalaLoaderUtils.createScalaPluginInstance(scalaPluginClazz);
             ScalaLoader.getInstance().addScalaPlugin(plugin);
             return plugin;

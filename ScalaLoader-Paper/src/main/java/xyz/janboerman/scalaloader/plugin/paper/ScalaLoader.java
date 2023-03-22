@@ -14,6 +14,7 @@ import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
+import xyz.janboerman.scalaloader.compat.Migration;
 import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariantTransformer;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanResult;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanner;
@@ -111,6 +112,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     @Override
     public void onLoad() {
+        Migration.addMigrator(PaperPluginTransformer::new);
         ScalaLoaderUtils.initConfiguration(this);
         loadScalaPlugins();
     }
@@ -118,7 +120,11 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @Override
     public void onEnable() {
         initCommands();
-        //enableScalaPlugins();   //TODO remove this because it should not be necessary (PaperPluginInstanceManager already enables plugins)
+
+        //TODO should not be necessary, but apparently still is. (PaperPluginInstanceManager already enables plugins)
+        enableScalaPlugins();
+        //TODO have a look at how the ListPluginsCommand works -> I have to inject plugins in an EntryPointHandler dafuq?
+
         ScalaLoaderUtils.initBStats(this);
     }
 
@@ -160,7 +166,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 String mainClassName = scanResult.getMainClass();
                 DescriptionPlugin dummyPlugin;
                 try {
-                    Class<? extends DescriptionPlugin> descriptionClass = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, false, classLoader);
+                    Class<? extends DescriptionPlugin> descriptionClass = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, true, classLoader);
                     dummyPlugin = ScalaLoaderUtils.createScalaPluginInstance(descriptionClass);
                 } catch (Error initializerOrConstructorError) {
                     getLogger().log(Level.SEVERE, "Some error occurred in ScalaPlugin's constructor or initializer. " +
@@ -291,7 +297,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         return dependsOn(dependencies, dependency, plugin2, workingSet, explored);
     }
 
-    //TODO remove this.
     private void enableScalaPlugins() {
         for (ScalaPlugin plugin : getScalaPlugins()) {
             if (!plugin.isEnabled()) {
@@ -311,9 +316,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         MainClassScanner bestCandidate = null;
         TransformerRegistry transformerRegistry = new TransformerRegistry();
         Map<String, Object> pluginYamlData = Compat.emptyMap();
-
-        //generic bytecode transformers (apply to every class)
-        transformerRegistry.addUnspecificTransformer(PaperPluginTransformer::new);
 
         //enumerate the class files!
         Enumeration<JarEntry> entryEnumeration = pluginJarFile.entries();

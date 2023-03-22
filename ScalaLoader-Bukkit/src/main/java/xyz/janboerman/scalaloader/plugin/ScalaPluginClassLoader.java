@@ -231,7 +231,7 @@ public class ScalaPluginClassLoader extends URLClassLoader implements IScalaPlug
 
         if (name.startsWith("scala.") || name.startsWith("dotty.")) {
             //short-circuit scala standard library and dotty/tasty classes.
-            //we do this because if some plugin or library (such as PDM) adds the scala library to this classloader using #addUrl(URL),
+            //we do this because if some plugin or library (such as PDM) adds the scala library to this classloader using #addURL(URL),
             //then we still want to use the scala library that is loaded by the parent classloader
             //the same goes for libraries defined in the plugin.yml
             try {
