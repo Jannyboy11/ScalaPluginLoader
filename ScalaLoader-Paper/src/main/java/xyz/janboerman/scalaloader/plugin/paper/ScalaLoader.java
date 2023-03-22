@@ -1,5 +1,8 @@
 package xyz.janboerman.scalaloader.plugin.paper;
 
+import com.google.common.graph.GraphBuilder;
+import com.google.common.graph.Graphs;
+import com.google.common.graph.MutableGraph;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
@@ -27,11 +30,14 @@ import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -39,6 +45,7 @@ import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * @author Jannyboy11
@@ -46,10 +53,10 @@ import java.util.logging.Level;
 public class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     private EventBus eventBus;
-    private DebugSettings debugSettings = new DebugSettings(this);
+    private final DebugSettings debugSettings = new DebugSettings(this);
     private File scalaPluginsFolder;
 
-    private Set<ScalaPlugin> scalaPlugins = new HashSet<>();
+    private final LinkedHashSet<ScalaPlugin> scalaPlugins = new LinkedHashSet<>();
 
     private final ScalaCompatMap<ScalaDependency> scalaCompatMap = new ScalaCompatMap();
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
@@ -107,7 +114,6 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
     }
 
     private void loadScalaPlugins() {
-        //TODO might need to load them 'all at once' because of the new paper plugin update
         loadScalaPlugins(scalaPluginsFolder.listFiles((File dir, String name) -> name.endsWith(".jar")));
     }
 
@@ -116,6 +122,12 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
         final Map<File, ScalaPluginDescription> descriptions = new HashMap<>();
         final Map<File, PluginJarScanResult> scanResults = new HashMap<>();
+        final Map<String, File> byName = new HashMap<>();
+        final MutableGraph<String> dependencyGraph = GraphBuilder.directed()
+                .allowsSelfLoops(false)
+                .expectedNodeCount(files.length)
+                .<String>build();
+        dependencyGraph.addNode("ScalaLoader");
 
         for (File file : files) {
             try {
@@ -134,12 +146,14 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
                 //and set the description
                 ScalaPluginDescription description = dummyPlugin.getScalaDescription();
+                final String pluginName;
                 if (description != null) {
                     description.setMain(mainClassName);
                     description.setApiVersion(scanResult.getApiVersion().getVersionString());
                     description.setScalaVersion(scalaDependency.getVersionString());
+                    pluginName = description.getName();
                 } else {
-                    String pluginName = scanResult.pluginYaml.get("name").toString();
+                    pluginName = scanResult.pluginYaml.get("name").toString();
                     String version = scanResult.pluginYaml.get("version").toString();
                     description = new ScalaPluginDescription(pluginName, version);
                     description.readFromPluginYamlData(scanResult.pluginYaml);
@@ -148,6 +162,18 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 //store to load later
                 descriptions.put(file, description);
                 scanResults.put(file, scanResult);
+                byName.put(pluginName, file);
+                dependencyGraph.addNode(pluginName);
+                //fill dependency graph (dependencies are pointed to)
+                for (String dep : description.getHardDependencies())
+                    dependencyGraph.putEdge(pluginName, dep);
+                for (String softDep : description.getSoftDependencies())
+                    dependencyGraph.putEdge(pluginName, softDep);
+                for (String inverseDep : description.getInverseDependencies())
+                    dependencyGraph.putEdge(inverseDep, pluginName);
+                //according to https://javadoc.io/doc/com.google.guava/guava/latest/com/google/common/graph/MutableGraph.html
+                //method putEdge: "If nodeU and nodeV are not already present in this graph, this method will silently add nodeU and nodeV to the graph."
+                //so this method should work if there are ScalaPlugin that depend on plain old JavaPlugins.
 
             } catch (IOException e) {
                 getLogger().log(Level.SEVERE, "Failed to load ScalaPlugin from file: " + file.getName(), e);
@@ -161,9 +187,11 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
         //all ScalaPlugins have been scanned.
         //let's instantiate them!
 
-        //TODO take load-order into account? :O
+        final List<String> pluginLoadOrder = new ArrayList<>(byName.size());
+        pluginLoadOrder.addAll(byName.keySet()); //fill up the list using the byName variable. (dependencyGraph can contain plugin names which are not ScalaPlugins.)
+        pluginLoadOrder.sort(dependencyOrder(dependencyGraph));
 
-        for (File file : files) {
+        for (String pluginName : pluginLoadOrder) {
             //the process will look as follows:
             //  - instantiate the bootstrapper:
             //  - instantiate the pluginloader
@@ -171,11 +199,13 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
             //  - call pluginloader.classloader(pluginclasspathbuilder)
             //  - call boostrapper.createPlugin(pluginprovidercontext)
 
+            File file = byName.get(pluginName);
+            PluginJarScanResult scanResult = scanResults.get(file);
             ScalaPluginDescription description = descriptions.get(file);
             ScalaPluginProviderContext context = new ScalaPluginProviderContext(description);
 
+            //TODO do the loading thing!
         }
-
 
 
         //TODO make sure to register the plugins with Paper's PluginInstanceManager.
@@ -183,6 +213,40 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
         //TODO call PaperPluginInstanceManager#loadPlugin(Plugin provided) - it does both of the above!
 
         //TODO for every ScalaPlugin, make sure to call Plugin.onLoad().
+    }
+
+    private static Comparator<String> dependencyOrder(MutableGraph<String> dependencies) {
+        return new Comparator<String>() {
+            @Override
+            public int compare(String plugin1, String plugin2) {
+                boolean oneDependsOnTwo = dependsOn(dependencies, plugin1, plugin2);
+                boolean twoDependsOnOne = dependsOn(dependencies, plugin2, plugin1);
+                if (oneDependsOnTwo && !twoDependsOnOne) {
+                    return 1; //plugin1 is greater - it must be loaded later
+                } else if (twoDependsOnOne && !oneDependsOnTwo) {
+                    return -1; //plugin2 is greater. plugin1 must be loaded earlier.
+                } else {
+                    return 0; //cyclic dependency, or no dependency.
+                }
+            }
+        }.thenComparing(Comparator.naturalOrder());
+    }
+
+    private static boolean dependsOn(MutableGraph<String> dependencies, String plugin1, String plugin2) {
+        return dependsOn(dependencies, plugin1, plugin2, new HashSet<>(dependencies.successors(plugin1)), new HashSet<>());
+    }
+
+    private static boolean dependsOn(MutableGraph<String> dependencies, String plugin1, String plugin2, Set<String> workingSet, Set<String> explored) {
+        if (workingSet.contains(plugin2)) return true;
+        explored.add(plugin1);
+
+        workingSet = workingSet.stream().flatMap(plugin -> dependencies.successors(plugin).stream()).collect(Collectors.toSet());
+        workingSet.removeAll(explored);
+
+        if (workingSet.isEmpty()) return false;
+
+        String dependency = workingSet.iterator().next();
+        return dependsOn(dependencies, dependency, plugin2, workingSet, explored);
     }
 
     private void enableScalaPlugins() {

@@ -27,32 +27,32 @@ public class DescriptionPlugin extends JavaPlugin implements IScalaPlugin {
 
     @Override
     public File getConfigFile() {
-        throw new UnsupportedOperationException("Not yet supported in constructor");
+        throw new UnsupportedOperationException("Not yet supported in constructor or initializer");
     }
 
     @Override
     public EventBus getEventBus() {
-        throw new UnsupportedOperationException("Not yet supported in constructor");
+        throw new UnsupportedOperationException("Not yet supported in constructor or initializer");
     }
 
     @Override
     public String getScalaVersion() {
-        throw new UnsupportedOperationException("Not yet supported in constructor");
+        throw new UnsupportedOperationException("Not yet supported in constructor or initializer");
     }
 
     @Override
     public ScalaRelease getScalaRelease() {
-        throw new UnsupportedOperationException("Not yet supported in constructor");
+        throw new UnsupportedOperationException("Not yet supported in constructor or initializer");
     }
 
     @Override
     public String getDeclaredScalaVersion() {
-        throw new UnsupportedOperationException("Not yet supported in constructor");
+        throw new UnsupportedOperationException("Not yet supported in constructor or initializer");
     }
 
     @Override
     public String getPrefix() {
-        throw new UnsupportedOperationException("Not yet supported in constructor");
+        throw new UnsupportedOperationException("Not yet supported in constructor or initializer");
     }
 
 }
