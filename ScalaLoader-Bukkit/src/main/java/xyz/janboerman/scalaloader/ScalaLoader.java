@@ -20,6 +20,10 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
+import xyz.janboerman.scalaloader.commands.DumpClass;
+import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
+import xyz.janboerman.scalaloader.commands.ResetScalaUrls;
+import xyz.janboerman.scalaloader.commands.SetDebug;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
@@ -150,7 +154,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @Override
     public void onEnable() {
         //ScalaLoader commands
-        ScalaLoaderUtils.initCommands(this);
+        initCommands();
 
         //if the ".jar"-pluginloader is overridden, then check for unloaded plugins. otherwise just enable the scalaplugins now.
         if (iActuallyManagedToOverrideTheDefaultJavaPluginLoader) {
@@ -184,6 +188,13 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @Override
     public void onDisable() {
         //Do we want to disable the scala plugins? I don't think so
+    }
+
+    private void initCommands() {
+        getCommand("resetScalaUrls").setExecutor(new ResetScalaUrls(this));
+        getCommand("dumpClass").setExecutor(new DumpClass(this));
+        getCommand("setDebug").setExecutor(new SetDebug(this.getDebugSettings()));
+        getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins(this));
     }
 
     private boolean downloadScalaJarFiles() {

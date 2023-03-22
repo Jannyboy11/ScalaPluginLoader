@@ -5,6 +5,7 @@ import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import io.papermc.paper.plugin.manager.PaperPluginManagerImpl;
 import io.papermc.paper.plugin.provider.type.paper.PaperPluginParent;
+import org.bukkit.command.CommandMap;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
@@ -24,6 +25,10 @@ import xyz.janboerman.scalaloader.plugin.ScalaCompatMap;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
+import xyz.janboerman.scalaloader.plugin.paper.commands.DumpClassCommand;
+import xyz.janboerman.scalaloader.plugin.paper.commands.ListScalaPluginsCommand;
+import xyz.janboerman.scalaloader.plugin.paper.commands.ResetScalaUrlsCommand;
+import xyz.janboerman.scalaloader.plugin.paper.commands.SetDebugCommand;
 import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionClassLoader;
 import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionPlugin;
 import xyz.janboerman.scalaloader.plugin.paper.description.MainClassScanner;
@@ -112,9 +117,17 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     @Override
     public void onEnable() {
-        ScalaLoaderUtils.initCommands(this);
+        initCommands();
         //enableScalaPlugins();   //TODO remove this because it should not be necessary (PaperPluginInstanceManager already enables plugins)
         ScalaLoaderUtils.initBStats(this);
+    }
+
+    private void initCommands() {
+        CommandMap commandMap = getServer().getCommandMap();
+        commandMap.register(ResetScalaUrlsCommand.name, new ResetScalaUrlsCommand(this));
+        commandMap.register(DumpClassCommand.name, new DumpClassCommand(this));
+        commandMap.register(SetDebugCommand.name, new SetDebugCommand(this));
+        commandMap.register(ListScalaPluginsCommand.name, new ListScalaPluginsCommand(this));
     }
 
     private void loadScalaPlugins() {
@@ -278,6 +291,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         return dependsOn(dependencies, dependency, plugin2, workingSet, explored);
     }
 
+    //TODO remove this.
     private void enableScalaPlugins() {
         for (ScalaPlugin plugin : getScalaPlugins()) {
             if (!plugin.isEnabled()) {

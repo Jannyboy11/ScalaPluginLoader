@@ -28,6 +28,10 @@ public class ListScalaPlugins implements TabExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         Collection<? extends IScalaPlugin> scalaPlugins = scalaLoader.getScalaPlugins();
+        if (scalaPlugins.isEmpty()) {
+            sender.sendMessage(ChatColor.YELLOW + "No ScalaPlugins loaded.");
+            return true;
+        }
 
         Map<ScalaRelease, List<IScalaPlugin>> pluginNamesByScalaRelease = new TreeMap<>(Comparator.reverseOrder());
         for (IScalaPlugin scalaPlugin : scalaPlugins) {

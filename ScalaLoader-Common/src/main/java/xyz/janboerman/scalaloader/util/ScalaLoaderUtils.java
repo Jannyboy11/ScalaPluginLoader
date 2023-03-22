@@ -59,13 +59,6 @@ public class ScalaLoaderUtils {
         xyz.janboerman.scalaloader.configurationserializable.runtime.types.Either.registerWithConfigurationSerialization();
     }
 
-    public static <ScalaLoader extends JavaPlugin & IScalaLoader> void initCommands(ScalaLoader scalaLoader) {
-        scalaLoader.getCommand("resetScalaUrls").setExecutor(new ResetScalaUrls(scalaLoader));
-        scalaLoader.getCommand("dumpClass").setExecutor(new DumpClass(scalaLoader));
-        scalaLoader.getCommand("setDebug").setExecutor(new SetDebug(scalaLoader.getDebugSettings()));
-        scalaLoader.getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins(scalaLoader));
-    }
-
     public static <ScalaLoader extends JavaPlugin & IScalaLoader> void initBStats(ScalaLoader scalaLoader) {
         final int pluginId = 9150;
         Metrics metrics = new Metrics(scalaLoader, pluginId);

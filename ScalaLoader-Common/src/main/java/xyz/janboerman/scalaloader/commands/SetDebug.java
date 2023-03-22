@@ -31,4 +31,5 @@ public class SetDebug implements CommandExecutor {
 
         return true;
     }
+
 }

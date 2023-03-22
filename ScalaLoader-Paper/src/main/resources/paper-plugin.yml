@@ -19,7 +19,7 @@ description:
 commands:
   listScalaPlugins:
     usage: "/<command>"
-    description: Outputs the scala plugins, grouped by their scalaVersion of Scala.
+    description: Outputs the scala plugins, grouped by their version of Scala.
     permission: scalaloader.listscalaplugins
     aliases: [scalaplugins]
   resetScalaUrls:
