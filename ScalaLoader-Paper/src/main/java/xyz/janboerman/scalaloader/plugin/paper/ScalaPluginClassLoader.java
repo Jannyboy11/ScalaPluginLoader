@@ -269,6 +269,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         }
 
         byte[] byteCode = classGenerator.generate(className);
+        byteCode = transformBytecode(className, byteCode); //only really need the migration code, but this will do.
         debugClass(className, byteCode);
 
         boolean isNew;

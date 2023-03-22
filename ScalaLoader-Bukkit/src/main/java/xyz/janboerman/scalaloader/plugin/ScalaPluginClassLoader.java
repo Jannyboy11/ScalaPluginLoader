@@ -473,6 +473,7 @@ public class ScalaPluginClassLoader extends URLClassLoader implements IScalaPlug
         }
 
         byte[] byteCode = classGenerator.generate(className);
+        byteCode = ClassLoaderUtils.transform(className, byteCode, this, transformerRegistry, this, getPluginLoader().getScalaLoader().getLogger());
         debugClass(className, byteCode);
 
         boolean isNew;
