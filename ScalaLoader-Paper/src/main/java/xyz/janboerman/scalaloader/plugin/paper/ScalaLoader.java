@@ -141,8 +141,15 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 //Now, we instantiate the DescriptionPlugin
                 DescriptionClassLoader classLoader = new DescriptionClassLoader(file, getOrCreateScalaLibrary(scalaDependency));
                 String mainClassName = scanResult.getMainClass();
-                Class<? extends DescriptionPlugin> descriptionClass = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, false, classLoader);
-                DescriptionPlugin dummyPlugin = ScalaLoaderUtils.createScalaPluginInstance(descriptionClass);
+                DescriptionPlugin dummyPlugin;
+                try {
+                    Class<? extends DescriptionPlugin> descriptionClass = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, false, classLoader);
+                    dummyPlugin = ScalaLoaderUtils.createScalaPluginInstance(descriptionClass);
+                } catch (Error initializerOrConstructorError) {
+                    getLogger().log(Level.SEVERE, "Some error occurred in ScalaPlugin's constructor or initializer. " +
+                            "Try to move stuff over to #onLoad() or #onEnable().", initializerOrConstructorError);
+                    continue;
+                }
 
                 //and set the description
                 ScalaPluginDescription description = dummyPlugin.getScalaDescription();
@@ -173,7 +180,7 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
                     dependencyGraph.putEdge(inverseDep, pluginName);
                 //according to https://javadoc.io/doc/com.google.guava/guava/latest/com/google/common/graph/MutableGraph.html
                 //method putEdge: "If nodeU and nodeV are not already present in this graph, this method will silently add nodeU and nodeV to the graph."
-                //so this method should work if there are ScalaPlugin that depend on plain old JavaPlugins.
+                //so this method should work if there are ScalaPlugins that depend on plain old JavaPlugins.
 
             } catch (IOException e) {
                 getLogger().log(Level.SEVERE, "Failed to load ScalaPlugin from file: " + file.getName(), e);
@@ -181,6 +188,8 @@ public class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 getLogger().log(Level.SEVERE, "Main class not found: " + file.getName(), e);
             } catch (ScalaPluginLoaderException e) {
                 getLogger().log(Level.SEVERE, "Could not find main class in: " + file.getName(), e);
+            } catch (Throwable e) {
+                getLogger().log(Level.SEVERE, "Unknown error while loading plugin: " + file.getName(), e);
             }
         }
 
