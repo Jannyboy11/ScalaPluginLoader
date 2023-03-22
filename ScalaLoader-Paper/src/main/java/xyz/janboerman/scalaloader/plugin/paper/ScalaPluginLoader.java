@@ -1,14 +1,13 @@
 package xyz.janboerman.scalaloader.plugin.paper;
 
-import io.papermc.paper.plugin.bootstrap.PluginProviderContext;
+import io.papermc.paper.plugin.loader.library.impl.JarLibrary;
 import io.papermc.paper.plugin.loader.library.impl.MavenLibraryResolver;
-import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
-import io.papermc.paper.plugin.provider.type.PluginTypeFactory;
-import io.papermc.paper.plugin.provider.type.paper.PaperPluginParent;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
+
+import static xyz.janboerman.scalaloader.compat.Compat.listOf;
 import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 
@@ -16,6 +15,16 @@ import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
 import io.papermc.paper.plugin.loader.PluginLoader;
 
 import org.jetbrains.annotations.NotNull;
+import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
+import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency;
+import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
 
 
 /*  According to https://docs.papermc.io/paper/dev/getting-started/paper-plugins#loaders
@@ -23,60 +32,116 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
-    //TODO should there be a ScalaPluginLoader instance per ScalaPlugin?
-    //TODO there could be, but that is not strictly required.
-    //TODO for now: YES.
-    //TODO Paper's own implementation does exactly this though (see PaperPluginProviderFactory).
-    //TODO We don't need to copy this behaviour necessarily, since the #classloader method is called for each plugin.
-
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2").build();
     private static final RemoteRepository CODE_MC = new RemoteRepository.Builder("CodeMC", "default", "https://repo.codemc.org/repository/maven-public/").build();
-
 
     @Override
     public DebugSettings debugSettings() {
         return ScalaLoader.getInstance().getDebugSettings();
     }
 
-
     @Override
-    public void classloader(@NotNull PluginClasspathBuilder classpathBuilder) {
-        //TODO is this where we want to do the scanning? where are we called?
+    public void classloader(@NotNull PluginClasspathBuilder pluginClasspathBuilder) {
 
-        //TODO this PluginLoader#classLoader is called by PaperPluginProviderFactory#build
-        //TODO so we need to implement this method, if we use the same factory.
-
-        PluginTypeFactory<PaperPluginParent, PaperPluginMeta> paperPluginTypeFactory = PaperPluginParent.FACTORY;
-
-        //TODO we need to make sure we do call PaperClassPathBuilder.buildClassLoader!
-
-        PluginProviderContext pluginProviderContext = classpathBuilder.getContext();
-        ScalaPluginMeta scalaPluginMeta = (ScalaPluginMeta) pluginProviderContext.getConfiguration();
+        ScalaPluginClasspathBuilder classpathBuilder = (ScalaPluginClasspathBuilder) pluginClasspathBuilder;
+        ScalaPluginProviderContext context = classpathBuilder.getContext();
+        ScalaPluginMeta scalaPluginMeta = context.getConfiguration();
 
         MavenLibraryResolver mavenLibraryResolver = new MavenLibraryResolver();
         mavenLibraryResolver.addRepository(MAVEN_CENTRAL);
         mavenLibraryResolver.addRepository(CODE_MC);
 
         //add scala libraries
-        //TODO if the scala libraries were declared using @Scala, then resolve it using maven,
-        //TODO OR if the scala libraries were declared in the plugin.yml or paper-plugin.yml with the scala-scalaVersion property:
-        //TODO      mavenLibraryResolver.addDependency(new Dependency(new DefaultArtifact(gav), "compile"))
-        //TODO if the scala libraries were delcared using @CustomScala, download them and add jar libraries to the classpath
-        //TODO      classpathBuilder.addLibrary(new JarLibrary(donloadedFile.toPath())
-
-        //TODO for the first and second approach, implement bytecode scanning in ScalaLibraryScanner
-        //TODO for the second approach, make sure to use the same download location that the 'bukkit' ScalaLoader plugin uses.
-        //TODO the folder to which these should be downloaded is: File scalaLibsFolder = new File(getScalaLoader().getDataFolder(), "scalalibraries");
-
-        //add plugin-declared maven dependencies
-        //TODO should we do this in the bootstrapper?
-        for (String gav : scalaPluginMeta.getMavenDependencies()) {
-            Artifact artifact = new DefaultArtifact(gav);
-            Dependency dependency = new Dependency(artifact, "compile");
-            mavenLibraryResolver.addDependency(dependency);
+        ScalaDependency scalaDependency = ScalaLoader.getInstance().getScalaVersions().getLatestVersion(scalaPluginMeta.getScalaVersion());
+        if (scalaDependency instanceof ScalaDependency.Builtin builtinDep) {
+            for (String gav : mavenDependencies(builtinDep.scalaVersion().getVersion()))
+                addMavenDependency(mavenLibraryResolver, gav);
+        } else if (scalaDependency instanceof ScalaDependency.Custom customDep) {
+            try {
+                for (File file : downloadScalaLibraries(customDep.scalaVersion(), customDep.urls(), ScalaLoader.getInstance()))
+                    classpathBuilder.addLibrary(new JarLibrary(file.toPath()));
+            } catch (IOException e) {
+                ScalaLoader.getInstance().getLogger().log(Level.SEVERE, "Could not download scala libraries for version: " + customDep, e);
+            }
+        } else if (scalaDependency instanceof ScalaDependency.YamlDefined yamlDefinedDep) {
+            for (String gav : mavenDependencies(yamlDefinedDep.scalaVersion()))
+                addMavenDependency(mavenLibraryResolver, gav);
         }
 
+        //add plugin-declared maven dependencies
+        for (String gav : scalaPluginMeta.getMavenDependencies())
+            addMavenDependency(mavenLibraryResolver, gav);
+
         classpathBuilder.addLibrary(mavenLibraryResolver);
+    }
+
+    private static void addMavenDependency(MavenLibraryResolver mavenLibraryResolver, String gav) {
+        Artifact artifact = new DefaultArtifact(gav);
+        Dependency dependency = new Dependency(artifact, "compile");
+        mavenLibraryResolver.addDependency(dependency);
+    }
+
+    private static List<String> mavenDependencies(String scalaVersion) {
+        boolean isScala2 = scalaVersion.startsWith("2.");
+        if (isScala2)
+            return listOf(
+                    "org.scala-lang:scala-library:" + scalaVersion,
+                    "org.scala-lang:scala-reflect:" + scalaVersion);
+
+        boolean isScala3 = scalaVersion.startsWith("3.");
+        if (isScala3)
+            if ("3.0.0".equals(scalaVersion))
+                return listOf(
+                        "org.scala-lang:scala-library:" + ScalaVersion.getLatest_2_13().getVersion(),
+                        "org.scala-lang:scala-reflect:" + ScalaVersion.getLatest_2_13().getVersion(),
+                        "org.scala-lang:scala3-library_3.0.0-nonbootstrapped:3.0.0",
+                        "org.scala-lang:tasty-core_3.0.0-nonbootstrapped:3.0.0");
+            else
+                return listOf(
+                        "org.scala-lang:scala-library:" + ScalaVersion.getLatest_2_13().getVersion(),
+                        "org.scala-lang:scala-reflect:" + ScalaVersion.getLatest_2_13().getVersion(),
+                        "org.scala-lang:scala3-library_3:" + scalaVersion,
+                        "org.scala-lang:tasty-core_3:" + scalaVersion);
+
+        throw new RuntimeException("Unrecognised Scala version: " + scalaVersion);
+    }
+
+    private static File[] downloadScalaLibraries(String scalaVersion, Map<String, String> urls, ScalaLoader scalaLoader) throws IOException {
+        File scalaLibsFolder = new File(scalaLoader.getDataFolder(), "scalalibraries");
+        File versionFolder = new File(scalaLibsFolder, scalaVersion);
+        versionFolder.mkdirs();
+
+        File[] jarFiles = versionFolder.listFiles((dir, name) -> name.endsWith(".jar"));
+
+        if (jarFiles.length == 0) {
+            //no jar files found - download dem files
+            scalaLoader.getLogger().info("Tried to load Scala " + scalaVersion + " libraries from disk, but they were not present. Downloading...");
+
+            Map<String, String> urlMap = urls;
+            jarFiles = new File[urlMap.size()];
+            int i = 0;
+            for (Map.Entry<String, String> entry : urlMap.entrySet()) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+
+                String fileName;
+                if (key.endsWith("-url")) {
+                    fileName = key.substring(0, key.length() - 3) + scalaVersion + ".jar";
+                } else if (key.endsWith(".jar")) {
+                    fileName = key;
+                } else {
+                    fileName = key + "-" + scalaVersion + ".jar";
+                }
+
+                File scalaRuntimeJarFile = new File(versionFolder, fileName);
+                scalaRuntimeJarFile.createNewFile();
+                URL url = new URL(value);
+                ScalaLoaderUtils.downloadFile(url, scalaRuntimeJarFile);
+                jarFiles[i++] = scalaRuntimeJarFile;
+            }
+        }
+
+        return jarFiles;
     }
 
 }

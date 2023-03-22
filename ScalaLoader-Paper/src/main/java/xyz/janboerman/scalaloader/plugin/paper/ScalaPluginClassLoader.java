@@ -3,7 +3,6 @@ package xyz.janboerman.scalaloader.plugin.paper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -14,7 +13,7 @@ import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
 import org.bukkit.Server;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import xyz.janboerman.scalaloader.ScalaRelease;
+import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
@@ -32,6 +31,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
     private final JarFile jarFile;
     private final String mainClassName;
     private final Map<String, Object> pluginYaml;
+    private final TransformerRegistry transformerRegistry;
 
     public ScalaPluginClassLoader(Logger logger,
                                   File pluginJarFile,
@@ -40,7 +40,8 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
                                   URLClassLoader libraryLoader,
 
                                   ScalaPluginLoader pluginLoader,
-                                  Map<String, Object> pluginYaml) throws IOException {
+                                  Map<String, Object> pluginYaml,
+                                  TransformerRegistry transformerRegistry) throws IOException {
         super(logger, pluginJarFile.toPath(), Compat.jarFile(pluginJarFile), configuration, parent, libraryLoader);
 
         this.pluginJarFile = pluginJarFile;
@@ -48,6 +49,9 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         this.mainClassName = configuration.getMainClass();
         this.pluginLoader = pluginLoader;
         this.pluginYaml = pluginYaml;
+        this.transformerRegistry = transformerRegistry;
+
+        //TODO persistentClasses
     }
 
     @Override
@@ -108,7 +112,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
     @Override
     public ClassDefineResult getOrDefineClass(String className, ClassGenerator classGenerator, boolean persist) {
-        //TODO
+        //TODO persistent generated classes
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

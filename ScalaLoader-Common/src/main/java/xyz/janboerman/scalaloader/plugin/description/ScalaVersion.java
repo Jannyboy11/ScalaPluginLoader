@@ -125,6 +125,10 @@ public enum ScalaVersion {
         return version;
     }
 
+    public static ScalaVersion getLatest_2_13() {
+        return latest_2_13;
+    }
+
     /**
      * <p>
      *     Get the download urls for some of the Scala runtime jar files.

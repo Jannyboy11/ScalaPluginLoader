@@ -24,7 +24,6 @@ public class ScalaPluginBootstrap implements PluginBootstrap {
         ScalaCompatMap<ScalaDependency> compatMap = ScalaLoader.getInstance().getScalaVersions();
         ScalaPluginMeta scalaPluginMeta = (ScalaPluginMeta) context.getConfiguration();
         scalaPluginMeta.description.setScalaVersion(compatMap.getLatestVersion(scalaPluginMeta.getScalaVersion()).getVersionString());
-
     }
 
     @Override
@@ -36,9 +35,7 @@ public class ScalaPluginBootstrap implements PluginBootstrap {
         try {
             Class<? extends ScalaPlugin> scalaPluginClazz = (Class<? extends ScalaPlugin>) Class.forName(main, false, classLoader);
             ScalaPlugin plugin = ScalaLoaderUtils.createScalaPluginInstance(scalaPluginClazz);
-
             ScalaLoader.getInstance().addScalaPlugin(plugin);
-
             return plugin;
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not find plugin main class: " + main, e);

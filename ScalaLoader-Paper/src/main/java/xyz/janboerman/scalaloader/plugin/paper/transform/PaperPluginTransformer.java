@@ -65,9 +65,7 @@ public class PaperPluginTransformer extends ClassRemapper {
             Compat.mapEntry(SCALAPLUGINLOADER_DESCRIPTOR, SCALAPAPERPLUGINLOADER_DESCRIPTOR)
     );
 
-    //TODO let the ScalaPluginClassLoader call this. (actually, call this in ClassLoaderUtils, only if we are loaded as a PaperPlugin)
-    //TODO alternatively: implement a custom PaperScalaPluginClassLoader.
-    PaperPluginTransformer(ClassVisitor delegate) {
+    public PaperPluginTransformer(ClassVisitor delegate) {
         super(AsmConstants.ASM_API, delegate, new SimpleRemapper(MAPPINGS));
     }
 

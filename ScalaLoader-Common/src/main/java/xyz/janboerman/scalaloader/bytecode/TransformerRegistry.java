@@ -16,6 +16,7 @@ public class TransformerRegistry {
 
     public final List<BiFunction<ClassVisitor/*old*/, String/*mainClassName*/, ClassVisitor/*new*/>> mainClassTransformers = new ArrayList<>();
     public final Map<String/*className*/, List<Function<ClassVisitor/*old*/, ClassVisitor/*new*/>>> byClassTransformers = new HashMap<>();
+    public final List<Function<ClassVisitor/*old*/, ClassVisitor/*new*/>> unspecificTransformers = new ArrayList<>(0);
 
     public TransformerRegistry() {
     }
@@ -24,8 +25,12 @@ public class TransformerRegistry {
         mainClassTransformers.add(function);
     }
 
-    public void addClassTransformer(String targetClassName, Function<ClassVisitor, ClassVisitor> function) {
+    public void addTargetedClassTransformer(String targetClassName, Function<ClassVisitor, ClassVisitor> function) {
         byClassTransformers.computeIfAbsent(targetClassName, k -> new ArrayList<>()).add(function);
+    }
+
+    public void addUnspecificTransformer(Function<ClassVisitor, ClassVisitor> function) {
+        unspecificTransformers.add(function);
     }
 
 }

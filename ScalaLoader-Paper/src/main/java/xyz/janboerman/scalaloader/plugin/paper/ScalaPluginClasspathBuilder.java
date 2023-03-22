@@ -41,10 +41,10 @@ public class ScalaPluginClasspathBuilder implements PluginClasspathBuilder {
             library.register(libraryStore);
         }
         File[] libraryFiles = libraryStore.getPaths().stream().map(Path::toFile).toArray(File[]::new);
-        LibraryClassLoader libraryClassLoader = new LibraryClassLoader(libraryFiles, parent, logger, null, transformerRegistry);
+        LibraryClassLoader libraryClassLoader = new LibraryClassLoader(libraryFiles, parent, logger, null/*initialised via .setPlugin(..)*/, transformerRegistry);
 
         //create plugin classloader
-        ScalaPluginClassLoader pluginClassLoader = new ScalaPluginClassLoader(logger, pluginJarFile, context.getConfiguration(), parent, libraryClassLoader, pluginLoader, pluginYaml);
+        ScalaPluginClassLoader pluginClassLoader = new ScalaPluginClassLoader(logger, pluginJarFile, context.getConfiguration(), parent, libraryClassLoader, pluginLoader, pluginYaml, transformerRegistry);
         libraryClassLoader.setPlugin(pluginClassLoader); //important!!
         return pluginClassLoader;
     }

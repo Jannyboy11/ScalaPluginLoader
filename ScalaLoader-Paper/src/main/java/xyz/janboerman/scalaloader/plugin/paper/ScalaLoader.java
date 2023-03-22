@@ -27,6 +27,7 @@ import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionClassLoade
 import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionPlugin;
 import xyz.janboerman.scalaloader.plugin.paper.description.MainClassScanner;
 import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency;
+import xyz.janboerman.scalaloader.plugin.paper.transform.PaperPluginTransformer;
 import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 import java.io.File;
@@ -235,7 +236,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 continue;
             }
 
-            PaperPluginManagerImpl.getInstance().loadPlugin(plugin); //calls PaperPluginInstanceManager#loadPlugin(Plugin provided)
+            PaperHacks.getPaperPluginManager().loadPlugin(plugin);  //calls PaperPluginInstanceManager#loadPlugin(Plugin provided)
             //this correctly takes dependencies and softdependencies into account, but not inverse dependencies. should I make the distinction between dependency graph and load graph?
             plugin.onLoad();
         }
@@ -289,6 +290,9 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         TransformerRegistry transformerRegistry = new TransformerRegistry();
         Map<String, Object> pluginYamlData = null;
 
+        //generic bytecode transformers (apply to every class)
+        transformerRegistry.addUnspecificTransformer(PaperPluginTransformer::new);
+
         //enumerate the class files!
         Enumeration<JarEntry> entryEnumeration = pluginJarFile.entries();
         while (entryEnumeration.hasMoreElements()) {
@@ -300,6 +304,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 MainClassScanner scanner = new MainClassScanner(classBytes);
                 bestCandidate = BinaryOperator.minBy(candidateComparator).apply(bestCandidate, scanner);
 
+                //targeted bytecode transformers
                 final GlobalScanResult configSerResult = new GlobalScanner().scan(new ClassReader(classBytes));
                 PluginTransformer.addTo(transformerRegistry, configSerResult);
                 AddVariantTransformer.addTo(transformerRegistry, configSerResult);
@@ -345,10 +350,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         return scalaCompatMap;
     }
 
-    private boolean downloadScalaJarFiles() {
-        return getConfig().getBoolean("load-libraries-from-disk", true);
-    }
-
     private ScalaLibraryClassLoader getOrCreateScalaLibrary(ScalaDependency scalaDependency) throws ScalaPluginLoaderException {
         PluginScalaVersion scalaVersion;
 
@@ -363,6 +364,10 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         }
 
         return loadOrGetScalaVersion(scalaVersion);
+    }
+
+    private boolean downloadScalaJarFiles() {
+        return getConfig().getBoolean("load-libraries-from-disk", true);
     }
 
     public ScalaLibraryClassLoader loadOrGetScalaVersion(PluginScalaVersion scalaVersion) throws ScalaPluginLoaderException {

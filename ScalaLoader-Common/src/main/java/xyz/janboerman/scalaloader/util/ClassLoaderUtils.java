@@ -12,6 +12,7 @@ import xyz.janboerman.scalaloader.configurationserializable.transform.Configurat
 import xyz.janboerman.scalaloader.event.transform.EventError;
 import xyz.janboerman.scalaloader.event.transform.EventTransformations;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -57,8 +58,10 @@ public class ClassLoaderUtils {
             //can't apply main class transformations, because the plugin's main class is never loaded through this classloader
 
             //apply target transformations
-            List<Function<ClassVisitor, ClassVisitor>> targetedTransformers = registry.byClassTransformers.get(className);
-            if (targetedTransformers != null && !targetedTransformers.isEmpty()) {
+            List<Function<ClassVisitor, ClassVisitor>> targetedTransformers = ListOps.concat(
+                    registry.byClassTransformers.get(className),
+                    registry.unspecificTransformers);
+            if (!targetedTransformers.isEmpty()) {
                 for (Function<ClassVisitor, ClassVisitor> transformer : targetedTransformers) {
                     classVisitor = transformer.apply(classVisitor);
                 }
@@ -78,8 +81,6 @@ public class ClassLoaderUtils {
         } catch (Exception e) {
             logger.log(Level.SEVERE, "An unexpected error occurred when updating bytecode to work with new references to classes that have been moved or otherwise refactored.", e);
         }
-
-        //TODO paper transformations
 
         //apply bukkit bytecode transformations
         try {

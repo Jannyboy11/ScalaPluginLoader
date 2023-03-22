@@ -76,8 +76,6 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
         return getScalaVersion(); //fallback - to make this more robust in production
     }
 
-
-
     @Override
     public String toString() {
         return getName();

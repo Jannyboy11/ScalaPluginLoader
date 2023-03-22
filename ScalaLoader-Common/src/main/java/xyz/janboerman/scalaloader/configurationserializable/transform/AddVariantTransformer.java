@@ -39,7 +39,7 @@ public class AddVariantTransformer extends ClassVisitor {
         if (scanResult.sumAlternatives != null) {
             for (Type type : scanResult.sumAlternatives) {
                 String className = type.getInternalName().replace('/', '.');
-                transformerRegistry.addClassTransformer(className, AddVariantTransformer::new);
+                transformerRegistry.addTargetedClassTransformer(className, AddVariantTransformer::new);
             }
         }
     }
