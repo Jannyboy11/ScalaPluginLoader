@@ -5,6 +5,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
@@ -50,6 +51,7 @@ public class Migration {
         combinedTransformer = new RuntimeConversionsReplacer(combinedTransformer);
         combinedTransformer = new PluginEventReplacer(combinedTransformer);
         combinedTransformer = new AddUrlReplacer(combinedTransformer);
+        combinedTransformer = new GetClassLoaderReplacer(combinedTransformer);
 
         new ClassReader(byteCode).accept(combinedTransformer, ClassReader.EXPAND_FRAMES);
         return classWriter.toByteArray();
@@ -122,7 +124,7 @@ class PermissionGetChildrenReplacer extends ClassVisitor {
         return new MethodVisitor(AsmConstants.ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                if (opcode == Opcodes.INVOKEVIRTUAL && SCALALOADER_PERMISSION_NAME.equals(owner) && GETCHILDREN_NAME.equals(name) && GETCHILDREN_DESCRIPTOR.equals(descriptor) && !isInterface) {
+                if (opcode == INVOKEVIRTUAL && SCALALOADER_PERMISSION_NAME.equals(owner) && GETCHILDREN_NAME.equals(name) && GETCHILDREN_DESCRIPTOR.equals(descriptor) && !isInterface) {
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, MIGRATION_NAME, "legacyGetChildren", LEGACYGETCHILDREN_DESCRIPTOR, false);
                 } else {
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
@@ -181,12 +183,12 @@ class PluginEventReplacer extends ClassVisitor {
         return new MethodVisitor(AsmConstants.ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                if (opcode == Opcodes.INVOKEVIRTUAL
+                if (opcode == INVOKEVIRTUAL
                         && (ENABLE_EVENT.equals(owner) || DISABLE_EVENT.equals(owner))
                         && GETPLUGIN_NAME.equals(name)
                         && OLD_GETPLUGIN_DESCRIPTOR.equals(descriptor)
                         && !isInterface) {
-                    super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, GETPLUGIN_NAME, NEW_GETPLUGIN_DESCRIPTOR, false);
+                    super.visitMethodInsn(INVOKEVIRTUAL, owner, GETPLUGIN_NAME, NEW_GETPLUGIN_DESCRIPTOR, false);
                     if (IScalaLoader.getInstance().isPaperPlugin()) {
                         super.visitTypeInsn(Opcodes.CHECKCAST, "xyz/janboerman/scalaloader/plugin/paper/ScalaPlugin");
                     } else {
@@ -220,6 +222,37 @@ class AddUrlReplacer extends ClassVisitor {
                         super.visitMethodInsn(opcode, SCALAPAPERPLUGINCLASSLOADER_NAME, "addURL", ADDURL_DESCRIPTOR, isInterface);
                     } else {
                         super.visitMethodInsn(opcode, SCALAPLUGINCLASSLOADER_NAME, "addURL", ADDURL_DESCRIPTOR, isInterface);
+                    }
+                } else {
+                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                }
+            }
+        };
+    }
+
+}
+
+class GetClassLoaderReplacer extends ClassVisitor  {
+
+    private static final String SCALAPLUGIN_NAME = "xyz/janboerman/scalaloader/plugin/ScalaPlugin";
+    private static final String SCALAPAPERPLUGIN_NAME = "xyz/janboerman/scalaloader/plugin/paper/ScalaPlugin";
+    private static final String SCALAPLUGINCLASSLOADER_DESCRIPTOR = "Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;";
+    private static final String SCALAPAPERPLUGINCLASSLOADER_DESCRIPTOR = "Lxyz/janboerman/scalaloader/plugin/paper/ScalaPluginClassLoader;";
+
+    GetClassLoaderReplacer(ClassVisitor delegate) {
+        super(AsmConstants.ASM_API, delegate);
+    }
+
+    @Override
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        return new MethodVisitor(AsmConstants.ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+            @Override
+            public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                if (opcode == INVOKEVIRTUAL && SCALAPLUGIN_NAME.equals(owner) && "getClassLoader".equals(name) && "()".concat(SCALAPLUGINCLASSLOADER_DESCRIPTOR).equals(descriptor) && !isInterface) {
+                    if (IScalaLoader.getInstance().isPaperPlugin()) {
+                        super.visitMethodInsn(opcode, SCALAPAPERPLUGIN_NAME, "classLoader", "()".concat(SCALAPAPERPLUGINCLASSLOADER_DESCRIPTOR), false);
+                    } else {
+                        super.visitMethodInsn(opcode, SCALAPLUGIN_NAME, "classLoader", "()".concat(SCALAPLUGINCLASSLOADER_DESCRIPTOR), false);
                     }
                 } else {
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);

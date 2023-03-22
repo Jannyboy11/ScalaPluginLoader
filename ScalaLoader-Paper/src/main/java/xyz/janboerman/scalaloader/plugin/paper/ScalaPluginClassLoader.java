@@ -4,11 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.security.CodeSigner;
 import java.security.CodeSource;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +26,12 @@ import io.papermc.paper.plugin.entrypoint.classloader.ClassloaderBytecodeModifie
 import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
 
 import org.bukkit.Server;
+import org.bukkit.command.Command;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.PluginCommandYamlParser;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import org.objectweb.asm.ClassReader;
@@ -87,6 +94,8 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         // overriding this method just us the ability to do it *during* instantiation,
         // meaning that the bodies of ScalaPlugin subclasses' constructors are experiencing a fully initialised ScalaPlugin.
         super.init(plugin);
+
+        registerCommandsFromPluginYaml();
 
         this.persistentClasses = new PersistentClasses(getPlugin());
         for (ClassFile classFile : this.persistentClasses.load()) {
@@ -293,6 +302,32 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         //do I even want this metohd?
         //if yes, should the URL be added to the LibraryClassLoader? or to this one?
         super.addURL(url);
+    }
+
+    private void registerCommandsFromPluginYaml() {
+        var descriptionCommands = getConfiguration().description.getCommands();
+        List<Command> pluginCommands = new ArrayList<>(descriptionCommands.size());
+        for (var cmd : descriptionCommands) {
+            PluginCommand command = newPluginCommand(cmd.getName(), getPlugin());
+            cmd.getDescription().ifPresent(command::setDescription);
+            cmd.getUsage().ifPresent(command::setUsage);
+            command.setAliases(Compat.listCopy(cmd.getAliases()));
+            cmd.getPermission().ifPresent(command::setPermission);
+            cmd.getPermissionMessage().ifPresent(command::setPermissionMessage);
+            pluginCommands.add(command);
+        }
+
+        getServer().getCommandMap().registerAll(getPlugin().getName(), pluginCommands);
+    }
+
+    private static final PluginCommand newPluginCommand(String name, ScalaPlugin plugin) {
+        try {
+            Constructor<PluginCommand> ctor = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
+            ctor.setAccessible(true);
+            return ctor.newInstance(name, plugin);
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

@@ -3,8 +3,6 @@ package xyz.janboerman.scalaloader.plugin.paper;
 import com.destroystokyo.paper.utils.PaperPluginLogger;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
-import io.papermc.paper.plugin.manager.PaperPluginManagerImpl;
-import io.papermc.paper.plugin.provider.type.paper.PaperPluginParent;
 import org.bukkit.command.CommandMap;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
@@ -34,6 +32,7 @@ import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionClassLoade
 import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionPlugin;
 import xyz.janboerman.scalaloader.plugin.paper.description.MainClassScanner;
 import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency;
+import xyz.janboerman.scalaloader.plugin.paper.transform.MainClassCallerMigrator;
 import xyz.janboerman.scalaloader.plugin.paper.transform.PaperPluginTransformer;
 import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
@@ -155,15 +154,19 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         for (File file : files) {
             try {
                 PluginJarScanResult scanResult = read(Compat.jarFile(file));
+
+                //save scala version
                 ScalaDependency scalaDependency = scanResult.getScalaVersion();
                 if (scalaDependency == null)
                     throw new ScalaPluginLoaderException("Could not find Scala dependency. Please annotate your main class with @Scala or @CustomScala.");
-
                 scalaCompatMap.add(scalaDependency);
+
+                //register the GetClassLoaderMigrator (so that every call to MyPluginMainClass.getClassLoader() will be replaced by MyPluginMainClass.classLoader())
+                String mainClassName = scanResult.getMainClass();
+                scanResult.transformerRegistry.addUnspecificTransformer(visitor -> new MainClassCallerMigrator(visitor, mainClassName));
 
                 //Now, we instantiate the DescriptionPlugin
                 DescriptionClassLoader classLoader = new DescriptionClassLoader(file, getOrCreateScalaLibrary(scalaDependency));
-                String mainClassName = scanResult.getMainClass();
                 DescriptionPlugin dummyPlugin;
                 try {
                     Class<? extends DescriptionPlugin> descriptionClass = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, true, classLoader);
