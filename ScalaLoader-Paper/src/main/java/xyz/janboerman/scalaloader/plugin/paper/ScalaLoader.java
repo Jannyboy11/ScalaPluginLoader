@@ -113,7 +113,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @Override
     public void onEnable() {
         ScalaLoaderUtils.initCommands(this);
-        enableScalaPlugins();
+        //enableScalaPlugins();   //TODO remove this because it should not be necessary (PaperPluginInstanceManager already enables plugins)
         ScalaLoaderUtils.initBStats(this);
     }
 

@@ -79,6 +79,9 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
                     }
                 }
 
+                //TODO if class loader debuggin is on, dump the generated class.
+                //TODO maybe log that we are coming from the DescriptionClassLoader.
+
                 //define the class
                 CodeSigner[] codeSigners = jarEntry.getCodeSigners();
                 CodeSource codeSource = new CodeSource(getURLs()[0], codeSigners);
