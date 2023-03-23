@@ -3,7 +3,7 @@ version: ${project.version}
 main: xyz.janboerman.scalaloader.plugin.paper.ScalaLoader
 api-version: 1.19
 folia-supported: true
-has-open-classloader: true
+has-open-classloader: true #open classloader ScalaLoader's PaperPluginClassLoader is used as a parent for all ScalaPlugins, and those need access to other plugins!
 load: STARTUP
 author: Jannyboy11
 website: https://github.com/Jannyboy11/ScalaPluginLoader
