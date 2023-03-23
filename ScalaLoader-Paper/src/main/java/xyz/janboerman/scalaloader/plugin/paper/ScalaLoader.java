@@ -261,6 +261,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
             PaperHacks.getPaperPluginManager().loadPlugin(plugin);  //calls PaperPluginInstanceManager#loadPlugin(Plugin provided)
             //this correctly takes dependencies and softdependencies into account, but not inverse dependencies. should I make the distinction between dependency graph and load graph?
+            //TODO take load-order into account!
             plugin.onLoad();
         }
 
