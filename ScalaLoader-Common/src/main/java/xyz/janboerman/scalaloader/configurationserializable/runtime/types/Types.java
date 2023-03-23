@@ -22,12 +22,9 @@ class Types {
         String main = plugin.getMainClassName();
         Type mainType = Type.getType("L" + main.replace('.', '/') + ";");
 
-        methodVisitor.visitLdcInsn(mainType);
-        operandStack.push(Type.getType(Class.class));
-        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Class.class), "classLoader", "()" + Type.getDescriptor(IScalaPluginClassLoader.class), false);
-        operandStack.replaceTop(Type.getType(ClassLoader.class));
-        methodVisitor.visitTypeInsn(CHECKCAST, Type.getInternalName(IScalaPluginClassLoader.class));
-        operandStack.replaceTop(Type.getType(IScalaPluginClassLoader.class));
+        methodVisitor.visitLdcInsn(mainType);   operandStack.push(Type.getType(Class.class));   //MyPlugin.class
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Class.class), "getClassLoader", "()" + Type.getDescriptor(ClassLoader.class), false);
+        operandStack.replaceTop(Type.getType(ClassLoader.class));                               //.getClassLader()
     }
 
     //adapted from Conversions#genParameterType

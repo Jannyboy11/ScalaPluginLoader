@@ -24,7 +24,7 @@ public class ScalaPluginProviderContext implements PluginProviderContext {
 
     @Override
     public @NotNull Path getDataDirectory() {
-        return PluginInitializerManager.instance().pluginDirectoryPath().resolve(getConfiguration().getDisplayName());
+        return ScalaLoader.getInstance().getScalaPluginsFolder().toPath().resolve(getConfiguration().getName());
     }
 
     @Override

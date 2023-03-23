@@ -1220,7 +1220,7 @@ class Conversions {
 
         methodVisitor.visitLdcInsn(mainType);                                                                                                                   operandStack.push(Type.getType(Class.class));
         methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader", "()Ljava/lang/ClassLoader;", false);      operandStack.replaceTop(Type.getType(ClassLoader.class));
-        methodVisitor.visitTypeInsn(CHECKCAST, "xyz/janboerman/scalaloader/compat/IScalaPluginClassLoader");                                                    operandStack.replaceTop(Type.getType(IScalaPluginClassLoader.class));
+        methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/ClassLoader");                                                                                operandStack.replaceTop(Type.getType(IScalaPluginClassLoader.class));
     }
 
     private static void genParameterType(MethodVisitor methodVisitor, TypeSignature typeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
