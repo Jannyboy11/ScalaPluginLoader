@@ -301,6 +301,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     }
 
     private void enableScalaPlugins() {
+        //TODO: take load status into account (STARTUP, POSTWORLD).
         for (ScalaPlugin plugin : getScalaPlugins()) {
             if (!plugin.isEnabled()) {
                 ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(plugin);

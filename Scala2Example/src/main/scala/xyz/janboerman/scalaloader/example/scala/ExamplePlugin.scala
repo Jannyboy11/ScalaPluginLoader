@@ -58,6 +58,7 @@ object ExamplePlugin
     def getInt() = 42
 
     private def listConfigs(): Unit = {
+        //getClassLoader() is deprecated, but we still call it to showcase our bytecode transforming abilities! :D
         val urls = getClassLoader.findResources("config.yml")
         while (urls.hasMoreElements) {
             val url = urls.nextElement()

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -95,6 +96,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         // meaning that the bodies of ScalaPlugin subclasses' constructors are experiencing a fully initialised ScalaPlugin.
         super.init(plugin);
 
+        hackDataFolder();
         registerCommandsFromPluginYaml();
 
         this.persistentClasses = new PersistentClasses(getPlugin());
@@ -303,6 +305,16 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         //do I even want this metohd?
         //if yes, should the URL be added to the LibraryClassLoader? or to this one?
         super.addURL(url);
+    }
+
+    private void hackDataFolder() {
+        try {
+            Field dataFolderField = JavaPlugin.class.getDeclaredField("dataFolder");
+            dataFolderField.setAccessible(true);
+            dataFolderField.set(getPlugin(), getDataDirectory().toFile());
+            //luckily, this field is not declared as final.
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+        }
     }
 
     private void registerCommandsFromPluginYaml() {
