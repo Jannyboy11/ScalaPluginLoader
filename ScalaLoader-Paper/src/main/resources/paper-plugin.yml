@@ -3,6 +3,7 @@ version: ${project.version}
 main: xyz.janboerman.scalaloader.plugin.paper.ScalaLoader
 api-version: 1.19
 folia-supported: true
+has-open-classloader: true
 load: STARTUP
 author: Jannyboy11
 website: https://github.com/Jannyboy11/ScalaPluginLoader
