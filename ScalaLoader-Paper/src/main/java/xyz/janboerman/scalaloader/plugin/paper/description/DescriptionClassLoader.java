@@ -43,6 +43,7 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
     private DescriptionPlugin plugin;
     private PluginClassLoaderGroup classLoaderGroup;
 
+    //TODO also load plugin.yml-defined libraries.
     public DescriptionClassLoader(File jarFile, ScalaLibraryClassLoader parent) throws IOException {
         super(new URL[] {jarFile.toURI().toURL()}, parent);
         this.jarFile = Compat.jarFile(jarFile);
@@ -143,6 +144,7 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
     @Override
     public @Nullable PluginClassLoaderGroup getGroup() {
         return classLoaderGroup == null ? classLoaderGroup = new SingletonPluginClassLoaderGroup(this) : classLoaderGroup;
+        //TODO actually, ScalaLoader's own classloader should also be in the group, because its classloader is a parent of this classloader.
     }
 
     @Override
