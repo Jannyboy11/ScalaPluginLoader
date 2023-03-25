@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 /**
  * @author Jannyboy11
  */
+//TODO put this in package xyz.janboerman.scalaloader.paper.ScalaLoader ?
 public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     private EventBus eventBus;
@@ -239,7 +240,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             ScalaPluginDescription description = descriptions.get(file);
 
             ScalaPluginProviderContext context = new ScalaPluginProviderContext(description);
-            ScalaPluginBootstrap bootstrapper = new ScalaPluginBootstrap();
+            ScalaPluginBootstrap bootstrapper = new ScalaPluginBootstrap(); //TODO allow setting bootstrap in ScalaPluginDescription (can use class literal: Class<? extends Bootstrapper>)
             ScalaPluginLoader loader = new ScalaPluginLoader();
             ScalaPluginClasspathBuilder pluginClasspathBuilder = new ScalaPluginClasspathBuilder(context);
 
@@ -259,9 +260,11 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 continue;
             }
 
+            addScalaPlugin(plugin);
+
             PaperHacks.getPaperPluginManager().loadPlugin(plugin);  //calls PaperPluginInstanceManager#loadPlugin(Plugin provided)
             //this correctly takes dependencies and softdependencies into account, but not inverse dependencies. should I make the distinction between dependency graph and load graph?
-            //TODO take load-order into account!
+            //TODO take PluginLoadOrder into account!
             plugin.onLoad();
         }
 
@@ -368,10 +371,12 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
         candidateComparator = Comparator.nullsLast(
             Comparator.comparing(MainClassScanner::getMainClass, optionalComparator)
-                    .thenComparing(scanner -> !scanner.hasScalaAnnotation())
-                    .thenComparing(MainClassScanner::extendsScalaPlugin)
-                    .thenComparing(MainClassScanner::getClassName, packageComparator)
-                    .thenComparing(MainClassScanner::getClassName)
+                    .thenComparing(scanner -> !scanner.hasScalaAnnotation())            //better candidate if it has a @Scala annotation
+                    .thenComparing(scanner -> !scanner.isSingletonObject())             //better candidate if it is an object
+                    .thenComparing(MainClassScanner::extendsObject)                     //worse candidate if it extends Object directly
+                    .thenComparing(MainClassScanner::extendsScalaPlugin)                //worse candidate if it extends ScalaPlugin directly
+                    .thenComparing(MainClassScanner::getClassName, packageComparator)   //worse candidate if the package consists of a long namespace
+                    .thenComparing(MainClassScanner::getClassName)                      //worse candiate if the class name is longer
         );
     }
 

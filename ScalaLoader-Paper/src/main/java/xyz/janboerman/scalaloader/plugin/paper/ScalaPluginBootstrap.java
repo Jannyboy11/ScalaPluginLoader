@@ -34,9 +34,7 @@ public class ScalaPluginBootstrap implements PluginBootstrap {
 
         try {
             Class<? extends ScalaPlugin> scalaPluginClazz = (Class<? extends ScalaPlugin>) Class.forName(main, true, classLoader);
-            ScalaPlugin plugin = ScalaLoaderUtils.createScalaPluginInstance(scalaPluginClazz);
-            ScalaLoader.getInstance().addScalaPlugin(plugin);
-            return plugin;
+            return ScalaLoaderUtils.createScalaPluginInstance(scalaPluginClazz);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not find plugin main class: " + main, e);
         } catch (ScalaPluginLoaderException e) {

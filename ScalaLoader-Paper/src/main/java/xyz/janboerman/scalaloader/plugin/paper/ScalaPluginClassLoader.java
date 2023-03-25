@@ -302,8 +302,8 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
     @Override
     @Deprecated
     public void addURL(URL url) {
-        //do I even want this metohd?
-        //if yes, should the URL be added to the LibraryClassLoader? or to this one?
+        //do I even want this method? if yes, should the URL be added to the LibraryClassLoader? or to this one?
+        //for now stick, with 'this one'.
         super.addURL(url);
     }
 

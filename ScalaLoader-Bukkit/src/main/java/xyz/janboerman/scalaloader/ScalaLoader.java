@@ -12,10 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
@@ -131,8 +128,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             for (File file : scalaPluginsFolder.listFiles((File dir, String name) -> name.endsWith(".jar"))) {
                 try {
                     getServer().getPluginManager().loadPlugin(file);    //will now use our own ScalaPluginLoader to load the plugin
-                    //TODO Problematic on Paper-405 and later (the "PaperPlugin" update: https://github.com/PaperMC/Paper/pull/8108)
-                    //TODO This is an intentional breaking change by PaperMC: https://github.com/Jannyboy11/ScalaPluginLoader/issues/20#issuecomment-1462187112
                 } catch (UnknownDependencyException ude) {
                     ScalaPluginLoader.getInstance().loadWhenDependenciesComeAvailable(file);
                     scalaPluginsWaitingOnJavaPlugins.put(file, ude);

@@ -105,6 +105,14 @@ public class MainClassScanner extends ClassVisitor {
         return apiVersion;
     }
 
+    public boolean extendsObject() {
+        return extendsJavaLangObject;
+    }
+
+    public boolean isSingletonObject() {
+        return isObject;
+    }
+
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         javaClassName = (asmClassName = name).replace('/', '.');
