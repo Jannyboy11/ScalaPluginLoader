@@ -1,9 +1,10 @@
-package xyz.janboerman.scalaloader.plugin.paper.description;
+package xyz.janboerman.scalaloader.paper.plugin.description;
 
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.entrypoint.classloader.group.SingletonPluginClassLoaderGroup;
 import io.papermc.paper.plugin.provider.classloader.ConfiguredPluginClassLoader;
 import io.papermc.paper.plugin.provider.classloader.PluginClassLoaderGroup;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,13 +15,15 @@ import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 import xyz.janboerman.scalaloader.DebugSettings;
-import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
-import xyz.janboerman.scalaloader.plugin.paper.ScalaLoader;
-import xyz.janboerman.scalaloader.plugin.paper.ScalaPluginClassLoader;
-import xyz.janboerman.scalaloader.plugin.paper.ScalaPluginMeta;
-import xyz.janboerman.scalaloader.plugin.paper.transform.MainClassBootstrapTransformer;
+import xyz.janboerman.scalaloader.compat.Migration;
+import xyz.janboerman.scalaloader.compat.Platform;
+import xyz.janboerman.scalaloader.paper.ScalaLoader;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginMeta;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginClassLoader;
+import xyz.janboerman.scalaloader.paper.transform.MainClassBootstrapTransformer;
+import xyz.janboerman.scalaloader.paper.transform.MainClassCallerMigrator;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +37,7 @@ import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.logging.Level;
 
 //this is much like PaperSimplePluginClassLoader
 public class DescriptionClassLoader extends URLClassLoader implements ConfiguredPluginClassLoader {
@@ -42,11 +46,14 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
 
     private DescriptionPlugin plugin;
     private PluginClassLoaderGroup classLoaderGroup;
+    private boolean modern;
+    private String mainClass;
 
-    //TODO also load plugin.yml-defined libraries.
-    public DescriptionClassLoader(File jarFile, ScalaLibraryClassLoader parent) throws IOException {
+    public DescriptionClassLoader(File jarFile, ClassLoader parent, boolean modern, String mainClass) throws IOException {
         super(new URL[] {jarFile.toURI().toURL()}, parent);
         this.jarFile = Compat.jarFile(jarFile);
+        this.modern = modern;
+        this.mainClass = mainClass;
     }
 
     @Override
@@ -60,6 +67,13 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
                 byte[] byteCode = Compat.readAllBytes(inputStream);
 
                 //transform the bytecode
+                //1. Bukkit's own migrations
+                try {
+                    byteCode = Platform.CRAFTBUKKIT.transformNative(Bukkit.getServer(), byteCode, modern); //we can assume Platform.CRAFTBUKKIT because we are running on Paper (which is a fork of CraftBukkit).
+                } catch (Throwable e) {
+                    Bukkit.getLogger().log(Level.SEVERE, "Server could not transform bytecode for class: " + className + ". This is a bug in " + Bukkit.getUnsafe().getClass().getName() + "#processClass", e);
+                }
+                //2. ScalaLoader's migrations
                 ClassWriter classWriter = new ClassWriter(0) {
                     @Override
                     protected ClassLoader getClassLoader() {
@@ -67,8 +81,9 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
                     }
                 };
                 ClassReader classReader = new ClassReader(byteCode);
-                classReader.accept(new MainClassBootstrapTransformer(classWriter), ClassReader.EXPAND_FRAMES);
+                classReader.accept(new MainClassBootstrapTransformer(new MainClassCallerMigrator(classWriter, mainClass)), ClassReader.EXPAND_FRAMES);
                 byteCode = classWriter.toByteArray();
+                byteCode = Migration.transform(byteCode, this);
 
                 //define the package
                 int dotIndex = className.lastIndexOf('.');
@@ -90,6 +105,7 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
                     }
                 }
 
+                //dump the class, if configured in the debug settings
                 debugClass(className, byteCode);
 
                 //define the class
@@ -143,8 +159,7 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
 
     @Override
     public @Nullable PluginClassLoaderGroup getGroup() {
-        return classLoaderGroup == null ? classLoaderGroup = new SingletonPluginClassLoaderGroup(this) : classLoaderGroup;
-        //TODO actually, ScalaLoader's own classloader should also be in the group, because its classloader is a parent of this classloader.
+        return classLoaderGroup == null ? classLoaderGroup = new ScalaLoaderGroup(this) : classLoaderGroup;
     }
 
     @Override

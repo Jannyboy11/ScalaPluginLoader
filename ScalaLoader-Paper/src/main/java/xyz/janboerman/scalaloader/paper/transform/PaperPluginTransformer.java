@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper.transform;
+package xyz.janboerman.scalaloader.paper.transform;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.*;
@@ -8,10 +8,10 @@ import static org.objectweb.asm.Opcodes.*;
 
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.bytecode.AsmConstants;
-import xyz.janboerman.scalaloader.plugin.paper.ScalaLoader;
-import xyz.janboerman.scalaloader.plugin.paper.ScalaPlugin;
-import xyz.janboerman.scalaloader.plugin.paper.ScalaPluginClassLoader;
-import xyz.janboerman.scalaloader.plugin.paper.ScalaPluginLoader;
+import xyz.janboerman.scalaloader.paper.ScalaLoader;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPlugin;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginClassLoader;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginLoader;
 
 import java.util.Map;
 

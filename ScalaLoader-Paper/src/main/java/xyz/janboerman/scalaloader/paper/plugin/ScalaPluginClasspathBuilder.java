@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper;
+package xyz.janboerman.scalaloader.paper.plugin;
 
 import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
 import io.papermc.paper.plugin.loader.library.ClassPathLibrary;

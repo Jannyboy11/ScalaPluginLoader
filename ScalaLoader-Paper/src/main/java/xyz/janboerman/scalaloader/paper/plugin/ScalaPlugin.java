@@ -1,12 +1,13 @@
-package xyz.janboerman.scalaloader.plugin.paper;
+package xyz.janboerman.scalaloader.paper.plugin;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.event.EventBus;
+import xyz.janboerman.scalaloader.paper.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.description.Scala;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
-import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionClassLoader;
+import xyz.janboerman.scalaloader.paper.plugin.description.DescriptionClassLoader;
 
 import java.io.File;
 

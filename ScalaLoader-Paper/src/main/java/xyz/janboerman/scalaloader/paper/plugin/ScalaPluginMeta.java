@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper;
+package xyz.janboerman.scalaloader.paper.plugin;
 
 import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
 import org.bukkit.permissions.Permission;

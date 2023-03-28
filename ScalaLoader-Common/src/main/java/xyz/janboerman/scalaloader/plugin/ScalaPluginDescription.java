@@ -42,6 +42,9 @@ public class ScalaPluginDescription {
     private final LinkedHashSet<Command> commands = new LinkedHashSet<>();
     private final LinkedHashSet<Permission> permissions = new LinkedHashSet<>();
 
+    //paper-specific
+    private Class<?/* extends io.papermc.paper.plugin.bootstrap.PluginBootstrap*/> bootstrapper;
+
     //awareness?? use a List<PluginAwareness> ??
     //idea: use awareness for Scala version!! That would only work if the Yaml instance from PluginDescriptionFile was accessible.
     //see: https://hub.spigotmc.org/jira/browse/SPIGOT-6410
@@ -311,6 +314,21 @@ public class ScalaPluginDescription {
 
     public Collection<Permission> getPermissions() {
         return Collections.unmodifiableSet(permissions);
+    }
+
+    /**
+     * Set's the ScalaPlugin's bootstrapper. When running your ScalaPlugin on the Paper server software, this class will be used to boostrap your plugin.
+     * @param bootstrapperClass the bootstrap class. This class must implement io.papermc.paper.plugin.bootstrap.PluginBootstrap.
+     * @return this ScalaPluginDescription
+     * @see <a href=https://docs.papermc.io/paper/dev/getting-started/paper-plugins#bootstrapper>Paper Plugins documentation on PaperMC.io</a>
+     */
+    public ScalaPluginDescription bootstrapper(Class<?/* extends io.papermc.paper.plugin.bootstrap.PluginBootstrap*/> bootstrapperClass) {
+        this.bootstrapper = bootstrapperClass;
+        return this;
+    }
+
+    public Class<?> getBootstrapper() {
+        return bootstrapper;
     }
 
     public PluginDescriptionFile toPluginDescriptionFile() {

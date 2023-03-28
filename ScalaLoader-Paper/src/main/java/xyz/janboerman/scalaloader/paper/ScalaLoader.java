@@ -1,8 +1,10 @@
-package xyz.janboerman.scalaloader.plugin.paper;
+package xyz.janboerman.scalaloader.paper;
 
 import com.destroystokyo.paper.utils.PaperPluginLogger;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
+import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
+import io.papermc.paper.plugin.loader.PluginLoader;
 import org.bukkit.command.CommandMap;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
@@ -17,28 +19,42 @@ import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariant
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanResult;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanner;
 import xyz.janboerman.scalaloader.configurationserializable.transform.PluginTransformer;
+import xyz.janboerman.scalaloader.dependency.PluginYamlLibraryLoader;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.event.plugin.ScalaPluginEnableEvent;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaCompatMap;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
+import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
-import xyz.janboerman.scalaloader.plugin.paper.commands.DumpClassCommand;
-import xyz.janboerman.scalaloader.plugin.paper.commands.ListScalaPluginsCommand;
-import xyz.janboerman.scalaloader.plugin.paper.commands.ResetScalaUrlsCommand;
-import xyz.janboerman.scalaloader.plugin.paper.commands.SetDebugCommand;
-import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionClassLoader;
-import xyz.janboerman.scalaloader.plugin.paper.description.DescriptionPlugin;
-import xyz.janboerman.scalaloader.plugin.paper.description.MainClassScanner;
-import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency;
-import xyz.janboerman.scalaloader.plugin.paper.transform.MainClassCallerMigrator;
-import xyz.janboerman.scalaloader.plugin.paper.transform.PaperPluginTransformer;
+import xyz.janboerman.scalaloader.paper.commands.DumpClassCommand;
+import xyz.janboerman.scalaloader.paper.commands.ListScalaPluginsCommand;
+import xyz.janboerman.scalaloader.paper.commands.ResetScalaUrlsCommand;
+import xyz.janboerman.scalaloader.paper.commands.SetDebugCommand;
+import xyz.janboerman.scalaloader.paper.plugin.PaperHacks;
+import xyz.janboerman.scalaloader.paper.plugin.PluginJarScanResult;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPlugin;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginBootstrap;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginClassLoader;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginClasspathBuilder;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginLoader;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginProviderContext;
+import xyz.janboerman.scalaloader.paper.plugin.description.DescriptionClassLoader;
+import xyz.janboerman.scalaloader.paper.plugin.description.DescriptionPlugin;
+import xyz.janboerman.scalaloader.paper.plugin.description.MainClassScanner;
+import xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency;
+import xyz.janboerman.scalaloader.paper.transform.MainClassCallerMigrator;
+import xyz.janboerman.scalaloader.paper.transform.PaperPluginTransformer;
 import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -59,7 +75,6 @@ import java.util.stream.Collectors;
 /**
  * @author Jannyboy11
  */
-//TODO put this in package xyz.janboerman.scalaloader.paper.ScalaLoader ?
 public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     private EventBus eventBus;
@@ -78,7 +93,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         }
     }
 
-    static ScalaLoader getInstance() {
+    public static ScalaLoader getInstance() {
         return JavaPlugin.getPlugin(ScalaLoader.class);
     }
 
@@ -167,19 +182,12 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 scanResult.transformerRegistry.addUnspecificTransformer(visitor -> new MainClassCallerMigrator(visitor, mainClassName));
 
                 //Now, we instantiate the DescriptionPlugin
-                DescriptionClassLoader classLoader = new DescriptionClassLoader(file, getOrCreateScalaLibrary(scalaDependency));
-                DescriptionPlugin dummyPlugin;
-                try {
-                    Class<? extends DescriptionPlugin> descriptionClass = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, true, classLoader);
-                    dummyPlugin = ScalaLoaderUtils.createScalaPluginInstance(descriptionClass);
-                } catch (Error initializerOrConstructorError) {
-                    getLogger().log(Level.SEVERE, "Some error occurred in ScalaPlugin's constructor or initializer. " +
-                            "Try to move stuff over to #onLoad() or #onEnable().", initializerOrConstructorError);
-                    continue;
-                }
+                var optionalDescriptionPlugin = buildDescriptionPlugin(file, scanResult, mainClassName, scalaDependency);
+                if (optionalDescriptionPlugin.isEmpty()) continue;
+                DescriptionPlugin descriptionPlugin = optionalDescriptionPlugin.get();
 
                 //and set the description
-                ScalaPluginDescription description = dummyPlugin.getScalaDescription();
+                ScalaPluginDescription description = descriptionPlugin.getScalaDescription();
                 final String pluginName;
                 if (description != null) {
                     description.setMain(mainClassName);
@@ -211,8 +219,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
             } catch (IOException e) {
                 getLogger().log(Level.SEVERE, "Failed to load ScalaPlugin from file: " + file.getName(), e);
-            } catch (ClassNotFoundException e) {
-                getLogger().log(Level.SEVERE, "Main class not found: " + file.getName(), e);
             } catch (ScalaPluginLoaderException e) {
                 getLogger().log(Level.SEVERE, "Could not find main class in: " + file.getName(), e);
             } catch (Throwable e) {
@@ -240,28 +246,20 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             ScalaPluginDescription description = descriptions.get(file);
 
             ScalaPluginProviderContext context = new ScalaPluginProviderContext(description);
-            ScalaPluginBootstrap bootstrapper = new ScalaPluginBootstrap(); //TODO allow setting bootstrap in ScalaPluginDescription (can use class literal: Class<? extends Bootstrapper>)
+            var optionalBootstrap = getBootstrap(description.getBootstrapper());
+            if (optionalBootstrap.isEmpty()) continue;
+            PluginBootstrap bootstrapper = optionalBootstrap.get();
             ScalaPluginLoader loader = new ScalaPluginLoader();
             ScalaPluginClasspathBuilder pluginClasspathBuilder = new ScalaPluginClasspathBuilder(context);
 
             bootstrapper.bootstrap(context);
             loader.classloader(pluginClasspathBuilder);
 
-            ScalaPlugin plugin;
-
-            try {
-                ScalaPluginClassLoader pluginClassLoader = pluginClasspathBuilder.buildClassLoader(PaperPluginLogger.getLogger(context.getConfiguration()), getClassLoader(), file, scanResult.transformerRegistry, loader, scanResult.pluginYaml);
-                context.setPluginClassLoader(pluginClassLoader);
-                plugin = bootstrapper.createPlugin(context);
-                //don't think I need this currently:
-                //PaperPluginParent parent = new PaperPluginParent(file.toPath(), Compat.jarFile(file), context.getConfiguration(), pluginClassLoader, context);
-            } catch (IOException e) {
-                getLogger().log(Level.SEVERE, "could not instantiate ScalaPlugin " + pluginName, e);
-                continue;
-            }
+            var optionalPlugin = buildPlugin(pluginName, file, context, scanResult, loader, bootstrapper, pluginClasspathBuilder);
+            if (optionalPlugin.isEmpty()) continue;
+            ScalaPlugin plugin = optionalPlugin.get();
 
             addScalaPlugin(plugin);
-
             PaperHacks.getPaperPluginManager().loadPlugin(plugin);  //calls PaperPluginInstanceManager#loadPlugin(Plugin provided)
             //this correctly takes dependencies and softdependencies into account, but not inverse dependencies. should I make the distinction between dependency graph and load graph?
             //TODO take PluginLoadOrder into account!
@@ -380,7 +378,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         );
     }
 
-    ScalaCompatMap<ScalaDependency> getScalaVersions() {
+    public ScalaCompatMap<ScalaDependency> getScalaVersions() {
         return scalaCompatMap;
     }
 
@@ -400,12 +398,101 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         return loadOrGetScalaVersion(scalaVersion);
     }
 
+    private ClassLoader createLibraryClassLoader(ClassLoader parent, Map<String, Object> pluginYaml) throws ScalaPluginLoaderException {
+        if (pluginYaml == null || !pluginYaml.containsKey("libraries")) return parent;
+
+        PluginYamlLibraryLoader pluginYamlLibraryLoader = new PluginYamlLibraryLoader(getLogger(), new File(getDataFolder(), "libraries"));
+        Collection<File> files = pluginYamlLibraryLoader.getJarFiles(pluginYaml);
+
+        URL[] urls = new URL[files.size()];
+        int i = 0;
+        for (File file : files) {
+            try {
+                URL url = file.toURI().toURL();
+                urls[i] = url;
+            } catch (MalformedURLException e) {
+                throw new ScalaPluginLoaderException("Malformed URL for file: " + file + "?!", e);
+            }
+            i += 1;
+        }
+        return new URLClassLoader(urls, parent);
+    }
+
     private boolean downloadScalaJarFiles() {
         return getConfig().getBoolean("load-libraries-from-disk", true);
     }
 
     public ScalaLibraryClassLoader loadOrGetScalaVersion(PluginScalaVersion scalaVersion) throws ScalaPluginLoaderException {
         return ScalaLoaderUtils.loadOrGetScalaVersion(scalaLibraryClassLoaders, scalaVersion, downloadScalaJarFiles(), this);
+    }
+
+    private Optional<PluginBootstrap> getBootstrap(Class<?> bootstrapCls) {
+        if (bootstrapCls != null) {
+            if (PluginBootstrap.class.isAssignableFrom(bootstrapCls)) {
+                Class<? extends PluginBootstrap> bootstrapClass = (Class<? extends PluginBootstrap>) bootstrapCls;
+                try {
+                    return Optional.of(ScalaLoaderUtils.instantiate(bootstrapClass));
+                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | InstantiationException e) {
+                    getLogger().log(Level.SEVERE, "Could not instantiate bootstrapper: " + bootstrapClass.getName(), e);
+                    return Optional.empty();
+                }
+            } else {
+                getLogger().log(Level.SEVERE, "Bootstrapper " + bootstrapCls + " does not implement " + PluginBootstrap.class);
+                return Optional.empty();
+            }
+        } else {
+            return Optional.of(new ScalaPluginBootstrap());
+        }
+    }
+
+    private Optional<? extends ScalaPlugin> buildPlugin(String pluginName, File file, ScalaPluginProviderContext context, PluginJarScanResult scanResult, ScalaPluginLoader loader, PluginBootstrap bootstrapper, ScalaPluginClasspathBuilder pluginClasspathBuilder) {
+        try {
+            ScalaPluginClassLoader pluginClassLoader = pluginClasspathBuilder.buildClassLoader(PaperPluginLogger.getLogger(context.getConfiguration()), getClassLoader(), file, scanResult.transformerRegistry, loader, scanResult.pluginYaml);
+            context.setPluginClassLoader(pluginClassLoader);
+            JavaPlugin javaPlugin = bootstrapper.createPlugin(context);
+            if (javaPlugin instanceof ScalaPlugin scalaPlugin) {
+                return Optional.of(scalaPlugin);
+            } else {
+                getLogger().log(Level.SEVERE, "Plugin instance returned by configured bootstrapper " + bootstrapper.getClass().getName() + " must have a type that extends " + ScalaPlugin.class + ", instead we got: " + (javaPlugin == null ? "null" : javaPlugin.getClass()));
+                return Optional.empty();
+            }
+            //don't think I need this currently:
+            //PaperPluginParent parent = new PaperPluginParent(file.toPath(), Compat.jarFile(file), context.getConfiguration(), pluginClassLoader, context);
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "could not instantiate ScalaPlugin " + pluginName, e);
+            return Optional.empty();
+        }
+    }
+
+    private Optional<? extends DescriptionPlugin> buildDescriptionPlugin(File file, PluginJarScanResult scanResult, String mainClassName, ScalaDependency scalaDependency) {
+        ClassLoader libraryLoader;
+        try {
+            ScalaLibraryClassLoader scalaLibraryClassLoader = getOrCreateScalaLibrary(scalaDependency);
+            libraryLoader = createLibraryClassLoader(scalaLibraryClassLoader, scanResult.pluginYaml);
+        } catch (ScalaPluginLoaderException e) {
+            getLogger().log(Level.SEVERE, "Could not download all libraries from plugin's description.", e);
+            return Optional.empty();
+        }
+
+        DescriptionClassLoader classLoader;
+        try {
+            classLoader = new DescriptionClassLoader(file, libraryLoader, scanResult.getApiVersion() != ApiVersion.LEGACY, mainClassName);
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "Could not create classloader to load " + file + "'s plugin description.", e);
+            return Optional.empty();
+        }
+
+        try {
+            Class<? extends DescriptionPlugin> descriptionClass = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, true, classLoader);
+            return Optional.of(ScalaLoaderUtils.createScalaPluginInstance(descriptionClass));
+        } catch (ClassNotFoundException e) {
+            getLogger().log(Level.SEVERE, "Could not find plugin's main class " + mainClassName + " in file " + file.getName() + ".", e);
+            return Optional.empty();
+        } catch (Throwable throwable) {
+            getLogger().log(Level.SEVERE, "Some error occurred in ScalaPlugin's constructor or initializer. " +
+                    "Try to move stuff over to #onLoad() or #onEnable().", throwable);
+            return Optional.empty();
+        }
     }
 
 }

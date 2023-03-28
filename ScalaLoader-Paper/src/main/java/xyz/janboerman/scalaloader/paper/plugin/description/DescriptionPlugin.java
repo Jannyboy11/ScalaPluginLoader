@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper.description;
+package xyz.janboerman.scalaloader.paper.plugin.description;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;

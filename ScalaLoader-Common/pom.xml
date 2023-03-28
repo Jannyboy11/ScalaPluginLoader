@@ -16,6 +16,8 @@
         <asmVersion>9.4</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <junitVersion>5.7.1</junitVersion>
+        <mavenResolverVersion>1.6.2</mavenResolverVersion>
+        <mavenResolverProviderVersion>3.8.1</mavenResolverProviderVersion>
 
         <java11.sourceDirectory>${project.basedir}/src/main/java11</java11.sourceDirectory>
         <java11.build.outputDirectory>${project.build.directory}/classes-java11</java11.build.outputDirectory>
@@ -292,6 +294,26 @@
             <artifactId>bstats-bukkit</artifactId>
             <version>${bstatsVersion}</version>
             <scope>compile</scope>
+        </dependency>
+
+        <!-- runtime library loading -->
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-resolver-provider</artifactId>
+            <version>${mavenResolverProviderVersion}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-connector-basic</artifactId>
+            <version>${mavenResolverVersion}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-transport-http</artifactId>
+            <version>${mavenResolverVersion}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- testing -->

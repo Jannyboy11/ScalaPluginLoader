@@ -264,7 +264,7 @@ public class ScalaPluginClassLoader extends URLClassLoader implements IScalaPlug
                         || name.startsWith("xyz.janboerman.scalaloader.commands")
                         || name.startsWith("xyz.janboerman.scalaloader.dependency")
                         || name.equals("xyz.janboerman.scalaloader.plugin.runtime.PersistentClasses")
-                        || name.startsWith("xyz.janboerman.scalaloader.plugin.paper.transform")
+                        || name.startsWith("xyz.janboerman.scalaloader.paper.transform")
                 ) throw new ClassNotFoundException("Can't access internal class: " + name);
             }
 

@@ -22,7 +22,7 @@ public class DescriptionScanner extends ClassVisitor {
     private static final String JAVAPLUGIN_CLASS_NAME = Type.getInternalName(JavaPlugin.class);
     private static final String JAVA_LANG_OBJECT_CLASS_NAME = Type.getInternalName(Object.class);
     private static final String SCALAPLUGIN_CLASS_NAME = "xyz/janboerman/scalaloader/plugin/ScalaPlugin";               //Type.getInternalName(xyz.janboerman.scalaloader.plugin.ScalaPlugin.class);
-    private static final String SCALAPAPERPLUGIN_CLASS_NAME = "xyz/janboerman/scalaloader/plugin/paper/ScalaPlugin";    //Type.getInternalName(xyz.janboerman.scalaloader.plugin.paper.ScalaPlugin.class);
+    private static final String SCALAPAPERPLUGIN_CLASS_NAME = "xyz/janboerman/scalaloader/paper/plugin/ScalaPlugin";    //Type.getInternalName(xyz.janboerman.scalaloader.paper.plugin.ScalaPlugin.class);
 
     private static final String SCALA_ANNOTATION_DESCRIPTOR = Type.getDescriptor(Scala.class);
     private static final String CUSTOMSCALA_ANNOTATION_DESCRIPTOR = Type.getDescriptor(CustomScala.class);

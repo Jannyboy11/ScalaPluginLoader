@@ -14,46 +14,14 @@ import java.lang.invoke.MethodType;
 /**
  * This class is NOT part of the public API!
  */
-public enum Platform {
+public class Platform {
 
-    CRAFTBUKKIT {
-        private MethodHandle commodoreConvert = null;
-        private boolean attempted = false;
+    protected Platform() {
+    }
 
-        @Override
-        public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
-            if (!attempted) {
-                attempted = true;
-                MethodHandles.Lookup lookup = MethodHandles.lookup();
-                Server craftServer = pluginClassLoader.getServer();
-                try {
-                    Class<?> commodoreClass = Class.forName(getPackageName(craftServer.getClass()) + ".util.Commodore");
-                    String methodName = "convert";
-                    MethodType methodType = MethodType.methodType(byte[].class, new Class<?>[]{byte[].class, boolean.class});
-                    commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
-                } catch (ClassNotFoundException | NoSuchMethodException ignored) {
-                    //running on craftbukkit 1.12.2 or earlier
-                }
-            }
-
-            if (commodoreConvert != null) {
-                boolean isModern = pluginClassLoader.getApiVersion() != ApiVersion.LEGACY;
-                classBytes = (byte[]) commodoreConvert.invoke(classBytes, isModern);
-            }
-
-            return classBytes;
-        }
-    },
-    GLOWSTONE {
-//            @Override
-//            public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
-//                GlowServer glowServer = (GlowServer) currentPluginClassLoader.getServer();
-//                GlowUnsafeValues glowUnsafeValues = (GlowUnsafeValues) glowServer.getUnsafe();
-//                glowUnsafeValues.processClass() -- not yet implemented in the GlowStone 1.16 branch
-//            }
-    },
-    UNKNOWN;
-
+    public static final CraftBukkitPlatform CRAFTBUKKIT = new CraftBukkitPlatform();
+    public static final GlowstonePlatform GLOWSTONE = new GlowstonePlatform();
+    private static final Platform UNKNOWN = new Platform();
 
     private Boolean conversionMethodExists = null;
 
@@ -95,4 +63,47 @@ public enum Platform {
             return Platform.UNKNOWN;
         }
     }
+
+    // built-in implementations:
+
+    public static class CraftBukkitPlatform extends Platform {
+        private MethodHandle commodoreConvert = null;
+        private boolean attempted = false;
+
+        public byte[] transformNative(Server craftServer, byte[] classBytes, boolean modern) throws Throwable {
+            if (!attempted) {
+                attempted = true;
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                try {
+                    Class<?> commodoreClass = Class.forName(getPackageName(craftServer.getClass()) + ".util.Commodore");
+                    String methodName = "convert";
+                    MethodType methodType = MethodType.methodType(byte[].class, new Class<?>[]{byte[].class, boolean.class});
+                    commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
+                } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ignored) {
+                    //running on craftbukkit 1.12.2 or earlier
+                }
+            }
+
+            if (commodoreConvert != null) {
+                classBytes = (byte[]) commodoreConvert.invoke(classBytes, modern);
+            }
+
+            return classBytes;
+        }
+
+        @Override
+        public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
+            return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader.getApiVersion() != ApiVersion.LEGACY);
+        }
+    }
+
+    public static class GlowstonePlatform extends Platform {
+//        @Override
+//        public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
+//            GlowServer glowServer = (GlowServer) currentPluginClassLoader.getServer();
+//            GlowUnsafeValues glowUnsafeValues = (GlowUnsafeValues) glowServer.getUnsafe();
+//            glowUnsafeValues.processClass() -- not yet implemented in the GlowStone 1.16 branch
+//        }
+    }
+
 }

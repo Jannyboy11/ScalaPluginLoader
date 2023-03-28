@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper.commands;
+package xyz.janboerman.scalaloader.paper.commands;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -8,7 +8,7 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import xyz.janboerman.scalaloader.commands.SetDebug;
 import xyz.janboerman.scalaloader.compat.Compat;
-import xyz.janboerman.scalaloader.plugin.paper.ScalaLoader;
+import xyz.janboerman.scalaloader.paper.ScalaLoader;
 
 public class SetDebugCommand extends Command implements PluginIdentifiableCommand {
 

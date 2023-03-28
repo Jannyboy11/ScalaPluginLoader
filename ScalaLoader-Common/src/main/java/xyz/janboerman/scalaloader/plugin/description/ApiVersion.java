@@ -101,7 +101,7 @@ public enum ApiVersion {
      * @return the ApiVersion
      */
     public static ApiVersion byVersion(String versionString) {
-        return BY_VERSION.get(versionString);
+        return BY_VERSION.getOrDefault(versionString, LEGACY);
     }
 
 }

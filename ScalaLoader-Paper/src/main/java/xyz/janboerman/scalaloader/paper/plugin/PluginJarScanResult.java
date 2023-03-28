@@ -1,19 +1,19 @@
-package xyz.janboerman.scalaloader.plugin.paper;
+package xyz.janboerman.scalaloader.paper.plugin;
 
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
+import xyz.janboerman.scalaloader.paper.plugin.description.MainClassScanner;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
-import xyz.janboerman.scalaloader.plugin.paper.description.MainClassScanner;
-import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency;
-import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency.YamlDefined;
+import xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency;
+import xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency.YamlDefined;
 
 import java.util.Map;
 
-class PluginJarScanResult {
+public class PluginJarScanResult {
 
-    MainClassScanner mainClassScanner;
-    Map<String, Object> pluginYaml;
-    TransformerRegistry transformerRegistry;
+    public MainClassScanner mainClassScanner;
+    public Map<String, Object> pluginYaml;
+    public TransformerRegistry transformerRegistry;
 
     @Override
     public String toString() {
@@ -24,7 +24,7 @@ class PluginJarScanResult {
                 + "}";
     }
 
-    ScalaDependency getScalaVersion() {
+    public ScalaDependency getScalaVersion() {
         if (mainClassScanner.hasScalaAnnotation()) {
             return mainClassScanner.getScalaDependency();
         } else if (pluginYaml.containsKey("scala-version")) {
@@ -34,7 +34,7 @@ class PluginJarScanResult {
         }
     }
 
-    ApiVersion getApiVersion() {
+    public ApiVersion getApiVersion() {
         if (mainClassScanner.hasApiVersion()) {
             return mainClassScanner.getApiVersion();
         } else if (pluginYaml.containsKey("api-version")) {
@@ -44,7 +44,7 @@ class PluginJarScanResult {
         }
     }
 
-    String getMainClass() throws ScalaPluginLoaderException {
+    public String getMainClass() throws ScalaPluginLoaderException {
         if (pluginYaml.containsKey("main")) {
             return pluginYaml.get("main").toString();
         } else {

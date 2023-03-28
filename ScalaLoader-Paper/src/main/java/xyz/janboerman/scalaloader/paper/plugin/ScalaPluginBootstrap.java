@@ -1,11 +1,12 @@
-package xyz.janboerman.scalaloader.plugin.paper;
+package xyz.janboerman.scalaloader.paper.plugin;
 
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import io.papermc.paper.plugin.bootstrap.PluginProviderContext;
 import org.jetbrains.annotations.NotNull;
+import xyz.janboerman.scalaloader.paper.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaCompatMap;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
-import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency;
+import xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency;
 import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 /*  According to https://docs.papermc.io/paper/dev/getting-started/paper-plugins#bootstrapper:

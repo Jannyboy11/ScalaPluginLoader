@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper;
+package xyz.janboerman.scalaloader.paper.plugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,19 +17,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.logging.Logger;
 import java.util.jar.JarFile;
 
-import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.entrypoint.classloader.ClassloaderBytecodeModifier;
 import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
 
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.command.PluginCommandYamlParser;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.Plugin;
@@ -46,6 +43,7 @@ import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
+import xyz.janboerman.scalaloader.paper.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
@@ -79,6 +77,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
                                   TransformerRegistry transformerRegistry,
                                   Path dataDirectory) throws IOException {
         super(logger, pluginJarFile.toPath(), Compat.jarFile(pluginJarFile), configuration, parent, libraryLoader);
+        //super call already sets ClassLoaderGroup
 
         this.pluginJarFile = pluginJarFile;
         this.jarFile = Compat.jarFile(pluginJarFile);
@@ -208,6 +207,8 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
         return this.defineClass(name, classBytes, 0, classBytes.length, source);
     }
+
+    // No need to worry about classloader groups, since the super implementation (from PaperPluginClassLoader is already correct for us).
 
     private void debugClass(String className, byte[] bytecode) {
         DebugSettings debugSettings = getPluginLoader().debugSettings();

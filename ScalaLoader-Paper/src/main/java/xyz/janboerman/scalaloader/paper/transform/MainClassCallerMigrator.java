@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper.transform;
+package xyz.janboerman.scalaloader.paper.transform;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;

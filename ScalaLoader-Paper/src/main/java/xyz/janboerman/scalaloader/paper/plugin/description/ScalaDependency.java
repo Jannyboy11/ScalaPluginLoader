@@ -1,8 +1,8 @@
-package xyz.janboerman.scalaloader.plugin.paper.description;
+package xyz.janboerman.scalaloader.paper.plugin.description;
 
 import xyz.janboerman.scalaloader.compat.IScalaVersion;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
-import static xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency.*;
+import static xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency.*;
 
 import java.util.Map;
 

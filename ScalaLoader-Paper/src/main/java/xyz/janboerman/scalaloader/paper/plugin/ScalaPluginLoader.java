@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper;
+package xyz.janboerman.scalaloader.paper.plugin;
 
 import io.papermc.paper.plugin.loader.library.impl.JarLibrary;
 import io.papermc.paper.plugin.loader.library.impl.MavenLibraryResolver;
@@ -15,8 +15,9 @@ import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
 import io.papermc.paper.plugin.loader.PluginLoader;
 
 import org.jetbrains.annotations.NotNull;
+import xyz.janboerman.scalaloader.paper.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
-import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency;
+import xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency;
 import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 import java.io.File;

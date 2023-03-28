@@ -80,15 +80,11 @@ public class ScalaLoaderUtils {
     }
 
     /**
-     * Tries to get the plugin instance from the scala plugin class.
-     * This method is able to get the static instances from scala `object`s,
-     * as well as it is able to create plugins using their public NoArgsConstructors.
-     * @param clazz the plugin class
-     * @param <P> the plugin type
-     * @return the plugin's instance.
-     * @throws ScalaPluginLoaderException when a plugin instance could not be created for the given class
+     * Tries to obtain an instance of the given class either by using an `object`'s singleton instance, or by calling the public no-args consturctor.
+     * @param clazz the class for which to create an instance
+     * @return the instance
      */
-    public static <P extends IScalaPlugin> P createScalaPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
+    public static <Super, Type extends Super> Type instantiate(Class<Type> clazz) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, InstantiationException {
         boolean endsWithDollar = clazz.getName().endsWith("$");
         boolean hasStaticFinalModule$;
         Field module$Field;
@@ -117,31 +113,37 @@ public class ScalaLoaderUtils {
         if (isObjectSingleton) {
             //we found a scala singleton object.
             //the instance is already present in the MODULE$ field when this class is loaded.
-
-            try {
-                Object pluginInstance = module$Field.get(null);
-                return clazz.cast(pluginInstance);
-            } catch (IllegalAccessException e) {
-                throw new ScalaPluginLoaderException("Couldn't access static field MODULE$ in class " + clazz.getName(), e);
-            }
+            Object pluginInstance = module$Field.get(null);
+            return clazz.cast(pluginInstance);
         } else {
             //we found are a regular class.
             //it should have a public zero-argument constructor
+            Constructor<?> ctr = clazz.getConstructor();
+            Object pluginInstance = ctr.newInstance();
+            return clazz.cast(pluginInstance);
+        }
+    }
 
-            try {
-                Constructor<?> ctr = clazz.getConstructor();
-                Object pluginInstance = ctr.newInstance();
-
-                return clazz.cast(pluginInstance);
-            } catch (IllegalAccessException e) {
-                throw new ScalaPluginLoaderException("Could not access the NoArgsConstructor of " + clazz.getName() + ", please make it public", e);
-            } catch (InvocationTargetException e) {
-                throw new ScalaPluginLoaderException("Error instantiating class " + clazz.getName() + ", its constructor threw something at us", e);
-            } catch (NoSuchMethodException e) {
-                throw new ScalaPluginLoaderException("Could not find NoArgsConstructor in class " + clazz.getName(), e);
-            } catch (InstantiationException e) {
-                throw new ScalaPluginLoaderException("Could not instantiate class " + clazz.getName(), e);
-            }
+    /**
+     * Tries to get the plugin instance from the scala plugin class.
+     * This method is able to get the static instances from scala `object`s,
+     * as well as it is able to create plugins using their public NoArgsConstructors.
+     * @param clazz the plugin class
+     * @param <P> the plugin type
+     * @return the plugin's instance.
+     * @throws ScalaPluginLoaderException when a plugin instance could not be created for the given class
+     */
+    public static <P extends IScalaPlugin> P createScalaPluginInstance(Class<P> clazz) throws ScalaPluginLoaderException {
+       try {
+           return ScalaLoaderUtils.<IScalaPlugin, P>instantiate(clazz);
+        } catch (IllegalAccessException e) {
+            throw new ScalaPluginLoaderException("Could not access MODULE$ field or NoArgsConstructor of " + clazz.getName() + ", please make it public", e);
+        } catch (InvocationTargetException e) {
+            throw new ScalaPluginLoaderException("Error instantiating class " + clazz.getName() + ", its constructor threw something at us", e);
+        } catch (NoSuchMethodException e) {
+            throw new ScalaPluginLoaderException("Could not find NoArgsConstructor in class " + clazz.getName(), e);
+        } catch (InstantiationException e) {
+            throw new ScalaPluginLoaderException("Could not instantiate class " + clazz.getName(), e);
         }
     }
 

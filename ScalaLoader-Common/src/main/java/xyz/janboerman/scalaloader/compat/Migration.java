@@ -190,7 +190,7 @@ class PluginEventReplacer extends ClassVisitor {
                         && !isInterface) {
                     super.visitMethodInsn(INVOKEVIRTUAL, owner, GETPLUGIN_NAME, NEW_GETPLUGIN_DESCRIPTOR, false);
                     if (IScalaLoader.getInstance().isPaperPlugin()) {
-                        super.visitTypeInsn(Opcodes.CHECKCAST, "xyz/janboerman/scalaloader/plugin/paper/ScalaPlugin");
+                        super.visitTypeInsn(Opcodes.CHECKCAST, "xyz/janboerman/scalaloader/paper/plugin/ScalaPlugin");
                     } else {
                         super.visitTypeInsn(Opcodes.CHECKCAST, "xyz/janboerman/scalaloader/plugin/ScalaPlugin");
                     }
@@ -205,7 +205,7 @@ class PluginEventReplacer extends ClassVisitor {
 class AddUrlReplacer extends ClassVisitor {
 
     private static final String SCALAPLUGINCLASSLOADER_NAME = "xyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader";
-    private static final String SCALAPAPERPLUGINCLASSLOADER_NAME = "xyz/janboerman/scalaloder/plugin/paper/ScalaPluginClassLoader";
+    private static final String SCALAPAPERPLUGINCLASSLOADER_NAME = "xyz/janboerman/scalaloder/paper/plugin/ScalaPluginClassLoader";
     private static final String ADDURL_DESCRIPTOR = Type.getMethodDescriptor(Type.getType(void.class), Type.getType(URL.class));
 
     AddUrlReplacer(ClassVisitor delegate) {
@@ -235,9 +235,9 @@ class AddUrlReplacer extends ClassVisitor {
 class GetClassLoaderReplacer extends ClassVisitor  {
 
     private static final String SCALAPLUGIN_NAME = "xyz/janboerman/scalaloader/plugin/ScalaPlugin";
-    private static final String SCALAPAPERPLUGIN_NAME = "xyz/janboerman/scalaloader/plugin/paper/ScalaPlugin";
+    private static final String SCALAPAPERPLUGIN_NAME = "xyz/janboerman/scalaloader/paper/plugin/ScalaPlugin";
     private static final String SCALAPLUGINCLASSLOADER_DESCRIPTOR = "Lxyz/janboerman/scalaloader/plugin/ScalaPluginClassLoader;";
-    private static final String SCALAPAPERPLUGINCLASSLOADER_DESCRIPTOR = "Lxyz/janboerman/scalaloader/plugin/paper/ScalaPluginClassLoader;";
+    private static final String SCALAPAPERPLUGINCLASSLOADER_DESCRIPTOR = "Lxyz/janboerman/scalaloader/paper/plugin/ScalaPluginClassLoader;";
 
     GetClassLoaderReplacer(ClassVisitor delegate) {
         super(AsmConstants.ASM_API, delegate);

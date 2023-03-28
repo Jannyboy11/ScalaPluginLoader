@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper.description;
+package xyz.janboerman.scalaloader.paper.plugin.description;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.AnnotationVisitor;
@@ -17,8 +17,8 @@ import xyz.janboerman.scalaloader.plugin.description.Scala;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 import xyz.janboerman.scalaloader.plugin.description.Version;
 import xyz.janboerman.scalaloader.plugin.description.Version.ScalaLibrary;
-import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency.Builtin;
-import xyz.janboerman.scalaloader.plugin.paper.description.ScalaDependency.Custom;
+import xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency.Builtin;
+import xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency.Custom;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +30,7 @@ import java.util.Optional;
 public class MainClassScanner extends ClassVisitor {
 
     private static final String SCALAPLUGIN_CLASS_NAME = "xyz/janboerman/scalaloader/plugin/ScalaPlugin";               //Type.getInternalName(xyz.janboerman.scalaloader.plugin.ScalaPlugin.class);
-    private static final String SCALAPAPERPLUGIN_CLASS_NAME = "xyz/janboerman/scalaloader/plugin/paper/ScalaPlugin";    //Type.getInternalName(xyz.janboerman.scalaloader.plugin.paper.ScalaPlugin.class);
+    private static final String SCALAPAPERPLUGIN_CLASS_NAME = "xyz/janboerman/scalaloader/paper/plugin/ScalaPlugin";    //Type.getInternalName(xyz.janboerman.scalaloader.paper.plugin.ScalaPlugin.class);
     private static final String JAVAPLUGIN_CLASS_NAME = Type.getInternalName(JavaPlugin.class);
     private static final String JAVA_LANG_OBJECT_CLASS_NAME = Type.getInternalName(Object.class);
 

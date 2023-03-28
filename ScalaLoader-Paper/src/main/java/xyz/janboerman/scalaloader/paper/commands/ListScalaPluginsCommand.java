@@ -1,4 +1,4 @@
-package xyz.janboerman.scalaloader.plugin.paper.commands;
+package xyz.janboerman.scalaloader.paper.commands;
 
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -8,30 +8,28 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import xyz.janboerman.scalaloader.commands.DumpClass;
+import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
 import xyz.janboerman.scalaloader.compat.Compat;
-import xyz.janboerman.scalaloader.plugin.paper.ScalaLoader;
+import xyz.janboerman.scalaloader.paper.ScalaLoader;
 
 import java.util.List;
 
-public class DumpClassCommand extends Command implements PluginIdentifiableCommand {
+public class ListScalaPluginsCommand extends Command implements PluginIdentifiableCommand {
 
-    public static final String name = "dumpClass";
-    private static final String usage = "/dumpClass <plugin> <class file> <format>?";
-    private static final String description = """
-            Dumps a class definition to the console/logs.
-            The class can be printed in ASM format or in the regular text format for Java bytecode.
-            """;
-    private static final String permission = "scalaloader.dumpclass";
+    public static final String name = "listScalaPlugins";
+    private static final String usage = "/listScalaPlugins";
+    private static final String description = "Output the scala plugins, grouped by their version of Scala";
+    private static final String permission = "scalaloader.listscalaplugins";
+    private static final List<String> aliases = Compat.listOf("scalaplugins");
 
     private final ScalaLoader plugin;
     private final TabExecutor executor;
 
-    public DumpClassCommand(ScalaLoader scalaLoader) {
-        super(name, description, usage, Compat.emptyList());
+    public ListScalaPluginsCommand(ScalaLoader scalaLoader) {
+        super(name, description, usage, aliases);
         setPermission(permission);
         this.plugin = scalaLoader;
-        this.executor = new DumpClass(scalaLoader);
+        this.executor = new ListScalaPlugins(scalaLoader);
     }
 
     @Override
