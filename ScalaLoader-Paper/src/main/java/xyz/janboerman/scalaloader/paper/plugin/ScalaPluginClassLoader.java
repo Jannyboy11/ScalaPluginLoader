@@ -96,7 +96,9 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         super.init(plugin);
 
         hackDataFolder();
+        hackPluginDescriptionFile();
         registerCommandsFromPluginYaml();
+        //TODO maybe in the future I will have to hack the permissions map as well.
 
         this.persistentClasses = new PersistentClasses(getPlugin());
         for (ClassFile classFile : this.persistentClasses.load()) {
@@ -315,6 +317,15 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
             dataFolderField.set(getPlugin(), getDataDirectory().toFile());
             //luckily, this field is not declared as final.
         } catch (NoSuchFieldException | IllegalAccessException ignored) {
+        }
+    }
+
+    private void hackPluginDescriptionFile() {
+        try {
+            Field descriptionField = JavaPlugin.class.getDeclaredField("description");
+            descriptionField.setAccessible(true);
+            descriptionField.set(getPlugin(), getConfiguration().description.toPluginDescriptionFile());
+        } catch (Throwable ignored) {
         }
     }
 

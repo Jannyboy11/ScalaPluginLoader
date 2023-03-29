@@ -25,6 +25,7 @@ public class Compat {
     private Compat() {}
 
     public static byte[] readAllBytes(InputStream inputStream) throws IOException {
+        if (inputStream == null) return null;
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             byte[] data = new byte[4096];
             int bytesRead;
@@ -37,11 +38,13 @@ public class Compat {
     }
 
     public static <T> List<T> listCopy(Collection<T> coll) {
+        if (coll == null) return null;
         return new ArrayList<>(coll);
     }
 
     @SafeVarargs
     public static <T> List<T> listOf(T... items) {
+        if (items == null) return null;
         return Collections.unmodifiableList(Arrays.asList(items));
     }
 
@@ -54,11 +57,13 @@ public class Compat {
     }
 
     public static <T> Set<T> setCopy(Collection<T> coll) {
+        if (coll == null) return null;
         return new LinkedHashSet<>(coll);
     }
 
     @SafeVarargs
     public static <T> Set<T> setOf(T... items) {
+        if (items == null) return null;
         Set<T> set = new LinkedHashSet<>();
         Collections.addAll(set, items);
         return Collections.unmodifiableSet(set);
@@ -77,6 +82,7 @@ public class Compat {
     }
 
     public static <K, V> Map<K, V> mapCopy(Map<K, V> map) {
+        if (map == null) return null;
         return new LinkedHashMap<>(map);
     }
 
@@ -86,6 +92,7 @@ public class Compat {
 
     @SafeVarargs
     public static <K, V> Map<K, V> mapOf(Map.Entry<K, V>... entries) {
+        if (entries == null) return null;
         Map<K, V> map = new LinkedHashMap<>();
         for (Map.Entry<K, V> entry : entries) {
             map.put(entry.getKey(), entry.getValue());
@@ -98,6 +105,7 @@ public class Compat {
     }
 
     public static String stringRepeat(String base, int repeat) {
+        if (base == null) return null;
         StringJoiner stringJoiner = new StringJoiner("");
         for (int i = 0; i < repeat; ++i) {
             stringJoiner.add(base);
@@ -106,10 +114,12 @@ public class Compat {
     }
 
     public static JarFile jarFile(File jarFile) throws IOException {
+        if (jarFile == null) return null;
         return new JarFile(jarFile);
     }
 
     public static String getPackageName(Class<?> clazz) {
+        if (clazz == null) return null;
         return clazz.getPackage().getName();
     }
 }
