@@ -8,6 +8,7 @@ import xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency;
 import xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency.YamlDefined;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class PluginJarScanResult {
 
@@ -45,11 +46,10 @@ public class PluginJarScanResult {
     }
 
     public String getMainClass() throws ScalaPluginLoaderException {
-        if (pluginYaml.containsKey("main")) {
-            return pluginYaml.get("main").toString();
-        } else {
-            return mainClassScanner.getMainClass().orElseThrow(() -> new ScalaPluginLoaderException("ScalaPlugin without a main class?! :O"));
-        }
+        // Prioritise scanned main class, even if 'main' attribute is set in pluginYaml.
+        return mainClassScanner.getMainClass()
+                .or(() -> Optional.ofNullable((String) pluginYaml.get("main")))
+                .orElseThrow(() -> new ScalaPluginLoaderException("ScalaPlugin without a main class?! :O"));
     }
 
 }

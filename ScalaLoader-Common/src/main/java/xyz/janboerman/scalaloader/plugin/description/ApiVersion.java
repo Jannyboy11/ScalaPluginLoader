@@ -36,7 +36,13 @@ public enum ApiVersion {
     /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.21 */
     v1_21("1.21"),
     /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.22 */
-    v1_22("1.22");
+    v1_22("1.22"),
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.23 */
+    v1_23("1.23"),
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.24 */
+    v1_24("1.24"),
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.25 */
+    v1_25("1.25");
 
     private static final Map<String, ApiVersion> BY_VERSION = new HashMap<>();
     private static final ApiVersion LATEST_VERSION;

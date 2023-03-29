@@ -86,7 +86,8 @@ public class MainClassScanner extends ClassVisitor {
                 .filter(x -> hasPublicNoArgsConstructor || isObject)
                 .filter(x -> !isAbstract)
                 .filter(x -> !extendsJavaLangObject)
-                .filter(x -> !extendsJavaPlugin);
+                .filter(x -> !extendsJavaPlugin)
+                .filter(x -> hasScalaAnnotation());
     }
 
     public String getAsmClassName() {
