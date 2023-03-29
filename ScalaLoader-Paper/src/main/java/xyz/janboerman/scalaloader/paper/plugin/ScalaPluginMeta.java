@@ -142,7 +142,10 @@ public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
 
     @Override
     public String getBootstrapper() {
-        return ScalaPluginBootstrap.class.getName();
+        String bootstrapper = description.getBootstrapperName();
+        if (bootstrapper == null)
+            bootstrapper = ScalaPluginBootstrap.class.getName();
+        return bootstrapper;
     }
 
     @Override
@@ -152,7 +155,8 @@ public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
 
     @Override
     public boolean hasOpenClassloader() {
-        //super.hasOpenClassLoader() is always false. why?
+        //ScalaPlugins always need access to all other plugins.
+        //TODO do they though?
         return true;
     }
 
