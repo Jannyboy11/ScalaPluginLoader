@@ -40,7 +40,7 @@ public class ScalaPluginDescription {
     private final LinkedHashSet<String> inverseDependencies = new LinkedHashSet<>();
     private final LinkedHashSet<String> provides = new LinkedHashSet<>();
     private final LinkedHashSet<String> mavenDependencies = new LinkedHashSet<>();
-    private PermissionDefault permissionDefault = PERMISSION_DEFAULT;
+    private PermissionDefault permissionDefault = null;
     private final LinkedHashSet<Command> commands = new LinkedHashSet<>();
     private final LinkedHashSet<Permission> permissions = new LinkedHashSet<>();
 
@@ -163,7 +163,7 @@ public class ScalaPluginDescription {
     }
 
     public PluginLoadOrder getLoadOrder() {
-        return loadOrder;
+        return loadOrder != null ? loadOrder : PluginLoadOrder.POSTWORLD;
     }
 
     public ScalaPluginDescription website(String website) {
@@ -287,7 +287,7 @@ public class ScalaPluginDescription {
     }
 
     public PermissionDefault getPermissionDefault() {
-        return permissionDefault;
+        return permissionDefault != null ? permissionDefault : PERMISSION_DEFAULT;
     }
 
     public ScalaPluginDescription commands(Command... commands) {
@@ -438,16 +438,16 @@ public class ScalaPluginDescription {
         addYaml(pluginYaml);
 
         Object apiVersion = pluginYaml.get("api-version");
-        if (apiVersion != null)
+        if (apiVersion != null && this.apiVersion == null)
             setApiVersion(String.valueOf(apiVersion));
         Object scalaVersion = pluginYaml.get("scala-version");
-        if (scalaVersion != null)
+        if (scalaVersion != null && this.scalaVersion == null)
             setScalaVersion(String.valueOf(scalaVersion));
         Object mainClass = pluginYaml.get("main");
-        if (mainClass != null)
+        if (mainClass != null && this.main == null)
             setMain(mainClass.toString());
         Object foliaSupported = pluginYaml.get("folia-supported");
-        if (foliaSupported != null)
+        if (foliaSupported != null && !this.foliaSupported)
             setFoliaSupported(Boolean.parseBoolean(foliaSupported.toString()));
         description((String) pluginYaml.get("description"));
         String author = (String) pluginYaml.get("author");
@@ -466,10 +466,10 @@ public class ScalaPluginDescription {
         website((String) pluginYaml.get("website"));
         prefix((String) pluginYaml.get("prefix"));
         String load = (String) pluginYaml.get("load");
-        if (load != null)
+        if (load != null && this.loadOrder == null)
             loadOrder(PluginLoadOrder.valueOf(load));
         String defaultPermissionDefault = (String) pluginYaml.get("default-permission");
-        if (defaultPermissionDefault != null)
+        if (defaultPermissionDefault != null && this.permissionDefault == null)
             permissionDefault(PermissionDefault.getByName(defaultPermissionDefault));
         List<String> depend = (List<String>) pluginYaml.get("depend");
         if (depend != null)
@@ -518,7 +518,7 @@ public class ScalaPluginDescription {
                 cmd.permission((String) value.get("permission"));
                 cmd.permissionMessage((String) value.get("permission-message"));
                 Iterable aliases = (Iterable) value.get("aliases");
-                for (Object alias : aliases) cmd.addAlias(alias.toString());
+                if (aliases != null) for (Object alias : aliases) cmd.addAlias(alias.toString());
                 addCommand(cmd);
             }
         }
