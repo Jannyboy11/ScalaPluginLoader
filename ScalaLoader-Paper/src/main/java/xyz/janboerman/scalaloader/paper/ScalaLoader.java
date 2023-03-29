@@ -190,6 +190,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 ScalaPluginDescription description = descriptionPlugin.getScalaDescription();
                 final String pluginName;
                 if (description != null) {
+                    description.readFromPluginYamlData(scanResult.pluginYaml);
                     description.setMain(mainClassName);
                     description.setApiVersion(scanResult.getApiVersion().getVersionString());
                     description.setScalaVersion(scalaDependency.getVersionString());
@@ -449,7 +450,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         try {
             ScalaPluginClassLoader pluginClassLoader = pluginClasspathBuilder.buildClassLoader(PaperPluginLogger.getLogger(context.getConfiguration()), getClassLoader(), file, scanResult.transformerRegistry, loader, scanResult.pluginYaml);
             context.setPluginClassLoader(pluginClassLoader);
-            JavaPlugin javaPlugin = bootstrapper.createPlugin(context);
+            JavaPlugin javaPlugin = bootstrapper.createPlugin(context); //TODO this throws an error because the libraries could not be loaded. Don't we have them in the ScalaPluginDescription?
             if (javaPlugin instanceof ScalaPlugin scalaPlugin) {
                 return Optional.of(scalaPlugin);
             } else {
@@ -465,28 +466,28 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     }
 
     private Optional<? extends DescriptionPlugin> buildDescriptionPlugin(File file, PluginJarScanResult scanResult, String mainClassName, ScalaDependency scalaDependency) {
-        ClassLoader libraryLoader;
+        DescriptionClassLoader classLoader;
         try {
             ScalaLibraryClassLoader scalaLibraryClassLoader = getOrCreateScalaLibrary(scalaDependency);
-            libraryLoader = createLibraryClassLoader(scalaLibraryClassLoader, scanResult.pluginYaml);
+            ClassLoader libraryLoader = createLibraryClassLoader(scalaLibraryClassLoader, scanResult.pluginYaml);
+            classLoader = new DescriptionClassLoader(file, libraryLoader, scanResult.getApiVersion() != ApiVersion.LEGACY, mainClassName, scalaLibraryClassLoader.getScalaVersion());
         } catch (ScalaPluginLoaderException e) {
             getLogger().log(Level.SEVERE, "Could not download all libraries from plugin's description.", e);
             return Optional.empty();
-        }
-
-        DescriptionClassLoader classLoader;
-        try {
-            classLoader = new DescriptionClassLoader(file, libraryLoader, scanResult.getApiVersion() != ApiVersion.LEGACY, mainClassName);
         } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Could not create classloader to load " + file + "'s plugin description.", e);
             return Optional.empty();
         }
 
         try {
-            Class<? extends DescriptionPlugin> descriptionClass = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, true, classLoader);
-            return Optional.of(ScalaLoaderUtils.createScalaPluginInstance(descriptionClass));
+            Class<? extends DescriptionPlugin> clazz = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, true, classLoader);
+            DescriptionPlugin plugin = ScalaLoaderUtils.createScalaPluginInstance(clazz);
+            return Optional.of(plugin);
         } catch (ClassNotFoundException e) {
             getLogger().log(Level.SEVERE, "Could not find plugin's main class " + mainClassName + " in file " + file.getName() + ".", e);
+            return Optional.empty();
+        } catch (ScalaPluginLoaderException e) {
+            getLogger().log(Level.SEVERE, "Could not instantiate plugin instance: " + mainClassName, e);
             return Optional.empty();
         } catch (Throwable throwable) {
             getLogger().log(Level.SEVERE, "Some error occurred in ScalaPlugin's constructor or initializer. " +

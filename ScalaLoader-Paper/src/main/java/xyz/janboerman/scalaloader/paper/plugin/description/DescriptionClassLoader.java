@@ -1,6 +1,8 @@
 package xyz.janboerman.scalaloader.paper.plugin.description;
 
 import io.papermc.paper.plugin.configuration.PluginMeta;
+//import io.papermc.paper.plugin.provider.classloader.PaperClassLoaderStorage;
+//import io.papermc.paper.plugin.entrypoint.classloader.group.PaperPluginClassLoaderStorage;
 import io.papermc.paper.plugin.entrypoint.classloader.group.SingletonPluginClassLoaderGroup;
 import io.papermc.paper.plugin.provider.classloader.ConfiguredPluginClassLoader;
 import io.papermc.paper.plugin.provider.classloader.PluginClassLoaderGroup;
@@ -19,7 +21,6 @@ import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.compat.Migration;
 import xyz.janboerman.scalaloader.compat.Platform;
-import xyz.janboerman.scalaloader.paper.ScalaLoader;
 import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginMeta;
 import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.paper.transform.MainClassBootstrapTransformer;
@@ -48,12 +49,14 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
     private PluginClassLoaderGroup classLoaderGroup;
     private boolean modern;
     private String mainClass;
+    private String scalaVersion;
 
-    public DescriptionClassLoader(File jarFile, ClassLoader parent, boolean modern, String mainClass) throws IOException {
+    public DescriptionClassLoader(File jarFile, ClassLoader parent, boolean modern, String mainClass, String scalaVersion) throws IOException {
         super(new URL[] {jarFile.toURI().toURL()}, parent);
         this.jarFile = Compat.jarFile(jarFile);
         this.modern = modern;
         this.mainClass = mainClass;
+        this.scalaVersion = scalaVersion;
     }
 
     @Override
@@ -160,6 +163,10 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
     @Override
     public @Nullable PluginClassLoaderGroup getGroup() {
         return classLoaderGroup == null ? classLoaderGroup = new ScalaLoaderGroup(this) : classLoaderGroup;
+        //are any of the following implementations better? I don't know! :D
+        //return classLoaderGroup == null ? classLoaderGroup = ((PaperPluginClassLoaderStorage) PaperClassLoaderStorage.instance()).getGlobalGroup() : classLoaderGroup;
+        //return classLoaderGroup == null ? new SingletonPluginClassLoaderGroup(this) : classLoaderGroup;
+        //return null;
     }
 
     @Override
@@ -173,8 +180,7 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
     }
 
     public String getScalaVersion() {
-        ScalaPluginClassLoader parent = (ScalaPluginClassLoader) getParent();
-        return parent.getScalaVersion();
+        return scalaVersion;
     }
 
 }

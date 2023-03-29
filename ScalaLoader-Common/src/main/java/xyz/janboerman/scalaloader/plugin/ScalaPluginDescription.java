@@ -9,6 +9,8 @@ import xyz.janboerman.scalaloader.compat.Compat;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * The Java API for configuring a {@link ScalaPlugin}. This API is meant as a compile-time type-safe alternative to the error-prone plugin.yml files.
@@ -68,7 +70,9 @@ public class ScalaPluginDescription {
         this.main = mainClass;
     }
 
-    protected void addYaml(Map<String, Object> yaml) {
+    /** @deprecated internal use only */
+    @Deprecated
+    public void addYaml(Map<String, Object> yaml) {
         this.addYaml = yaml;
     }
 
@@ -373,8 +377,9 @@ public class ScalaPluginDescription {
         }
         if (!permissions.isEmpty()) {
             Map<String, Map<String, Object>> permissionsMap = new HashMap<>();
+            Map<String, Permission> knownByName = getPermissions().stream().collect(Collectors.toMap(Permission::getName, Function.identity()));
             for (Permission permission : getPermissions()) {
-                Map<String, Object> currentPermission = createPermissionMap(permission, getPermissionDefault());
+                Map<String, Object> currentPermission = createPermissionMap(knownByName, permission, getPermissionDefault());
                 permissionsMap.put(permission.getName(), currentPermission);
             }
             pluginData.put("permissions", permissionsMap);
@@ -392,19 +397,21 @@ public class ScalaPluginDescription {
     }
 
     //recursively traverses the permissions to create a permission map. The map includes the permission properties (not the permission name)
-    private static Map<String, Object> createPermissionMap(Permission permission, PermissionDefault parentDefault) {
+    private static Map<String, Object> createPermissionMap(Map<String, Permission> known, Permission permission, PermissionDefault parentDefault) {
         Map<String, Object> currentPermission = new HashMap<>();
+
+        Map<String, Permission> knownPermissions = new HashMap<>();
 
         permission.getDescription().ifPresent(description -> currentPermission.put("description", description));
         PermissionDefault permissionDefault = permission.getDefault().orElse(parentDefault);
         currentPermission.put("default", permissionDefault.name());
-        Map<Permission, Boolean> children = permission.getChildren();
+        Map<Permission, Boolean> children = permission.getChildren(knownPermissions);
         if (!children.isEmpty()) {
             Map<String, Object> childrenMap = new HashMap<>();
             for (Map.Entry<Permission, Boolean> entry : children.entrySet()) {
                 Permission child = entry.getKey();
                 Boolean enabled = entry.getValue();
-                childrenMap.put(child.getName(), createPermissionMap(child, permissionDefault(permissionDefault, !enabled.booleanValue())));
+                childrenMap.put(child.getName(), createPermissionMap(known, child, permissionDefault(permissionDefault, !enabled.booleanValue())));
             }
             currentPermission.put("children", childrenMap);
         }
@@ -539,9 +546,9 @@ public class ScalaPluginDescription {
                 perm.addChild(new Permission(kid.toString()));
             }
         } else if (children instanceof Map) {
-            Map<String, Map<String, Object>> kids = (Map) children;
-            for (Map.Entry<String, Map<String, Object>> kid : kids.entrySet()) {
-                perm.addChild(makePermission(kid.getKey(), kid.getValue()));
+            Map<String, Boolean> kids = (Map) children;
+            for (Map.Entry<String, Boolean> kid : kids.entrySet()) {
+                perm.addChild(kid.getKey(), kid.getValue());
             }
         }
 
@@ -578,7 +585,7 @@ public class ScalaPluginDescription {
         }
 
         public Command addAlias(String alias) {
-            if (alias == null) aliases = new LinkedHashSet<>();
+            if (this.aliases == null) this.aliases = new LinkedHashSet<>();
             this.aliases.add(alias);
             return this;
         }
@@ -636,6 +643,7 @@ public class ScalaPluginDescription {
         private final String name;
         private String description;
         private PermissionDefault permissionDefault;
+        private LinkedHashMap<String, Boolean> childrenStrings;
         private LinkedHashMap<Permission, Boolean> children;
 
         public Permission(String name) {
@@ -670,6 +678,24 @@ public class ScalaPluginDescription {
             return this;
         }
 
+        public Permission children(String... children) {
+            for (String child : children) {
+                addChild(child);
+            }
+            return this;
+        }
+
+        public Permission addChild(String child) {
+            addChild(child, true);
+            return this;
+        }
+
+        public Permission addChild(String child, boolean enabled) {
+            if (childrenStrings == null) childrenStrings = new LinkedHashMap<>();
+            childrenStrings.put(child, enabled);
+            return this;
+        }
+
         public String getName() {
             return name;
         }
@@ -683,8 +709,33 @@ public class ScalaPluginDescription {
         }
 
         public Map<Permission, Boolean> getChildren() {
-            return children == null ? Compat.emptyMap() : Collections.unmodifiableMap(children);
+            return getChildren(null);
         }
+
+        public Map<Permission, Boolean> getChildren(Map<String, Permission> byName) {
+            if (children == null && childrenStrings == null) return Compat.emptyMap();
+            Map<Permission, Boolean> res = new LinkedHashMap<>();
+
+            if (children != null) {
+                if (byName == null) byName = new HashMap<>();
+                for (Map.Entry<Permission, Boolean> entry : children.entrySet()) {
+                    Permission perm = entry.getKey();
+                    byName.put(perm.getName(), perm);
+                    res.put(perm, entry.getValue());
+                }
+            }
+            if (childrenStrings != null) {
+                if (byName == null) byName = new HashMap<>();
+                for (Map.Entry<String, Boolean> entry : childrenStrings.entrySet()) {
+                    String name = entry.getKey();
+                    Permission perm = byName.computeIfAbsent(name, Permission::new);
+                    res.put(perm, entry.getValue());
+                }
+            }
+
+            return res;
+        }
+
 
         @Override
         public boolean equals(Object other) {
