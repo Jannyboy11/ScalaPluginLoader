@@ -47,6 +47,7 @@ public class ScalaPluginDescription {
     //paper-specific
     private Class<?/* extends io.papermc.paper.plugin.bootstrap.PluginBootstrap*/> bootstrapperClass;
     private String bootstrapperString;
+    private boolean openClassLoader = true;
 
     //awareness?? use a List<PluginAwareness> ??
     //idea: use awareness for Scala version!! That would only work if the Yaml instance from PluginDescriptionFile was accessible.
@@ -347,6 +348,15 @@ public class ScalaPluginDescription {
         return null;
     }
 
+    public boolean hasOpenClassLoader() {
+        return openClassLoader;
+    }
+
+    public ScalaPluginDescription openClassLoader(boolean openClassLoader) {
+        this.openClassLoader = openClassLoader;
+        return this;
+    }
+
     public PluginDescriptionFile toPluginDescriptionFile() {
         Map<String, Object> pluginData = new HashMap<>();
 
@@ -358,6 +368,7 @@ public class ScalaPluginDescription {
 
         if (foliaSupported) pluginData.put("folia-supported", true);
         String bootstrapper = getBootstrapperName(); if (bootstrapper != null) pluginData.put("bootstrapper", bootstrapper);
+        if (openClassLoader) pluginData.put("has-open-classloader", true);
         if (pluginDescription != null) pluginData.put("description", pluginDescription);
         if (authors != null && !authors.isEmpty()) pluginData.put("authors", Compat.listCopy(authors));
         if (contributors != null && !contributors.isEmpty()) pluginData.put("contributors", Compat.listCopy(contributors));
@@ -465,6 +476,9 @@ public class ScalaPluginDescription {
         Object bootstrapper = pluginYaml.get("bootstrapper");
         if (bootstrapper != null && getBootstrapperName() == null)
             bootstrapper(bootstrapper.toString());
+        Object openClassLoader = pluginYaml.get("has-open-classloader");
+        if (openClassLoader != null)
+            openClassLoader(Boolean.parseBoolean(openClassLoader.toString()));
         description((String) pluginYaml.get("description"));
         String author = (String) pluginYaml.get("author");
         if (author != null)

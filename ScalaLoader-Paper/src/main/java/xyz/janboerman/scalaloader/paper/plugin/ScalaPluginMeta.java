@@ -155,9 +155,7 @@ public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
 
     @Override
     public boolean hasOpenClassloader() {
-        //ScalaPlugins always need access to all other plugins.
-        //TODO do they though?
-        return true;
+        return description.hasOpenClassLoader();
     }
 
     //ScalaPluginMeta-specific
