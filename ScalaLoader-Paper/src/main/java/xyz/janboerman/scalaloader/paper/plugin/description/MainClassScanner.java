@@ -68,6 +68,12 @@ public class MainClassScanner extends ClassVisitor {
         classReader.accept(this, 0);
     }
 
+    @Override
+    public String toString() {
+        String main = getClassName();
+        return main != null ? main : "Empty MainClassScanner";
+    }
+
     public boolean hasScalaAnnotation() {
         return scannedScalaDependency != null;
     }
@@ -250,10 +256,6 @@ public class MainClassScanner extends ClassVisitor {
         }
 
         return null;
-    }
-
-    public ScalaDependency result() {
-        return scannedScalaDependency;
     }
 
 }

@@ -196,20 +196,19 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 ScalaPluginDescription description = descriptionPlugin.getScalaDescription();
                 final String pluginName;
                 if (description != null) {
-                    description.setMain(mainClassName);
-                    description.setApiVersion(apiVersion.getVersionString());
-                    description.setScalaVersion(scalaDependency.getVersionString());
+                    //ScalaPluginDescription constructor was used! :)
                     description.readFromPluginYamlData(scanResult.pluginYaml);
                     pluginName = description.getName();
                 } else {
+                    //No-args constructor was used. Get the description from the pluginYaml.
                     pluginName = scanResult.pluginYaml.get("name").toString();
                     String version = scanResult.pluginYaml.get("version").toString();
                     description = new ScalaPluginDescription(pluginName, version);
                     description.readFromPluginYamlData(scanResult.pluginYaml);
-                    description.setScalaVersion(scalaDependency.getVersionString());
-                    description.setApiVersion(apiVersion.getVersionString());
-                    description.setMain(mainClassName);
                 }
+                description.setMain(mainClassName);
+                description.setApiVersion(apiVersion.getVersionString());
+                description.setScalaVersion(scalaDependency.getVersionString());
 
                 //store to load later
                 descriptions.put(file, description);
@@ -363,10 +362,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         }
 
         result.pluginYaml = pluginYamlData;
-        if (pluginYamlData.containsKey("main")) {
-            String mainClassFile = pluginYamlData.get("main").toString().replace('.', '/') + ".class";
-            result.mainClassScanner = new MainClassScanner(pluginJarFile.getInputStream(pluginJarFile.getJarEntry(mainClassFile)));
-        }
 
         return result;
     }
