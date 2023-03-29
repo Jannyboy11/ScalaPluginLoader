@@ -84,9 +84,9 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
                     }
                 };
                 ClassReader classReader = new ClassReader(byteCode);
-                classReader.accept(new MainClassBootstrapTransformer(new MainClassCallerMigrator(classWriter, mainClass)), ClassReader.EXPAND_FRAMES);
+                classReader.accept(new MainClassBootstrapTransformer(classWriter), ClassReader.EXPAND_FRAMES);
                 byteCode = classWriter.toByteArray();
-                byteCode = Migration.transform(byteCode, this);
+                byteCode = Migration.transform(byteCode, this); //it's important that this happens AFTER the MainClassBootstrapTransformer is executed.
 
                 //define the package
                 int dotIndex = className.lastIndexOf('.');

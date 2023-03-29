@@ -74,4 +74,8 @@ public class DescriptionPlugin extends JavaPlugin implements IScalaPlugin {
         return description.getPrefix();
     }
 
+    public DescriptionClassLoader descriptionClassLoader() {
+        return (DescriptionClassLoader) super.getClassLoader();
+    }
+
 }

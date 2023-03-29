@@ -45,7 +45,8 @@ public class ScalaPluginDescription {
     private final LinkedHashSet<Permission> permissions = new LinkedHashSet<>();
 
     //paper-specific
-    private Class<?/* extends io.papermc.paper.plugin.bootstrap.PluginBootstrap*/> bootstrapper;
+    private Class<?/* extends io.papermc.paper.plugin.bootstrap.PluginBootstrap*/> bootstrapperClass;
+    private String bootstrapperString;
 
     //awareness?? use a List<PluginAwareness> ??
     //idea: use awareness for Scala version!! That would only work if the Yaml instance from PluginDescriptionFile was accessible.
@@ -320,6 +321,11 @@ public class ScalaPluginDescription {
         return Collections.unmodifiableSet(permissions);
     }
 
+    public ScalaPluginDescription bootstrapper(String bootstrapperClassName) {
+        this.bootstrapperString = bootstrapperClassName;
+        return this;
+    }
+
     /**
      * Set's the ScalaPlugin's bootstrapper. When running your ScalaPlugin on the Paper server software, this class will be used to boostrap your plugin.
      * @param bootstrapperClass the bootstrap class. This class must implement io.papermc.paper.plugin.bootstrap.PluginBootstrap.
@@ -327,12 +333,18 @@ public class ScalaPluginDescription {
      * @see <a href=https://docs.papermc.io/paper/dev/getting-started/paper-plugins#bootstrapper>Paper Plugins documentation on PaperMC.io</a>
      */
     public ScalaPluginDescription bootstrapper(Class<?/* extends io.papermc.paper.plugin.bootstrap.PluginBootstrap*/> bootstrapperClass) {
-        this.bootstrapper = bootstrapperClass;
+        this.bootstrapperClass = bootstrapperClass;
         return this;
     }
 
     public Class<?> getBootstrapper() {
-        return bootstrapper;
+        return bootstrapperClass;
+    }
+
+    public String getBootstrapperName() {
+        if (bootstrapperString != null) return bootstrapperString;
+        if (bootstrapperClass != null) return bootstrapperClass.getName();
+        return null;
     }
 
     public PluginDescriptionFile toPluginDescriptionFile() {
@@ -345,6 +357,7 @@ public class ScalaPluginDescription {
         pluginData.put("main", main);
 
         if (foliaSupported) pluginData.put("folia-supported", true);
+        String bootstrapper = getBootstrapperName(); if (bootstrapper != null) pluginData.put("bootstrapper", bootstrapper);
         if (pluginDescription != null) pluginData.put("description", pluginDescription);
         if (authors != null && !authors.isEmpty()) pluginData.put("authors", Compat.listCopy(authors));
         if (contributors != null && !contributors.isEmpty()) pluginData.put("contributors", Compat.listCopy(contributors));
@@ -449,6 +462,9 @@ public class ScalaPluginDescription {
         Object foliaSupported = pluginYaml.get("folia-supported");
         if (foliaSupported != null && !this.foliaSupported)
             setFoliaSupported(Boolean.parseBoolean(foliaSupported.toString()));
+        Object bootstrapper = pluginYaml.get("bootstrapper");
+        if (bootstrapper != null && getBootstrapperName() == null)
+            bootstrapper(bootstrapper.toString());
         description((String) pluginYaml.get("description"));
         String author = (String) pluginYaml.get("author");
         if (author != null)

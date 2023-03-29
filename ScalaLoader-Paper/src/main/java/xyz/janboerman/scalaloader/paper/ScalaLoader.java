@@ -4,7 +4,6 @@ import com.destroystokyo.paper.utils.PaperPluginLogger;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
-import io.papermc.paper.plugin.loader.PluginLoader;
 import org.bukkit.command.CommandMap;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
@@ -77,6 +76,10 @@ import java.util.stream.Collectors;
  */
 public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
+    static {
+        Migration.addMigrator(PaperPluginTransformer::new);
+    }
+
     private EventBus eventBus;
     private final DebugSettings debugSettings = new DebugSettings(this);
     private File scalaPluginsFolder;
@@ -127,7 +130,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     @Override
     public void onLoad() {
-        Migration.addMigrator(PaperPluginTransformer::new);
         ScalaLoaderUtils.initConfiguration(this);
         loadScalaPlugins();
     }
@@ -161,6 +163,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         final Map<File, ScalaPluginDescription> descriptions = new HashMap<>();
         final Map<File, PluginJarScanResult> scanResults = new HashMap<>();
         final Map<String, File> byName = new HashMap<>();
+        final Map<File, DescriptionPlugin> descriptionPlugins = new HashMap<>();
         final MutableGraph<String> dependencyGraph = GraphBuilder.directed()
                 .allowsSelfLoops(false)
                 .expectedNodeCount(files.length)
@@ -172,34 +175,40 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 PluginJarScanResult scanResult = read(Compat.jarFile(file));
 
                 //save scala version
-                ScalaDependency scalaDependency = scanResult.getScalaVersion();
+                final ScalaDependency scalaDependency = scanResult.getScalaVersion();
                 if (scalaDependency == null)
                     throw new ScalaPluginLoaderException("Could not find Scala dependency. Please annotate your main class with @Scala or @CustomScala.");
                 scalaCompatMap.add(scalaDependency);
 
+                final ApiVersion apiVersion = scanResult.getApiVersion();
+
                 //register the GetClassLoaderMigrator (so that every call to MyPluginMainClass.getClassLoader() will be replaced by MyPluginMainClass.classLoader())
-                String mainClassName = scanResult.getMainClass();
+                final String mainClassName = scanResult.getMainClass();
                 scanResult.transformerRegistry.addUnspecificTransformer(visitor -> new MainClassCallerMigrator(visitor, mainClassName));
 
                 //Now, we instantiate the DescriptionPlugin
-                var optionalDescriptionPlugin = buildDescriptionPlugin(file, scanResult, mainClassName, scalaDependency);
+                var optionalDescriptionPlugin = buildDescriptionPlugin(file, scanResult, apiVersion, mainClassName, scalaDependency);
                 if (optionalDescriptionPlugin.isEmpty()) continue;
-                DescriptionPlugin descriptionPlugin = optionalDescriptionPlugin.get();
+                final DescriptionPlugin descriptionPlugin = optionalDescriptionPlugin.get();
+                descriptionPlugins.put(file, descriptionPlugin);
 
                 //and set the description
                 ScalaPluginDescription description = descriptionPlugin.getScalaDescription();
                 final String pluginName;
                 if (description != null) {
-                    description.readFromPluginYamlData(scanResult.pluginYaml);
                     description.setMain(mainClassName);
-                    description.setApiVersion(scanResult.getApiVersion().getVersionString());
+                    description.setApiVersion(apiVersion.getVersionString());
                     description.setScalaVersion(scalaDependency.getVersionString());
+                    description.readFromPluginYamlData(scanResult.pluginYaml);
                     pluginName = description.getName();
                 } else {
                     pluginName = scanResult.pluginYaml.get("name").toString();
                     String version = scanResult.pluginYaml.get("version").toString();
                     description = new ScalaPluginDescription(pluginName, version);
                     description.readFromPluginYamlData(scanResult.pluginYaml);
+                    description.setScalaVersion(scalaDependency.getVersionString());
+                    description.setApiVersion(apiVersion.getVersionString());
+                    description.setMain(mainClassName);
                 }
 
                 //store to load later
@@ -247,7 +256,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             ScalaPluginDescription description = descriptions.get(file);
 
             ScalaPluginProviderContext context = new ScalaPluginProviderContext(description);
-            var optionalBootstrap = getBootstrap(description.getBootstrapper());
+            var optionalBootstrap = getBootstrap(description, descriptionPlugins.get(file).descriptionClassLoader());
             if (optionalBootstrap.isEmpty()) continue;
             PluginBootstrap bootstrapper = optionalBootstrap.get();
             ScalaPluginLoader loader = new ScalaPluginLoader();
@@ -427,7 +436,20 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         return ScalaLoaderUtils.loadOrGetScalaVersion(scalaLibraryClassLoaders, scalaVersion, downloadScalaJarFiles(), this);
     }
 
-    private Optional<PluginBootstrap> getBootstrap(Class<?> bootstrapCls) {
+    private Optional<PluginBootstrap> getBootstrap(ScalaPluginDescription description, ClassLoader classLoader) {
+        Class<?> bootstrapCls = description.getBootstrapper();
+        if (bootstrapCls == null) {
+            String bootstrapperName = description.getBootstrapperName();
+            if (bootstrapperName != null) {
+                try {
+                    bootstrapCls = Class.forName(bootstrapperName, true, classLoader);
+                } catch (ClassNotFoundException e) {
+                    getLogger().log(Level.SEVERE, "Could not find bootstrapper class: " + bootstrapperName, e);
+                    return Optional.empty();
+                }
+            }
+        }
+
         if (bootstrapCls != null) {
             if (PluginBootstrap.class.isAssignableFrom(bootstrapCls)) {
                 Class<? extends PluginBootstrap> bootstrapClass = (Class<? extends PluginBootstrap>) bootstrapCls;
@@ -465,12 +487,12 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         }
     }
 
-    private Optional<? extends DescriptionPlugin> buildDescriptionPlugin(File file, PluginJarScanResult scanResult, String mainClassName, ScalaDependency scalaDependency) {
+    private Optional<? extends DescriptionPlugin> buildDescriptionPlugin(File file, PluginJarScanResult scanResult, ApiVersion apiVersion, String mainClassName, ScalaDependency scalaDependency) {
         DescriptionClassLoader classLoader;
         try {
             ScalaLibraryClassLoader scalaLibraryClassLoader = getOrCreateScalaLibrary(scalaDependency);
             ClassLoader libraryLoader = createLibraryClassLoader(scalaLibraryClassLoader, scanResult.pluginYaml);
-            classLoader = new DescriptionClassLoader(file, libraryLoader, scanResult.getApiVersion() != ApiVersion.LEGACY, mainClassName, scalaLibraryClassLoader.getScalaVersion());
+            classLoader = new DescriptionClassLoader(file, libraryLoader, apiVersion != ApiVersion.LEGACY, mainClassName, scalaLibraryClassLoader.getScalaVersion());
         } catch (ScalaPluginLoaderException e) {
             getLogger().log(Level.SEVERE, "Could not download all libraries from plugin's description.", e);
             return Optional.empty();
