@@ -424,12 +424,10 @@ public class ScalaPluginDescription {
     private static Map<String, Object> createPermissionMap(Map<String, Permission> known, Permission permission, PermissionDefault parentDefault) {
         Map<String, Object> currentPermission = new HashMap<>();
 
-        Map<String, Permission> knownPermissions = new HashMap<>();
-
         permission.getDescription().ifPresent(description -> currentPermission.put("description", description));
         PermissionDefault permissionDefault = permission.getDefault().orElse(parentDefault);
         currentPermission.put("default", permissionDefault.name());
-        Map<Permission, Boolean> children = permission.getChildren(knownPermissions);
+        Map<Permission, Boolean> children = permission.getChildren(known);
         if (!children.isEmpty()) {
             Map<String, Object> childrenMap = new HashMap<>();
             for (Map.Entry<Permission, Boolean> entry : children.entrySet()) {
