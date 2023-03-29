@@ -158,6 +158,11 @@ public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
         return description.hasOpenClassLoader();
     }
 
+    //only exists on Folia.
+    /*@Override*/ public boolean isFoliaSupported() {
+        return description.isFoliaSupported();
+    }
+
     //ScalaPluginMeta-specific
 
     public String getScalaVersion() {
