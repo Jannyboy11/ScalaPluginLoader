@@ -305,6 +305,19 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
 
     }
 
+    private void enableScalaPlugins(PluginLoadOrder loadOrder) {
+        for (ScalaPlugin plugin : getScalaPlugins()) {
+            if (!plugin.isEnabled() && plugin.getPluginMeta().getLoadOrder() == loadOrder) {
+                ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(plugin);
+                getServer().getPluginManager().callEvent(event);
+                if (event.isCancelled())
+                    continue;
+
+                PaperHacks.getPaperPluginManager().enablePlugin(plugin);
+            }
+        }
+    }
+
     private static Comparator<String> dependencyOrder(MutableGraph<String> dependencies) {
         return new Comparator<String>() {
             @Override
@@ -337,19 +350,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
 
         String dependency = workingSet.iterator().next();
         return dependsOn(dependencies, dependency, plugin2, workingSet, explored);
-    }
-
-    private void enableScalaPlugins(PluginLoadOrder loadOrder) {
-        for (ScalaPlugin plugin : getScalaPlugins()) {
-            if (!plugin.isEnabled() && plugin.getPluginMeta().getLoadOrder() == loadOrder) {
-                ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(plugin);
-                getServer().getPluginManager().callEvent(event);
-                if (event.isCancelled())
-                    continue;
-
-                PaperHacks.getPaperPluginManager().enablePlugin(plugin);
-            }
-        }
     }
 
     private static PluginJarScanResult read(JarFile pluginJarFile) throws IOException {
