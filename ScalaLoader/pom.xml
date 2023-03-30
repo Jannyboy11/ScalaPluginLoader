@@ -11,6 +11,10 @@
 
     <artifactId>ScalaLoader</artifactId>
 
+    <properties>
+        <finalName>${project.artifactId}-${project.version}</finalName>
+    </properties>
+
     <build>
         <finalName>${finalName}</finalName>
 
