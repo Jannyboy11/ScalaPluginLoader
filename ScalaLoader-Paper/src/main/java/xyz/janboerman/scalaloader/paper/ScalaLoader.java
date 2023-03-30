@@ -6,6 +6,11 @@ import com.google.common.graph.MutableGraph;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import org.bukkit.Server;
 import org.bukkit.command.CommandMap;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.server.ServerLoadEvent;
+import org.bukkit.event.server.ServerLoadEvent.LoadType;
+import org.bukkit.plugin.PluginLoadOrder;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
@@ -79,7 +84,7 @@ import java.util.stream.Collectors;
 /**
  * @author Jannyboy11
  */
-public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
+public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Listener {
 
     static {
         Migration.addMigrator(PaperPluginTransformer::new);
@@ -89,6 +94,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     private final DebugSettings debugSettings = new DebugSettings(this);
     private File scalaPluginsFolder;
 
+    //ScalaLoader has a tendency of becoming a God Object. May want to factor out plugin-loading stuff to a separate class ScalaPluginManager or something.
     private final LinkedHashSet<ScalaPlugin> scalaPlugins = new LinkedHashSet<>();
 
     private final ScalaCompatMap<ScalaDependency> scalaCompatMap = new ScalaCompatMap();
@@ -135,6 +141,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     @Override
     public void onLoad() {
+        assert getPluginMeta().getLoadOrder() == PluginLoadOrder.STARTUP : "ScalaLoader must enable at PluginLoadOrder.STARTUP.";
         ScalaLoaderUtils.initConfiguration(this);
         loadScalaPlugins();
     }
@@ -142,12 +149,17 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @Override
     public void onEnable() {
         initCommands();
-
-        //TODO should not be necessary, but apparently still is. (PaperPluginInstanceManager already enables plugins)
-        enableScalaPlugins();
-        //TODO have a look at how the ListPluginsCommand works -> I have to inject plugins in an EntryPointHandler dafuq?
-
+        getServer().getPluginManager().registerEvents(this, this);
+        enableScalaPlugins(PluginLoadOrder.STARTUP);    //Enable ScalaPlugins at STARTUP because ScalaLoader itself enables on STARTUP.
         ScalaLoaderUtils.initBStats(this);
+    }
+
+    @EventHandler
+    public void onServerLoad(ServerLoadEvent event) {
+        if (event.getType() == LoadType.STARTUP) {
+            enableScalaPlugins(PluginLoadOrder.POSTWORLD);
+        }
+        //Don't need to enable ScalaPlugins at LoadType.RELOAD, because the server itself already does this.
     }
 
     private void initCommands() {
@@ -247,6 +259,10 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             }
         }
 
+        //Food for thought:
+        //perhaps, split this logic? maybe construct the ScalaPlugins from ScalaLoader's constructor
+        //and then, call scalaPlugin.onLoad() from ScalaLoader's onLoad() method.
+
         //all ScalaPlugins have been scanned.
         //let's instantiate them!
 
@@ -261,6 +277,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             //  - call bootstrapper.bootstrap(pluginprovidercontext)
             //  - call pluginloader.classloader(pluginclasspathbuilder)
             //  - call boostrapper.createPlugin(pluginprovidercontext)
+            //  - finally, register them to Paper's PluginManager, and call .onLoad()
 
             File file = byName.get(pluginName);
             PluginJarScanResult scanResult = scanResults.get(file);
@@ -283,7 +300,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             addScalaPlugin(plugin);
             PaperHacks.getPaperPluginManager().loadPlugin(plugin);  //calls PaperPluginInstanceManager#loadPlugin(Plugin provided)
             //this correctly takes dependencies and softdependencies into account, but not inverse dependencies. should I make the distinction between dependency graph and load graph?
-            //TODO take PluginLoadOrder into account!
             plugin.onLoad();
         }
 
@@ -323,17 +339,16 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         return dependsOn(dependencies, dependency, plugin2, workingSet, explored);
     }
 
-    private void enableScalaPlugins() {
-        //TODO: take load status into account (STARTUP, POSTWORLD).
+    private void enableScalaPlugins(PluginLoadOrder loadOrder) {
         for (ScalaPlugin plugin : getScalaPlugins()) {
-            if (!plugin.isEnabled()) {
+            if (!plugin.isEnabled() && plugin.getPluginMeta().getLoadOrder() == loadOrder) {
                 ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(plugin);
                 getServer().getPluginManager().callEvent(event);
                 if (event.isCancelled())
                     continue;
-            }
 
-            PaperHacks.getPaperPluginManager().enablePlugin(plugin);
+                PaperHacks.getPaperPluginManager().enablePlugin(plugin);
+            }
         }
     }
 

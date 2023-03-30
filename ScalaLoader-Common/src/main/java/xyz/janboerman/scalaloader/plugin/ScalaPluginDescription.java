@@ -96,7 +96,7 @@ public class ScalaPluginDescription {
     }
 
     public ScalaPluginDescription setFoliaSupported(boolean supportFolia) {
-        this.foliaSupported = foliaSupported;
+        this.foliaSupported = supportFolia;
         return this;
     }
 
