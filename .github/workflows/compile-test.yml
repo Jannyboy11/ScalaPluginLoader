@@ -8,12 +8,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 19
+      - name: Set up JDK 20
         uses: actions/setup-java@v3
         with:
-          # Use Eclipse Temurin's OpenJDK build as Microsoft doesn't (yet) publish any builds of OpenJDK 19.
+          # Use Eclipse Temurin's OpenJDK because Microsoft doesn't seem to want to build non-LTS releases.
           distribution: 'temurin'
-          java-version: '19'
+          java-version: '20'
           cache: 'maven'
-      - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots verify
+      - name: Install Paper
+        run: |
+          git clone https://github.com/PaperMC/Paper
+          cd Paper
+          ./gradlew applyPatches
+          ./gradlew createReobfBundlerJar
+          ./gradlew build
+          ./gradlew generateMetadataFileForMavenPublication
+          ./gradlew generatePomFileForMavenPublication
+          ./gradlew publishToMavenLocal
+          cd ~/.m2/repository/io/papermc/paper/paper-server/1.19.4-R0.1-SNAPSHOT
+          mvn install:install-file -DgroupId=io.papermc.paper -DartifactId=paper-server -Dversion=1.19.4-R0.1-SNAPSHOT -Dpackaging=jar -Dfile=paper-server-1.19.4-R0.1-SNAPSHOT-mojang-mapped.jar
+          cd ~
+      - name: Compile ScalaLoader
+        run: mvn --batch-mode --update-snapshots verify -DfinalName=ScalaLoader
+      - name: Create tagged release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+           ScalaLoader/target/ScalaLoader.jar

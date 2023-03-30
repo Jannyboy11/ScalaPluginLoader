@@ -618,6 +618,10 @@ public class ScalaPluginDescription {
             return this;
         }
 
+        public Command permission(Permission permission) {
+            return permission(permission.getName());
+        }
+
         public Command permission(String permission) {
             this.permission = permission;
             return this;

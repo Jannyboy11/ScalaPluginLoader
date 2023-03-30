@@ -4,17 +4,23 @@ import org.bukkit.{ChatColor, Material}
 import org.bukkit.command.{Command, CommandSender}
 import org.bukkit.event.{EventPriority, Listener}
 import org.bukkit.permissions.PermissionDefault
+import xyz.janboerman.scalaloader.example.scala.Permissions.{homePermission, fooPermission}
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCommand, Permission => SPPermission}
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
+
+object Permissions {
+    val fooPermission = "scalaexample.foo";
+    val homePermission = new SPPermission("scalaexample.home").permissionDefault(PermissionDefault.TRUE);
+}
 
 @Scala(version = ScalaVersion.v2_13_10)
 @Api(ApiVersion.v1_19)
 object ExamplePlugin
     extends ScalaPlugin(new ScalaPluginDescription("Scala2Example", "0.18.0-SNAPSHOT")
-        .addCommand(new SPCommand("foo") permission "scalaexample.foo")
-        .addCommand(new SPCommand("home") permission "scalaexample.home" usage "/home set|tp")
-        .permissions(new SPPermission("scalaexample.home") permissionDefault PermissionDefault.TRUE)) {
+        .addCommand(new SPCommand("foo").permission(fooPermission))
+        .addCommand(new SPCommand("home").permission(homePermission).usage("/home set|tp"))
+        .permissions(homePermission)) {
 
     getLogger.info("ScalaExample - I am constructed!")
 

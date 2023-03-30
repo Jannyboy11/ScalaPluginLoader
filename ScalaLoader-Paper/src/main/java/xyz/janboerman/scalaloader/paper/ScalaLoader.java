@@ -284,7 +284,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
             PluginJarScanResult scanResult = scanResults.get(file);
             ScalaPluginDescription description = descriptions.get(file);
 
-            ScalaPluginProviderContext context = new ScalaPluginProviderContext(description);
+            ScalaPluginProviderContext context = new ScalaPluginProviderContext(file, description);
             var optionalBootstrap = getBootstrap(description, descriptionPlugins.get(file).descriptionClassLoader());
             if (optionalBootstrap.isEmpty()) continue;
             PluginBootstrap bootstrapper = optionalBootstrap.get();

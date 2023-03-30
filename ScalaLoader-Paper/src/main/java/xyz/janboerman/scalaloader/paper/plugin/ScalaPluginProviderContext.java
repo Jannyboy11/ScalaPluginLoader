@@ -6,15 +6,18 @@ import org.jetbrains.annotations.NotNull;
 import xyz.janboerman.scalaloader.paper.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 
+import java.io.File;
 import java.nio.file.Path;
 
 public class ScalaPluginProviderContext implements PluginProviderContext {
 
     private final ScalaPluginMeta configuration;
+    private final Path pluginSource;
     private ScalaPluginClassLoader pluginClassLoader;
 
-    public ScalaPluginProviderContext(ScalaPluginDescription description) {
+    public ScalaPluginProviderContext(File pluginJarFile, ScalaPluginDescription description) {
         this.configuration = new ScalaPluginMeta(description);
+        this.pluginSource = pluginJarFile.toPath();
     }
 
     @Override
@@ -30,6 +33,11 @@ public class ScalaPluginProviderContext implements PluginProviderContext {
     @Override
     public @NotNull ComponentLogger getLogger() {
         return ComponentLogger.logger(getConfiguration().getMainClass());
+    }
+
+    @Override
+    public @NotNull Path getPluginSource() {
+        return pluginSource;
     }
 
     public void setPluginClassLoader(ScalaPluginClassLoader pluginClassLoader) {
