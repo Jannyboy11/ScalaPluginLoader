@@ -67,6 +67,9 @@ public class Platform {
     // built-in implementations:
 
     public static class CraftBukkitPlatform extends Platform {
+
+        private CraftBukkitPlatform() {}
+
         private MethodHandle commodoreConvert = null;
         private boolean attempted = false;
 
@@ -95,15 +98,36 @@ public class Platform {
         public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
             return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader.getApiVersion() != ApiVersion.LEGACY);
         }
+
     }
 
     public static class GlowstonePlatform extends Platform {
+
+        private GlowstonePlatform() {}
+
 //        @Override
 //        public byte[] transform(String jarEntryPath, byte[] original, ScalaPluginClassLoader currentPluginClassLoader) throws Throwable {
 //            GlowServer glowServer = (GlowServer) currentPluginClassLoader.getServer();
 //            GlowUnsafeValues glowUnsafeValues = (GlowUnsafeValues) glowServer.getUnsafe();
 //            glowUnsafeValues.processClass() -- not yet implemented in the GlowStone 1.16 branch
 //        }
+    }
+
+    // Folia
+    private static final boolean FOLIA;
+    static {
+        boolean folia;
+        try {
+            Class.forName("io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler");
+            folia = true;
+        } catch (ClassNotFoundException e) {
+            folia = false;
+        }
+        FOLIA = folia;
+    }
+
+    public static boolean isFolia() {
+        return FOLIA;
     }
 
 }

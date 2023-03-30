@@ -4,6 +4,7 @@ import com.destroystokyo.paper.utils.PaperPluginLogger;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
+import org.bukkit.Server;
 import org.bukkit.command.CommandMap;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
@@ -14,6 +15,7 @@ import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.compat.Migration;
+import xyz.janboerman.scalaloader.compat.Platform;
 import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariantTransformer;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanResult;
 import xyz.janboerman.scalaloader.configurationserializable.transform.GlobalScanner;
@@ -50,6 +52,9 @@ import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -209,6 +214,13 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
                 description.setMain(mainClassName);
                 description.setApiVersion(apiVersion.getVersionString());
                 description.setScalaVersion(scalaDependency.getVersionString());
+
+                //check for Folia
+                if (Platform.isFolia() && !description.isFoliaSupported()) {
+                    getLogger().log(Level.WARNING, "Plugin " + pluginName + " has not explicitly declared it supports the Folia api");
+                    getLogger().log(Level.WARNING, "Skipping loading plugin " + file + ".");
+                    continue;
+                }
 
                 //store to load later
                 descriptions.put(file, description);
@@ -510,6 +522,30 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
             getLogger().log(Level.SEVERE, "Some error occurred in ScalaPlugin's constructor or initializer. " +
                     "Try to move stuff over to #onLoad() or #onEnable().", throwable);
             return Optional.empty();
+        }
+    }
+
+    // Folia support
+
+    @Deprecated
+    private MethodHandle Server_GlobalRegionScheduler_execute;
+
+    @Deprecated
+    @Override
+    public void runInMainThread(Runnable runnable) {
+        if (!Platform.isFolia()) {
+            getServer().getScheduler().runTask(this, runnable);
+        } else {
+            try {
+                if (Server_GlobalRegionScheduler_execute == null) {
+                    Server_GlobalRegionScheduler_execute = MethodHandles.lookup()
+                            .findVirtual(Server.class, "getGlobalRegionScheduler", MethodType.methodType(Class.forName("io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler")));
+                }
+
+                Server_GlobalRegionScheduler_execute.invoke(getServer(), this, runnable);
+            } catch (Throwable e) {
+                getLogger().log(Level.SEVERE, "Failed to schedule task on main thread (Folia/GlobalRegionScheduler)", e);
+            }
         }
     }
 
