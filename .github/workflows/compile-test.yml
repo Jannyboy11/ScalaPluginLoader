@@ -17,6 +17,8 @@ jobs:
           cache: 'maven'
       - name: Install Paper
         run: |
+          git config --global user.email "jannyboy11@example.com"
+          git config --global user.name "Jannyboy11"
           git clone https://github.com/PaperMC/Paper
           cd Paper
           ./gradlew applyPatches
@@ -37,4 +39,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-           ScalaLoader/target/ScalaLoader.jar
+            ScalaLoader/target/ScalaLoader.jar
