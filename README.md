@@ -160,22 +160,22 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 ## Dependency Information [![Build Status](https://ci.codemc.io/buildStatus/icon?job=Jannyboy11%2FScalaPluginLoader)](https://ci.codemc.io/job/Jannyboy11/job/ScalaPluginLoader/)
 ##### SBT
 ```scala
-resolvers += "codemc-snapshots" at "https://repo.codemc.io/repository/maven-snapshots/"
-libraryDependencies += "xyz.janboerman" % "ScalaLoader" % "0.17.16-SNAPSHOT" % "provided"
+resolvers += "jannyboy11-minecraft-repo" at "https://repo.repsy.io/mvn/jannyboy11/minecraft"
+libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.1-SNAPSHOT" % "provided"
 ```
 
 ##### Maven
 ```xml
 <repository>
-    <id>codemc-snapshots</id>
-    <url>https://repo.codemc.io/repository/maven-snapshots/</url>
+    <id>jannyboy11-minecraft</id>
+    <name>Jannyboy11 Minecraft Repo</name>
+    <url>https://repo.repsy.io/mvn/jannyboy11/minecraft</url>
 </repository>
 
 <dependency>
-    <groupId>xyz.janboerman</groupId>
+    <groupId>com.janboerman.scalaloader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>0.17.16-SNAPSHOT</version>
-    <scope>provided</scope>
+    <version>0.18.1-SNAPSHOT</version>
 </dependency>
 ```
 
