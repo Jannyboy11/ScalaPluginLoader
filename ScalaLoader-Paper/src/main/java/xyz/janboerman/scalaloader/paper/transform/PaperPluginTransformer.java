@@ -77,7 +77,16 @@ public class PaperPluginTransformer extends ClassRemapper {
                 if (INVOKESTATIC == opcode && SCALAPLUGIN_NAME.equals(owner) && "getPlugin".equals(name) && "(Ljava/lang/Class;)Lxyz/janboerman/scalaloader/plugin/ScalaPlugin;".equals(descriptor) && !isInterface) {
                     super.visitMethodInsn(INVOKESTATIC, JAVAPLUGIN_NAME, "getPlugin", "(Ljava/lang/Class;)Lorg/bukkit/plugin/java/JavaPlugin;", false);
                     super.visitTypeInsn(CHECKCAST, SCALAPAPERPLUGIN_NAME);
-                } else {
+                }
+
+                else if (INVOKEVIRTUAL == opcode && SCALAPLUGINLOADER_NAME.equals(owner) && "openUpToJavaPlugin".equals(name) && !isInterface) {
+                    //turn ScalaPluginLoader#openUpToJavaPlugin into a no-op.
+                    super.visitInsn(POP);   //pop the JavaPlugin argument
+                    super.visitInsn(POP);   //pop the ScalaPlugin argument
+                    super.visitInsn(POP);   //pop the ScalaPluginLoader receiver (which is always null on Paper)
+                }
+
+                else {
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 }
             }
