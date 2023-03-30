@@ -66,6 +66,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -132,7 +133,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
 
     @Override
     public Collection<ScalaPlugin> getScalaPlugins() {
-        return scalaPlugins;
+        return Collections.unmodifiableSet(scalaPlugins);
     }
 
     protected void addScalaPlugin(ScalaPlugin plugin) {
