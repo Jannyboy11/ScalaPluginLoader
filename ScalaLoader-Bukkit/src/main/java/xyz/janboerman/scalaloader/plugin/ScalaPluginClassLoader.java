@@ -113,7 +113,7 @@ public class ScalaPluginClassLoader extends URLClassLoader implements IScalaPlug
                                                     this,
                                                     transformerRegistry);
         try {
-            this.plugin = ScalaLoaderUtils.createScalaPluginInstance((Class<? extends ScalaPlugin>) Class.forName(mainClassName, true, this));
+            this.plugin = ScalaLoaderUtils.createScalaPluginInstance(Class.forName(mainClassName, true, this).asSubclass(ScalaPlugin.class));
         } catch (ClassNotFoundException e) {
             throw new ScalaPluginLoaderException("Could not find plugin's main class: " + mainClassName, e);
         }

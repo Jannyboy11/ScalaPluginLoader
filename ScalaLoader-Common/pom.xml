@@ -113,31 +113,6 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Automatic-Module-Name>xyz.janboerman.scalaloader</Automatic-Module-Name>
-                            <!-- use an automatic module until we migrate to Java 11 (or newer!) in a future release
-                            module com.janboerman.scalaloader {
-                                requires java.logging;
-                                requires org.bukkit;
-                                requires org.yaml.snakeyaml;
-                                requires bstats.bukkit;     //filename-based because bStats does not provide a module yet. (I expect this to become org.bstats.bukkit in the future)
-                                requires org.objectweb.asm;
-                                requires org.objectweb.asm.commons;
-                                requires org.objectweb.asm.util;
-                                //requires org.objectweb.asm.tree; //for debugging
-                                //requires scala.library; //for debugging
-
-                                exports xyz.janboerman.scalaloader.configurationserializable;
-                                exports xyz.janboerman.scalaloader.configurationserializable.runtime;
-                                exports xyz.janboerman.scalaloader.configurationserializable.runtime.types;
-                                exports xyz.janboerman.scalaloader.event;
-                                exports xyz.janboerman.scalaloader.event.plugin;
-                                exports xyz.janboerman.scalaloader.plugin;
-                                exports xyz.janboerman.scalaloader.plugin.description;
-                                exports xyz.janboerman.scalaloader;
-
-                                opens xyz.janboerman.scalaloader to org.bukkit;
-                            }
-                            -->
                             <Multi-Release>true</Multi-Release>
                         </manifestEntries>
                     </archive>
@@ -171,10 +146,10 @@
                                     <pattern>org.codehaus</pattern>
                                     <shadedPattern>xyz.janboerman.scalaloader.libs.codehaus</shadedPattern>
                                 </relocation>
-<!--                                <relocation>-->
-<!--                                    <pattern>org.slf4j</pattern>-->
-<!--                                    <shadedPattern>xyz.janboerman.scalaloader.libs.slf4j</shadedPattern>-->
-<!--                                </relocation>-->
+                                <relocation>
+                                    <pattern>org.slf4j</pattern>
+                                    <shadedPattern>xyz.janboerman.scalaloader.libs.slf4j</shadedPattern>
+                                </relocation>
                                 <relocation>
                                     <pattern>org.sonatype</pattern>
                                     <shadedPattern>xyz.janboerman.scalaloader.libs.sonatype</shadedPattern>
@@ -188,7 +163,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.5.0</version>
                 <configuration>
                     <!-- spigot api javadoc -->
                     <links>
@@ -224,20 +199,21 @@
                     <failOnError>false</failOnError>
 
                     <!-- so that proper hyperlinks to standard jdk classes are generated -->
-                    <additionalOptions>-source 19</additionalOptions>
+                    <!-- enable-preview is necessary because apparently one of our dependencies uses an incubator api! -->
+                    <additionalOptions>-source 20 --enable-preview</additionalOptions>
                 </configuration>
 
                 <!-- I don't even get why this workaround is required.
                     Why is the javadoc plugin reading bytecode anyway?
                     link to the bugtracker: https://issues.apache.org/jira/projects/MJAVADOC/issues/MJAVADOC-542 -->
-                <!-- TODO is this still needed? -->
-                <dependencies>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                        <version>${asmVersion}</version>
-                    </dependency>
-                </dependencies>
+                <!-- keep this around for if the maven-javadoc-plugin starts acting weird again in the future: -->
+<!--                <dependencies>-->
+<!--                    <dependency>-->
+<!--                        <groupId>org.ow2.asm</groupId>-->
+<!--                        <artifactId>asm</artifactId>-->
+<!--                        <version>${asmVersion}</version>-->
+<!--                    </dependency>-->
+<!--                </dependencies>-->
             </plugin>
 
             <plugin>

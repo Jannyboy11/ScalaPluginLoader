@@ -475,7 +475,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
 
         if (bootstrapCls != null) {
             if (PluginBootstrap.class.isAssignableFrom(bootstrapCls)) {
-                Class<? extends PluginBootstrap> bootstrapClass = (Class<? extends PluginBootstrap>) bootstrapCls;
+                Class<? extends PluginBootstrap> bootstrapClass = bootstrapCls.asSubclass(PluginBootstrap.class);
                 try {
                     return Optional.of(ScalaLoaderUtils.instantiate(bootstrapClass));
                 } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | InstantiationException e) {
@@ -525,7 +525,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         }
 
         try {
-            Class<? extends DescriptionPlugin> clazz = (Class<? extends DescriptionPlugin>) Class.forName(mainClassName, true, classLoader);
+            Class<? extends DescriptionPlugin> clazz = Class.forName(mainClassName, true, classLoader).asSubclass(DescriptionPlugin.class);
             DescriptionPlugin plugin = ScalaLoaderUtils.createScalaPluginInstance(clazz);
             return Optional.of(plugin);
         } catch (ClassNotFoundException e) {
