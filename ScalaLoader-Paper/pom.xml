@@ -45,9 +45,9 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>3.5.0</version>
                 <configuration>
-                    <!-- spigot api javadoc -->
+                    <!-- paper api javadoc -->
                     <links>
-                        <link>https://hub.spigotmc.org/javadocs/spigot/</link>
+                        <link>https://jd.papermc.io/paper/1.19/</link>
                     </links>
 
                     <!-- make the javadoc tool stop complain about unrecognised tags -->
@@ -89,7 +89,7 @@
     <repositories>
         <repository>
             <id>papermc-repo</id>
-            <url> https://repo.papermc.io/repository/maven-public/</url>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
     </repositories>
 
