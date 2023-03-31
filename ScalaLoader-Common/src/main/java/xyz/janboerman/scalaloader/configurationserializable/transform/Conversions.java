@@ -115,6 +115,7 @@ class Conversions {
                 break;
             case "Ljava/lang/Double;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Double");
+                operandStack.replaceTop(Double_TYPE);
                 break;
             case "Ljava/lang/Character;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Character");
@@ -123,6 +124,7 @@ class Conversions {
                 break;
             case "Ljava/lang/Boolean;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
+                operandStack.replaceTop(Boolean_TYPE);
                 break;
             case "Ljava/lang/Void;":
                 methodVisitor.visitTypeInsn(CHECKCAST, "java/lang/Void");
