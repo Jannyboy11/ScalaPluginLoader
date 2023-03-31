@@ -268,7 +268,7 @@ class ImmutableCollectionTest {
     def serialize(): java.util.Map[String, AnyRef] = {
         val result = new java.util.LinkedHashMap[String, AnyRef]()
 
-        //TODO this is going to be fun. depending on the scalaVersion of Scala used by the plugin,
+        //TODO this is going to be fun. depending on the version of Scala used by the plugin,
         //TODO I need to pick the right conversion method. Thanks Scala! (not!)
         //TODO I could make use of ScalaRelease?
 

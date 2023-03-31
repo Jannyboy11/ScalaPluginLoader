@@ -199,8 +199,7 @@
                     <failOnError>false</failOnError>
 
                     <!-- so that proper hyperlinks to standard jdk classes are generated -->
-                    <!-- enable-preview is necessary because apparently one of our dependencies uses an incubator api! -->
-                    <additionalOptions>-source 20 --enable-preview</additionalOptions>
+                    <additionalOptions>-source 20</additionalOptions>
                 </configuration>
 
                 <!-- I don't even get why this workaround is required.
