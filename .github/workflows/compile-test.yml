@@ -42,12 +42,13 @@ jobs:
             ScalaLoader/target/ScalaLoader.jar
       - name: Deploy Javadoc
         uses: MathieuSoysal/Javadoc-publisher.yml@v2.4.0
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           javadoc-branch: master
           java-distribution: temurin
           java-version: 20
-          custom-command: 'mvn javadoc:aggregate -pl :ScalaPluginLoader,:ScalaLoader-Command,:ScalaLoader-Bukkit,:ScalaLoader-Paper'
+          custom-command: 'mvn javadoc:aggregate -pl :ScalaPluginLoader,:ScalaLoader-Common,:ScalaLoader-Bukkit,:ScalaLoader-Paper'
           target-folder: javadoc # url will be https://<username>.github.io/<repo>/javadoc, This can be left as nothing to generate javadocs in the root folder.
           project: maven # or gradle
-          subdirectories: ScalaLoader-Common ScalaLoader-Bukkit
+          subdirectories: ScalaLoader-Common ScalaLoader-Bukkit ScalaLoader-Paper
