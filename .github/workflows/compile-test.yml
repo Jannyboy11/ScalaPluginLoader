@@ -46,7 +46,7 @@ jobs:
         # if: startsWith(github.ref, 'refs/tags/') #TODO once it works, put this in.
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          javadoc-branch: master
+          javadoc-branch: javadoc
           java-distribution: temurin
           java-version: 20
           custom-command: 'mvn clean package javadoc:aggregate -pl :ScalaPluginLoader,:ScalaLoader-Common,:ScalaLoader-Bukkit,:ScalaLoader-Paper'
