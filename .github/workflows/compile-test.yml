@@ -49,7 +49,6 @@ jobs:
           javadoc-branch: javadoc
           java-distribution: temurin
           java-version: 20
-          custom-command: 'mvn clean package javadoc:aggregate -pl :ScalaPluginLoader,:ScalaLoader-Common,:ScalaLoader-Bukkit,:ScalaLoader-Paper'
-          target-folder: javadoc # url will be https://<username>.github.io/<repo>/javadoc, This can be left as nothing to generate javadocs in the root folder.
+          custom-command: 'mvn package javadoc:aggregate -pl :ScalaPluginLoader,:ScalaLoader-Common,:ScalaLoader-Bukkit,:ScalaLoader-Paper'
+          target-folder: target/site/apidocs # url will be https://<username>.github.io/<repo>/javadoc, This can be left as nothing to generate javadocs in the root folder.
           project: maven # or gradle
-          #subdirectories: ScalaLoader-Common ScalaLoader-Bukkit ScalaLoader-Paper
