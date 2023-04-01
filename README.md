@@ -135,15 +135,13 @@ public final class DummyPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         //get the plugin instance
-        ExamplePlugin$ plugin = (ExamplePlugin$) getServer().getPluginManager().getPlugin("ScalaExample");
+        ExamplePlugin$ scalaPlugin = (ExamplePlugin$) getServer().getPluginManager().getPlugin("ScalaExample");
         
         //make sure all classes from the scala plugin can be accessed
-        if (!IScalaLaoder.getInstance().isPaperPlugin()) {
-            ScalaPluginLoader.getInstance().openUpToJavaPlugin(plugin, this);
-        }
+        IScalaPluginLoader.openUpToJavaPlugin(scalaPlugin, this);
         
         //do whatever you want afterwards!
-        getLogger().info("We got " + plugin.getInt() + " from Scala!");
+        getLogger().info("We got " + scalaPlugin.getInt() + " from Scala!");
     }
 
 }
@@ -161,7 +159,7 @@ Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
 ##### SBT
 ```scala
 resolvers += "jannyboy11-minecraft-repo" at "https://repo.repsy.io/mvn/jannyboy11/minecraft"
-libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.2-SNAPSHOT" % "provided"
+libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.3-SNAPSHOT" % "provided"
 ```
 
 ##### Maven
@@ -175,7 +173,7 @@ libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.2-SN
 <dependency>
     <groupId>com.janboerman.scalaloader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>0.18.2-SNAPSHOT</version>
+    <version>0.18.3-SNAPSHOT</version>
 </dependency>
 ```
 

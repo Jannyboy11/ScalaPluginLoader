@@ -17,6 +17,7 @@ import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
+import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions;
 import xyz.janboerman.scalaloader.configurationserializable.transform.AddVariantTransformer;
@@ -395,7 +396,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
      * @param scalaPlugin the scala plugin
      * @param javaPlugin the java plugin
      *
-     * @deprecated does not work on Paper - do not call if {@link IScalaLoader#isPaperPlugin()} is true!
+     * @deprecated use {@link IScalaPluginLoader#openUpToJavaPlugin(IScalaPlugin, JavaPlugin)} instead.
      */
     @Deprecated
     //can be static, but this is a public api though, and I might want to change the implementation details again later, so I think it's good that this is a virtual method.
