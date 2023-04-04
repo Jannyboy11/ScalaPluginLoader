@@ -49,7 +49,7 @@ If possible, always use methods that let you pass the Plugin instance explicitly
 ### Roadmap
 There's only ~~seven~~ two features that are missing in my opinion:
 - ~~The first con. I want JavaPlugins te be able to access the Scala library classes, however they will need to tell
-ScalaLoader somehow which version they want to use.~~ Now implemented in ScalaPluginLoader#openUpToJavaPlugin(ScalaPlugin,JavaPlugin).
+ScalaLoader somehow which version they want to use.~~ Now implemented in IScalaPluginLoader#openUpToJavaPlugin(ScalaPlugin,JavaPlugin).
 Currently this does not inject the Scala library classes into the JavaPlugin's classloader, but it's a start.
 - ~~Make the ScalaPluginLoader parallel capable. Right now ScalaPlugins are loaded sequentially.~~
 - ~~Use bukkit's api-version to transform classes so that plugins will be compatible once they are loaded.~~
