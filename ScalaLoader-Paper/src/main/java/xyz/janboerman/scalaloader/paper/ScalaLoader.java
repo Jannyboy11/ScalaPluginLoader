@@ -84,7 +84,13 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
- * This is ScalaLoader's main class when running on Paper.
+ * <p>
+ *      This is ScalaLoader's main class when running on Paper.
+ * </p>
+ * <p>
+ *      If you want to explicitly get the instance of the ScalaLoader plugin, use {@link IScalaLoader#getInstance()} instead.
+ *      The implementation of ScalaLoader returned by this method depends on whether ScalaLoader is loaded as <a href=https://docs.papermc.io/paper/dev/getting-started/paper-plugins>Paper Plugin</a> or not.
+ * </p>
  *
  * @author Jannyboy11
  */

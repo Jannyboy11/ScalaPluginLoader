@@ -31,8 +31,14 @@ import xyz.janboerman.scalaloader.plugin.ScalaPluginLoaderException;
 import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
 
 /**
- * The ScalaLoader plugin's main class! ScalaLoader enables you to write plugins in Scala. Just depend on ScalaLoader,
- * extend {@link xyz.janboerman.scalaloader.plugin.ScalaPlugin}, and ScalaLoader will provide the Scala runtime classes!
+ * <p>
+ *      The ScalaLoader plugin's main class! ScalaLoader enables you to write plugins in Scala. Just depend on ScalaLoader,
+ *      extend {@link xyz.janboerman.scalaloader.plugin.ScalaPlugin}, and ScalaLoader will provide the Scala runtime classes!
+ * </p>
+ * <p>
+ *      If you want to explicitly get the instance of the ScalaLoader plugin, use {@link IScalaLoader#getInstance()} instead.
+ *      The implementation of ScalaLoader returned by this method depends on whether ScalaLoader is loaded as <a href=https://docs.papermc.io/paper/dev/getting-started/paper-plugins>Paper Plugin</a> or not.
+ * </p>
  *
  * @note undocumented methods are unintended for use outside of this plugin.
  *
