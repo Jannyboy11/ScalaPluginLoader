@@ -5,12 +5,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.event.EventBus;
+import xyz.janboerman.scalaloader.paper.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLogger;
 
 import java.io.File;
 import java.util.logging.Logger;
 
+/** Special plugin instance to obtain your plugin's description. Internal use only. */
 public class DescriptionPlugin extends JavaPlugin implements IScalaPlugin {
 
     private final ScalaPluginDescription description;
@@ -42,7 +44,7 @@ public class DescriptionPlugin extends JavaPlugin implements IScalaPlugin {
 
     @Override
     public EventBus getEventBus() {
-        return new EventBus(Bukkit.getPluginManager());
+        return ScalaLoader.getInstance().getEventBus();
     }
 
     @Override

@@ -13,8 +13,10 @@ Introducing...
 # ScalaLoader
 
 ScalaLoader uses a custom PluginLoader that loads the Scala runtime classes for you!
+Javadoc available [here](https://jannyboy11.github.io/ScalaPluginLoader/javadoc)!
 
 [![ScalaLoader](https://api.mcbanners.com/banner/saved/UmfAZlBOygXvQb.png)](https://www.spigotmc.org/resources/scalaloader.59568/)
+
 
 #### Pros
 - Write idiomatic Scala!
@@ -153,13 +155,16 @@ The jar file will be built at `./ScalaLoader/target/ScalaLoader-<version>.jar`
 Note that while ScalaLoader can run on Java 8, it requires JDK-20 to compile.
 
 ### Pre-built plugin jar file?
-Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/)
+Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/).
+
+### Javadocs?
+Available on [GitHub Pages](https://jannyboy11.github.io/ScalaPluginLoader/javadoc).
 
 ## Dependency Information [![Build Status](https://ci.codemc.io/buildStatus/icon?job=Jannyboy11%2FScalaPluginLoader)](https://ci.codemc.io/job/Jannyboy11/job/ScalaPluginLoader/)
 ##### SBT
 ```scala
 resolvers += "jannyboy11-minecraft-repo" at "https://repo.repsy.io/mvn/jannyboy11/minecraft"
-libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.3-SNAPSHOT" % "provided"
+libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.4-SNAPSHOT" % "provided"
 ```
 
 ##### Maven
@@ -173,7 +178,7 @@ libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.3-SN
 <dependency>
     <groupId>com.janboerman.scalaloader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>0.18.3-SNAPSHOT</version>
+    <version>0.18.4-SNAPSHOT</version>
 </dependency>
 ```
 

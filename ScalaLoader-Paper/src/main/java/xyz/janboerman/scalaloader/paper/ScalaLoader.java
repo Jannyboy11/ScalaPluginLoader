@@ -83,6 +83,8 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
+ * This is ScalaLoader's main class when running on Paper.
+ *
  * @author Jannyboy11
  */
 public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Listener {
@@ -122,6 +124,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         return debugSettings;
     }
 
+    @Override
     public EventBus getEventBus() {
         return eventBus == null ? eventBus = new EventBus(getServer().getPluginManager()) : eventBus;
     }
@@ -495,7 +498,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         try {
             ScalaPluginClassLoader pluginClassLoader = pluginClasspathBuilder.buildClassLoader(PaperPluginLogger.getLogger(context.getConfiguration()), getClassLoader(), file, scanResult.transformerRegistry, loader, scanResult.pluginYaml);
             context.setPluginClassLoader(pluginClassLoader);
-            JavaPlugin javaPlugin = bootstrapper.createPlugin(context); //TODO this throws an error because the libraries could not be loaded. Don't we have them in the ScalaPluginDescription?
+            JavaPlugin javaPlugin = bootstrapper.createPlugin(context);
             if (javaPlugin instanceof ScalaPlugin scalaPlugin) {
                 return Optional.of(scalaPlugin);
             } else {

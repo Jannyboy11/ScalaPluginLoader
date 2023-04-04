@@ -11,6 +11,7 @@ import org.bukkit.generator.BiomeProvider;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import xyz.janboerman.scalaloader.ScalaRelease;
+import xyz.janboerman.scalaloader.bytecode.Replaced;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.plugin.description.Api;
@@ -52,6 +53,7 @@ import java.util.logging.Logger;
  * <p>
  * For ScalaLoader's Event api, see {@link EventBus}, {@link xyz.janboerman.scalaloader.event.Event} and {@link xyz.janboerman.scalaloader.event.Cancellable}.
  */
+@Replaced //Paper
 public abstract class ScalaPlugin implements IScalaPlugin {
 
     private final ScalaPluginDescription description;

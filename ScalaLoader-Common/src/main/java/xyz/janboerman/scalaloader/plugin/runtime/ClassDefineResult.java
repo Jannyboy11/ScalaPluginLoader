@@ -2,10 +2,21 @@ package xyz.janboerman.scalaloader.plugin.runtime;
 
 import java.util.Objects;
 
+/**
+ * Represents a result of defining a class using an {@link xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader}.
+ */
 public interface ClassDefineResult /*permits NewClass, OldClass*/ {
 
+    /**
+     * Get the Class that was defined.
+     * @return the class
+     */
     public Class<?> getClassDefinition();
 
+    /**
+     * Whether the class was newly-defined.
+     * @return true if the class is new, false if it was old
+     */
     public boolean isNew();
 
     public static ClassDefineResult newClass(Class<?> clazz) {

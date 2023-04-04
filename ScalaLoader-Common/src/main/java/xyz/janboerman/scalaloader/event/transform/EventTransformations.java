@@ -3,6 +3,7 @@ package xyz.janboerman.scalaloader.event.transform;
 import org.bukkit.event.Event;
 import org.objectweb.asm.*;
 import xyz.janboerman.scalaloader.bytecode.AsmConstants;
+import xyz.janboerman.scalaloader.event.EventBus;
 
 /**
  * This class is NOT part of the public API!

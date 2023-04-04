@@ -159,9 +159,9 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         return pluginLoader;
     }
 
-    //now that scala library classes are handled by the library classoader, this should simplify a whole lot. I think.
+    //now that scala library classes are handled by the library classloader, this should simplify a whole lot. I think.
 
-    //probably don't have to override loadClass because the PaperPluginClassLoader implementation is already perfect for us? :D //TODO check whether this is true.
+    //probably don't have to override loadClass because the PaperPluginClassLoader implementation is already perfect for us? :D
 
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {

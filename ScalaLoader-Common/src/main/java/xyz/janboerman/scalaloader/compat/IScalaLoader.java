@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.janboerman.scalaloader.DebugSettings;
+import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 
 import java.io.File;
@@ -13,17 +14,33 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Abstraction for ScalaLoader's main class.
+ */
 public interface IScalaLoader extends Plugin {
 
+    /** Get the ScalaLoader instance.
+     * @return the instance
+     */
     public static IScalaLoader getInstance() {
         JavaPlugin whoLoadedThis = JavaPlugin.getProvidingPlugin(IScalaLoader.class);
         return (IScalaLoader) whoLoadedThis;
     }
 
+    /**
+     * Get whether ScalaLoader is a Paper Plugin
+     * @return true if ScalaLoader is a Paper Plugin, false if it is a regular Bukkit plugin.
+     * @see <a href=https://docs.papermc.io/paper/dev/getting-started/paper-plugins>Paper Plugins</a>
+     */
     public boolean isPaperPlugin();
 
+    /** Internal use only */
     public DebugSettings getDebugSettings();
 
+    /**
+     * Get the folder from which ScalaPlugins are loaded. By default this is server_root/plugins/ScalaLoader/scalaplugins
+     * @return the folder from which ScalaPlugins are loaded
+     */
     public File getScalaPluginsFolder();
 
     /**
@@ -54,6 +71,10 @@ public interface IScalaLoader extends Plugin {
         }
     }
 
+    /**
+     * Get the loaded ScalaPlugins.
+     * @return the loaded ScalaPlugins.
+     */
     public Collection<? extends IScalaPlugin> getScalaPlugins();
 
     /**
@@ -69,5 +90,11 @@ public interface IScalaLoader extends Plugin {
         saveConfig();
         return wasAdded;
     }
+
+    /**
+     * Get the EventBus used for registering and calling {@link xyz.janboerman.scalaloader.event.Event}s.
+     * @return the event bus
+     */
+    public EventBus getEventBus();
 
 }

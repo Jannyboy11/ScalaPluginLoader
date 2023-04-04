@@ -7,10 +7,22 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.logging.Level;
 
+/**
+ * Represents the plugin loader of a ScalaPlugin.
+ * <p>
+ * On CraftBukkit and Spigot, this is a single instance for all ScalaPlugins,
+ * while on Paper, this is a loader instance per ScalaPlugin.
+ */
 public interface IScalaPluginLoader {
 
+    /** Internal use only */
     public DebugSettings debugSettings();
 
+    /**
+     * Make the classes of a ScalaPlugin accessible to a JavaPlugin.
+     * @param scalaPlugin the ScalaPlugin
+     * @param javaPlugin the JavaPlugin
+     */
     public static void openUpToJavaPlugin(IScalaPlugin scalaPlugin, JavaPlugin javaPlugin) {
         if (!IScalaLoader.getInstance().isPaperPlugin()) {
             //IScalaPluginLoader instance == xyz.janboerman.scalaloader.plugin.ScalaPluginLoader.getInstance();

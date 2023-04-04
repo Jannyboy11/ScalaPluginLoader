@@ -17,11 +17,13 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
+import xyz.janboerman.scalaloader.bytecode.Replaced;
 import xyz.janboerman.scalaloader.commands.DumpClass;
 import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
 import xyz.janboerman.scalaloader.commands.ResetScalaUrls;
 import xyz.janboerman.scalaloader.commands.SetDebug;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
+import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.plugin.ScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginLoader;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
@@ -36,6 +38,7 @@ import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
  *
  * @author Jannyboy11
  */
+@Replaced //Paper
 public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
 
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
@@ -108,6 +111,11 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
     @Override
     public Collection<ScalaPlugin> getScalaPlugins() {
         return ScalaPluginLoader.getInstance().getScalaPlugins();
+    }
+
+    @Override
+    public EventBus getEventBus() {
+        return ScalaPluginLoader.getInstance().getEventBus();
     }
 
     public Pattern[] getJavaPluginLoaderPatterns() {

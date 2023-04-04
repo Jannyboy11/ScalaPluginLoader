@@ -45,7 +45,7 @@ import xyz.janboerman.scalaloader.event.transform.EventError;
  *  Alternatively, it's also possible to register your event Listener using a lambda, there's a {@link EventExecutor} too for ScalaLoader Events.
  * </p>
  *
- * @implNote because transformations are done at the classloader-level, JavaPlugins cannot extend this class because they use a
+ * @implNote Because transformations are done at the classloader-level, JavaPlugins cannot extend this class because they use a
  * different classloader implementation. JavaPlugins can listen to instances of subclasses of {@link Event}s just fine through Bukkit's
  * EventHandler reflection api. It is only the {@link Event} base type that is toxic, don't ever use it explicitly in a JavaPlugin.
  *

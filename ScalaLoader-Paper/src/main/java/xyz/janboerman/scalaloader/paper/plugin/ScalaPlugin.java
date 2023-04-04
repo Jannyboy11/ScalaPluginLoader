@@ -11,15 +11,27 @@ import xyz.janboerman.scalaloader.paper.plugin.description.DescriptionClassLoade
 
 import java.io.File;
 
+/**
+ * Representation of a ScalaPlugin when running on Paper. ScalaLoader's bytecode transformer will ensure that subclasses of xyz.janboerman.scalaloader.plugin.ScalaPlugin
+ * will be subclasses of xyz.janboerman.scalalaoder.paper.plugin.ScalaPlugin at runtime when ScalaLoader runs on Paper.
+ */
 public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
 
     private final ScalaPluginDescription description;
     private File configFile;
 
+    /**
+     * Use this super constructor if you don't want to describe your plugin using a Yaml file.
+     * You can *just* provide the description directly as an argument.
+     * @param description your plugin's description
+     */
     protected ScalaPlugin(ScalaPluginDescription description) {
         this.description = description;
     }
 
+    /**
+     * Use this super constructor if you have a plugin.yml or paper-plugin.yml.
+     */
     protected ScalaPlugin() {
         if (getClass().getClassLoader() instanceof ScalaPluginClassLoader classLoader) {
             this.description = classLoader.getConfiguration().description;
@@ -35,31 +47,37 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
         return description;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getPrefix() {
         return getScalaDescription().getPrefix();
     }
 
+    /** {@inheritDoc} */
     @Override
     public ScalaPluginClassLoader classLoader() {
         return (ScalaPluginClassLoader) super.getClassLoader();
     }
 
+    /** {@inheritDoc} */
     @Override
     public File getConfigFile() {
         return configFile == null ? configFile = new File(classLoader().getDataDirectory().toFile(), "config.yml") : configFile;
     }
 
+    /** {@inheritDoc} */
     @Override
     public EventBus getEventBus() {
         return ScalaLoader.getInstance().getEventBus();
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getScalaVersion() {
         return classLoader().getScalaVersion();
     }
 
+    /** {@inheritDoc} */
     @Override
     public final String getDeclaredScalaVersion() {
         Class<?> mainClass = getClass();

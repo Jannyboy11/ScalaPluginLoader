@@ -14,6 +14,7 @@ import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
+import xyz.janboerman.scalaloader.bytecode.Replaced;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
@@ -48,6 +49,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+@Replaced //Paper
 public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
     private static ScalaPluginLoader INSTANCE;
@@ -164,7 +166,9 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
      *
      * @apiNote This method is provided for JavaPlugins. ScalaPlugin's can use {@link ScalaPlugin#getEventBus()} instead.
      * @return the event bus
+     * @deprecated use {@link IScalaLoader#getEventBus()} instead.
      */
+    @Deprecated
     public EventBus getEventBus() {
         return eventBus;
     }

@@ -11,7 +11,7 @@ import xyz.janboerman.scalaloader.event.transform.EventError;
 
 /**
  * An event bus for ScalaPlugin {@link Event}s.
- * The instance of this event bus can be obtained in your ScalaPlugin's main class using {@code super.getEventBus()} or {@link ScalaPluginLoader#getEventBus()}
+ * The instance of this event bus can be obtained in your ScalaPlugin's main class using {@code super.getEventBus()} or {@link xyz.janboerman.scalaloader.compat.IScalaLoader#getEventBus()}.
  *
  * @apiNote JavaPlugins should not use this class, they are better off using Bukkit's PluginManager api.
  * @implNote Some of the internals of this class rely on the fact that the bytecode of ScalaPlugins is transformed using
@@ -26,7 +26,7 @@ public class EventBus {
     /**
      * Construct the event bus.
      *
-     * @deprecated not meant to be constructed explicitly. Use {@link xyz.janboerman.scalaloader.compat.IScalaPlugin#getEventBus()} or {@link xyz.janboerman.scalaloader.compat.IScalaPluginLoader#getEventBus()}.
+     * @deprecated not meant to be constructed explicitly. Use {@link xyz.janboerman.scalaloader.compat.IScalaPlugin#getEventBus()} or {@link xyz.janboerman.scalaloader.compat.IScalaLoader#getEventBus()}.
      * @param pluginManager the server's PluginManager
      */
     @Deprecated
