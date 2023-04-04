@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.event.server.ServerLoadEvent.LoadType;
 import org.bukkit.plugin.PluginLoadOrder;
+import org.bukkit.plugin.UnknownDependencyException;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
@@ -286,6 +287,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
             File file = byName.get(pluginName);
             PluginJarScanResult scanResult = scanResults.get(file);
             ScalaPluginDescription description = descriptions.get(file);
+            //TODO check dependencies. if not available, might want to try to load the ScalaPlugin again once Paper's own JavaPlugin loading process has finished.
 
             ScalaPluginProviderContext context = new ScalaPluginProviderContext(file, description);
             var optionalBootstrap = getBootstrap(description, descriptionPlugins.get(file).descriptionClassLoader());

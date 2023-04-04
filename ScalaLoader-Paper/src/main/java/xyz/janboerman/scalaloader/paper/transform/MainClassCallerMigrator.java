@@ -22,6 +22,8 @@ public class MainClassCallerMigrator extends ClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
                 if (asmMainClassName.equals(owner) && name.equals("getClassLoader")) {
                     super.visitMethodInsn(opcode, asmMainClassName, "classLoader", descriptor, isInterface);
+                } else if (asmMainClassName.equals(owner) && name.equals("getPluginLoader")) {
+                    super.visitMethodInsn(opcode, asmMainClassName, "pluginLoader", descriptor, isInterface);
                 } else {
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 }

@@ -400,9 +400,20 @@ public abstract class ScalaPlugin implements IScalaPlugin {
     /**
      * Gets the plugin loader.
      * @return a {@link ScalaPluginLoader}
+     * @deprecated use {@link #pluginLoader()} instead.
      */
+    @Deprecated //TODO at the next deprecation clean up spree, make this method final.
     @Override
     public ScalaPluginLoader getPluginLoader() {
+        return pluginLoader();
+    }
+
+    /**
+     * Get the plugin loader.
+     * @return a {@link ScalaPluginLoader}
+     */
+    @Override
+    public ScalaPluginLoader pluginLoader() {
         return pluginLoader;
     }
 

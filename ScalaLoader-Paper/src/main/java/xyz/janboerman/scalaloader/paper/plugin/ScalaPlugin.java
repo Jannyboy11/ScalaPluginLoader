@@ -59,6 +59,11 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
         return (ScalaPluginClassLoader) super.getClassLoader();
     }
 
+    @Override
+    public ScalaPluginLoader pluginLoader() {
+        return (ScalaPluginLoader) classLoader().getPluginLoader();
+    }
+
     /** {@inheritDoc} */
     @Override
     public File getConfigFile() {

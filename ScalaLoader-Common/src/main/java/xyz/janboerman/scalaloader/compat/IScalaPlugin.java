@@ -63,6 +63,14 @@ public interface IScalaPlugin extends Plugin {
     }
 
     /**
+     * Get the {@link org.bukkit.plugin.PluginLoader} of this plugin.
+     * @return the plugin loader
+     */
+    public default IScalaPluginLoader pluginLoader() {
+        return classLoader().getPluginLoader();
+    }
+
+    /**
      * Get the prefix of this plugin, used for logging.
      * @return the prefix
      */
