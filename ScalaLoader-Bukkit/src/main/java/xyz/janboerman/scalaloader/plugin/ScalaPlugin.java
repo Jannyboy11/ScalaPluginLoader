@@ -216,6 +216,10 @@ public abstract class ScalaPlugin implements IScalaPlugin {
         return getScalaVersion(); //fallback - to make this more robust in production
     }
 
+    /**
+     * Get the api-version that was declared by this plugin.
+     * @return the bukkit api version
+     */
     public final String getDeclaredApiVersion() {
         Class<?> mainClass = getClass();
 
@@ -224,7 +228,12 @@ public abstract class ScalaPlugin implements IScalaPlugin {
             return api.value().getVersionString();
         }
 
-        return null;
+        Object yamlDefinedApi = getClassLoader().getExtraPluginYaml().get("api-version");
+        if (yamlDefinedApi != null) {
+            return yamlDefinedApi.toString();
+        }
+
+        return ApiVersion.latest().getVersionString();
     }
 
     /**

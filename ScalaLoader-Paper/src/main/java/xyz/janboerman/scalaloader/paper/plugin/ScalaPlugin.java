@@ -5,6 +5,8 @@ import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.paper.ScalaLoader;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
+import xyz.janboerman.scalaloader.plugin.description.Api;
+import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 import xyz.janboerman.scalaloader.plugin.description.Scala;
 import xyz.janboerman.scalaloader.plugin.description.CustomScala;
 import xyz.janboerman.scalaloader.paper.plugin.description.DescriptionClassLoader;
@@ -59,6 +61,7 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
         return (ScalaPluginClassLoader) super.getClassLoader();
     }
 
+    /** {@inheritDoc} */
     @Override
     public ScalaPluginLoader pluginLoader() {
         return (ScalaPluginLoader) classLoader().getPluginLoader();
@@ -104,6 +107,27 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
 
         return getScalaVersion(); //fallback - to make this more robust in production
     }
+
+    /**
+     * Get the api-version that was declared by this plugin.
+     * @return the bukkit api version
+     */
+    public final String getDeclaredApiVersion() {
+        Class<?> mainClass = getClass();
+
+        Api api = mainClass.getDeclaredAnnotation(Api.class);
+        if (api != null) {
+            return api.value().getVersionString();
+        }
+
+        Object yamlDefinedApi = classLoader().getExtraPluginYaml().get("api-version");
+        if (yamlDefinedApi != null) {
+            return yamlDefinedApi.toString();
+        }
+
+        return ApiVersion.latest().getVersionString();
+    }
+
 
     @Override
     public String toString() {
