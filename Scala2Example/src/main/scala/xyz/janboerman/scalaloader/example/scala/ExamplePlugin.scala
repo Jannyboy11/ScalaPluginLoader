@@ -17,7 +17,7 @@ object Permissions {
 @Scala(version = ScalaVersion.v2_13_10)
 @Api(ApiVersion.v1_19)
 object ExamplePlugin
-    extends ScalaPlugin(new ScalaPluginDescription("Scala2Example", "0.18.3-SNAPSHOT")
+    extends ScalaPlugin(new ScalaPluginDescription("Scala2Example", "0.18.6-SNAPSHOT")
         .addCommand(new SPCommand("foo").permission(fooPermission))
         .addCommand(new SPCommand("home").permission(homePermission).usage("/home set|tp"))
         .permissions(homePermission)) {
