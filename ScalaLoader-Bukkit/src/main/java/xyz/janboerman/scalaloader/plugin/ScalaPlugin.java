@@ -45,7 +45,6 @@ import java.util.logging.Logger;
  * object MyPlugin extends ScalaPlugin:
  *     override def onEnable(): Unit =
  *         getLogger().info("Hello, World!")
- *
  * </code>
  * </pre>
  * Optionally you can pass a {@link ScalaPluginDescription} to the ScalaPlugin constructor which allows you to not have to provide a plugin.yml plugin description file.
