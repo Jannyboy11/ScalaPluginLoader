@@ -13,7 +13,7 @@ Introducing...
 # ScalaLoader
 
 ScalaLoader uses a custom PluginLoader that loads the Scala runtime classes for you!
-Javadoc available [here](https://jannyboy11.github.io/ScalaPluginLoader/javadoc)!
+Javadoc available [here](https://jannyboy11.github.io/ScalaPluginLoader/javadoc/xyz/janboerman/scalaloader/plugin/ScalaPlugin.html)!
 
 [![ScalaLoader](https://api.mcbanners.com/banner/saved/UmfAZlBOygXvQb.png)](https://www.spigotmc.org/resources/scalaloader.59568/)
 
@@ -179,6 +179,7 @@ libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.5-SN
     <groupId>com.janboerman.scalaloader</groupId>
     <artifactId>ScalaLoader</artifactId>
     <version>0.18.5-SNAPSHOT</version>
+    <scope>provided</scope>
 </dependency>
 ```
 
