@@ -22,14 +22,14 @@ object ExamplePlugin
         .addCommand(new SPCommand("home").permission(homePermission).usage("/home set|tp"))
         .permissions(homePermission)) {
 
-    getLogger.info("ScalaExample - I am constructed!")
+    getLogger.info("Scala2Example - I am constructed!")
 
     override def onLoad(): Unit = {
-        getLogger.info("ScalaExample - I am loaded!")
+        getLogger.info("Scala2Example - I am loaded!")
     }
 
     override def onEnable(): Unit = {
-        getLogger.info("ScalaExample - I am enabled!")
+        getLogger.info("Scala2Example - I am enabled!")
 
         //works because Home is magically registered at ConfigurationSerialization at the start of the onEnable!
         HomeManager.loadHomes()
@@ -53,7 +53,7 @@ object ExamplePlugin
     }
 
     override def onDisable(): Unit = {
-        getLogger.info("ScalaExample - I am disabled!")
+        getLogger.info("Scala2Example - I am disabled!")
     }
 
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean = {
