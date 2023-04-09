@@ -335,7 +335,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         for (var cmd : descriptionCommands) {
             PluginCommand command = newPluginCommand(cmd.getName(), getPlugin());
             cmd.getDescription().ifPresent(command::setDescription);
-            cmd.getUsage().ifPresent(command::setUsage);
+            cmd.getUsage().ifPresent(usage -> command.setUsage(usage.replace("<command>", cmd.getName())));
             command.setAliases(Compat.listCopy(cmd.getAliases()));
             cmd.getPermission().ifPresent(command::setPermission);
             cmd.getPermissionMessage().ifPresent(command::setPermissionMessage);
