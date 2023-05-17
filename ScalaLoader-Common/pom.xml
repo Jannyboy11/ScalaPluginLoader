@@ -13,7 +13,7 @@
 
     <properties>
         <bukkitVersion>1.19.4-R0.1-SNAPSHOT</bukkitVersion>
-        <asmVersion>9.4</asmVersion>
+        <asmVersion>9.5</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <junitVersion>5.7.1</junitVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
