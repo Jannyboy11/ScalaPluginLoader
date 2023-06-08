@@ -38,6 +38,7 @@ public class ScalaPluginDescription {
     private final LinkedHashSet<String> hardDependencies = new LinkedHashSet<>();
     private final LinkedHashSet<String> softDependencies = new LinkedHashSet<>(); { addSoftDepend("ScalaLoader"); }
     private final LinkedHashSet<String> inverseDependencies = new LinkedHashSet<>();
+    //TODO paperplugin-style dependencies?
     private final LinkedHashSet<String> provides = new LinkedHashSet<>();
     private final LinkedHashSet<String> mavenDependencies = new LinkedHashSet<>();
     private PermissionDefault permissionDefault = null;
@@ -493,9 +494,9 @@ public class ScalaPluginDescription {
                     addContributor(contrib.toString());
         website((String) pluginYaml.get("website"));
         prefix((String) pluginYaml.get("prefix"));
-        String load = (String) pluginYaml.get("load");
-        if (load != null && this.loadOrder == null)
-            loadOrder(PluginLoadOrder.valueOf(load));
+        String pluginLoadOrder = (String) pluginYaml.get("load");
+        if (pluginLoadOrder != null && this.loadOrder == null)
+            loadOrder(PluginLoadOrder.valueOf(pluginLoadOrder));
         String defaultPermissionDefault = (String) pluginYaml.get("default-permission");
         if (defaultPermissionDefault != null && this.permissionDefault == null)
             permissionDefault(PermissionDefault.getByName(defaultPermissionDefault));
@@ -514,13 +515,22 @@ public class ScalaPluginDescription {
             for (String inverseDep : inverseDepend)
                 if (inverseDep != null)
                     addLoadBefore(inverseDep);
-        List<Map<String, Object>> paperDependencies = (List<Map<String, Object>>) pluginYaml.get("dependencies");
-        if (paperDependencies != null)
-            for (Map<String, Object> paperDependency : paperDependencies)
-                if (Boolean.parseBoolean(paperDependency.get("required").toString()))
-                    addHardDepend(paperDependency.get("name").toString());
-                else
-                    addSoftDepend(paperDependency.get("name").toString());
+
+        Object paperDependencies = pluginYaml.get("dependencies");
+        if (paperDependencies instanceof List) {
+            List<Map<String, Object>> paperDeps = (List) paperDependencies;
+            if (paperDependencies != null)
+                for (Map<String, Object> paperDependency : paperDeps)
+                    if (Boolean.parseBoolean(paperDependency.get("required").toString()))
+                        addHardDepend(paperDependency.get("name").toString());
+                    else
+                        addSoftDepend(paperDependency.get("name").toString());
+        } else if (paperDependencies instanceof Map) {
+            //TODO might want to track paper plugin dependencies separately in ScalaPluginDescription or ScalaPluginMeta
+            Map<String, Object> map = (Map) paperDependencies;
+            addPaperDependency(this, (Map<String, Map<String, Object>>) map.get("bootstrap"));
+            addPaperDependency(this, (Map<String, Map<String, Object>>) map.get("server"));
+        }
         List<Map<String, Object>> paperLoadBefores = (List<Map<String, Object>>) pluginYaml.get("load-before");
         if (paperLoadBefores != null)
             for (Map<String, Object> paperLoadBefore : paperLoadBefores)
@@ -529,6 +539,7 @@ public class ScalaPluginDescription {
         if (paperLoadAfters != null)
             for (Map<String, Object> paperLoadAfter : paperLoadAfters)
                 addSoftDepend(paperLoadAfter.get("name").toString());
+
         List<String> provides = (List<String>) pluginYaml.get("provides");
         if (provides != null)
             provides(provides.toArray(new String[0]));
@@ -557,6 +568,29 @@ public class ScalaPluginDescription {
                 Map<String, Object> properties = entry.getValue();
                 Permission perm = makePermission(permissionName, properties);
                 addPermission(perm);
+            }
+        }
+    }
+
+    private static void addPaperDependency(ScalaPluginDescription receiver, Map<String, Map<String, Object>> dependencies) {
+        for (Map.Entry<String, Map<String, Object>> entry : dependencies.entrySet()) {
+            String pluginName = entry.getKey();
+            Map<String, Object> dependencyConfig = entry.getValue();
+            String load = dependencyConfig.getOrDefault("load", "OMIT").toString();
+            boolean required = (Boolean) dependencyConfig.getOrDefault("required", true);
+            boolean joinClassPath = (Boolean) dependencyConfig.getOrDefault("join-classpath", true);
+            if (!required) {
+                if (joinClassPath) {
+                    receiver.addSoftDepend(pluginName);
+                } else {
+                    receiver.addLoadBefore(pluginName);
+                }
+            } else {
+                switch (load) {
+                    case "BEFORE": receiver.addHardDepend(pluginName); break;
+                    case "AFTER": receiver.addLoadBefore(pluginName); break;
+                    case "OMIT": receiver.addSoftDepend(pluginName); break;
+                }
             }
         }
     }

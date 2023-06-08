@@ -4,6 +4,7 @@ import com.destroystokyo.paper.utils.PaperPluginLogger;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
+import io.papermc.paper.plugin.bootstrap.PluginProviderContext;
 import org.bukkit.Server;
 import org.bukkit.command.CommandMap;
 import org.bukkit.event.EventHandler;
@@ -11,7 +12,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.event.server.ServerLoadEvent.LoadType;
 import org.bukkit.plugin.PluginLoadOrder;
-import org.bukkit.plugin.UnknownDependencyException;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.objectweb.asm.ClassReader;
 import org.yaml.snakeyaml.Yaml;
@@ -29,6 +29,7 @@ import xyz.janboerman.scalaloader.configurationserializable.transform.PluginTran
 import xyz.janboerman.scalaloader.dependency.PluginYamlLibraryLoader;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.event.plugin.ScalaPluginEnableEvent;
+import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginBootstrapContext;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaCompatMap;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
@@ -62,6 +63,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -295,14 +297,14 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
             ScalaPluginDescription description = descriptions.get(file);
             //TODO check dependencies. if not available, might want to try to load the ScalaPlugin again once Paper's own JavaPlugin loading process has finished.
 
-            ScalaPluginProviderContext context = new ScalaPluginProviderContext(file, description);
+            ScalaPluginProviderContext context = makeScalaPluginProviderContext(file, description); //used to be just new ScalaPluginProviderContext(file, description)
             var optionalBootstrap = getBootstrap(description, descriptionPlugins.get(file).descriptionClassLoader());
             if (optionalBootstrap.isEmpty()) continue;
             PluginBootstrap bootstrapper = optionalBootstrap.get();
             ScalaPluginLoader loader = new ScalaPluginLoader();
             ScalaPluginClasspathBuilder pluginClasspathBuilder = new ScalaPluginClasspathBuilder(context);
 
-            bootstrapper.bootstrap(context);
+            bootstrap(bootstrapper, context);   //used to be just boostrapper.bootstrap(context), but PluginBootstrap#bootstrap(PluginProviderContext) got changed to PluginBootstrap#bootstrap(BootstrapContext).
             loader.classloader(pluginClasspathBuilder);
 
             var optionalPlugin = buildPlugin(pluginName, file, context, scanResult, loader, bootstrapper, pluginClasspathBuilder);
@@ -315,6 +317,44 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
             plugin.onLoad();
         }
 
+    }
+
+    private static ScalaPluginProviderContext makeScalaPluginProviderContext(File file, ScalaPluginDescription description) {
+        try {
+            Class.forName("io.papermc.paper.plugin.bootstrap.BootstrapContext");
+            return new ScalaPluginBootstrapContext(file, description);
+        } catch (ClassNotFoundException e) {
+            return new ScalaPluginProviderContext(file, description);
+        }
+    }
+
+    private static void bootstrap(PluginBootstrap bootstrapper, ScalaPluginProviderContext context) {
+        Method bootstrap = null;
+        RuntimeException ex = new RuntimeException("could not bootstrap plugin using bootstrapper: " + bootstrapper + " and context " + context);
+
+        try {
+            Class<?> bootstrapContextClazz = Class.forName("io.papermc.paper.plugin.bootstrap.BootstrapContext");
+            bootstrap = PluginBootstrap.class.getMethod("bootstrap", bootstrapContextClazz);
+        } catch (ReflectiveOperationException e1) {
+            ex.addSuppressed(e1);
+
+            try {
+                bootstrap = PluginBootstrap.class.getMethod("bootstrap", PluginProviderContext.class);
+            } catch (ReflectiveOperationException e2) {
+                ex.addSuppressed(e2);
+            }
+        }
+
+        if (bootstrap != null) {
+            try {
+                bootstrap.invoke(bootstrapper, context);
+                return;
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                ex.addSuppressed(e);
+            }
+        }
+
+        throw ex;
     }
 
     private void enableScalaPlugins(PluginLoadOrder loadOrder) {

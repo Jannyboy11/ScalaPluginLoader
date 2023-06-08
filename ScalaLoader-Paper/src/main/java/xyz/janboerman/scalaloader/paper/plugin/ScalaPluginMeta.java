@@ -1,6 +1,8 @@
 package xyz.janboerman.scalaloader.paper.plugin;
 
 import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
+import io.papermc.paper.plugin.provider.configuration.type.DependencyConfiguration;
+import io.papermc.paper.plugin.provider.configuration.type.DependencyConfiguration.LoadOrder;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.PluginLoadOrder;
@@ -19,6 +21,7 @@ import java.util.Set;
 
 public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
 
+    //TODO separate paper plugin dependency configuration?
     final ScalaPluginDescription description;
 
     public ScalaPluginMeta(ScalaPluginDescription description) {
@@ -75,6 +78,36 @@ public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
     @Override
     public @NotNull List<String> getProvidedPlugins() {
         return Compat.listCopy(description.getProvides());
+    }
+
+    //TODO track new paper-style dependency configuration separately?
+    @Override
+    public Map<String, DependencyConfiguration> getServerDependencies() {
+        Map<String, DependencyConfiguration> res = new HashMap<>();
+
+        for (String pluginName : getPluginDependencies()) {
+            res.put(pluginName, new DependencyConfiguration(LoadOrder.BEFORE, true, true));
+        }
+        for (String pluginName : getPluginSoftDependencies()) {
+            res.put(pluginName, new DependencyConfiguration(LoadOrder.OMIT, false, true));
+        }
+        for (String pluginName : getLoadBeforePlugins()) {
+            res.put(pluginName, new DependencyConfiguration(LoadOrder.AFTER, true, true));
+        }
+
+        return res;
+    }
+
+    //TODO track new paper-style dependency configuration separately?
+    @Override
+    public Map<String, DependencyConfiguration> getBoostrapDependencies() {
+        Map<String, DependencyConfiguration> res = new HashMap<>();
+
+        for (String pluginName : getPluginDependencies()) {
+            res.put(pluginName, new DependencyConfiguration(LoadOrder.BEFORE, true, true));
+        }
+
+        return res;
     }
 
     @Override

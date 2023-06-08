@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.paper.plugin;
 
+import io.papermc.paper.plugin.bootstrap.BootstrapContext;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import io.papermc.paper.plugin.bootstrap.PluginProviderContext;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +15,7 @@ import xyz.janboerman.scalaloader.util.ScalaLoaderUtils;
  */
 public class ScalaPluginBootstrap implements PluginBootstrap {
 
-    @Override
+    /*@Override*/
     public void bootstrap(@NotNull PluginProviderContext context) {
         //context provides access to:
         //  - configuration     (ScalaPluginMeta)
@@ -25,6 +26,11 @@ public class ScalaPluginBootstrap implements PluginBootstrap {
         ScalaCompatMap<ScalaDependency> compatMap = ScalaLoader.getInstance().getScalaVersions();
         ScalaPluginMeta scalaPluginMeta = (ScalaPluginMeta) context.getConfiguration();
         scalaPluginMeta.description.setScalaVersion(compatMap.getLatestVersion(scalaPluginMeta.getScalaVersion()).getVersionString());
+    }
+
+    @Override
+    public void bootstrap(@NotNull BootstrapContext context) {
+       bootstrap((PluginProviderContext) context);
     }
 
     @Override
