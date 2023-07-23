@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.janboerman.scalaloader</groupId>
         <artifactId>ScalaPluginLoader</artifactId>
-        <version>0.18.7-SNAPSHOT</version>
+        <version>0.18.8-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,7 +13,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.version>1.19.4-R0.1-SNAPSHOT</paper.version>
+        <paper.version>1.20.1-R0.1-SNAPSHOT</paper.version>
 
         <!-- paper server dependencies -->
         <mavenResolverVersion>1.7.3</mavenResolverVersion>

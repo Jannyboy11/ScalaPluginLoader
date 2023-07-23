@@ -242,7 +242,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
 
                 //check for Folia
                 if (Platform.isFolia() && !description.isFoliaSupported()) {
-                    getLogger().log(Level.WARNING, "Plugin " + pluginName + " has not explicitly declared it supports the Folia api");
+                    getLogger().log(Level.WARNING, "Plugin " + pluginName + " has not explicitly declared it supports the Folia server implementation.");
                     getLogger().log(Level.WARNING, "Skipping loading plugin " + file + ".");
                     continue;
                 }
