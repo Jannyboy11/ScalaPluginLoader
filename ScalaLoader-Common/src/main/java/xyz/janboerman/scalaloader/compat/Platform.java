@@ -118,7 +118,7 @@ public class Platform {
     static {
         boolean folia;
         try {
-            Class.forName("io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler");
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
             folia = true;
         } catch (ClassNotFoundException e) {
             folia = false;
