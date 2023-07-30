@@ -14,21 +14,26 @@ import java.security.CodeSigner;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.jar.JarEntry;
 import java.util.logging.Logger;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 import io.papermc.paper.plugin.entrypoint.classloader.ClassloaderBytecodeModifier;
 import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
 
+import io.papermc.paper.plugin.manager.PaperPluginManagerImpl;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -44,6 +49,7 @@ import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.paper.ScalaLoader;
+import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
@@ -98,7 +104,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         hackDataFolder();
         hackPluginDescriptionFile();
         registerCommandsFromPluginYaml();
-        //TODO maybe in the future I will have to hack the permissions map as well.
+        registerPermissionsFromPluginYaml();    // is it really necessary to register our permissions with the Paper PluginManager though?
 
         this.persistentClasses = new PersistentClasses(getPlugin());
         for (ClassFile classFile : this.persistentClasses.load()) {
@@ -345,6 +351,14 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         getServer().getCommandMap().registerAll(getPlugin().getName(), pluginCommands);
     }
 
+    private void registerPermissionsFromPluginYaml() {
+        ScalaPluginDescription scalaPluginDescription = getConfiguration().description;
+        PermissionDefault defaultPermission = scalaPluginDescription.getPermissionDefault();
+        PaperHacks.getPaperPluginManager().addPermissions(scalaPluginDescription.getPermissions().stream()
+                .map(descriptionPermission -> toBukkitPermission(descriptionPermission, defaultPermission))
+                .toList());
+    }
+
     private static final PluginCommand newPluginCommand(String name, ScalaPlugin plugin) {
         try {
             Constructor<PluginCommand> ctor = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
@@ -353,6 +367,19 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static final Permission toBukkitPermission(xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.Permission descriptionPermission, PermissionDefault defaultPermission) {
+        return new Permission(descriptionPermission.getName(), descriptionPermission.getDescription().orElse(null), defaultPermission, toBukkitChildren(descriptionPermission.getChildren()));
+    }
+
+    private static final Map<String, Boolean> toBukkitChildren(Map<xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.Permission, Boolean> children) {
+        if (children == null || children.isEmpty()) return Compat.emptyMap();
+        LinkedHashMap<String, Boolean> result = new LinkedHashMap<>();
+        for (var entry : children.entrySet()) {
+            result.put(entry.getKey().getName(), entry.getValue());
+        }
+        return result;
     }
 
 }

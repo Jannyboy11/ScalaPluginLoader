@@ -5,6 +5,7 @@ import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import io.papermc.paper.plugin.bootstrap.PluginProviderContext;
+import io.papermc.paper.plugin.manager.PaperPluginManagerImpl;
 import org.bukkit.Server;
 import org.bukkit.command.CommandMap;
 import org.bukkit.event.EventHandler;
@@ -276,6 +277,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         //perhaps, split this logic? maybe construct the ScalaPlugins from ScalaLoader's constructor
         //and then, call scalaPlugin.onLoad() from ScalaLoader's onLoad() method.
 
+        //idea: create a ScalaPluginProvider? and register it at an EntrypointHandler? The problem in doing that is PluginFileType#guessType cannot guess our type :/
+
         //all ScalaPlugins have been scanned.
         //let's instantiate them!
 
@@ -312,8 +315,6 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
             ScalaPlugin plugin = optionalPlugin.get();
 
             addScalaPlugin(plugin);
-            PaperHacks.getPaperPluginManager().loadPlugin(plugin);  //calls PaperPluginInstanceManager#loadPlugin(Plugin provided)
-            //this correctly takes dependencies and softdependencies into account, but not inverse dependencies. should I make the distinction between dependency graph and load graph?
             plugin.onLoad();
         }
 
@@ -358,14 +359,25 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
     }
 
     private void enableScalaPlugins(PluginLoadOrder loadOrder) {
-        for (ScalaPlugin plugin : getScalaPlugins()) {
-            if (!plugin.isEnabled() && plugin.getPluginMeta().getLoadOrder() == loadOrder) {
-                ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(plugin);
-                getServer().getPluginManager().callEvent(event);
-                if (event.isCancelled())
-                    continue;
+        for (ScalaPlugin scalaPlugin : getScalaPlugins()) {
+            if (scalaPlugin.getPluginMeta().getLoadOrder() == loadOrder) {
 
-                PaperHacks.getPaperPluginManager().enablePlugin(plugin);
+                //register the ScalaPlugin with Paper's pluginManager.
+                PaperPluginManagerImpl paperPluginManager = PaperHacks.getPaperPluginManager();
+                if (paperPluginManager.getPlugin(scalaPlugin.getName()) == null) {  //ensure idempotency
+                    paperPluginManager.loadPlugin(scalaPlugin);                     //more like "registerPlugin" since PaperPluginInstanceManager.loadPlugin(Plugin) does not call Plugin.onLoad()!
+                    //note that scalaPlugin.onLoad() has already been called!
+                }
+
+                //now, enable the scalaPlugin.
+                if (!scalaPlugin.isEnabled()) {
+                    ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(scalaPlugin);
+                    getServer().getPluginManager().callEvent(event);
+                    if (event.isCancelled())
+                        continue;
+
+                    PaperHacks.getPaperPluginManager().enablePlugin(scalaPlugin);
+                }
             }
         }
     }
