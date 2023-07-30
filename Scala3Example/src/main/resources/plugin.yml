@@ -2,6 +2,7 @@ name: Scala3Example
 version: ${project.version}
 api-version: "1.19"
 folia-supported: true
+load: STARTUP
 
 libraries:
   - "dev.zio:zio_3:2.0.2"

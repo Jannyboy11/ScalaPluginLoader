@@ -101,6 +101,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
 
     static {
         Migration.addMigrator(PaperPluginTransformer::new);
+        //TODO Paper's ClassloaderBytecodeModifier api gives us the ability to transform bytecode of JavaPlugins.
+        //TODO should I make use of this? Are there any ScalaLoader apis that I broke that can be called by JavaPlugins?
     }
 
     private EventBus eventBus;
@@ -182,6 +184,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         commandMap.register(DumpClassCommand.name, new DumpClassCommand(this));
         commandMap.register(SetDebugCommand.name, new SetDebugCommand(this));
         commandMap.register(ListScalaPluginsCommand.name, new ListScalaPluginsCommand(this));
+
+        //TODO should I create my own /plugins that displays ScalaPlugins in addition to Paper's default output?
     }
 
     private void loadScalaPlugins() {
@@ -315,6 +319,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
             ScalaPlugin plugin = optionalPlugin.get();
 
             addScalaPlugin(plugin);
+            //don't register to Paper's PluginManager yet, see https://github.com/Jannyboy11/ScalaPluginLoader/issues/22#issuecomment-1656932716.
             plugin.onLoad();
         }
 

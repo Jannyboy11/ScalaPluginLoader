@@ -178,7 +178,7 @@ libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.6-SN
 <dependency>
     <groupId>com.janboerman.scalaloader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>0.18.6-SNAPSHOT</version>
+    <version>0.18.10-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>
 ```
