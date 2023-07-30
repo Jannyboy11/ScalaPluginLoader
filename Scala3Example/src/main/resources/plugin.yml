@@ -6,3 +6,8 @@ load: STARTUP
 
 libraries:
   - "dev.zio:zio_3:2.0.2"
+
+permissions:
+  scala3.yolo:
+    description: Swag
+    default: true

@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.janboerman.scalaloader</groupId>
         <artifactId>ScalaPluginLoader</artifactId>
-        <version>0.18.10-SNAPSHOT</version>
+        <version>0.18.11-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
