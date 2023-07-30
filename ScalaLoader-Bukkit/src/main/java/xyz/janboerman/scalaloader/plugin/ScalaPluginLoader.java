@@ -75,7 +75,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
 
     private static final Comparator<DescriptionScanner> descriptionComparator;
     static {
-        //filled optionals are smaller then empty optionals.
+        //filled optionals are smaller than empty optionals.
         Comparator<Optional<?>> optionalComparator = Comparator.comparing(optional -> !optional.isPresent());
         //smaller package hierarchy = smaller string
         Comparator<String> packageComparator = Comparator.comparing(className -> className.split("\\."), Comparator.comparing(array -> array.length));

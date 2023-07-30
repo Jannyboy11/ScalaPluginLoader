@@ -104,7 +104,8 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         hackDataFolder();
         hackPluginDescriptionFile();
         registerCommandsFromPluginYaml();
-        registerPermissionsFromPluginYaml();    // is it really necessary to register our permissions with the Paper PluginManager though?
+        //TODO might need this in the future when Paper completely switches to its own PaperPermissionManager implementation.
+        //registerPermissionsFromPluginYaml();    // is it really necessary to register our permissions with the Paper PluginManager though?
 
         this.persistentClasses = new PersistentClasses(getPlugin());
         for (ClassFile classFile : this.persistentClasses.load()) {
