@@ -75,6 +75,7 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +104,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         Migration.addMigrator(PaperPluginTransformer::new);
         //TODO Paper's ClassloaderBytecodeModifier api gives us the ability to transform bytecode of JavaPlugins.
         //TODO should I make use of this? Are there any ScalaLoader apis that I broke that can be called by JavaPlugins?
+        //TODO the only thing that comes to mind right now is ScalaPluginLoader.openUpToJavaPlugin(ScalaPlugin, JavaPlugin).
+        //TODO the replacement would be to make the ScalaPlugin's classloader accessible to the JavaPlugin's classloader (perhaps through ClassLoader groups).
     }
 
     private EventBus eventBus;
@@ -167,13 +170,23 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         initCommands();
         getServer().getPluginManager().registerEvents(this, this);
         enableScalaPlugins(PluginLoadOrder.STARTUP);    //Enable ScalaPlugins at STARTUP because ScalaLoader itself enables on STARTUP.
+        for (ScalaPlugin scalaPlugin : getScalaPlugins()) {
+            registerScalaPlugin(scalaPlugin);
+        }
         ScalaLoaderUtils.initBStats(this);
+    }
+
+    @Override
+    public void onDisable() {
+        scalaPlugins.clear();
     }
 
     @EventHandler
     public void onServerLoad(ServerLoadEvent event) {
-        //enable ScalaPlugin's at POSTWORLD for both load types (STARTUP, RELOAD)
-        enableScalaPlugins(PluginLoadOrder.POSTWORLD);
+        if (event.getType() == LoadType.STARTUP) {
+            enableScalaPlugins(PluginLoadOrder.POSTWORLD);
+        }
+        //Don't need to enable ScalaPlugins at LoadType.RELOAD, because the server itself already does this.
     }
 
     private void initCommands() {
@@ -363,16 +376,9 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
 
     private void enableScalaPlugins(PluginLoadOrder loadOrder) {
         for (ScalaPlugin scalaPlugin : getScalaPlugins()) {
+            //if this is the right moment to load
             if (scalaPlugin.getPluginMeta().getLoadOrder() == loadOrder) {
-
-                //register the ScalaPlugin with Paper's pluginManager.
-                PaperPluginManagerImpl paperPluginManager = PaperHacks.getPaperPluginManager();
-                if (paperPluginManager.getPlugin(scalaPlugin.getName()) == null) {  //ensure idempotency
-                    paperPluginManager.loadPlugin(scalaPlugin);                     //more like "registerPlugin" since PaperPluginInstanceManager.loadPlugin(Plugin) does not call Plugin.onLoad()!
-                    //note that scalaPlugin.onLoad() has already been called!
-                }
-
-                //now, enable the scalaPlugin.
+                //enable the scalaPlugin.
                 if (!scalaPlugin.isEnabled()) {
                     ScalaPluginEnableEvent event = new ScalaPluginEnableEvent(scalaPlugin);
                     getServer().getPluginManager().callEvent(event);
@@ -382,6 +388,14 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
                     PaperHacks.getPaperPluginManager().enablePlugin(scalaPlugin);
                 }
             }
+        }
+    }
+
+    private static void registerScalaPlugin(ScalaPlugin scalaPlugin) {
+        PaperPluginManagerImpl paperPluginManager = PaperHacks.getPaperPluginManager();
+        if (paperPluginManager.getPlugin(scalaPlugin.getName()) == null) {  //ensure idempotency
+            paperPluginManager.loadPlugin(scalaPlugin);                     //more like "registerPlugin" since PaperPluginInstanceManager.loadPlugin(Plugin) does not call Plugin.onLoad()!
+            //note that scalaPlugin.onLoad() has already been called!
         }
     }
 
