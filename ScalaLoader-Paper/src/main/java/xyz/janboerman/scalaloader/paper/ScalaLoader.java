@@ -172,10 +172,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
 
     @EventHandler
     public void onServerLoad(ServerLoadEvent event) {
-        if (event.getType() == LoadType.STARTUP) {
-            enableScalaPlugins(PluginLoadOrder.POSTWORLD);
-        }
-        //Don't need to enable ScalaPlugins at LoadType.RELOAD, because the server itself already does this.
+        //enable ScalaPlugin's at POSTWORLD for both load types (STARTUP, RELOAD)
+        enableScalaPlugins(PluginLoadOrder.POSTWORLD);
     }
 
     private void initCommands() {
