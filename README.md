@@ -152,7 +152,8 @@ public final class DummyPlugin extends JavaPlugin {
 ## Compiling
 It's a [maven](https://maven.apache.org/) project, so just run `mvn package` and you're good to go.
 The jar file will be built at `./ScalaLoader/target/ScalaLoader-<version>.jar`
-Note that while ScalaLoader can run on Java 8, it requires JDK-20 to compile.
+Note that while ScalaLoader can run on Java 8, it requires JDK-21 to compile.
+As of ScalaLoader 0.18.x, it is required that Paper is installed in the local maven repository.
 
 ### Pre-built plugin jar file?
 Available on [SpigotMC](https://www.spigotmc.org/resources/scalaloader.59568/).

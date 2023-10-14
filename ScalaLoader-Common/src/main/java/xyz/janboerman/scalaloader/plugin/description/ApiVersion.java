@@ -49,7 +49,13 @@ public enum ApiVersion {
     static {
         ApiVersion runningOn;
         String bukkitVersion = Bukkit.getBukkitVersion();
-        if (bukkitVersion.startsWith("1.22")) {
+        if (bukkitVersion.startsWith("1.25")) {
+            runningOn = v1_25;
+        } else if (bukkitVersion.startsWith("1.24")) {
+            runningOn = v1_24;
+        } else if (bukkitVersion.startsWith("1.23")) {
+            runningOn = v1_23;
+        } else if (bukkitVersion.startsWith("1.22")) {
             runningOn = v1_22;
         } else if (bukkitVersion.startsWith("1.21")) {
             runningOn = v1_21;

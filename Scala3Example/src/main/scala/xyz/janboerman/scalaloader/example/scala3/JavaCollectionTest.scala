@@ -40,7 +40,7 @@ object JavaCollectionTest {
 }
 
 
-@ConfigurationSerializable(scan = Scan(
+@ConfigurationSerializable(scan = new Scan(
     value = Scan.Type.FIELDS
 ))
 case class JavaCollectionTest(treeSet: java.util.TreeSet[Int], arrayList: java.util.ArrayList[java.util.UUID], enumSet: java.util.EnumSet[InventoryType])

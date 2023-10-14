@@ -12,8 +12,8 @@
     <artifactId>ScalaLoader-Common</artifactId>
 
     <properties>
-        <bukkitVersion>1.19.4-R0.1-SNAPSHOT</bukkitVersion>
-        <asmVersion>9.5</asmVersion>
+        <bukkitVersion>1.20.2-R0.1-SNAPSHOT</bukkitVersion>
+        <asmVersion>9.6</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <junitVersion>5.7.1</junitVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
@@ -199,7 +199,7 @@
                     <failOnError>false</failOnError>
 
                     <!-- so that proper hyperlinks to standard jdk classes are generated -->
-                    <additionalOptions>-source 20</additionalOptions>
+                    <additionalOptions>-source 21</additionalOptions>
                 </configuration>
 
                 <!-- I don't even get why this workaround is required.
@@ -282,7 +282,7 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.13.10</version>
+            <version>2.13.12</version>
             <scope>provided</scope>
         </dependency>
 

@@ -15,8 +15,8 @@ object Permissions {
     val homePermission = new SPPermission("scalaexample.home").permissionDefault(PermissionDefault.TRUE);
 }
 
-@Scala(version = ScalaVersion.v2_13_10)
-@Api(ApiVersion.v1_19)
+@Scala(version = ScalaVersion.v2_13_12)
+@Api(ApiVersion.v1_20)
 object ExamplePlugin
     extends ScalaPlugin(new ScalaPluginDescription("Scala2Example", "0.18.10-SNAPSHOT")
         .addCommand(new SPCommand("foo").permission(fooPermission))

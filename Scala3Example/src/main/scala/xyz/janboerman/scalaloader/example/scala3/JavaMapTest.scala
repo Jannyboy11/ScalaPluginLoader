@@ -36,7 +36,7 @@ object JavaMapTest {
 
 }
 
-@ConfigurationSerializable(scan = Scan(
+@ConfigurationSerializable(scan = new Scan(
     value = Scan.Type.FIELDS
 ))
 case class JavaMapTest(map1: java.util.Map[Int, Byte], map2: java.util.Map[Byte, Int])

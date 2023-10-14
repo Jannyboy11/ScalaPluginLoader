@@ -35,7 +35,7 @@ object EitherTest {
 
 }
 
-@ConfigurationSerializable(scan = Scan(
+@ConfigurationSerializable(scan = new Scan(
     value = Scan.Type.FIELDS
 ))
 case class EitherTest(left: Either[Int, String], right: Either[Int, String])

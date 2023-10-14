@@ -12,7 +12,7 @@
     <artifactId>Scala2Example</artifactId>
 
     <properties>
-        <scala.version>2.13.10</scala.version>
+        <scala.version>2.13.12</scala.version>
     </properties>
 
     <build>
@@ -20,7 +20,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>4.7.2</version>
+                <version>4.8.1</version>
                 <configuration>
                     <recompileMode>incremental</recompileMode>
                 </configuration>
@@ -106,7 +106,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.19.4-R0.1-SNAPSHOT</version>
+            <version>1.20.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

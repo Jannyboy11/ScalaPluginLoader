@@ -24,7 +24,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <release>17</release>
+                    <release>21</release>
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
@@ -118,7 +118,7 @@
                     <failOnError>false</failOnError>
 
                     <!-- so that proper hyperlinks to standard jdk classes are generated -->
-                    <additionalOptions>-source 20</additionalOptions>
+                    <additionalOptions>-source 21</additionalOptions>
                 </configuration>
             </plugin>
         </plugins>

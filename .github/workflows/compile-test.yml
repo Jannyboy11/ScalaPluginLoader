@@ -8,12 +8,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 20
+      - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           # Use Eclipse Temurin's OpenJDK because Microsoft doesn't seem to want to build non-LTS releases.
           distribution: 'temurin'
-          java-version: '20'
+          java-version: '21'
           cache: 'maven'
       - name: Install Paper
         run: |
@@ -27,8 +27,8 @@ jobs:
           ./gradlew generateMetadataFileForMavenPublication
           ./gradlew generatePomFileForMavenPublication
           ./gradlew publishToMavenLocal
-          cd ~/.m2/repository/io/papermc/paper/paper-server/1.20.1-R0.1-SNAPSHOT
-          mvn install:install-file -DgroupId=io.papermc.paper -DartifactId=paper-server -Dversion=1.20.1-R0.1-SNAPSHOT -Dpackaging=jar -Dfile=paper-server-1.20.1-R0.1-SNAPSHOT-mojang-mapped.jar
+          cd ~/.m2/repository/io/papermc/paper/paper-server/1.20.2-R0.1-SNAPSHOT
+          mvn install:install-file -DgroupId=io.papermc.paper -DartifactId=paper-server -Dversion=1.20.2-R0.1-SNAPSHOT -Dpackaging=jar -Dfile=paper-server-1.20.2-R0.1-SNAPSHOT-mojang-mapped.jar
           cd ~
       - name: Compile ScalaLoader
         run: mvn --batch-mode --update-snapshots verify -DfinalName=ScalaLoader
@@ -47,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           javadoc-branch: javadoc
           java-distribution: temurin
-          java-version: 20
+          java-version: 21
           custom-command: 'mvn package javadoc:aggregate -pl :ScalaPluginLoader,:ScalaLoader-Common,:ScalaLoader-Bukkit,:ScalaLoader-Paper'
           target-folder: javadoc
           project: maven

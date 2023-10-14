@@ -39,7 +39,7 @@ object CollectionTest:
         if ExamplePlugin.assertionsEnabled then console.sendMessage(s"${ChatColor.GREEN}Test passed!")
     end test
 
-@ConfigurationSerializable(scan = Scan(
+@ConfigurationSerializable(scan = new Scan(
     value = Scan.Type.GETTER_SETTER_METHODS
 ))
 class CollectionTest(@Scan.IncludeProperty var integers: Seq[Int],

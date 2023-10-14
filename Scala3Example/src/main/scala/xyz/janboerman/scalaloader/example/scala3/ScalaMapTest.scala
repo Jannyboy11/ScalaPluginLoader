@@ -35,7 +35,7 @@ object ScalaMapTest {
 
 }
 
-@ConfigurationSerializable(scan = Scan(
+@ConfigurationSerializable(scan = new Scan(
     value = Scan.Type.FIELDS
 ))
 case class ScalaMapTest(map1: Map[String, String], map5: Map[String, String], mut: scala.collection.mutable.Map[String, String])

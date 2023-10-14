@@ -35,7 +35,7 @@ object OptionTest {
 
 }
 
-@ConfigurationSerializable(scan = Scan(
+@ConfigurationSerializable(scan = new Scan(
     value = Scan.Type.FIELDS
 ))
 case class OptionTest(a: Option[String], b: Option[Int])
