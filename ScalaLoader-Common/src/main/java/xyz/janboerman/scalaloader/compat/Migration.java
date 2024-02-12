@@ -178,7 +178,7 @@ class PluginEventReplacer extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         //if a plugin calls ScalaPluginEnableEvent#getPlugin() -> ScalaPlugin, replace the call by calling to ScalaPluginEnableEvent#getPlugin() -> IScalaPlugin instead.
-        //to keep compatibility, cast to ScalaPlugin again. This is a best-effort approach, it will fail if the plugin in a paper.ScalaPlugin.
+        //to keep compatibility, cast to ScalaPlugin again. This is a best-effort approach, it will fail if the plugin is a paper.ScalaPlugin.
 
         return new MethodVisitor(AsmConstants.ASM_API, super.visitMethod(access, name, descriptor, signature, exceptions)) {
             @Override

@@ -27,8 +27,8 @@ jobs:
           ./gradlew generateMetadataFileForMavenPublication
           ./gradlew generatePomFileForMavenPublication
           ./gradlew publishToMavenLocal
-          cd ~/.m2/repository/io/papermc/paper/paper-server/1.20.2-R0.1-SNAPSHOT
-          mvn install:install-file -DgroupId=io.papermc.paper -DartifactId=paper-server -Dversion=1.20.2-R0.1-SNAPSHOT -Dpackaging=jar -Dfile=paper-server-1.20.2-R0.1-SNAPSHOT-mojang-mapped.jar
+          cd ~/.m2/repository/io/papermc/paper/paper-server/1.20.4-R0.1-SNAPSHOT
+          mvn install:install-file -DgroupId=io.papermc.paper -DartifactId=paper-server -Dversion=1.20.4-R0.1-SNAPSHOT -Dpackaging=jar -Dfile=paper-server-1.20.4-R0.1-SNAPSHOT-mojang-mapped.jar
           cd ~
       - name: Compile ScalaLoader
         run: mvn --batch-mode --update-snapshots verify -DfinalName=ScalaLoader
