@@ -1,6 +1,5 @@
 package xyz.janboerman.scalaloader.paper.plugin.description;
 
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.janboerman.scalaloader.ScalaRelease;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
@@ -17,6 +16,8 @@ public class DescriptionPlugin extends JavaPlugin implements IScalaPlugin {
 
     private final ScalaPluginDescription description;
     private final Logger logger;
+
+    // TODO note: it should still be safe to register to plugin lifecycle events in a ScalaPlugin's constructor body.
 
     protected DescriptionPlugin(ScalaPluginDescription description) {
         this.description = description;

@@ -22,7 +22,7 @@ public class ScalaPluginBootstrapContext extends ScalaPluginProviderContext impl
             //TODO this is currently not called. when should this be called? should it be called at all?
         }
     };
-    
+
     public ScalaPluginBootstrapContext(File pluginJarFile, ScalaPluginDescription description) {
         super(pluginJarFile, description);
     }
