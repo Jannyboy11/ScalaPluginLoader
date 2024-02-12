@@ -13,7 +13,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <bukkit.version>1.20.2-R0.1-SNAPSHOT</bukkit.version>
+        <bukkit.version>1.20.4-R0.1-SNAPSHOT</bukkit.version>
 
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
         <mavenResolverProviderVersion>3.8.1</mavenResolverProviderVersion>

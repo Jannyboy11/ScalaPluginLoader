@@ -12,7 +12,7 @@
     <artifactId>ScalaLoader-Common</artifactId>
 
     <properties>
-        <bukkitVersion>1.20.2-R0.1-SNAPSHOT</bukkitVersion>
+        <bukkitVersion>1.20.4-R0.1-SNAPSHOT</bukkitVersion>
         <asmVersion>9.6</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <junitVersion>5.7.1</junitVersion>
