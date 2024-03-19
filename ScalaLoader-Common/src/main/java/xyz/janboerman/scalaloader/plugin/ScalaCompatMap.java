@@ -39,6 +39,8 @@ public class ScalaCompatMap<SV extends IScalaVersion> {
         }
     }
 
+    //TODO be more stricts about which version is consuming which other version?
+    //TODO e.g. 3.4.0 can consume 2.13.x and 3.[0123].x, but 3.3.x cannot consume 3.4.x.
     private static boolean isCompatible(String one, String two) {
         ScalaRelease release1 = ScalaRelease.fromScalaVersion(one);
         ScalaRelease release2 = ScalaRelease.fromScalaVersion(two);

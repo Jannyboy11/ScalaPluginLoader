@@ -97,6 +97,7 @@ import java.util.stream.Collectors;
  *
  * @author Jannyboy11
  */
+// TODO should ScalaLoader have a custom bootstrapper? probably yes, since we can use it to delegate plugin lifecyle events to scala plugins. Is that the only way to do it?
 public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Listener {
 
     static {
