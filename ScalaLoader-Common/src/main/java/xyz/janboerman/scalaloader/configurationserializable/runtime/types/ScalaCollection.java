@@ -32,6 +32,7 @@ public abstract class ScalaCollection {
     static final String SCALA_MUTABLE_ARRAY_SEQ = "scala.collection.mutable.ArraySeq";
     static final String SCALA_IMMUTABLE_LIST = "scala.collection.immutable.List";
     //TODO static final String SCALA_IMMUTABLE_NUMERIC_RANGE = "scala.collection.immutable.NumericRange";    //can't handle this (yet), because we need to obtain the Integral instances first.
+    //TODO but we have Explicit now. does this help us?
     //TODO also need to special-case the 'sorted' collections: TreeSet etc
 
     public ScalaCollection() {}
@@ -211,6 +212,7 @@ public abstract class ScalaCollection {
 }
 
 //TODO do I still need this?
+//TODO I think we want to generate this code, amiright?
 @SerializableAs("THE_SEQ_IMPLEMENTATION_CLASS_NAME")
 /*public*/ final class SeqAdapter extends ScalaSeq {
     private final scala.collection.Seq seq;

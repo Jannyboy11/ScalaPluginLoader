@@ -195,6 +195,5 @@ public class ArraySerializable /*implements org.bukkit.configuration.serializati
                 + ",longs = " + Arrays.toString(longs)
                 + ",booleanss = " + Arrays.deepToString(booleanss)
                 + "}";
-
     }
 }

@@ -153,7 +153,7 @@ class Conversions {
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/util/UUID", "toString", "()Ljava/lang/String;", false);
                 operandStack.replaceTop(STRING_TYPE);
                 break;
-            //TODO java.util.Date maybe? anything else?
+            //TODO java.util.Date/java.time.Instant maybe?
             //TODO scala.math.BigInt
             //TODO scala.math.BigDecimal
 
@@ -1811,6 +1811,7 @@ class ScalaConversions {
 
             //TODO if I really feel ambitious, I might implement recursive lookups too!
             //TODO I should probably factor this out to a separate "ImplicitSearch" class.
+            //TODO a humble beginning is started in the 'Explicit.java' file.
 
         }
 
@@ -1820,7 +1821,6 @@ class ScalaConversions {
         //TODO  - immutable.NumericRange    --- done! (but not yet tested)
         //TODO  - immutable.ArraySeq
         //TODO  - mutable.ArraySeq
-        //TODO  - mutable.ArrayBuilder (debatable)
         //TODO
 
 
@@ -2202,11 +2202,12 @@ class ScalaConversions {
         //TODO  - immutable.NumericRange    --- TODO requires ImplicitSearch for deserialization.
         //TODO                              --- TODO Also we need to generate instanceof bytecodes to check the runtime type of the elements
         //TODO                              --- TODO and use the correct component types for the start, end and step values of the NumericRange.
-        //TODO  - immutable.ArraySeq
-        //TODO  - mutable.ArraySeq
-        //TODO  - mutable.ArrayBuilder (debatable)
+        //TODO                              --- TODO implement this later after the other types are done.
+        //TODO  - immutable.ArraySeq        --- TODO why does this need a special case? because the ArraySeq is potentially backed by primitive arrays. and for the case of Unit we only have to save a length. boolean arrays can be backed by a long (where the bits equal booleans).
+        //TODO  - mutable.ArraySeq          --- TODO why does this need a special case? Do we have a custom serialization strategy? I think we do! We could also re-use our array serialisation code.
         //TODO
 
+        //
 
         //best effort
         final TypeSignature elementTypeSignature = typeSignature.hasTypeArguments() ? typeSignature.getTypeArgument(0) : TypeSignature.OBJECT_TYPE_SIGNATURE;
@@ -2318,7 +2319,7 @@ class ScalaConversions {
     }
 
     private static void generateOrdering(IScalaPluginClassLoader classLoader, MethodVisitor methodVisitor, TypeSignature elementType, LocalCounter localCounter, LocalVariableTable localVariableTable, OperandStack operandStack) {
-        switch(elementType.internalName()) {
+        switch (elementType.internalName()) {
             //java primitives
             case "B":
                 methodVisitor.visitFieldInsn(GETSTATIC, "scala/math/Ordering$Byte$", "MODULE$", "Lscala/math/Ordering$Byte$;");
@@ -2462,6 +2463,7 @@ class ScalaConversions {
                 //assume the Ordering instance can be found in the companion object.
                 //TODO we need to inspect the fields & methods of the companion object and generate the appropriate calls!
                 //TODO need to Adjust GlobalScanner or something so that CompanionObjectScanResult is part of the result?
+                //TODO can we use Explicit here?
                 break;
         }
 

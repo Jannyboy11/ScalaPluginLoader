@@ -9,10 +9,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import xyz.janboerman.scalaloader.configurationserializable.ConfigurationSerializable;
 import static xyz.janboerman.scalaloader.example.java.ExamplePlugin.assertionsEnabled;

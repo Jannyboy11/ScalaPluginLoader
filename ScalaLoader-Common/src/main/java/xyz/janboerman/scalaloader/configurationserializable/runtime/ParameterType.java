@@ -129,7 +129,7 @@ public class ParameterType {
             return from(annotations, upperBound);
         } else {
             //this branch should never be taken actually.
-            //when it is take, TypeUtils.asRawType will throw an IllegalArgumentException
+            //when it is taken, TypeUtils.asRawType will throw an IllegalArgumentException.
             return new ParameterType(annotations, TypeUtils.asRawType(type));
         }
     }

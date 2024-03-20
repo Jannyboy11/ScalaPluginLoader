@@ -179,6 +179,8 @@ public class Explicit {
                             return getCompanionObjectInstance(Class.forName(ORDERING + "$Symbol", true, classLoader));
                         //can't know the orderings for Option, Seq, Either or Tuple, because we would need the ordering instances for the elements,
                         //and we don't know the type arguments sadly.
+                        //TODO is it possible to find out? TypeclassTrait should become a Parameterized(Parameter)Type, right?
+                        //TODO can we make it that? and can we actually provide the type arguments?
                     }
                     break;
                 case CLASSTAG:
@@ -204,6 +206,8 @@ public class Explicit {
                 }
             }
         }
+
+        // tough luck, nothing to do
         throw ex;
     }
 
