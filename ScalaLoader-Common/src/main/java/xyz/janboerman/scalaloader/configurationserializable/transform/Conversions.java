@@ -153,7 +153,7 @@ class Conversions {
                 methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/util/UUID", "toString", "()Ljava/lang/String;", false);
                 operandStack.replaceTop(STRING_TYPE);
                 break;
-            //TODO java.util.Date/java.time.Instant maybe?
+            //TODO java.util.Date/java.time.Instant maybe? We can use the ISO-8601 format.
             //TODO scala.math.BigInt
             //TODO scala.math.BigDecimal
 
@@ -177,6 +177,8 @@ class Conversions {
         }
 
     }
+
+    // TODO split conversions methods to other (new) classes (ArrayConversions, CollectionConversions, MapConversions, ScalaCollectionsConversions, ScalaMapConversions, more classes for scala-specific types such as tuples, option/either, etc).
 
     private static void arrayToSerializedType(IScalaPluginClassLoader pluginClassLoader, MethodVisitor methodVisitor, TypeSignature arrayTypeSignature, OperandStack operandStack, LocalCounter localCounter, LocalVariableTable localVariableTable) {
 
@@ -1819,8 +1821,8 @@ class ScalaConversions {
         //TODO  - immutable.WrappedString   --- done!
         //TODO  - immutable.Range           --- done!
         //TODO  - immutable.NumericRange    --- done! (but not yet tested)
-        //TODO  - immutable.ArraySeq
-        //TODO  - mutable.ArraySeq
+        //TODO  - immutable.ArraySeq        --- TODO why do we need this? can we serialise it more optimally? is there a different way to construct one?
+        //TODO  - mutable.ArraySeq          --- TODO why do we need this? can we serialise it more optimally? is there a different way to construct one?
         //TODO
 
 

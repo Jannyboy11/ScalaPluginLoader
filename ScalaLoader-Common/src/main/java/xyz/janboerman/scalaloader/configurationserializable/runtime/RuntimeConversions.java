@@ -2,7 +2,6 @@ package xyz.janboerman.scalaloader.configurationserializable.runtime;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import xyz.janboerman.scalaloader.bytecode.Called;
-import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.types.*;
 import xyz.janboerman.scalaloader.configurationserializable.transform.ConfigurationSerializableError;
 import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
@@ -11,6 +10,20 @@ import xyz.janboerman.scalaloader.util.Maybe;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.Period;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZonedDateTime;
+import java.time.chrono.HijrahDate;
+import java.time.chrono.JapaneseDate;
+import java.time.chrono.MinguoDate;
+import java.time.chrono.ThaiBuddhistDate;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -216,7 +229,38 @@ public class RuntimeConversions {
             return new xyz.janboerman.scalaloader.configurationserializable.runtime.types.BigDecimal((BigDecimal) live);
         } else if (live instanceof Enum) {
             return xyz.janboerman.scalaloader.configurationserializable.runtime.types.Enum.forEnum((Enum) live, pluginClassLoader);
+        } else if (live instanceof Instant) {
+            return new DateTime.Instant((Instant) live);
+        } else if (live instanceof ZonedDateTime) {
+            return new DateTime.ZonedDateTime((ZonedDateTime) live);
+        } else if (live instanceof LocalDateTime) {
+            return new DateTime.LocalDateTime((LocalDateTime) live);
+        } else if (live instanceof LocalTime) {
+            return new DateTime.LocalTime((LocalTime) live);
+        } else if (live instanceof LocalDate) {
+            return new DateTime.LocalDate((LocalDate) live);
+        } else if (live instanceof Year) {
+            return new DateTime.Year((Year) live);
+        } else if (live instanceof YearMonth) {
+            return new DateTime.YearMonth((YearMonth) live);
+        } else if (live instanceof OffsetDateTime) {
+            return new DateTime.OffsetDateTime((OffsetDateTime) live);
+        } else if (live instanceof MinguoDate) {
+            return new DateTime.MinguoDate((MinguoDate) live);
+        } else if (live instanceof JapaneseDate) {
+            return new DateTime.JapaneseDate((JapaneseDate) live);
+        } else if (live instanceof HijrahDate) {
+            return new DateTime.HijrahDate((HijrahDate) live);
+        } else if (live instanceof ThaiBuddhistDate) {
+            return new DateTime.ThaiBuddhistDate((ThaiBuddhistDate) live);
+        } else if (live instanceof Duration) {
+            return new DateTime.Duration((Duration) live);
+        } else if (live instanceof Period) {
+            return new DateTime.Period((Period) live);
+        } else if (live instanceof Date) {
+            return new DateTime.Date((Date) live);
         }
+        // TODO adapter for types which implement Serializable ?
 
         //if the type is not ConfigurationSerializable, warn the plugin author
         if (!(live instanceof ConfigurationSerializable) && pluginClassLoader.getPluginLoader().debugSettings().logMissingCodecs()) {

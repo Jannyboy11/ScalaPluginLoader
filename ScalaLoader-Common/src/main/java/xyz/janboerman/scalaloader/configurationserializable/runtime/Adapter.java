@@ -13,6 +13,7 @@ import xyz.janboerman.scalaloader.bytecode.Called;
  *
  * @param <T> the type of the wrapped value
  */
+@Called // there exist implementations of this interface which are generated at runtime through bytecode generation.
 public interface Adapter<T> extends ConfigurationSerializable {
 
     /**

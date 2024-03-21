@@ -16,6 +16,7 @@ import java.lang.reflect.Type;
 
 /**
  * Indicates that methods annotated with this annotation can be called by ScalaPlugins as a result of bytecode transformation.
+ * Indicates that interfaces annotated with this annotation are implemented by classes which are generated at runtime.
  * 
  * @see RuntimeConversions#serialize(Object, ParameterType, ClassLoader)
  * @see RuntimeConversions#deserialize(Object, ParameterType, ClassLoader)
@@ -25,6 +26,7 @@ import java.lang.reflect.Type;
  * @see ParameterType#from(Type)
  * @see ArrayParameterType#from(ParameterType, boolean)
  * @see ParameterizedParameterType#from(Class, ParameterType...)
+ * @see Adapter
  */
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE})
 @Retention(RetentionPolicy.CLASS)
