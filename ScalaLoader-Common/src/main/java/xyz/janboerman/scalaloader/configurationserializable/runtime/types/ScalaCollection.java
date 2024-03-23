@@ -1,23 +1,36 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.configuration.serialization.SerializableAs;
+import org.objectweb.asm.*;
+import static org.objectweb.asm.Opcodes.*;
+
 import xyz.janboerman.scalaloader.bytecode.Called;
+import xyz.janboerman.scalaloader.bytecode.LocalCounter;
+import xyz.janboerman.scalaloader.bytecode.LocalVariable;
+import xyz.janboerman.scalaloader.bytecode.LocalVariableTable;
+import xyz.janboerman.scalaloader.bytecode.OperandStack;
+import xyz.janboerman.scalaloader.compat.Compat;
 import xyz.janboerman.scalaloader.compat.IScalaPluginClassLoader;
 import xyz.janboerman.scalaloader.compat.IScalaPluginLoader;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.RuntimeConversions;
-import xyz.janboerman.scalaloader.configurationserializable.runtime.types.ScalaCollection.ScalaSeq;
-import xyz.janboerman.scalaloader.configurationserializable.runtime.types.ScalaCollection.ScalaSet;
 import static xyz.janboerman.scalaloader.configurationserializable.runtime.types.Types.*;
+import static xyz.janboerman.scalaloader.configurationserializable.runtime.types.ScalaCollection.ScalaSet;
+import static xyz.janboerman.scalaloader.configurationserializable.runtime.types.ScalaCollection.ScalaSeq;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.Adapter;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterType;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.ParameterizedParameterType;
+import xyz.janboerman.scalaloader.plugin.runtime.ClassDefineResult;
+import xyz.janboerman.scalaloader.plugin.runtime.ClassGenerator;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Objects;
+import java.util.OptionalInt;
+import java.util.stream.IntStream;
 
+@SuppressWarnings("rawtypes")
 public abstract class ScalaCollection {
 
     static final String SCALA_SEQ = "scala.collection.Seq";
@@ -34,6 +47,9 @@ public abstract class ScalaCollection {
     //TODO static final String SCALA_IMMUTABLE_NUMERIC_RANGE = "scala.collection.immutable.NumericRange";    //can't handle this (yet), because we need to obtain the Integral instances first.
     //TODO but we have Explicit now. does this help us?
     //TODO also need to special-case the 'sorted' collections: TreeSet etc
+
+    static final String SCALA_SET_WRAPPER_WITH_SLASHES = ScalaSet.class.getName().replace('.', '/');
+    static final String SCALA_SEQ_WRAPPER_WITH_SLASHES = ScalaSeq.class.getName().replace('.', '/');
 
     public ScalaCollection() {}
 
@@ -97,6 +113,25 @@ public abstract class ScalaCollection {
         return isSeq(live, plugin) || isSet(live, plugin);
     }
 
+    @SuppressWarnings("unchecked")
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> ScalaCollection instantiateWrapper(
+            Object live, ParameterType liveType, String generatedClassName, ClassGenerator generator, ScalaPluginClassLoader plugin) {
+        Class<?> liveClass = live.getClass();
+
+        ClassDefineResult result = plugin.getOrDefineClass(generatedClassName, generator, true);
+        Class<? extends ScalaCollection> wrapperClass = (Class<? extends ScalaCollection>)result.getClassDefinition();
+        if (result.isNew()) {
+            ConfigurationSerialization.registerClass(wrapperClass, liveClass.getName());
+        }
+
+        try {
+            Constructor<? extends ScalaCollection> constructor = wrapperClass.getConstructor(liveClass);
+            return constructor.newInstance(live);
+        } catch (Exception shouldNotOccur) {
+            throw new RuntimeException("Could not serialize scala collection: " + live + ", of type: " + liveType, shouldNotOccur);
+        }
+    }
+
     public static ScalaCollection serialize(Object live, ParameterType type, ClassLoader plugin) {
         assert isCollection(live, plugin) : "Not a " + SCALA_SEQ + " or " + SCALA_SET;
 
@@ -105,6 +140,10 @@ public abstract class ScalaCollection {
         final String alias = ourCollectionClass.getName();
         final String generatedClassName = PREFIX_USING_DOTS + "$ScalaCollection$" + alias;
 
+        final OptionalInt isSetN = IntStream.rangeClosed(1, 4).filter(N -> isSetN(alias, N)).findAny();
+        if (isSetN.isPresent()) {
+
+        }
 
         //TODO
         /*
@@ -123,6 +162,8 @@ public abstract class ScalaCollection {
          } else if (live instanceof Seq) {
             return new GenericSeqAdapter((Seq) live);
          }
+
+
          */
         //TODO do I need to take mutable/immutable into account?
         //TODO I DO need to take Set1-Set4 into account, as well as empty Seq (Nil).
@@ -163,7 +204,7 @@ public abstract class ScalaCollection {
     }
 
     @Called
-    public abstract static class ScalaSeq extends ScalaCollection implements Adapter  {
+    public abstract static class ScalaSeq extends ScalaCollection implements Adapter/*<scala.collection.Seq>*/ {
         @Called
         public ScalaSeq() {}
 
@@ -187,7 +228,7 @@ public abstract class ScalaCollection {
     }
 
     @Called
-    public abstract static class ScalaSet extends ScalaCollection implements Adapter {
+    public abstract static class ScalaSet extends ScalaCollection implements  Adapter/*<scala.collection.Set>*/ {
         @Called
         public ScalaSet() {}
 
@@ -208,6 +249,215 @@ public abstract class ScalaCollection {
         public String toString() {
             return Objects.toString(getValue());
         }
+    }
+
+    private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] makeSetN(
+            final int N, String generatedClassName, final Class<?> theSetType, final String alias,
+            final ParameterType elementType, final ScalaPluginClassLoader plugin) {
+
+        generatedClassName = generatedClassName.replace('.', '/');
+        final String generatedClassDescriptor = "L" + generatedClassName + ";";
+        final String setNClassName = theSetType.getName().replace('.', '/');
+        final String setNClassDescriptor = "L" + setNClassName + ":";
+
+        ClassWriter classWriter = new ClassWriter(0);
+        FieldVisitor fieldVisitor;
+        MethodVisitor methodVisitor;
+        AnnotationVisitor annotationVisitor0;
+
+        // @SerialiableAs("scala.collection.Set$SetN");
+        // public class SetN extends ScalaCollection.ScalaSet { ... }
+        classWriter.visit(V1_8, ACC_FINAL | ACC_SUPER, generatedClassName, null, SCALA_SET_WRAPPER_WITH_SLASHES, null);
+
+        classWriter.visitSource("xyz/janboerman/scalaloader/configurationserializable/runtime/types/ScalaCollection.java", null);
+
+        {
+            annotationVisitor0 = classWriter.visitAnnotation("Lorg/bukkit/configuration/serialization/SerializableAs;", true);
+            annotationVisitor0.visit("value", alias);
+            annotationVisitor0.visitEnd();
+        }
+        classWriter.visitInnerClass("xyz/janboerman/scalaloader/configurationserializable/runtime/types/ScalaCollection$ScalaSet", "xyz/janboerman/scalaloader/configurationserializable/runtime/types/ScalaCollection", "ScalaSet", ACC_PUBLIC | ACC_STATIC | ACC_ABSTRACT);
+
+        classWriter.visitInnerClass(setNClassName, "scala/collection/immutable/Set", "Set" + N, ACC_PUBLIC | ACC_FINAL | ACC_STATIC);
+
+        {   // private final scala.collection.Set$SetN set;
+            fieldVisitor = classWriter.visitField(ACC_PRIVATE | ACC_FINAL, "set", setNClassDescriptor, null, null);
+            fieldVisitor.visitEnd();
+        }
+        {   // public SetN(scala.collection.Set$SetN set) { this.set = set }
+            methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "<init>", "(" + setNClassDescriptor + ")V", null, null);
+            methodVisitor.visitCode();
+            Label label0 = new Label();
+            methodVisitor.visitLabel(label0);
+            methodVisitor.visitVarInsn(ALOAD, 0);
+            methodVisitor.visitMethodInsn(INVOKESPECIAL, "xyz/janboerman/scalaloader/configurationserializable/runtime/types/ScalaCollection$ScalaSet", "<init>", "()V", false);
+            Label label1 = new Label();
+            methodVisitor.visitLabel(label1);
+            methodVisitor.visitVarInsn(ALOAD, 0);
+            methodVisitor.visitVarInsn(ALOAD, 1);
+            methodVisitor.visitFieldInsn(PUTFIELD, generatedClassName, "set", setNClassDescriptor);
+            Label label2 = new Label();
+            methodVisitor.visitLabel(label2);
+            methodVisitor.visitInsn(RETURN);
+            Label label3 = new Label();
+            methodVisitor.visitLabel(label3);
+            methodVisitor.visitLocalVariable("this", generatedClassDescriptor, null, label0, label3, 0);
+            methodVisitor.visitLocalVariable("set", setNClassDescriptor, null, label0, label3, 1);
+            methodVisitor.visitMaxs(2, 2);
+            methodVisitor.visitEnd();
+        }
+        {   // @Override public scala.collection.Set$SetN getValue() { return this.set; }
+            methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "getValue", "()" + setNClassDescriptor, null, null);
+            methodVisitor.visitCode();
+            Label label0 = new Label();
+            methodVisitor.visitLabel(label0);
+            methodVisitor.visitVarInsn(ALOAD, 0);
+            methodVisitor.visitFieldInsn(GETFIELD, generatedClassName, "set", setNClassDescriptor);
+            methodVisitor.visitInsn(ARETURN);
+            Label label1 = new Label();
+            methodVisitor.visitLabel(label1);
+            methodVisitor.visitLocalVariable("this", generatedClassDescriptor, null, label0, label1, 0);
+            methodVisitor.visitMaxs(1, 1);
+            methodVisitor.visitEnd();
+        }
+        {   // @Override public Map<String, Object> serialize() { ... }
+            methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "serialize", "()Ljava/util/Map;", "()Ljava/util/Map<Ljava/lang/String;Ljava/lang/Object;>;", null);
+            methodVisitor.visitCode();
+            Label label0 = new Label();
+            methodVisitor.visitLabel(label0);
+            methodVisitor.visitTypeInsn(NEW, "java/util/LinkedHashSet");
+            methodVisitor.visitInsn(DUP);
+            methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/LinkedHashSet", "<init>", "()V", false);
+            methodVisitor.visitVarInsn(ASTORE, 1);
+            Label label1 = new Label();
+            methodVisitor.visitLabel(label1);
+            methodVisitor.visitVarInsn(ALOAD, 0);
+            methodVisitor.visitFieldInsn(GETFIELD, generatedClassName, "set", setNClassDescriptor);
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, setNClassName, "iterator", "()Lscala/collection/Iterator;", false);
+            methodVisitor.visitVarInsn(ASTORE, 2);
+            Label label2 = new Label();
+            methodVisitor.visitLabel(label2);
+            methodVisitor.visitFrame(Opcodes.F_APPEND,2, new Object[] {"java/util/Set", "scala/collection/Iterator"}, 0, null);
+            methodVisitor.visitVarInsn(ALOAD, 2);
+            methodVisitor.visitMethodInsn(INVOKEINTERFACE, "scala/collection/Iterator", "hasNext", "()Z", true);
+            Label label3 = new Label();
+            methodVisitor.visitJumpInsn(IFEQ, label3);
+            Label label4 = new Label();
+            methodVisitor.visitLabel(label4);
+            methodVisitor.visitVarInsn(ALOAD, 1);
+            methodVisitor.visitVarInsn(ALOAD, 2);
+            methodVisitor.visitMethodInsn(INVOKEINTERFACE, "scala/collection/Iterator", "next", "()Ljava/lang/Object;", true);
+            genParameterType(methodVisitor, elementType, new OperandStack());
+            genScalaPluginClassLoader(methodVisitor, plugin, new OperandStack());
+            methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "serialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
+            methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Set", "add", "(Ljava/lang/Object;)Z", true);
+            methodVisitor.visitInsn(POP);
+            methodVisitor.visitJumpInsn(GOTO, label2);
+            methodVisitor.visitLabel(label3);
+            methodVisitor.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
+            methodVisitor.visitLdcInsn("set");
+            methodVisitor.visitVarInsn(ALOAD, 1);
+            methodVisitor.visitMethodInsn(INVOKESTATIC, "java/util/Collections", "singletonMap", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/Map;", false);
+            methodVisitor.visitInsn(ARETURN);
+            Label label5 = new Label();
+            methodVisitor.visitLabel(label5);
+            methodVisitor.visitLocalVariable("this", generatedClassDescriptor, null, label0, label5, 0);
+            methodVisitor.visitLocalVariable("serialized", "Ljava/util/Set;", "Ljava/util/Set<Ljava/lang/Object;>;", label1, label5, 1);
+            methodVisitor.visitLocalVariable("iterator", "Lscala/collection/Iterator;", null, label2, label5, 2);
+            methodVisitor.visitMaxs(4, 3);
+            methodVisitor.visitEnd();
+        }
+        {   // public static SetN deserialize(Map<String, Object> map) { ... }
+
+            // set up book keeping
+            final OperandStack operandStack = new OperandStack();
+            final LocalVariableTable localVariableTable = new LocalVariableTable();
+            final LocalCounter localCounter = new LocalCounter();
+
+            final Label startLabel = new Label(), endLabel = new Label();
+
+            final int argumentSetIndex = localCounter.getSlotIndex(), argumentSetFrameIndex = localCounter.getFrameIndex();
+
+            final LocalVariable argumentSetVariable = new LocalVariable("set", "Ljava/util/Set;", null, startLabel, endLabel, argumentSetIndex, argumentSetFrameIndex);
+            localVariableTable.add(argumentSetVariable); localCounter.add(Type.getType(java.util.Set.class));
+
+            // write the bytecode!
+            methodVisitor = classWriter.visitMethod(ACC_PUBLIC | ACC_STATIC, "deserialize", "(Ljava/util/Map;)" + generatedClassDescriptor, "(Ljava/util/Map<Ljava/lang/String;Ljava/lang/Object;>;)" + generatedClassDescriptor, null);
+            methodVisitor.visitCode();
+
+            methodVisitor.visitLabel(startLabel);   //let's a go!
+
+            // java.util.Set serialized = (java.util.Set) map.get("set");
+            methodVisitor.visitVarInsn(ALOAD, argumentSetIndex);                        operandStack.push(Type.getType(java.util.Set.class));
+            methodVisitor.visitLdcInsn("set");                                     operandStack.push(Type.getType(java.lang.String.class));
+            methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);     operandStack.replaceTop(2, Type.getType(Object.class));
+            methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Set");
+            final int serializedSetIndex = localCounter.getSlotIndex(), serializedSetFrameIndex = localCounter.getFrameIndex();
+            methodVisitor.visitVarInsn(ASTORE, serializedSetIndex);                     operandStack.pop();
+            Label label1 = new Label();
+            methodVisitor.visitLabel(label1);
+            final LocalVariable serializedSetVariable = new LocalVariable("serialized", "Ljava/util/Set;", null, label1, endLabel, serializedSetIndex, serializedSetFrameIndex);
+            localVariableTable.add(serializedSetVariable); localCounter.add(Type.getType(java.util.Set.class));
+
+            // java.util.Iterator<java.lang.Object> iterator = serialized.iterator();
+            methodVisitor.visitVarInsn(ALOAD, serializedSetIndex);                      operandStack.push(Type.getType(java.util.Set.class));
+            methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Set", "iterator", "()Ljava/util/Iterator;", true);    operandStack.replaceTop(Type.getType(java.util.Iterator.class));
+            final int iteratorIndex = localCounter.getSlotIndex(), iteratorFrameIndex = localCounter.getFrameIndex();
+            methodVisitor.visitVarInsn(ASTORE, iteratorIndex);                          operandStack.pop();
+            Label label2 = new Label();
+            methodVisitor.visitLabel(label2);
+            final LocalVariable iteratorVariable = new LocalVariable("iterator", "Ljava/util/Iterator;", null, label2, endLabel, iteratorIndex, iteratorFrameIndex);
+            localVariableTable.add(iteratorVariable); localCounter.add(Type.getType(java.util.Iterator.class));
+
+            // prepare for return; new scalaLoader.SetN(new scala.SetN(...
+            methodVisitor.visitTypeInsn(NEW, generatedClassName);                           operandStack.push(Type.getType(generatedClassDescriptor));
+            methodVisitor.visitInsn(DUP);                                                   operandStack.push(Type.getType(generatedClassDescriptor));
+            methodVisitor.visitTypeInsn(NEW, setNClassName);                                operandStack.push(Type.getType(setNClassDescriptor));
+            methodVisitor.visitTypeInsn(NEW, setNClassName);                                operandStack.push(Type.getType(setNClassDescriptor));
+
+            // prepare arguments
+            for (int k = 1; k <= N; k++) {
+                // just call iterator.next() unsafely because we know how many elements there are!
+
+                // java.util.Object elementK = iterator.next();
+                methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                           operandStack.push(Type.getType(java.util.Iterator.class));
+                methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(Type.getType(Object.class));
+                genParameterType(methodVisitor, elementType, operandStack);
+                genScalaPluginClassLoader(methodVisitor, plugin, operandStack);
+                methodVisitor.visitMethodInsn(INVOKESTATIC, "xyz/janboerman/scalaloader/configurationserializable/runtime/RuntimeConversions", "deserialize", "(Ljava/lang/Object;Lxyz/janboerman/scalaloader/configurationserializable/runtime/ParameterType;Ljava/lang/ClassLoader;)Ljava/lang/Object;", false);
+                /* just leave it on top of the stack! */                                    operandStack.replaceTop(3, Type.getType(Object.class));
+            }
+
+            // now, invoke the constuctors scala.SetN#<init>, scalaLoader.setN#<init>
+            methodVisitor.visitMethodInsn(INVOKESPECIAL, setNClassName, "<init>", "(" + Compat.stringRepeat("Ljava/lang/Object;", N) + ")V", false);    operandStack.pop(N + 1);    // arguments + the type itself
+            methodVisitor.visitMethodInsn(INVOKESPECIAL, generatedClassName, "<init>", "(" + setNClassDescriptor + ")V", false);                                operandStack.pop(2);
+            methodVisitor.visitInsn(ARETURN);
+
+            methodVisitor.visitLabel(endLabel);
+
+            for (LocalVariable local : localVariableTable) {
+                methodVisitor.visitLocalVariable(local.name, local.descriptor, local.signature, local.startLabel, local.endLabel, local.tableSlot);
+            }
+            methodVisitor.visitMaxs(operandStack.maxStack(), localVariableTable.maxLocals());
+            methodVisitor.visitEnd();
+        }
+        {   // @Override public Object getValue() { return this.set; } // return type is Object because of type erasure :)
+            methodVisitor = classWriter.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "getValue", "()Ljava/lang/Object;", null, null);
+            methodVisitor.visitCode();
+            Label label0 = new Label();
+            methodVisitor.visitLabel(label0);
+            methodVisitor.visitVarInsn(ALOAD, 0);
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, generatedClassName, "getValue", "()" + setNClassDescriptor, false);
+            methodVisitor.visitInsn(ARETURN);
+            Label label1 = new Label();
+            methodVisitor.visitLabel(label1);
+            methodVisitor.visitLocalVariable("this", generatedClassDescriptor, null, label0, label1, 0);
+            methodVisitor.visitMaxs(1, 1);
+            methodVisitor.visitEnd();
+        }
+        classWriter.visitEnd();
+
+        return classWriter.toByteArray();
     }
 }
 
