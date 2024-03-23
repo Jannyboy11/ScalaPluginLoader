@@ -151,6 +151,10 @@ public class RuntimeConversions {
             return ((BigDecimal) live).toString();
         } else if (rawType.isEnum()) {
             return ((Enum<?>) live).name();
+        } else if (rawType == Instant.class) {
+            return ((Instant) live).toString();
+        } else if (rawType == Duration.class) {
+            return ((Duration) live).toString();
         }
 
         //java containers
@@ -166,7 +170,7 @@ public class RuntimeConversions {
             return JavaMap.serialize(live, type, pluginClassLoader);
         }
 
-        //scala containers
+        //scala types
         else if (Tuple.isTuple(live)) {
             return Tuple.serialize(live, type, pluginClassLoader);
         } else if (Option.isOption(live, pluginClassLoader)) {
@@ -426,6 +430,10 @@ public class RuntimeConversions {
             return new BigDecimal((String) serialized);
         } else if (rawType.isEnum()) {
             return Enum.valueOf((Class<Enum>) rawType, (String) serialized);
+        } else if (rawType == Instant.class) {
+            return Instant.parse((String) serialized);
+        } else if (rawType == Duration.class) {
+            return Duration.parse((String) serialized);
         }
 
         //java containers
