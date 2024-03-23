@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.configurationserializable.runtime.types;
 
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.objectweb.asm.*;
@@ -38,7 +39,7 @@ public abstract class ScalaCollection {
     static final String SCALA_IMMUTABLE_SEQ = "scala.collection.immutable.Seq";
     static final String SCALA_IMMUTABLE_SET = "scala.collection.immutable.Set";
     static final String SCALA_MUTABLE_SEQ = "scala.collection.mutable.Seq";
-    static final String SCALA_MUTABLE_SET = "scala.collection.mutable.Set";
+    static final String SCALA_MUTABLE_SET = "scala.collection.mutable.Set"; //TODO do we also have mutable SetN variants? that does not make sense, right?
     static final String SCALA_IMMUTABLE_RANGE = "scala.collection.immutable.Range";
     static final String SCALA_IMMUTABLE_WRAPPED_STRING = "scala.collection.immutable.WrappedString";
     static final String SCALA_IMMUTABLE_ARRAY_SEQ = "scala.collection.immutable.ArraySeq";
@@ -48,8 +49,8 @@ public abstract class ScalaCollection {
     //TODO but we have Explicit now. does this help us?
     //TODO also need to special-case the 'sorted' collections: TreeSet etc
 
-    static final String SCALA_SET_WRAPPER_WITH_SLASHES = ScalaSet.class.getName().replace('.', '/');
     static final String SCALA_SEQ_WRAPPER_WITH_SLASHES = ScalaSeq.class.getName().replace('.', '/');
+    static final String SCALA_SET_WRAPPER_WITH_SLASHES = ScalaSet.class.getName().replace('.', '/');
 
     public ScalaCollection() {}
 
@@ -121,7 +122,7 @@ public abstract class ScalaCollection {
         ClassDefineResult result = plugin.getOrDefineClass(generatedClassName, generator, true);
         Class<? extends ScalaCollection> wrapperClass = (Class<? extends ScalaCollection>)result.getClassDefinition();
         if (result.isNew()) {
-            ConfigurationSerialization.registerClass(wrapperClass, liveClass.getName());
+            ConfigurationSerialization.registerClass((Class<? extends ConfigurationSerializable>) wrapperClass, liveClass.getName());
         }
 
         try {
@@ -132,7 +133,8 @@ public abstract class ScalaCollection {
         }
     }
 
-    public static ScalaCollection serialize(Object live, ParameterType type, ClassLoader plugin) {
+    public static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> ScalaCollection serialize(
+            Object live, ParameterType type, ScalaPluginClassLoader plugin) {
         assert isCollection(live, plugin) : "Not a " + SCALA_SEQ + " or " + SCALA_SET;
 
         final ParameterType elementType = type instanceof ParameterizedParameterType ? ((ParameterizedParameterType) type).getTypeParameter(0) : ParameterType.from(Object.class);
@@ -142,7 +144,8 @@ public abstract class ScalaCollection {
 
         final OptionalInt isSetN = IntStream.rangeClosed(1, 4).filter(N -> isSetN(alias, N)).findAny();
         if (isSetN.isPresent()) {
-
+            //TODO test this:
+            return instantiateWrapper(live, type, generatedClassName, name -> makeSetN(isSetN.getAsInt(), generatedClassName, ourCollectionClass, alias, elementType, plugin), plugin);
         }
 
         //TODO
@@ -325,18 +328,24 @@ public abstract class ScalaCollection {
             methodVisitor.visitCode();
             Label label0 = new Label();
             methodVisitor.visitLabel(label0);
+
+            // java.util.Set serialized = new java.util.LinkedHashSet();
             methodVisitor.visitTypeInsn(NEW, "java/util/LinkedHashSet");
             methodVisitor.visitInsn(DUP);
             methodVisitor.visitMethodInsn(INVOKESPECIAL, "java/util/LinkedHashSet", "<init>", "()V", false);
             methodVisitor.visitVarInsn(ASTORE, 1);
             Label label1 = new Label();
             methodVisitor.visitLabel(label1);
+
+            // scala.collection.Iterator = this.set.iterator();
             methodVisitor.visitVarInsn(ALOAD, 0);
             methodVisitor.visitFieldInsn(GETFIELD, generatedClassName, "set", setNClassDescriptor);
             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, setNClassName, "iterator", "()Lscala/collection/Iterator;", false);
             methodVisitor.visitVarInsn(ASTORE, 2);
             Label label2 = new Label();
             methodVisitor.visitLabel(label2);
+
+            // while (iterator.hasNext()) {
             methodVisitor.visitFrame(Opcodes.F_APPEND,2, new Object[] {"java/util/Set", "scala/collection/Iterator"}, 0, null);
             methodVisitor.visitVarInsn(ALOAD, 2);
             methodVisitor.visitMethodInsn(INVOKEINTERFACE, "scala/collection/Iterator", "hasNext", "()Z", true);
@@ -344,6 +353,8 @@ public abstract class ScalaCollection {
             methodVisitor.visitJumpInsn(IFEQ, label3);
             Label label4 = new Label();
             methodVisitor.visitLabel(label4);
+
+            // serialized.add(RuntimeConversions.serialize(iterator.next()));
             methodVisitor.visitVarInsn(ALOAD, 1);
             methodVisitor.visitVarInsn(ALOAD, 2);
             methodVisitor.visitMethodInsn(INVOKEINTERFACE, "scala/collection/Iterator", "next", "()Ljava/lang/Object;", true);
@@ -353,14 +364,19 @@ public abstract class ScalaCollection {
             methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Set", "add", "(Ljava/lang/Object;)Z", true);
             methodVisitor.visitInsn(POP);
             methodVisitor.visitJumpInsn(GOTO, label2);
+
+            // } // end while
             methodVisitor.visitLabel(label3);
             methodVisitor.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
+
+            // return Collections.singletonMap("set", serialized);
             methodVisitor.visitLdcInsn("set");
             methodVisitor.visitVarInsn(ALOAD, 1);
             methodVisitor.visitMethodInsn(INVOKESTATIC, "java/util/Collections", "singletonMap", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/Map;", false);
             methodVisitor.visitInsn(ARETURN);
             Label label5 = new Label();
             methodVisitor.visitLabel(label5);
+
             methodVisitor.visitLocalVariable("this", generatedClassDescriptor, null, label0, label5, 0);
             methodVisitor.visitLocalVariable("serialized", "Ljava/util/Set;", "Ljava/util/Set<Ljava/lang/Object;>;", label1, label5, 1);
             methodVisitor.visitLocalVariable("iterator", "Lscala/collection/Iterator;", null, label2, label5, 2);
@@ -718,8 +734,9 @@ public abstract class ScalaCollection {
     }
 }
 
+/*
 @SerializableAs(ScalaCollection.SCALA_IMMUTABLE_SET + ".SetN") //in bytecode replace N by the set size
-/*public*/ final class SetNAdapter extends ScalaSet {
+public final class SetNAdapter extends ScalaSet {
     private final scala.collection.immutable.Set.Set1 set;  //in bytecode make this dependent on the set size
 
     public SetNAdapter(scala.collection.immutable.Set.Set1 set) { //SetN
@@ -737,7 +754,7 @@ public abstract class ScalaCollection {
 
         scala.collection.Iterator iterator = set.iterator();
         while (iterator.hasNext()) {
-            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, /*IScalaPlugin ClassLoader*/ null));
+            serialized.add(RuntimeConversions.serialize(iterator.next(), (ParameterType) null, (ScalaPluginClassLoader) null));
             //gen ParameterType and gen ScalaPluginClassLoader
         }
 
@@ -749,7 +766,7 @@ public abstract class ScalaCollection {
 
         java.util.Iterator<Object> iterator = serialized.iterator();
         //for (int k = 1; k <= N; k++) {
-            RuntimeConversions.deserialize(iterator.next(), (ParameterType) null, /*IScalaPlugin classLoader*/ null);
+            RuntimeConversions.deserialize(iterator.next(), (ParameterType) null, (ScalaPluginClassLoader) null);
             //in bytecode, don't pop this, just leave it on the stack.
 
             //k++
@@ -758,3 +775,4 @@ public abstract class ScalaCollection {
         return new SetNAdapter(new scala.collection.immutable.Set.Set1(null)); //SetN(elem1, ..., elemN)
     }
 }
+*/

@@ -264,7 +264,7 @@ public class RuntimeConversions {
         } else if (live instanceof Date) {
             return new DateTime.Date((Date) live);
         }
-        // TODO adapter for types which implement Serializable ?
+        // TODO adapter for types which implement Serializable ? We can use BukkitOutputStream probably.
 
         //if the type is not ConfigurationSerializable, warn the plugin author
         if (!(live instanceof ConfigurationSerializable) && pluginClassLoader.getPluginLoader().debugSettings().logMissingCodecs()) {

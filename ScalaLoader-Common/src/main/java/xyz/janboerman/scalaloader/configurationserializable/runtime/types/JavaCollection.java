@@ -21,6 +21,7 @@ public abstract class JavaCollection<T> implements Adapter<Collection<? extends 
     private static final String FOR_ENUMSET = PREFIX_USING_DOTS + "JavaCollection$ForEnumSet";
     private static final String FOR_ENUMSET_ALIAS = "java.util.EnumSet";
 
+    // Adapters for unknown collection types (e.g. from third-party libraries, or from future JDKs).
     private static final Map<Class<? extends Collection>, Class<? extends JavaCollection<?>>> ForGenericAdapters = new WeakHashMap<>();
 
     @Called
