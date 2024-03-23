@@ -738,7 +738,7 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
 
     private static <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] makeMapN(final int N, String generatedClassName, final Class<?> theMapType, final String alias,
                                    final ParameterType keyType, final ParameterType valueType, final ScalaPluginClassLoader plugin) {
-        final String classNameUsingDots = generatedClassName;
+        final String classNameUsingDots = generatedClassName;   //TODO shouldn't this be used? or is it redundant?
         generatedClassName = generatedClassName.replace('.', '/');
         final String generatedClassDescriptor = "L" + generatedClassName + ";";
         final String mapNClassName = theMapType.getName().replace('.', '/');
@@ -747,7 +747,6 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
 
         ClassWriter classWriter = new ClassWriter(0);
         FieldVisitor fieldVisitor;
-        RecordComponentVisitor recordComponentVisitor;
         MethodVisitor methodVisitor;
         AnnotationVisitor annotationVisitor0;
 
@@ -892,7 +891,7 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
         methodVisitor.visitLdcInsn("map");                                                  operandStack.push(Type.getType(java.lang.Object.class));
         methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);     operandStack.replaceTop(2, Type.getType(Object.class));
         methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Map");                            operandStack.replaceTop(Type.getType(java.util.Map.class));
-        final int serializedMapIndex = localCounter.getSlotIndex(), serializedMapFrameIndex = localCounter.getFrameIndex();;
+        final int serializedMapIndex = localCounter.getSlotIndex(), serializedMapFrameIndex = localCounter.getFrameIndex();
         methodVisitor.visitVarInsn(ASTORE, serializedMapIndex);                                 operandStack.pop();
         Label label1 = new Label();
         methodVisitor.visitLabel(label1);
@@ -920,7 +919,7 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
         for (int k = 1; k <= N; k++) {
             //just call iterator.next() unsafely because we know how many elements there are!
 
-            //java.util.Map.Entry entryK = iterator.Next();
+            //java.util.Map.Entry entryK = iterator.next();
             methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                                   operandStack.push(Type.getType(java.util.Iterator.class));
             methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);             operandStack.replaceTop(Type.getType(Object.class));
             methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Map$Entry");                  operandStack.replaceTop(Type.getType(java.util.Map.Entry.class));
