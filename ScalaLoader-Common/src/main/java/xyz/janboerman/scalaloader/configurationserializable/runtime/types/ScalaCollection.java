@@ -407,7 +407,7 @@ public abstract class ScalaCollection {
             methodVisitor.visitVarInsn(ALOAD, argumentSetIndex);                        operandStack.push(Type.getType(java.util.Set.class));
             methodVisitor.visitLdcInsn("set");                                     operandStack.push(Type.getType(java.lang.String.class));
             methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);     operandStack.replaceTop(2, Type.getType(Object.class));
-            methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Set");
+            methodVisitor.visitTypeInsn(CHECKCAST, "java/util/Set");                operandStack.push(Type.getType(java.util.Set.class));
             final int serializedSetIndex = localCounter.getSlotIndex(), serializedSetFrameIndex = localCounter.getFrameIndex();
             methodVisitor.visitVarInsn(ASTORE, serializedSetIndex);                     operandStack.pop();
             Label label1 = new Label();

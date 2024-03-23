@@ -948,7 +948,7 @@ public abstract class ScalaMap implements Adapter/*<scala.collection.Map>*/ {
         }
 
         //now invoke the constructors: new MapNAdapter(new MapN(arguments));
-        methodVisitor.visitMethodInsn(INVOKESPECIAL, mapNClassName, "<init>", "(" + Compat.stringRepeat("Ljava/lang/Object;Ljava/lang/Object;", N) + ")V", false);        operandStack.pop(N + 1); //arguments + the type itself
+        methodVisitor.visitMethodInsn(INVOKESPECIAL, mapNClassName, "<init>", "(" + Compat.stringRepeat("Ljava/lang/Object;Ljava/lang/Object;", N) + ")V", false);        operandStack.pop(2 * N + 1); //arguments + the type itself
         methodVisitor.visitMethodInsn(INVOKESPECIAL, generatedClassName, "<init>", "(" + mapNClassDescriptor + ")V", false);                operandStack.pop(2);
         methodVisitor.visitInsn(ARETURN);
 
