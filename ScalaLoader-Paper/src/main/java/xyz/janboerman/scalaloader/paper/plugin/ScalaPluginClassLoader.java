@@ -24,14 +24,11 @@ import java.util.function.BiFunction;
 import java.util.jar.JarEntry;
 import java.util.logging.Logger;
 import java.util.jar.JarFile;
-import java.util.stream.Collectors;
 
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.entrypoint.classloader.ClassloaderBytecodeModifier;
 import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
 
-import io.papermc.paper.plugin.entrypoint.classloader.PaperSimplePluginClassLoader;
-import io.papermc.paper.plugin.manager.PaperPluginManagerImpl;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
@@ -50,7 +47,7 @@ import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 
-import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
+import io.papermc.paper.plugin.entrypoint.classloader.PaperSimplePluginClassLoader;
 import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
@@ -66,22 +63,8 @@ import xyz.janboerman.scalaloader.util.ClassLoaderUtils;
 
 public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IScalaPluginClassLoader {
 
-    private static final MethodHandle GET_CONFIGURATION;
     static {
         ClassLoader.registerAsParallelCapable();
-
-        MethodHandle getConfiguration;
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        try {
-            getConfiguration = lookup.findVirtual(PaperSimplePluginClassLoader.class, "getConfiguration", MethodType.methodType(PaperPluginMeta.class));
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            try {
-                getConfiguration = lookup.findVirtual(PaperSimplePluginClassLoader.class, "getConfiguration", MethodType.methodType(PluginMeta.class));
-            } catch (NoSuchMethodException | IllegalAccessException e2) {
-                getConfiguration = null;
-            }
-        }
-        GET_CONFIGURATION = getConfiguration;
     }
 
     private final ScalaPluginLoader pluginLoader;
@@ -156,7 +139,9 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         //https://github.com/PaperMC/Paper/pull/10758/files#diff-1b48bde36fde990048ba454fb0bcc4e2b92a441c8387c350f1a8f0f09dbc8f8eR1127
 
         try {
-            return (PluginMeta) GET_CONFIGURATION.invoke(this);
+            Field field = PaperSimplePluginClassLoader.class.getDeclaredField("configuration");
+            field.setAccessible(true);
+            return (PluginMeta) field.get(this);
         } catch (Throwable e) {
                 throw new RuntimeException("Could not get scala plugin configuration?", e);
         }
