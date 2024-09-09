@@ -10,6 +10,8 @@ import java.io.StringReader;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * This class is NOT part of the public API!
@@ -73,14 +75,65 @@ public class Platform {
         private MethodHandle commodoreConvert = null;
         private boolean attempted = false;
 
+        public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transformNative(Server craftServer, Class<?> apiVersionClass, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
+            IScalaLoader.getInstance().getLogger().info("DEBUG: transform native..");
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            if (commodoreConvert == null) {
+
+                IScalaLoader.getInstance().getLogger().info("DEBUG: first attempt to find Commodore#convert!");
+                attempted = true;
+                try {
+                    // public static byte[] convert(byte[] b, final String pluginName, final ApiVersion pluginVersion, final Set<String> activeCompatibilities)
+                    Class<?> commodoreClass = Class.forName(getPackageName(craftServer.getClass()) + ".util.Commodore");
+                    String methodName = "convert";
+                    MethodType methodType = MethodType.methodType(byte[].class,
+                            new Class<?>[] { byte[].class, String.class, apiVersionClass, Set.class });
+                    IScalaLoader.getInstance().getLogger().info("DEBUG: looking up static convert method..");
+                    commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
+                    IScalaLoader.getInstance().getLogger().info("DEBUG: found commodore convert!");
+                } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ignored) {
+                    IScalaLoader.getInstance()
+                            .getLogger()
+                            .info("DEBUG: could not find Commodore#convert!!! " + ignored.getClass().getName() + ": " +
+                                    ignored.getMessage());
+                    //impossible
+                }
+            }
+
+            if (commodoreConvert != null) {
+                IScalaLoader.getInstance().getLogger().info("DEBUG: converting class..");
+                String pluginName = pluginClassLoader.getPlugin().getName();
+                try {
+                    MethodHandle getOrCreateVersion = lookup.findStatic(apiVersionClass, "getOrCreateVersion", MethodType.methodType(apiVersionClass, String.class));
+                    Object apiVersion = getOrCreateVersion.invoke(pluginClassLoader.getApiVersion().getVersionString());
+
+                    Set activeCompatibilities = Collections.emptySet();
+                    try {
+                        MethodHandle compatibilitiesGetter = lookup.findGetter(craftServer.getClass(), "activeCompatibilities", Set.class);
+                        activeCompatibilities = (Set) compatibilitiesGetter.invoke(craftServer);
+                    } catch (Exception couldNotDetermineActiveCompatibilities) {
+                    }
+
+                    classBytes = (byte[]) commodoreConvert.invoke(classBytes, pluginName, apiVersion, activeCompatibilities);
+                    IScalaLoader.getInstance().getLogger().info("DEBUG: converted class!");
+                } catch (NoSuchMethodException | IllegalAccessException ignored) {
+                    IScalaLoader.getInstance().getLogger().info("DEBUG: could not invoke Commodore#convert!!! " + ignored.getClass().getName() + ": " + ignored.getMessage());
+                }
+            }
+
+            return classBytes;
+        }
+
         public byte[] transformNative(Server craftServer, byte[] classBytes, boolean modern) throws Throwable {
             if (!attempted) {
                 attempted = true;
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
                 try {
+                    // public static byte[] convert(byte[] b, boolean isModern)
                     Class<?> commodoreClass = Class.forName(getPackageName(craftServer.getClass()) + ".util.Commodore");
                     String methodName = "convert";
-                    MethodType methodType = MethodType.methodType(byte[].class, new Class<?>[]{byte[].class, boolean.class});
+                    MethodType methodType = MethodType.methodType(byte[].class,
+                            new Class<?>[] { byte[].class, boolean.class });
                     commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
                 } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ignored) {
                     //running on craftbukkit 1.12.2 or earlier
@@ -96,7 +149,12 @@ public class Platform {
 
         @Override
         public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
-            return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader.getApiVersion() != ApiVersion.LEGACY);
+            try {
+                Class<?> apiVersionClass = Class.forName("org.bukkit.craftbukkit.util.ApiVersion");
+                return transformNative(pluginClassLoader.getServer(), apiVersionClass, classBytes, pluginClassLoader);
+            } catch (ClassNotFoundException e) {
+                return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader.getApiVersion() != ApiVersion.LEGACY);
+            }
         }
 
     }
