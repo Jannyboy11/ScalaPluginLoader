@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -23,9 +26,11 @@ import java.util.logging.Logger;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.entrypoint.classloader.ClassloaderBytecodeModifier;
 import io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader;
 
+import io.papermc.paper.plugin.entrypoint.classloader.PaperSimplePluginClassLoader;
 import io.papermc.paper.plugin.manager.PaperPluginManagerImpl;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
@@ -44,6 +49,8 @@ import org.objectweb.asm.util.ASMifier;
 import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
+
+import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
 import xyz.janboerman.scalaloader.DebugSettings;
 import xyz.janboerman.scalaloader.bytecode.TransformerRegistry;
 import xyz.janboerman.scalaloader.compat.Compat;
@@ -59,8 +66,22 @@ import xyz.janboerman.scalaloader.util.ClassLoaderUtils;
 
 public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IScalaPluginClassLoader {
 
+    private static final MethodHandle GET_CONFIGURATION;
     static {
         ClassLoader.registerAsParallelCapable();
+
+        MethodHandle getConfiguration;
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        try {
+            getConfiguration = lookup.findVirtual(PaperSimplePluginClassLoader.class, "getConfiguration", MethodType.methodType(PaperPluginMeta.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            try {
+                getConfiguration = lookup.findVirtual(PaperSimplePluginClassLoader.class, "getConfiguration", MethodType.methodType(PluginMeta.class));
+            } catch (NoSuchMethodException | IllegalAccessException e2) {
+                getConfiguration = null;
+            }
+        }
+        GET_CONFIGURATION = getConfiguration;
     }
 
     private final ScalaPluginLoader pluginLoader;
@@ -127,7 +148,18 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
     @Override
     public ScalaPluginMeta getConfiguration() {
-        return (ScalaPluginMeta) super.getConfiguration();
+        return (ScalaPluginMeta) _getConfiguration();
+    }
+
+    private PluginMeta _getConfiguration() {
+        //Paper changed PaperSimplePluginClassLoader from PaperPluginMeta to PluginMeta:
+        //https://github.com/PaperMC/Paper/pull/10758/files#diff-1b48bde36fde990048ba454fb0bcc4e2b92a441c8387c350f1a8f0f09dbc8f8eR1127
+
+        try {
+            return (PluginMeta) GET_CONFIGURATION.invoke(this);
+        } catch (Throwable e) {
+                throw new RuntimeException("Could not get scala plugin configuration?", e);
+        }
     }
 
     @Override
@@ -236,7 +268,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
 
     private byte[] transformBytecode(String className, byte[] byteCode) {
         //Paper-supported bytecode transformer via ServiceLoader api!
-        byteCode = ClassloaderBytecodeModifier.bytecodeModifier().modify(configuration, byteCode);
+        byteCode = ClassloaderBytecodeModifier.bytecodeModifier().modify(getConfiguration(), byteCode);
 
         //ScalaLoader transformations (everything except main class)
         byteCode = ClassLoaderUtils.transform(className, byteCode, this, transformerRegistry, this, ScalaLoader.getInstance().getLogger());
