@@ -435,7 +435,7 @@ public abstract class ScalaCollection {
             for (int k = 1; k <= N; k++) {
                 // just call iterator.next() unsafely because we know how many elements there are!
 
-                // java.util.Object elementK = iterator.next();
+                // java.util.Object elementK = RuntimeConversions.deserialize(iterator.next());
                 methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                           operandStack.push(Type.getType(java.util.Iterator.class));
                 methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(Type.getType(Object.class));
                 genParameterType(methodVisitor, elementType, operandStack);

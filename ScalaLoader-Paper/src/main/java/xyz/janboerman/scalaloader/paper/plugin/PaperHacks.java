@@ -4,7 +4,7 @@ import io.papermc.paper.plugin.manager.PaperPluginManagerImpl;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 
-public class PaperHacks {
+public final class PaperHacks {
 
     private PaperHacks() {}
 
