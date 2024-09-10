@@ -18,6 +18,8 @@ import java.util.Set;
  */
 public class Platform {
 
+    private static final String FAKE_PLUGIN_NAME = "Fake";
+
     protected Platform() {
     }
 
@@ -33,7 +35,7 @@ public class Platform {
             try {
                 Server server = currentPluginClassLoader.getServer();
                 UnsafeValues unsafeValues = server.getUnsafe();
-                String fakeDescription = "name: Fake" + System.lineSeparator() +
+                String fakeDescription = "name: " + FAKE_PLUGIN_NAME + System.lineSeparator() +
                         "version: 1.0" + System.lineSeparator() +
                         "main: xyz.janboerman.scalaloader.FakePlugin" + System.lineSeparator();
                 ApiVersion apiVersion = currentPluginClassLoader.getApiVersion();
@@ -103,7 +105,7 @@ public class Platform {
             }
 
             if (commodoreConvert != null) {
-                String pluginName = pluginClassLoader.getPlugin().getName();
+                String pluginName = getPluginName(pluginClassLoader);
                 try {
                     MethodHandle getOrCreateVersion = lookup.findStatic(API_VERSION_CLASS, "getOrCreateVersion", MethodType.methodType(API_VERSION_CLASS, String.class));
                     Object apiVersion = getOrCreateVersion.invoke(pluginClassLoader.getApiVersion().getVersionString());
@@ -155,6 +157,14 @@ public class Platform {
             }
         }
 
+        private static String getPluginName(IScalaPluginClassLoader classLoader) {
+            IScalaPlugin plugin = classLoader.getPlugin();
+            if (plugin == null) {
+                return FAKE_PLUGIN_NAME;
+            } else {
+                return plugin.getName();
+            }
+        }
     }
 
     public static class GlowstonePlatform extends Platform {
