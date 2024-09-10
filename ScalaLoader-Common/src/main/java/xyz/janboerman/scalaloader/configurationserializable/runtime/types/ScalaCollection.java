@@ -435,7 +435,7 @@ public abstract class ScalaCollection {
             for (int k = 1; k <= N; k++) {
                 // just call iterator.next() unsafely because we know how many elements there are!
 
-                // java.util.Object elementK = RuntimeConversions.deserialize(iterator.next());
+                // java.lang.Object elementK = RuntimeConversions.deserialize(iterator.next());
                 methodVisitor.visitVarInsn(ALOAD, iteratorIndex);                           operandStack.push(Type.getType(java.util.Iterator.class));
                 methodVisitor.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "next", "()Ljava/lang/Object;", true);     operandStack.replaceTop(Type.getType(Object.class));
                 genParameterType(methodVisitor, elementType, operandStack);
@@ -444,7 +444,7 @@ public abstract class ScalaCollection {
                 /* just leave it on top of the stack! */                                    operandStack.replaceTop(3, Type.getType(Object.class));
             }
 
-            // now, invoke the constuctors scala.SetN#<init>, scalaLoader.setN#<init>
+            // now, invoke the constructors scala.SetN#<init>, scalaLoader.setN#<init>
             methodVisitor.visitMethodInsn(INVOKESPECIAL, setNClassName, "<init>", "(" + Compat.stringRepeat("Ljava/lang/Object;", N) + ")V", false);    operandStack.pop(N + 1);    // arguments + the type itself
             methodVisitor.visitMethodInsn(INVOKESPECIAL, generatedClassName, "<init>", "(" + setNClassDescriptor + ")V", false);                                operandStack.pop(2);
             methodVisitor.visitInsn(ARETURN);
