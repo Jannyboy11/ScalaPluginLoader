@@ -99,7 +99,7 @@ public class ScalaPluginMeta extends PaperPluginMeta /*implements PluginMeta*/ {
     }
 
     //TODO track new paper-style dependency configuration separately?
-    @Override
+    //@Override
     public Map<String, DependencyConfiguration> getBoostrapDependencies() {
         Map<String, DependencyConfiguration> res = new HashMap<>();
 
