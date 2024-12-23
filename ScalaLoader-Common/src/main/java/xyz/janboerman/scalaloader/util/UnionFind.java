@@ -9,6 +9,10 @@ import java.util.Set;
 
 /**
  * Represents a Union-Find (or 'disjoint union') data structure.
+ * <p>
+ * A Union-Find is a structure which partitions its members into disjoint sets. Each disjoint set is called a partition.
+ * Each partition is identified (uniquely) by its representative element.
+ * <p>
  * This Union-Find does not support null elements.
  *
  * @param <T> the type of elements in the Union-Find

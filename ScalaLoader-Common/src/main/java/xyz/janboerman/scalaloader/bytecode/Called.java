@@ -5,6 +5,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
+
+import xyz.janboerman.scalaloader.compat.Migration;
 import xyz.janboerman.scalaloader.configurationserializable.runtime.*;
 import xyz.janboerman.scalaloader.event.EventBus;
 
@@ -27,6 +29,7 @@ import java.lang.reflect.Type;
  * @see ArrayParameterType#from(ParameterType, boolean)
  * @see ParameterizedParameterType#from(Class, ParameterType...)
  * @see Adapter
+ * @see Migration
  */
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE})
 @Retention(RetentionPolicy.CLASS)
