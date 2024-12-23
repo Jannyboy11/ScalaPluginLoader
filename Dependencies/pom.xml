@@ -12,8 +12,7 @@
     <artifactId>Dependencies</artifactId>
 
     <properties>
-        <minecraftVersion>1.21</minecraftVersion>
-        <paperVersion>${minecraftVersion}-R0.1-SNAPSHOT</paperVersion>
+        <paper.version>1.21-R0.1-SNAPSHOT</paper.version>
     </properties>
     <repositories>
         <repository>
@@ -39,7 +38,7 @@
                                 <artifactItem>
                                     <groupId>io.papermc.paper</groupId>
                                     <artifactId>dev-bundle</artifactId>
-                                    <version>${paperVersion}</version>
+                                    <version>${paper.version}</version>
                                     <type>zip</type>
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}</outputDirectory>
@@ -86,7 +85,7 @@
                             <file>${basedir}/versions/${minecraftVersion}/paper-${minecraftVersion}.jar</file>
                             <groupId>io.papermc.paper</groupId>
                             <artifactId>paper-server</artifactId>
-                            <version>${paperVersion}</version>
+                            <version>${paper.version}</version>
                             <classifier>mojang-mapped</classifier>
                             <packaging>jar</packaging>
                             <generatePom>true</generatePom>
@@ -96,6 +95,4 @@
             </plugin>
         </plugins>
     </build>
-
-
 </project>
