@@ -13,6 +13,7 @@
     <artifactId>Dependencies</artifactId>
 
     <properties>
+        <minecraft.version>1.21.4</minecraft.version>
         <paper.version>1.21-R0.1-SNAPSHOT</paper.version>
     </properties>
 
@@ -85,7 +86,7 @@
                             <goal>install-file</goal>
                         </goals>
                         <configuration>
-                            <file>${basedir}/versions/${minecraftVersion}/paper-${minecraftVersion}.jar</file>
+                            <file>${basedir}/versions/${minecraft.version}/paper-${minecraft.version}.jar</file>
                             <groupId>io.papermc.paper</groupId>
                             <artifactId>paper-server</artifactId>
                             <version>${paper.version}</version>
