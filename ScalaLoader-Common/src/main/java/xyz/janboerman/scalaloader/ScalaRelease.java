@@ -74,6 +74,8 @@ public final class ScalaRelease implements Comparable<ScalaRelease> {
     public static final ScalaRelease SCALA_3_4 = new ScalaRelease("3.4");
     /** The Scala 3.5.x series */
     public static final ScalaRelease SCALA_3_5 = new ScalaRelease("3.5");
+    /** The Scala 3.6.x series */
+    public static final ScalaRelease SCALA_3_6 = new ScalaRelease("3.6");
 
     private final String compatVersion;
 
@@ -113,6 +115,8 @@ public final class ScalaRelease implements Comparable<ScalaRelease> {
             return SCALA_3_4;
         } else if (scalaVersion.startsWith("3.5.")) {
             return SCALA_3_5;
+        } else if (scalaVersion.startsWith("3.6.")) {
+            return SCALA_3_6;
         }
 
         else {
