@@ -12,6 +12,9 @@ ScalaLoader-Paper/target/*
 Scala2Example/target/*
 Scala3Example/target/*
 JavaExample/target/*
+Dependencies/target/*
+Dependencies/versions/*
+Dependencies/cache/*
 
 #Eclipse
 .settings/*

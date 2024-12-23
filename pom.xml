@@ -15,6 +15,8 @@
     </properties>
 
     <modules>
+        <module>Dependencies</module>
+
         <module>ScalaLoader-Common</module>
         <module>ScalaLoader-Bukkit</module>
         <module>ScalaLoader-Paper</module>
