@@ -165,7 +165,7 @@ Available on [GitHub Pages](https://jannyboy11.github.io/ScalaPluginLoader/javad
 ##### SBT
 ```scala
 resolvers += "jannyboy11-minecraft-repo" at "https://repo.repsy.io/mvn/jannyboy11/minecraft"
-libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.6-SNAPSHOT" % "provided"
+libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.15-SNAPSHOT" % "provided"
 ```
 
 ##### Maven
@@ -179,7 +179,7 @@ libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.6-SN
 <dependency>
     <groupId>com.janboerman.scalaloader</groupId>
     <artifactId>ScalaLoader</artifactId>
-    <version>0.18.10-SNAPSHOT</version>
+    <version>0.18.15-SNAPSHOT</version>
     <scope>provided</scope>
 </dependency>
 ```
