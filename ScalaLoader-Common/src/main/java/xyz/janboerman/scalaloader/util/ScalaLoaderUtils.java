@@ -15,6 +15,7 @@ import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -174,26 +175,29 @@ public final class ScalaLoaderUtils {
         if (sha1hash == null || sha1hash.isEmpty()) return;
 
         try {
-            MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
-            try (FileInputStream fis = new FileInputStream(outputFile)) {
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = fis.read(buffer)) != -1) {
-                    sha1.update(buffer, 0, bytesRead);
-                }
-            }
-
-            StringBuilder hashValue = new StringBuilder();
-            for (byte b : sha1.digest()) {
-                hashValue.append(String.format("%02x", b));
-            }
-
-            if (!sha1hash.equals(hashValue)) {
+            if (!sha1hash.equals(getSha1Hash(outputFile))) {
                 throw new IOException("Unexpected hash for " + outputFile.getName() + ", expected: " + sha1hash + ", actual: " + hashValue);
             }
         } catch (NoSuchAlgorithmException e) {
             throw new IOException("Could not find SHA-1 MessageDigest.", e);
         }
+    }
+
+    private static String getSha1Hash(File file) throws NoSuchAlgorithmException, IOException {
+        MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                sha1.update(buffer, 0, bytesRead);
+            }
+        }
+
+        StringBuilder hashValue = new StringBuilder();
+        for (byte b : sha1.digest()) {
+            hashValue.append(String.format("%02x", b));
+        }
+        return hashValue.toString();
     }
 
     /**
