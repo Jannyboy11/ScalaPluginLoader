@@ -47,7 +47,7 @@
                 <configuration>
                     <!-- paper api javadoc -->
                     <links>
-                        <link>https://jd.papermc.io/paper/1.19/</link>
+                        <link>https://jd.papermc.io/paper/1.21.4/</link>
                     </links>
 
                     <!-- make the javadoc tool stop complain about unrecognised tags -->
