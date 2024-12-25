@@ -125,7 +125,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
                 String value = entry.getValue();
 
                 String fileName;
-                if (key.endsWith("-url")) {
+                if (key.endsWith("-url")) { //see PluginScalaVersion
                     fileName = key.substring(0, key.length() - 3) + scalaVersion + ".jar";
                 } else if (key.endsWith(".jar")) {
                     fileName = key;
