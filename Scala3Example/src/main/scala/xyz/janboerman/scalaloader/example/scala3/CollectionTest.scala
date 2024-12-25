@@ -6,7 +6,6 @@ import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import xyz.janboerman.scalaloader.configurationserializable.{ConfigurationSerializable, Scan}
 
-import java.lang.annotation.Annotation
 import scala.collection.immutable.{ArraySeq, SortedSet}
 import scala.collection.mutable
 

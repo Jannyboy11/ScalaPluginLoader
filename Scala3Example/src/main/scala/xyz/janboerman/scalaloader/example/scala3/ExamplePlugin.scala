@@ -4,7 +4,7 @@ import xyz.janboerman.scalaloader.configurationserializable.runtime.{Codec, Runt
 import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 
-@Scala(ScalaVersion.v3_6_2)
+@Scala(version = ScalaVersion.v3_6_2)
 object ExamplePlugin extends ScalaPlugin {
 
     override def onEnable(): Unit =

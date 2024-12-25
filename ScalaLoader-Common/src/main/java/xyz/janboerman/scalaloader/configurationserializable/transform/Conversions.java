@@ -865,7 +865,7 @@ class Conversions {
         if ("java/util/EnumSet".equals(implementationClassName)) {
             //special-case EnumSet because has no nullary constructor.
             methodVisitor.visitLdcInsn(Type.getType(elementTypeSignature.toDescriptor()));                                                                                      operandStack.push(Type.getType(Class.class));
-            methodVisitor.visitMethodInsn(INVOKESTATIC, "java/util/EnumSet", "noneOf", "(Ljava/langClass;)Ljava/util/EnumSet;", false);     operandStack.replaceTop(Type.getType(EnumSet.class));
+            methodVisitor.visitMethodInsn(INVOKESTATIC, "java/util/EnumSet", "noneOf", "(Ljava/lang/Class;)Ljava/util/EnumSet;", false);     operandStack.replaceTop(Type.getType(EnumSet.class));
         } else {
             //call nullary constructor (this may fail at runtime with a NoSuchMethodDefError) //TODO generate try-catch code?
             methodVisitor.visitTypeInsn(NEW, implementationClassName);                                                                                                          operandStack.push(Type.getObjectType(collectionTypeName));

@@ -172,7 +172,7 @@ case object NoValue extends Maybe[scala.Nothing] {
 //    def serialize(): java.util.Map[String, AnyRef] = {
 //        val map = new java.util.HashMap[String, AnyRef]()
 //        map.putAll($serialize())
-//        map.put("$variant", "Nothing" /*or or the class name in case there was no alias*/)
+//        map.put("$variant", "Nothing" /*or, the class name in case there was no alias*/)
 //        return map;
 //    }
 //
