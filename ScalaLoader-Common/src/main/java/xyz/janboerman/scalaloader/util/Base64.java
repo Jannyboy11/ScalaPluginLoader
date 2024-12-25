@@ -2,7 +2,7 @@ package xyz.janboerman.scalaloader.util;
 
 import java.nio.charset.StandardCharsets;
 
-public class Base64 {
+public final class Base64 {
 
     private Base64() {
     }

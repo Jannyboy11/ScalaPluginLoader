@@ -2,6 +2,8 @@ package xyz.janboerman.scalaloader.paper.plugin.description;
 
 import xyz.janboerman.scalaloader.compat.IScalaVersion;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
+
+import static xyz.janboerman.scalaloader.compat.Compat.emptyMap;
 import static xyz.janboerman.scalaloader.paper.plugin.description.ScalaDependency.*;
 
 import java.util.Map;
@@ -17,7 +19,14 @@ public sealed interface ScalaDependency extends IScalaVersion permits Builtin, C
         }
     }
 
-    public static record Custom(String scalaVersion, Map<String, String> urls) implements ScalaDependency {
+    public static record Custom(String scalaVersion, Map<String, String> urls, Map<String, String> sha1hashes) implements ScalaDependency {
+
+        /** @deprecated Use canonical constructor instead. */
+        @Deprecated
+        Custom(String scalaVersion, Map<String, String> urls) {
+            this(scalaVersion, urls, emptyMap());
+        }
+
         @Override
         public String getVersionString() {
             return scalaVersion();

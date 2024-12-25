@@ -501,7 +501,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         if (scalaDependency instanceof ScalaDependency.Builtin builtin) {
             scalaVersion = PluginScalaVersion.fromScalaVersion(builtin.scalaVersion());
         } else if (scalaDependency instanceof ScalaDependency.Custom custom) {
-            scalaVersion = new PluginScalaVersion(custom.scalaVersion(), custom.urls());
+            scalaVersion = new PluginScalaVersion(custom.scalaVersion(), custom.urls(), custom.sha1hashes());
         } else if (scalaDependency instanceof ScalaDependency.YamlDefined yamlDefined) {
             scalaVersion = PluginScalaVersion.fromScalaVersion(ScalaVersion.fromVersionString(yamlDefined.scalaVersion()));
         } else {

@@ -58,7 +58,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
                 addMavenDependency(mavenLibraryResolver, gav);
         } else if (scalaDependency instanceof ScalaDependency.Custom customDep) {
             try {
-                for (File file : downloadScalaLibraries(customDep.scalaVersion(), customDep.urls(), ScalaLoader.getInstance()))
+                for (File file : downloadScalaLibraries(customDep.scalaVersion(), customDep.urls(), customDep.sha1hashes(), ScalaLoader.getInstance()))
                     classpathBuilder.addLibrary(new JarLibrary(file.toPath()));
             } catch (IOException e) {
                 ScalaLoader.getInstance().getLogger().log(Level.SEVERE, "Could not download scala libraries for version: " + customDep, e);
@@ -106,7 +106,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
         throw new RuntimeException("Unrecognised Scala version: " + scalaVersion);
     }
 
-    private static File[] downloadScalaLibraries(String scalaVersion, Map<String, String> urls, ScalaLoader scalaLoader) throws IOException {
+    private static File[] downloadScalaLibraries(String scalaVersion, Map<String, String> urls, Map<String, String> sha1hashes, ScalaLoader scalaLoader) throws IOException {
         File scalaLibsFolder = new File(scalaLoader.getDataFolder(), "scalalibraries");
         File versionFolder = new File(scalaLibsFolder, scalaVersion);
         versionFolder.mkdirs();
@@ -121,22 +121,22 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
             jarFiles = new File[urlMap.size()];
             int i = 0;
             for (Map.Entry<String, String> entry : urlMap.entrySet()) {
-                String key = entry.getKey();
-                String value = entry.getValue();
+                String fileKey = entry.getKey();
+                String urlForKey = entry.getValue();
 
                 String fileName;
-                if (key.endsWith("-url")) { //see PluginScalaVersion
-                    fileName = key.substring(0, key.length() - 3) + scalaVersion + ".jar";
-                } else if (key.endsWith(".jar")) {
-                    fileName = key;
+                if (fileKey.endsWith("-url")) { //see PluginScalaVersion
+                    fileName = fileKey.substring(0, fileKey.length() - 3) + scalaVersion + ".jar";
+                } else if (fileKey.endsWith(".jar")) {
+                    fileName = fileKey;
                 } else {
-                    fileName = key + "-" + scalaVersion + ".jar";
+                    fileName = fileKey + "-" + scalaVersion + ".jar";
                 }
 
                 File scalaRuntimeJarFile = new File(versionFolder, fileName);
                 scalaRuntimeJarFile.createNewFile();
-                URL url = new URL(value);
-                ScalaLoaderUtils.downloadFile(url, scalaRuntimeJarFile);
+                URL url = new URL(urlForKey);
+                ScalaLoaderUtils.downloadFile(url, scalaRuntimeJarFile, sha1hashes.get(fileKey));
                 jarFiles[i++] = scalaRuntimeJarFile;
             }
         }

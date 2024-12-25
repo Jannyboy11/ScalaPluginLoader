@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.plugin.description;
 
 import static xyz.janboerman.scalaloader.compat.Compat.*;
+
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 
 import java.util.Collections;

@@ -17,7 +17,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ClassLoaderUtils {
+public final class ClassLoaderUtils {
 
     private ClassLoaderUtils() {
     }

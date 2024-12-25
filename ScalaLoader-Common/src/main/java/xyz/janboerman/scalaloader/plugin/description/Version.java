@@ -16,6 +16,11 @@ public @interface Version {
     /** The download url for the Scala-2 reflection library (for Scala 3, use the url for Scala 2.13). */
     String scalaReflectUrl();
 
+    /** SHA-1 checksum for scala-library jar file. */
+    String scalaLibrarySha1() default "";
+    /** SHA-1 checksum for scala-reflect jar file. */
+    String scalaReflectSha1() default "";
+
     /** Download urls for additional jar files for classes not included in the standard library or reflection library. */
     ScalaLibrary[] scalaLibs() default {};
 
@@ -25,6 +30,7 @@ public @interface Version {
         String name();
         /** The download url */
         String url();
-        //TODO sha256 or some other kind of checksum hash
+        /** The SHA-1 checksum*/
+        String sha1() default "";
     }
 }

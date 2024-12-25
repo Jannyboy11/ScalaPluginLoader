@@ -180,6 +180,7 @@ public class DescriptionScanner extends ClassVisitor {
 
         private String version;
         private final Map<String, String> urls = new HashMap<>();
+        private final Map<String, String> sha1s = new HashMap<>();
 
         private CustomScalaAnnotationVisitor() {
             super(ASM_API);
@@ -195,6 +196,8 @@ public class DescriptionScanner extends ClassVisitor {
                             case "value":               version = value.toString();                                         break;
                             case "scalaLibraryUrl":     urls.put(PluginScalaVersion.SCALA2_LIBRARY_URL, value.toString());  break;
                             case "scalaReflectUrl":     urls.put(PluginScalaVersion.SCALA2_REFLECT_URL, value.toString());  break;
+                            case "scalaLibrarySha1":    sha1s.put(PluginScalaVersion.SCALA2_LIBRARY_URL, value.toString()); break;
+                            case "scalaReflectSha1":    sha1s.put(PluginScalaVersion.SCALA2_REFLECT_URL, value.toString()); break;
                         }
                     }
 
@@ -206,17 +209,22 @@ public class DescriptionScanner extends ClassVisitor {
                                 return SCALALIBRARY_ANNOTATION_DESCRIPTOR.equals(descriptor) ? new AnnotationVisitor(ASM_API) {
                                     String name = null;
                                     String url = null;
+                                    String sha1 = null;
 
                                     @Override
                                     public void visit(String name, Object value) {
                                         if ("name".equals(name)) this.name = (String) value;
                                         else if ("url".equals(name)) this.url = (String) value;
+                                        else if ("sha1".equals(name)) this.sha1 = (String) value;
                                     }
 
                                     @Override
                                     public void visitEnd() {
                                         if (name != null && url != null) {
                                             urls.put(name, url);
+                                        }
+                                        if (name != null && sha1 != null && !sha1.isEmpty()) {
+                                            sha1s.put(name, sha1);
                                         }
                                     }
                                 } : null;
@@ -228,7 +236,7 @@ public class DescriptionScanner extends ClassVisitor {
 
         @Override
         public void visitEnd() {
-            scalaVersion = new PluginScalaVersion(version, urls);
+            scalaVersion = new PluginScalaVersion(version, urls, sha1s);
         }
     }
 

@@ -178,6 +178,7 @@ public class MainClassScanner extends ClassVisitor {
 
                             private String version;
                             private Map<String, String> urls = new HashMap<>();
+                            private Map<String, String> sha1Hashes = new HashMap<>();
 
                             @Override
                             public void visit(String name, Object value) {
@@ -191,6 +192,12 @@ public class MainClassScanner extends ClassVisitor {
                                     case "scalaReflectUrl":
                                         this.urls.put(PluginScalaVersion.SCALA2_REFLECT_URL, value.toString());
                                         break;
+                                    case "scalaLibrarySha1":
+                                        this.sha1Hashes.put(PluginScalaVersion.SCALA2_LIBRARY_URL, value.toString());
+                                        break;
+                                    case "scalaReflectSha1":
+                                        this.sha1Hashes.put(PluginScalaVersion.SCALA2_REFLECT_URL, value.toString());
+                                        break;
                                 }
                             }
 
@@ -200,6 +207,7 @@ public class MainClassScanner extends ClassVisitor {
                                     return new AnnotationVisitor(AsmConstants.ASM_API) {
                                         private String libraryName;
                                         private String libraryUrl;
+                                        private String sha1;
 
                                         @Override
                                         public AnnotationVisitor visitAnnotation(String name, String descriptor) {
@@ -212,12 +220,15 @@ public class MainClassScanner extends ClassVisitor {
                                                                 libraryName = (String) value;
                                                             case "url":
                                                                 libraryUrl = (String) value;
+                                                            case "sha1":
+                                                                sha1 = (String) value;
                                                         }
                                                     }
 
                                                     @Override
                                                     public void visitEnd() {
                                                         urls.put(libraryName, libraryUrl);
+                                                        sha1Hashes.put(libraryName, sha1);
                                                     }
                                                 };
                                             }
@@ -236,7 +247,9 @@ public class MainClassScanner extends ClassVisitor {
 
                             @Override
                             public void visitEnd() {
-                                scannedScalaDependency = new Custom(version, Collections.unmodifiableMap(urls));
+                                scannedScalaDependency = new Custom(version,
+                                        Collections.unmodifiableMap(urls),
+                                        Collections.unmodifiableMap(sha1Hashes));
                             }
                         };
                     }

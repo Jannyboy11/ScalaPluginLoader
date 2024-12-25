@@ -3,7 +3,7 @@ package xyz.janboerman.scalaloader.util;
 import java.util.List;
 import java.util.ArrayList;
 
-public class ListOps {
+public final class ListOps {
 
     private ListOps() {
     }
