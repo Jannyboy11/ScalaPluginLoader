@@ -1,6 +1,7 @@
 package xyz.janboerman.scalaloader.plugin.description;
 
 import static xyz.janboerman.scalaloader.compat.Compat.*;
+
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 
 import java.util.Collections;
@@ -89,8 +90,6 @@ public enum ScalaVersion {
     v3_6_0("3.6.0", false),
     v3_6_1("3.6.1", false),
     v3_6_2("3.6.2");
-
-    //TODO include hashes of the jars! so that the loader can verify the integrity of the jars!
 
     private static Map<String, ScalaVersion> byVersion = new HashMap<>();
     private static final ScalaVersion latest_2_13;

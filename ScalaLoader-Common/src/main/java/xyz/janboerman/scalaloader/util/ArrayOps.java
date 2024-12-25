@@ -2,7 +2,7 @@ package xyz.janboerman.scalaloader.util;
 
 import java.util.Arrays;
 
-public class ArrayOps {
+public final class ArrayOps {
 
     private ArrayOps() {
     }

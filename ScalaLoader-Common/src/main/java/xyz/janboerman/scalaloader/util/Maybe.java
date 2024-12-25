@@ -20,7 +20,7 @@ public abstract class/*interface*/ Maybe<T> /*permits Just, Nothing*/ {
     }
 }
 
-class Just<T> extends Maybe<T> {
+final class Just<T> extends Maybe<T> {
 
     private final T value;
 
@@ -58,7 +58,7 @@ class Just<T> extends Maybe<T> {
     }
 }
 
-class Nothing<T> extends Maybe<T> {
+final class Nothing<T> extends Maybe<T> {
 
     private static final Nothing INSTANCE = new Nothing();
 

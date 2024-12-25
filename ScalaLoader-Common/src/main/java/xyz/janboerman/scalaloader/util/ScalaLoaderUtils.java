@@ -6,10 +6,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.janboerman.scalaloader.ScalaLibraryClassLoader;
 import xyz.janboerman.scalaloader.ScalaRelease;
-import xyz.janboerman.scalaloader.commands.DumpClass;
-import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
-import xyz.janboerman.scalaloader.commands.ResetScalaUrls;
-import xyz.janboerman.scalaloader.commands.SetDebug;
 import xyz.janboerman.scalaloader.compat.IScalaLoader;
 import xyz.janboerman.scalaloader.compat.IScalaPlugin;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
@@ -18,6 +14,8 @@ import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
 import xyz.janboerman.scalaloader.plugin.runtime.ClassFile;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -28,12 +26,17 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ScalaLoaderUtils {
+/**
+ * Internal use only.
+ */
+public final class ScalaLoaderUtils {
 
     private ScalaLoaderUtils() {
     }
@@ -148,6 +151,13 @@ public class ScalaLoaderUtils {
         }
     }
 
+    public static void downloadFile(URL inputResourceLocation, File outputFile, String sha1hash) throws IOException {
+        downloadFile(inputResourceLocation, outputFile);
+        checkSha1Hash(outputFile, sha1hash);
+    }
+
+    /** @deprecated Use {@linkplain #downloadFile(URL, File, String)} instead.*/
+    @Deprecated
     public static void downloadFile(URL inputResourceLocation, File outputFile) throws IOException {
         ReadableByteChannel rbc = null;
         FileOutputStream fos = null;
@@ -159,6 +169,36 @@ public class ScalaLoaderUtils {
             if (rbc != null) try { rbc.close(); } catch (IOException e) { e.printStackTrace(); }
             if (fos != null) try { fos.close(); } catch (IOException e) { e.printStackTrace(); }
         }
+    }
+
+    private static void checkSha1Hash(File outputFile, String sha1hash) throws IOException {
+        if (sha1hash == null || sha1hash.isEmpty()) return;
+
+        try {
+            String calculatedHash = getSha1Hash(outputFile);
+            if (!sha1hash.equals(calculatedHash)) {
+                throw new IOException("Unexpected hash for " + outputFile.getName() + ", expected: " + sha1hash + ", actual: " + calculatedHash);
+            }
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException("Could not find SHA-1 MessageDigest.", e);
+        }
+    }
+
+    private static String getSha1Hash(File file) throws NoSuchAlgorithmException, IOException {
+        MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                sha1.update(buffer, 0, bytesRead);
+            }
+        }
+
+        StringBuilder hashValue = new StringBuilder();
+        for (byte b : sha1.digest()) {
+            hashValue.append(String.format("%02x", b));
+        }
+        return hashValue.toString();
     }
 
     /**
@@ -205,20 +245,21 @@ public class ScalaLoaderUtils {
                 //no jar files found - download dem files
                 scalaLoader.getLogger().info("Tried to load Scala " + scalaVersion + " libraries from disk, but they were not present. Downloading...");
 
+                Map<String, String> sha1Map = scalaVersion.getSha1Hashes();
                 Map<String, String> urlMap = scalaVersion.getUrls();
                 jarFiles = new File[urlMap.size()];
                 int i = 0;
                 for (Map.Entry<String, String> entry : urlMap.entrySet()) {
-                    String key = entry.getKey();
-                    String value = entry.getValue();
+                    String urlKey = entry.getKey();
+                    String urlValue = entry.getValue();
 
                     String fileName;
-                    if (key.endsWith("-url")) {
-                        fileName = key.substring(0, key.length() - 3) + scalaVersion.getScalaVersion() + ".jar";
-                    } else if (key.endsWith(".jar")) {
-                        fileName = key;
+                    if (urlKey.endsWith("-url")) {
+                        fileName = urlKey.substring(0, urlKey.length() - 3) + scalaVersion.getScalaVersion() + ".jar";
+                    } else if (urlKey.endsWith(".jar")) {
+                        fileName = urlKey;
                     } else {
-                        fileName = key + "-" + scalaVersion.getScalaVersion() + ".jar";
+                        fileName = urlKey + "-" + scalaVersion.getScalaVersion() + ".jar";
                     }
 
                     File scalaRuntimeJarFile = new File(versionFolder, fileName);
@@ -230,10 +271,10 @@ public class ScalaLoaderUtils {
                     }
 
                     try {
-                        URL url = new URL(value);
-                        downloadFile(url, scalaRuntimeJarFile);
+                        URL url = new URL(urlValue);
+                        downloadFile(url, scalaRuntimeJarFile, sha1Map.get(urlKey));
                     } catch (MalformedURLException e) {
-                        throw new ScalaPluginLoaderException("Invalid url for key: " + key, e);
+                        throw new ScalaPluginLoaderException("Invalid url for key: " + urlKey, e);
                     } catch (IOException e) {
                         throw new ScalaPluginLoaderException("Could not open or close channel", e);
                     }

@@ -12,7 +12,7 @@
     <artifactId>Scala3Example</artifactId>
 
     <properties>
-        <scala.boostrapVersion>2.13.12</scala.boostrapVersion>
+        <scala.boostrapVersion>2.13.15</scala.boostrapVersion>
         <scala.version>3.6.2</scala.version>
     </properties>
 
@@ -28,7 +28,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.13.0</version>
                 <configuration>
                     <release>8</release>
                     <parameters>true</parameters>
@@ -110,13 +110,6 @@
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.21.4-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>dev.zio</groupId>
-            <artifactId>zio_3</artifactId>
-            <version>2.0.2</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

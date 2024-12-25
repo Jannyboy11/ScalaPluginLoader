@@ -7,11 +7,14 @@ import xyz.janboerman.scalaloader.ScalaRelease;
 import static xyz.janboerman.scalaloader.compat.Compat.*;
 import xyz.janboerman.scalaloader.compat.IScalaVersion;
 import xyz.janboerman.scalaloader.plugin.description.ScalaVersion;
+import xyz.janboerman.scalaloader.util.ScalaHashes;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SerializableAs("ScalaVersion")
 public final class PluginScalaVersion implements ConfigurationSerializable, IScalaVersion {
@@ -30,7 +33,8 @@ public final class PluginScalaVersion implements ConfigurationSerializable, ISca
 
 
     private final String scalaVersion;
-    private final Map<String, String> urls;
+    private final Map<String, String> urls;         //uses keys such as the string constants above.
+    private final Map<String, String> sha1Hashes;   //uses same keys as urls.
 
     /**
      * @deprecated since Scala 3 there are more artifacts than just the scala standard library and the scala reflection library
@@ -43,14 +47,23 @@ public final class PluginScalaVersion implements ConfigurationSerializable, ISca
 
         this.scalaVersion = scalaVersion;
         this.urls = mapOf(mapEntry(SCALA2_LIBRARY_URL, libraryUrl), mapEntry(SCALA2_REFLECT_URL, reflectUrl));
+        this.sha1Hashes = emptyMap();
     }
 
+    /** @deprecated use {@linkplain #PluginScalaVersion(String, Map, Map)} instead.*/
+    @Deprecated
     public PluginScalaVersion(String scalaVersion, Map<String, String> urls) {
+        this(scalaVersion, urls, emptyMap());
+    }
+
+    public PluginScalaVersion(String scalaVersion, Map<String, String> urls, Map<String, String> sha1hashes) {
         Objects.requireNonNull(scalaVersion, "scalaVersion cannot be null!");
         Objects.requireNonNull(urls, "urls cannot be null!");
+        Objects.requireNonNull(sha1hashes, "sha1hashes cannot be null!");
 
         this.scalaVersion = scalaVersion;
         this.urls = mapCopy(urls);
+        this.sha1Hashes = mapCopy(sha1hashes);
     }
 
 
@@ -62,11 +75,23 @@ public final class PluginScalaVersion implements ConfigurationSerializable, ISca
         return Collections.unmodifiableMap(urls);
     }
 
+    public Map<String, String> getSha1Hashes() {
+        return Collections.unmodifiableMap(sha1Hashes);
+    }
+
+    /**
+     * @deprecated use {@linkplain #getUrls()} instead.
+     * @see #SCALA2_LIBRARY_URL
+     */
     @Deprecated
     public String getScalaLibraryUrl() {
         return urls.get(SCALA2_LIBRARY_URL);
     }
 
+    /**
+     * @deprecated use {@linkplain #getUrls()} instead.
+     * @see #SCALA2_REFLECT_URL
+     */
     @Deprecated
     public String getScalaReflectUrl() {
         return urls.get(SCALA2_REFLECT_URL);
@@ -102,6 +127,9 @@ public final class PluginScalaVersion implements ConfigurationSerializable, ISca
         for (Map.Entry<String, String> urlEntry : urls.entrySet()) {
             map.put(urlEntry.getKey(), urlEntry.getValue());
         }
+        for (Map.Entry<String, String> hashEntry : sha1Hashes.entrySet()) {
+            map.put(hashEntry.getKey() + "-sha1", hashEntry.getValue());
+        }
 
         return map;
     }
@@ -112,17 +140,26 @@ public final class PluginScalaVersion implements ConfigurationSerializable, ISca
         String scalaVersion = map.remove(SCALA_VERSION).toString();
 
         Map<String, String> urls = new HashMap<>();
+        Map<String, String> sha1hashes = new HashMap<>();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-            urls.put(entry.getKey(), entry.getValue().toString());
+            String key = entry.getKey();
+            if (key.endsWith("-sha1")) {
+                sha1hashes.put(key, entry.getValue().toString());
+            } else {
+                urls.put(key, entry.getValue().toString());
+            }
         }
 
-        return new PluginScalaVersion(scalaVersion, urls);
+        return new PluginScalaVersion(scalaVersion, urls, sha1hashes);
     }
 
     public static PluginScalaVersion fromScalaVersion(ScalaVersion scalaVersion) {
-        return new PluginScalaVersion(
-                scalaVersion.getVersion(),
-                scalaVersion.getUrls());
+        String version = scalaVersion.getVersion();
+        Map<String, String> urls = scalaVersion.getUrls();
+        Map<String, String> sha1Hashes = urls.keySet().stream()
+                .collect(Collectors.toMap(Function.identity(), urlKey -> ScalaHashes.getSha1(version, urlKey)));
+
+        return new PluginScalaVersion(version, urls, sha1Hashes);
     }
 
     @Override
