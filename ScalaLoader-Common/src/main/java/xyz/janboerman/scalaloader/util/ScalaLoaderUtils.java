@@ -175,8 +175,9 @@ public final class ScalaLoaderUtils {
         if (sha1hash == null || sha1hash.isEmpty()) return;
 
         try {
-            if (!sha1hash.equals(getSha1Hash(outputFile))) {
-                throw new IOException("Unexpected hash for " + outputFile.getName() + ", expected: " + sha1hash + ", actual: " + hashValue);
+            String calculatedHash = getSha1Hash(outputFile);
+            if (!sha1hash.equals(calculatedHash)) {
+                throw new IOException("Unexpected hash for " + outputFile.getName() + ", expected: " + sha1hash + ", actual: " + calculatedHash);
             }
         } catch (NoSuchAlgorithmException e) {
             throw new IOException("Could not find SHA-1 MessageDigest.", e);
