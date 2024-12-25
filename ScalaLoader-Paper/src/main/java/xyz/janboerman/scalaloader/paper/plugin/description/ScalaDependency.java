@@ -20,7 +20,6 @@ public sealed interface ScalaDependency extends IScalaVersion permits Builtin, C
     }
 
     public static record Custom(String scalaVersion, Map<String, String> urls, Map<String, String> sha1hashes) implements ScalaDependency {
-
         /** @deprecated Use canonical constructor instead. */
         @Deprecated
         Custom(String scalaVersion, Map<String, String> urls) {

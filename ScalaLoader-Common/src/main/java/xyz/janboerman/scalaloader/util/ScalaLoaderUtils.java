@@ -158,8 +158,6 @@ public final class ScalaLoaderUtils {
     /** @deprecated Use {@linkplain #downloadFile(URL, File, String)} instead.*/
     @Deprecated
     public static void downloadFile(URL inputResourceLocation, File outputFile) throws IOException {
-        // TODO adjust call sites.
-
         ReadableByteChannel rbc = null;
         FileOutputStream fos = null;
         try {
@@ -171,7 +169,6 @@ public final class ScalaLoaderUtils {
             if (fos != null) try { fos.close(); } catch (IOException e) { e.printStackTrace(); }
         }
     }
-
 
     private static void checkSha1Hash(File outputFile, String sha1hash) throws IOException {
         if (sha1hash == null || sha1hash.isEmpty()) return;

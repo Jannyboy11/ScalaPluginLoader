@@ -33,8 +33,8 @@ public final class PluginScalaVersion implements ConfigurationSerializable, ISca
 
 
     private final String scalaVersion;
-    private final Map<String, String> urls;
-    private final Map<String, String> sha1Hashes;
+    private final Map<String, String> urls;         //uses keys such as the string constants above.
+    private final Map<String, String> sha1Hashes;   //uses same keys as urls.
 
     /**
      * @deprecated since Scala 3 there are more artifacts than just the scala standard library and the scala reflection library
