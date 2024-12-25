@@ -37,7 +37,7 @@ at class-load time! (Scala collection support is a WIP)
 #### Caveats
 - ScalaPlugin jars go in the <server_root>/plugins/ScalaLoader/scalaplugins/ directory. I made this choice so that ScalaLoader
 doesn't try to load JavaPlugins that are loaded already.
-- By default ScalaLoader downloads the scala libraries from over the network the first time. I made this choice to provide
+- By default, ScalaLoader downloads the scala libraries from over the network the first time. I made this choice to provide
 the best possible user experience for server admins. The ScalaLoader jar remains small in size, and there's no manual downloading
 involved. If you're very security-focused you might want to provide your own
 jars by changing the URLs to "file://some/location.jar". The scala classes aren't actually loaded until there's a plugin
