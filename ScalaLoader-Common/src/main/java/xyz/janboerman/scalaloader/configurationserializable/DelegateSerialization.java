@@ -44,7 +44,7 @@ public @interface DelegateSerialization {
     Class<?>[] value() default {};
 
     /**
-     * With what alias should the top type have?
+     * What alias should the top type have?
      * @return the alias
      */
     String as() default "";

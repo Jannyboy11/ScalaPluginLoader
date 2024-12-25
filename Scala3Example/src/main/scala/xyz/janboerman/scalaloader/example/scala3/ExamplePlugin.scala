@@ -5,7 +5,7 @@ import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, Sc
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
 import zio.{ZIO, Console}
 
-@Scala(ScalaVersion.v3_2_0)
+@Scala(version = ScalaVersion.v3_6_2)
 object ExamplePlugin extends ScalaPlugin {
 
     var syncRuntime = new BukkitRuntime(this).syncRuntime

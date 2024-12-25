@@ -13,7 +13,7 @@
 
     <properties>
         <scala.boostrapVersion>2.13.12</scala.boostrapVersion>
-        <scala.version>3.3.1</scala.version>
+        <scala.version>3.6.2</scala.version>
     </properties>
 
     <build>
@@ -109,7 +109,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.20.4-R0.1-SNAPSHOT</version>
+            <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
