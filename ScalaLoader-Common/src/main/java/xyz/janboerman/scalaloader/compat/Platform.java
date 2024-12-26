@@ -190,7 +190,7 @@ public class Platform {
             }
         }
 
-        public static String getPluginName(ClassLoader classLoader) {
+        private static String getPluginName(ClassLoader classLoader) {
             if (classLoader instanceof IScalaPluginClassLoader) {
                 IScalaPlugin plugin = ((IScalaPluginClassLoader) classLoader).getPlugin();
                 if (plugin != null) return plugin.getName();
