@@ -1,8 +1,7 @@
 package xyz.janboerman.scalaloader.example.scala3
 
-import xyz.janboerman.scalaloader.configurationserializable.runtime.{Codec, RuntimeConversions}
-import xyz.janboerman.scalaloader.plugin.description.{Api, ApiVersion, Scala, ScalaVersion}
-import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}
+import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
+import xyz.janboerman.scalaloader.plugin.ScalaPlugin
 
 @Scala(version = ScalaVersion.v3_6_2)
 object ExamplePlugin extends ScalaPlugin {
