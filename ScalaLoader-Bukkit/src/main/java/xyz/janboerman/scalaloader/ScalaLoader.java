@@ -18,6 +18,7 @@ import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import xyz.janboerman.scalaloader.bytecode.Replaced;
+import xyz.janboerman.scalaloader.commands.ClassMembers;
 import xyz.janboerman.scalaloader.commands.DumpClass;
 import xyz.janboerman.scalaloader.commands.ListScalaPlugins;
 import xyz.janboerman.scalaloader.commands.ResetScalaUrls;
@@ -204,6 +205,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader {
         getCommand("dumpClass").setExecutor(new DumpClass(this));
         getCommand("setDebug").setExecutor(new SetDebug(this.getDebugSettings()));
         getCommand("listScalaPlugins").setExecutor(new ListScalaPlugins(this));
+        getCommand("classMembers").setExecutor(new ClassMembers());
     }
 
     private boolean downloadScalaJarFiles() {

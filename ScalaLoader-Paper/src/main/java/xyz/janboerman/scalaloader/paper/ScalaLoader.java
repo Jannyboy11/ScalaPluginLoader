@@ -30,6 +30,7 @@ import xyz.janboerman.scalaloader.configurationserializable.transform.PluginTran
 import xyz.janboerman.scalaloader.dependency.PluginYamlLibraryLoader;
 import xyz.janboerman.scalaloader.event.EventBus;
 import xyz.janboerman.scalaloader.event.plugin.ScalaPluginEnableEvent;
+import xyz.janboerman.scalaloader.paper.commands.ClassMembersCommand;
 import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginBootstrapContext;
 import xyz.janboerman.scalaloader.plugin.PluginScalaVersion;
 import xyz.janboerman.scalaloader.plugin.ScalaCompatMap;
@@ -195,6 +196,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         commandMap.register(DumpClassCommand.name, new DumpClassCommand(this));
         commandMap.register(SetDebugCommand.name, new SetDebugCommand(this));
         commandMap.register(ListScalaPluginsCommand.name, new ListScalaPluginsCommand(this));
+        commandMap.register(ClassMembersCommand.name, new ClassMembersCommand(this));
 
         //TODO should I create my own /plugins that displays ScalaPlugins in addition to Paper's default output?
     }

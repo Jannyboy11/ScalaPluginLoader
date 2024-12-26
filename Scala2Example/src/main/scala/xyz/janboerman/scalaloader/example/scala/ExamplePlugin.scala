@@ -4,7 +4,6 @@ import org.bukkit.{ChatColor, Material}
 import org.bukkit.command.{Command, CommandSender}
 import org.bukkit.event.{EventPriority, Listener}
 import org.bukkit.permissions.PermissionDefault
-import org.bukkit.plugin.PluginLoadOrder
 import xyz.janboerman.scalaloader.example.scala.Permissions.{fooPermission, homePermission}
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription.{Command => SPCommand, Permission => SPPermission}
 import xyz.janboerman.scalaloader.plugin.{ScalaPlugin, ScalaPluginDescription}

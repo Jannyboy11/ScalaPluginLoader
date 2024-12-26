@@ -43,6 +43,12 @@ commands:
         Adds a class name to the debug configuration, causing the classloader to dump the transformed class to the logs/console
         the next time the class is loaded.
     permission: scalaloader.setdebug
+  classMembers:
+    usage: "/<command> <class name>"
+    description:
+      >
+        Lists accessible fields and methods of classes.
+    permission: scalaloader.classmembers
 
 
 permissions:
@@ -57,4 +63,7 @@ permissions:
     default: op
   scalaloader.listscalaplugins:
     description: Allows users to see the scala plugins by their scala version.
+    default: op
+  scalaloader.classmembers:
+    description: Allows users to see the accessible class members of a class.
     default: op

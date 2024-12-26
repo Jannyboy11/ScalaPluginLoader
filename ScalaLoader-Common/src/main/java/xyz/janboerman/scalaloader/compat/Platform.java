@@ -79,6 +79,7 @@ public class Platform {
         private boolean attemptedToFindCommodoreConvert = false;
         private Class<?> apiVersionClass;
         private boolean attemptedToFindApiVersion = false;
+        private Class<?> commodoreClass;
 
         private Class<?> getApiVersionClass() {
             if (!attemptedToFindApiVersion) {
@@ -91,21 +92,43 @@ public class Platform {
             return apiVersionClass;
         }
 
+        private Object getCommodore(Server craftServer) throws Throwable {
+            UnsafeValues craftMagicNumbers = craftServer.getUnsafe();
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            try {
+                MethodHandle getCommodore = lookup.findVirtual(craftMagicNumbers.getClass(), "getCommodore", MethodType.methodType(commodoreClass));
+                return getCommodore.invoke(craftMagicNumbers);
+            } catch (NoSuchMethodException | IllegalAccessException tooBad) {
+                return commodoreClass.newInstance();
+            }
+        }
+
         // MC 1.20.5+ method signature of Commodore#convert:
         public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transformNative(Server craftServer, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-
-            if (commodoreConvert == null) {
+            if (commodoreConvert == null && !attemptedToFindCommodoreConvert) {
                 attemptedToFindCommodoreConvert = true;
                 try {
                     // public static byte[] convert(byte[] b, final String pluginName, final ApiVersion pluginVersion, final Set<String> activeCompatibilities)
-                    Class<?> commodoreClass = Class.forName(getPackageName(craftServer.getClass()) + ".util.Commodore");
+                    commodoreClass = Class.forName(getPackageName(craftServer.getClass()) + ".util.Commodore");
+                    MethodHandles.Lookup lookup = MethodHandles.lookup().in(commodoreClass);
                     String methodName = "convert";
                     MethodType methodType = MethodType.methodType(byte[].class,
                             new Class<?>[] { byte[].class, String.class, getApiVersionClass(), Set.class });
                     commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
                 } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ignored) {
-                    //impossible
+                }
+            }
+
+            if (commodoreConvert == null && commodoreClass != null) {
+                MethodHandles.Lookup lookup = MethodHandles.lookup().in(commodoreClass);
+                String methodName = "convert";
+                MethodType methodType = MethodType.methodType(byte[].class,
+                        new Class<?>[] { byte[].class, String.class, getApiVersionClass(), Set.class });
+                try {
+                    // public byte[] convert(byte[] b, final String pluginName, final ApiVersion pluginVersion, final Set<String> activeCompatibilities)
+                    commodoreConvert = lookup.findVirtual(commodoreClass, methodName, methodType)
+                            .bindTo(getCommodore(craftServer));
+                } catch (NoSuchMethodException | IllegalAccessException ignored) {
                 }
             }
 
@@ -113,6 +136,7 @@ public class Platform {
                 String pluginName = getPluginName(pluginClassLoader);
                 try {
                     Class<?> apiVersionClass = getApiVersionClass();
+                    MethodHandles.Lookup lookup = MethodHandles.lookup().in(apiVersionClass);
                     MethodHandle getOrCreateVersion = lookup.findStatic(apiVersionClass, "getOrCreateVersion", MethodType.methodType(apiVersionClass, String.class));
                     Object apiVersion = getOrCreateVersion.invoke(pluginClassLoader.getApiVersion().getVersionString());
 
