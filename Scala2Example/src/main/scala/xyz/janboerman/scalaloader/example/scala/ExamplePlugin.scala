@@ -48,7 +48,7 @@ object ExamplePlugin
         getCommand("home").setExecutor(HomeExecutor)
 
         listConfigs()
-        checkMaterials()
+        checkMaterials()    // TODO why does this test now fail? Grrr....
         //SerializationMethodsTest.test()
         //ScalaTypesSerializationTest.test()
     }
@@ -74,6 +74,8 @@ object ExamplePlugin
     }
 
     private def checkMaterials(): Unit = {
+        // TODO fix bytecode transformation to make this test pass.
+
         val console = getServer.getConsoleSender
         console.sendMessage(s"${ChatColor.YELLOW}Test that a ScalaPlugin does not find both legacy and modern materials")
 

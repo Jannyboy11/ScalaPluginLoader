@@ -1,5 +1,6 @@
 package xyz.janboerman.scalaloader.compat;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.UnsafeValues;
 import org.bukkit.plugin.PluginDescriptionFile;
@@ -72,32 +73,36 @@ public class Platform {
 
     public static class CraftBukkitPlatform extends Platform {
 
-        private static final Class<?> API_VERSION_CLASS;
-        static {
-            Class<?> apiVersionClass;
-            try {
-                apiVersionClass = Class.forName("org.bukkit.craftbukkit.util.ApiVersion");
-            } catch (ClassNotFoundException e) {
-                apiVersionClass = null;
-            }
-            API_VERSION_CLASS = apiVersionClass;
-        }
-
         private CraftBukkitPlatform() {}
 
         private MethodHandle commodoreConvert = null;
-        private boolean attempted = false;
+        private boolean attemptedToFindCommodoreConvert = false;
+        private Class<?> apiVersionClass;
+        private boolean attemptedToFindApiVersion = false;
 
+        private Class<?> getApiVersionClass() {
+            if (!attemptedToFindApiVersion) {
+                attemptedToFindApiVersion = true;
+                try {
+                    apiVersionClass = Class.forName(getPackageName(Bukkit.getServer().getClass()) + ".util.ApiVersion");
+                } catch (ClassNotFoundException ignored) {
+                }
+            }
+            return apiVersionClass;
+        }
+
+        // MC 1.20.5+ method signature of Commodore#convert:
         public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transformNative(Server craftServer, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
+
             if (commodoreConvert == null) {
-                attempted = true;
+                attemptedToFindCommodoreConvert = true;
                 try {
                     // public static byte[] convert(byte[] b, final String pluginName, final ApiVersion pluginVersion, final Set<String> activeCompatibilities)
                     Class<?> commodoreClass = Class.forName(getPackageName(craftServer.getClass()) + ".util.Commodore");
                     String methodName = "convert";
                     MethodType methodType = MethodType.methodType(byte[].class,
-                            new Class<?>[] { byte[].class, String.class, API_VERSION_CLASS, Set.class });
+                            new Class<?>[] { byte[].class, String.class, getApiVersionClass(), Set.class });
                     commodoreConvert = lookup.findStatic(commodoreClass, methodName, methodType);
                 } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ignored) {
                     //impossible
@@ -107,7 +112,8 @@ public class Platform {
             if (commodoreConvert != null) {
                 String pluginName = getPluginName(pluginClassLoader);
                 try {
-                    MethodHandle getOrCreateVersion = lookup.findStatic(API_VERSION_CLASS, "getOrCreateVersion", MethodType.methodType(API_VERSION_CLASS, String.class));
+                    Class<?> apiVersionClass = getApiVersionClass();
+                    MethodHandle getOrCreateVersion = lookup.findStatic(apiVersionClass, "getOrCreateVersion", MethodType.methodType(apiVersionClass, String.class));
                     Object apiVersion = getOrCreateVersion.invoke(pluginClassLoader.getApiVersion().getVersionString());
 
                     Set activeCompatibilities = Collections.emptySet();
@@ -125,9 +131,10 @@ public class Platform {
             return classBytes;
         }
 
+        // MC 1.13-1.20.4 method signature of Commodore#convert:
         public byte[] transformNative(Server craftServer, byte[] classBytes, boolean modern) throws Throwable {
-            if (!attempted) {
-                attempted = true;
+            if (!attemptedToFindCommodoreConvert) {
+                attemptedToFindCommodoreConvert = true;
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
                 try {
                     // public static byte[] convert(byte[] b, boolean isModern)
@@ -150,7 +157,7 @@ public class Platform {
 
         @Override
         public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
-            if (API_VERSION_CLASS != null) {
+            if (getApiVersionClass() != null) {
                 return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader);
             } else {
                 return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader.getApiVersion() != ApiVersion.LEGACY);
