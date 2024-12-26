@@ -104,7 +104,7 @@ public class Platform {
         }
 
         // MC 1.20.5+ method signature of Commodore#convert:
-        public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transformNative(Server craftServer, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
+        public byte[] transformNative(Server craftServer, byte[] classBytes, ClassLoader pluginClassLoader, String pluginName, String apiVersionString) throws Throwable {
             if (commodoreConvert == null && !attemptedToFindCommodoreConvert) {
                 attemptedToFindCommodoreConvert = true;
                 try {
@@ -133,12 +133,11 @@ public class Platform {
             }
 
             if (commodoreConvert != null) {
-                String pluginName = getPluginName(pluginClassLoader);
                 try {
                     Class<?> apiVersionClass = getApiVersionClass();
                     MethodHandles.Lookup lookup = MethodHandles.lookup().in(apiVersionClass);
                     MethodHandle getOrCreateVersion = lookup.findStatic(apiVersionClass, "getOrCreateVersion", MethodType.methodType(apiVersionClass, String.class));
-                    Object apiVersion = getOrCreateVersion.invoke(pluginClassLoader.getApiVersion().getVersionString());
+                    Object apiVersion = getOrCreateVersion.invoke(apiVersionString);
 
                     Set activeCompatibilities = Collections.emptySet();
                     try {
@@ -156,6 +155,8 @@ public class Platform {
         }
 
         // MC 1.13-1.20.4 method signature of Commodore#convert:
+        /** @deprecated do not call directly. Use {@linkplain #transform(String, byte[], ClassLoader)} instead. */
+        @Deprecated
         public byte[] transformNative(Server craftServer, byte[] classBytes, boolean modern) throws Throwable {
             if (!attemptedToFindCommodoreConvert) {
                 attemptedToFindCommodoreConvert = true;
@@ -181,20 +182,20 @@ public class Platform {
 
         @Override
         public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
+            ApiVersion apiVersion = pluginClassLoader.getApiVersion();
             if (getApiVersionClass() != null) {
-                return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader);
+                return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader, getPluginName(pluginClassLoader), apiVersion.getVersionString());
             } else {
-                return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader.getApiVersion() != ApiVersion.LEGACY);
+                return transformNative(pluginClassLoader.getServer(), classBytes, apiVersion != ApiVersion.LEGACY);
             }
         }
 
-        private static String getPluginName(IScalaPluginClassLoader classLoader) {
-            IScalaPlugin plugin = classLoader.getPlugin();
-            if (plugin == null) {
-                return FAKE_PLUGIN_NAME;
-            } else {
-                return plugin.getName();
+        public static String getPluginName(ClassLoader classLoader) {
+            if (classLoader instanceof IScalaPluginClassLoader) {
+                IScalaPlugin plugin = ((IScalaPluginClassLoader) classLoader).getPlugin();
+                if (plugin != null) return plugin.getName();
             }
+            return FAKE_PLUGIN_NAME;
         }
     }
 

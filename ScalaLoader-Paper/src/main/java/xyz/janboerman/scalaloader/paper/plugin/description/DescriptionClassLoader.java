@@ -23,6 +23,7 @@ import xyz.janboerman.scalaloader.compat.Migration;
 import xyz.janboerman.scalaloader.compat.Platform;
 import xyz.janboerman.scalaloader.paper.plugin.ScalaPluginMeta;
 import xyz.janboerman.scalaloader.paper.transform.MainClassBootstrapTransformer;
+import xyz.janboerman.scalaloader.plugin.description.ApiVersion;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,14 +46,14 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
 
     private DescriptionPlugin plugin;
     private PluginClassLoaderGroup classLoaderGroup;
-    private boolean modern;
+    private ApiVersion apiVersion;
     private String mainClass;
     private String scalaVersion;
 
-    public DescriptionClassLoader(File jarFile, ClassLoader parent, boolean modern, String mainClass, String scalaVersion) throws IOException {
+    public DescriptionClassLoader(File jarFile, ClassLoader parent, ApiVersion apiVersion, String mainClass, String scalaVersion) throws IOException {
         super(new URL[] {jarFile.toURI().toURL()}, parent);
         this.jarFile = Compat.jarFile(jarFile);
-        this.modern = modern;
+        this.apiVersion = apiVersion;
         this.mainClass = mainClass;
         this.scalaVersion = scalaVersion;
     }
@@ -70,9 +71,8 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
                 //transform the bytecode
                 //1. Bukkit's own migrations
                 try {
-                    // TODO I don't think this will work still for newer versions of CraftBukkit.
-                    // TODO check this, and fix this if it's broken.
-                    byteCode = Platform.CRAFTBUKKIT.transformNative(Bukkit.getServer(), byteCode, modern); //we can assume Platform.CRAFTBUKKIT because we are running on Paper (which is a fork of CraftBukkit).
+                    String pluginName = plugin != null ? plugin.getName() : "Owning plugin of class " + className;
+                    byteCode = Platform.CRAFTBUKKIT.transformNative(Bukkit.getServer(), byteCode, this, pluginName, apiVersion.getVersionString()); //we can assume Platform.CRAFTBUKKIT because we are running on Paper (which is a fork of CraftBukkit).
                 } catch (Throwable e) {
                     Bukkit.getLogger().log(Level.SEVERE, "Server could not transform bytecode for class: " + className + ". This is a bug in " + Bukkit.getUnsafe().getClass().getName() + "#processClass", e);
                 }

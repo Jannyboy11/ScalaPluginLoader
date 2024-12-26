@@ -597,7 +597,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         try {
             ScalaLibraryClassLoader scalaLibraryClassLoader = getOrCreateScalaLibrary(scalaDependency);
             ClassLoader libraryLoader = createLibraryClassLoader(scalaLibraryClassLoader, scanResult.pluginYaml);
-            classLoader = new DescriptionClassLoader(file, libraryLoader, apiVersion != ApiVersion.LEGACY, mainClassName, scalaLibraryClassLoader.getScalaVersion());
+            classLoader = new DescriptionClassLoader(file, libraryLoader, apiVersion, mainClassName, scalaLibraryClassLoader.getScalaVersion());
         } catch (ScalaPluginLoaderException e) {
             getLogger().log(Level.SEVERE, "Could not download all libraries from plugin's description.", e);
             return Optional.empty();

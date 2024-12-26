@@ -4,9 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -219,8 +216,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
                         this.definePackage(pkgName, null, null, null, null, null, null, null);
                     }
                 } catch (IllegalArgumentException ex) {
-                    // parallel-capable class loaders: re-verify in case of a
-                    // race condition
+                    // parallel-capable class loaders: re-verify in case of a race condition
                     if (this.getDefinedPackage(pkgName) == null) {
                         // Should never happen
                         throw new IllegalStateException("Cannot find package " + pkgName);

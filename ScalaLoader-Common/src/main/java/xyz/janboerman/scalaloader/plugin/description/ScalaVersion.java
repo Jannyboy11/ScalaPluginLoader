@@ -91,6 +91,8 @@ public enum ScalaVersion {
     v3_6_1("3.6.1", false),
     v3_6_2("3.6.2");
 
+    // When adding new entries here, don't forget to update ScalaHashes.
+
     private static Map<String, ScalaVersion> byVersion = new HashMap<>();
     private static final ScalaVersion latest_2_13;
     static {
