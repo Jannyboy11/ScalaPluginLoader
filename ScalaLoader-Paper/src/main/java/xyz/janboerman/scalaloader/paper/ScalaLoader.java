@@ -116,6 +116,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
     //ScalaLoader has a tendency of becoming a God Object. May want to factor out plugin-loading stuff to a separate class ScalaPluginManager or something.
     private final LinkedHashSet<ScalaPlugin> scalaPlugins = new LinkedHashSet<>();
 
+    //TODO should probably be instantiated in ScalaLoader's own bootstrapper (or boostrap context?).
+    //TODO we want to provide this value to ScalaPluginBootstrap without needing the ScalaLoader instance yet.
     private final ScalaCompatMap<ScalaDependency> scalaCompatMap = new ScalaCompatMap();
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
 

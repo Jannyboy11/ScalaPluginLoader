@@ -19,8 +19,8 @@ public class ScalaPluginBootstrapContext extends ScalaPluginProviderContext impl
         super(pluginJarFile, description);
     }
 
-    // TODO can we be sure that: this manager is actually called when Paper calls event during the boostrap phase?
-    // TODO essentially this question is the same as: is this LifecycleEventManager registered with the LifecycleEventRunner.INSTANCE?
+    // TODO can we be sure that: when the ScalaPlugin is boostrapped, the events that fire during paper plugin bootstrapping are *not* already fired?
+    // TODO probably, the answer to this question: we can be sure that this is NOT the case. i.e. those events have already been fired when the ScalaPluginBootstrap runs.
     @Override
     public @NotNull LifecycleEventManager<BootstrapContext> getLifecycleManager() {
         return lifecycleEventManager;

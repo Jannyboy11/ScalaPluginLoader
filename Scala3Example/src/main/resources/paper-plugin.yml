@@ -1,0 +1,24 @@
+name: Scala3Example
+version: ${project.version}
+api-version: "1.21.4"
+folia-supported: true
+load: STARTUP
+
+bootstrapper: xyz.janboerman.scalaloader.example.scala3.ExampleBootstrap
+
+dependencies:
+  bootstrap:
+    ScalaLoader:
+      load: BEFORE
+      required: true
+      join-classpath: true
+  server:
+    ScalaLoader:
+      load: BEFORE
+      required: true
+      join-classpath: true
+
+permissions:
+  scala3.yolo:
+    description: Swag
+    default: true
