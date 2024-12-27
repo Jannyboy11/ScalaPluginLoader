@@ -12,11 +12,6 @@
 
     <artifactId>Dependencies</artifactId>
 
-    <properties>
-        <minecraft.version>1.21.4</minecraft.version>
-        <paper.version>${minecraft.version}-R0.1-SNAPSHOT</paper.version>
-    </properties>
-
     <repositories>
         <repository>
             <id>papermc</id>
