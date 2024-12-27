@@ -655,7 +655,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
             CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaCompatRelease);
             if (classLoaders != null) {
                 classLoaders.remove(scalaPluginClassLoader);
-                //noinspection SuspiciousMethodCalls - Thank IntelliJ but this is how you do an atomic removeIfEmpty.
+                //noinspection SuspiciousMethodCalls - Thanks IntelliJ but this is how you do an atomic removeIfEmpty.
                 sharedScalaPluginClassLoaders.remove(scalaCompatRelease, Compat.emptyList());
             }
 

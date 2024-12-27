@@ -105,7 +105,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         Migration.addMigrator(PaperPluginTransformer::new);
         //TODO Paper's ClassloaderBytecodeModifier api gives us the ability to transform bytecode of JavaPlugins.
         //TODO should I make use of this? Are there any ScalaLoader apis that I broke that can be called by JavaPlugins?
-        //TODO the only thing that comes to mind right now is ScalaPluginLoader.openUpToJavaPlugin(ScalaPlugin, JavaPlugin).
+        //TODO the only things that comes to mind right now are ScalaPluginLoader.openUpToJavaPlugin(ScalaPlugin, JavaPlugin) and ScalaPluginEnableEvent/ScalaPluginDisableEvent.getPlugin()
         //TODO the replacement would be to make the ScalaPlugin's classloader accessible to the JavaPlugin's classloader (perhaps through ClassLoader groups).
     }
 
@@ -310,7 +310,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
             //  - call bootstrapper.bootstrap(pluginprovidercontext)
             //  - call pluginloader.classloader(pluginclasspathbuilder)
             //  - call boostrapper.createPlugin(pluginprovidercontext)
-            //  - finally, register them to Paper's PluginManager, and call .onLoad()
+            //  - call .onLoad()
+            //  - register the plugin to Paper's PluginManager in ScalaLoader's onEnable phase.
 
             File file = byName.get(pluginName);
             PluginJarScanResult scanResult = scanResults.get(file);
@@ -325,6 +326,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
             ScalaPluginClasspathBuilder pluginClasspathBuilder = new ScalaPluginClasspathBuilder(context);
 
             bootstrap(bootstrapper, context);   //used to be just boostrapper.bootstrap(context), but PluginBootstrap#bootstrap(PluginProviderContext) got changed to PluginBootstrap#bootstrap(BootstrapContext).
+            disallowBoostrapLifecycleEventRegistration(context);    //lifecycle events
             loader.classloader(pluginClasspathBuilder);
 
             var optionalPlugin = buildPlugin(pluginName, file, context, scanResult, loader, bootstrapper, pluginClasspathBuilder);
@@ -348,25 +350,25 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
     }
 
     private static void bootstrap(PluginBootstrap bootstrapper, ScalaPluginProviderContext context) {
-        Method bootstrap = null;
+        Method bootstrapMethod = null;
         RuntimeException ex = new RuntimeException("could not bootstrap plugin using bootstrapper: " + bootstrapper + " and context " + context);
 
         try {
             Class<?> bootstrapContextClazz = Class.forName("io.papermc.paper.plugin.bootstrap.BootstrapContext");
-            bootstrap = PluginBootstrap.class.getMethod("bootstrap", bootstrapContextClazz);
+            bootstrapMethod = PluginBootstrap.class.getMethod("bootstrap", bootstrapContextClazz);
         } catch (ReflectiveOperationException e1) {
             ex.addSuppressed(e1);
 
             try {
-                bootstrap = PluginBootstrap.class.getMethod("bootstrap", PluginProviderContext.class);
+                bootstrapMethod = PluginBootstrap.class.getMethod("bootstrap", PluginProviderContext.class);
             } catch (ReflectiveOperationException e2) {
                 ex.addSuppressed(e2);
             }
         }
 
-        if (bootstrap != null) {
+        if (bootstrapMethod != null) {
             try {
-                bootstrap.invoke(bootstrapper, context);
+                bootstrapMethod.invoke(bootstrapper, context);
                 return;
             } catch (IllegalAccessException | InvocationTargetException e) {
                 ex.addSuppressed(e);
@@ -374,6 +376,15 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         }
 
         throw ex;
+    }
+
+    private static void disallowBoostrapLifecycleEventRegistration(ScalaPluginProviderContext context) {
+        try {
+            Class.forName("io.papermc.paper.plugin.bootstrap.BootstrapContext");
+            ScalaPluginBootstrapContext bootstrapContext = (ScalaPluginBootstrapContext) context; //can only load this class safely when we are running on Paper which has BootstrapContext abstraction.
+            bootstrapContext.disallowLifecycleEventRegistration();
+        } catch (ClassNotFoundException ignored) {
+        }
     }
 
     private void enableScalaPlugins(PluginLoadOrder loadOrder) {

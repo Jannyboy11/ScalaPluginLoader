@@ -3,7 +3,7 @@ package xyz.janboerman.scalaloader.paper.plugin;
 import io.papermc.paper.plugin.bootstrap.BootstrapContext;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
-import io.papermc.paper.plugin.lifecycle.event.handler.configuration.LifecycleEventHandlerConfiguration;
+import io.papermc.paper.plugin.lifecycle.event.PaperLifecycleEventManager;
 import xyz.janboerman.scalaloader.plugin.ScalaPluginDescription;
 
 import java.io.File;
@@ -12,21 +12,15 @@ import org.jetbrains.annotations.NotNull;
 
 public class ScalaPluginBootstrapContext extends ScalaPluginProviderContext implements BootstrapContext {
 
-    //TODO should perhaps use PaperLifecycleEventManager instead, since it contains some magic knowledge about the handlerConfiguration.
-    //TODO when should our booleanSupplier return false tho? I guess when all ScalaPlugins finished loading.
-    //TODO check https://gist.github.com/Machine-Maker/8e3fc6063c98e81cae7cee1ac230936f
-    private final LifecycleEventManager<BootstrapContext> lifecycleEventManager = new LifecycleEventManager<BootstrapContext>() {
-        @Override
-        public void registerEventHandler(
-                @NotNull LifecycleEventHandlerConfiguration<? super BootstrapContext> handlerConfiguration) {
-            //TODO this is currently not called. when should this be called? should it be called at all?
-        }
-    };
+    private boolean allowLifecycleEventRegistration = true;
+    private final LifecycleEventManager<BootstrapContext> lifecycleEventManager = new PaperLifecycleEventManager<>(this, () -> allowLifecycleEventRegistration);
 
     public ScalaPluginBootstrapContext(File pluginJarFile, ScalaPluginDescription description) {
         super(pluginJarFile, description);
     }
 
+    // TODO can we be sure that: this manager is actually called when Paper calls event during the boostrap phase?
+    // TODO essentially this question is the same as: is this LifecycleEventManager registered with the LifecycleEventRunner.INSTANCE?
     @Override
     public @NotNull LifecycleEventManager<BootstrapContext> getLifecycleManager() {
         return lifecycleEventManager;
@@ -35,5 +29,9 @@ public class ScalaPluginBootstrapContext extends ScalaPluginProviderContext impl
     @Override
     public @NotNull PluginMeta getPluginMeta() {
         return getConfiguration();
+    }
+
+    public void disallowLifecycleEventRegistration() {
+        this.allowLifecycleEventRegistration = false;
     }
 }
