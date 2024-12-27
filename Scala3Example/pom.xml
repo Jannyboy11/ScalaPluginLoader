@@ -37,12 +37,13 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>4.7.2</version>
+                <version>4.9.2</version>
                 <configuration>
                     <args>
 <!--                        <arg>-rewrite</arg><arg>-indent</arg>-->
                         <arg>-rewrite</arg><arg>-new-syntax</arg>
                     </args>
+                    <scalaVersion>${scala.version}</scalaVersion>
                 </configuration>
                 <executions>
                     <execution>
