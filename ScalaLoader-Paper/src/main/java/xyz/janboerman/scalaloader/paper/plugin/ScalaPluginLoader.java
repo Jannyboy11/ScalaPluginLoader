@@ -107,6 +107,8 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
     }
 
     private static File[] downloadScalaLibraries(String scalaVersion, Map<String, String> urls, Map<String, String> sha1hashes, ScalaLoader scalaLoader) throws IOException {
+        // TODO shouldn't need ScalaLoader argument - a logger and a data directory suffice.
+
         File scalaLibsFolder = new File(scalaLoader.getDataFolder(), "scalalibraries");
         File versionFolder = new File(scalaLibsFolder, scalaVersion);
         versionFolder.mkdirs();

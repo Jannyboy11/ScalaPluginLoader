@@ -113,6 +113,9 @@
             <version>${paper.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- TODO make it so that we don't need the paper server dependency. -->
+        <!-- TODO this is caused by the fact ScalaPlugin exposes some getters for types which inherit from some classes in the Paper-Server dependency. -->
+        <!-- TODO once we fix our APIs, we also need to add some bytecode migration for compatibility. -->
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-server</artifactId>

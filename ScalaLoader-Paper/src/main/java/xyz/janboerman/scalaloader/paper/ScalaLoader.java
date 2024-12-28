@@ -221,8 +221,13 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         dependencyGraph.addNode("ScalaLoader");
 
         for (File file : files) {
+            getLogger().info("Reading ScalaPlugin file: " + file.getName());
             try {
                 PluginJarScanResult scanResult = read(Compat.jarFile(file));
+
+                // TODO if a bootstrapper is defined, then we shouldn't need to use the DescriptionClassLoader.
+                // TODO the bootstrapper will determine how to instantiate the plugin.
+                // TODO what to do about the ScalaPluginLoader? should we let Paper instantiate it? (and should it be a property of the ScalaPluginDescription?)
 
                 //save scala version
                 final ScalaDependency scalaDependency = scanResult.getScalaVersion();
@@ -306,6 +311,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         pluginLoadOrder.sort(dependencyOrder(dependencyGraph));
 
         for (String pluginName : pluginLoadOrder) {
+            getLogger().info("Instantiating plugin: " + pluginName);
+
             //the process will look as follows:
             //  - instantiate the bootstrapper:
             //  - instantiate the pluginloader

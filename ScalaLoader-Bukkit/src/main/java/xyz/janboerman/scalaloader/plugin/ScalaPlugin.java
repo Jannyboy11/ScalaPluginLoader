@@ -143,6 +143,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
      * @deprecated This method *WILL NOT EXIST* at runtime when running your plugin on Paper. Use {@link #classLoader()} instead.
      */
     @Deprecated //TODO at the next deprecation clean up spree, make this method protected and final.
+    // TODO consider also using MainClassCallerMigrator in bytecode transformations in ScalaLoader-Bukkit.
     public ScalaPluginClassLoader getClassLoader() {
         return classLoader();
     }
