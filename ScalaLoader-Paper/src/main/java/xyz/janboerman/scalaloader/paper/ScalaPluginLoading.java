@@ -173,6 +173,8 @@ public final class ScalaPluginLoading {
         }
 
         // TODO implement this function, adapt from ScalaLoaderUtils.
-        return loadOrGetScalaVersion(scalaVersion);
+//        return loadOrGetScalaVersion(scalaVersion);
+        // TODO do we want to delegate to ScalaLoader instance here? perhaps not.
+        return ScalaLoader.getInstance().loadOrGetScalaVersion(scalaVersion);
     }
 }
