@@ -52,6 +52,7 @@ public enum ScalaVersion {
     v2_13_13("2.13.13"),
     v2_13_14("2.13.14"),
     v2_13_15("2.13.15"),
+    v2_13_16("2.13.16"),
 
     //3.0.x
     v3_0_0("3.0.0"),
@@ -89,7 +90,11 @@ public enum ScalaVersion {
     //3.6.x
     v3_6_0("3.6.0", false),
     v3_6_1("3.6.1", false),
-    v3_6_2("3.6.2");
+    v3_6_2("3.6.2"),
+
+    //3.7.x
+    v3_7_0("3.7.0"),
+    v3_7_1("3.7.1");
 
     // When adding new entries here, don't forget to update ScalaHashes.
 

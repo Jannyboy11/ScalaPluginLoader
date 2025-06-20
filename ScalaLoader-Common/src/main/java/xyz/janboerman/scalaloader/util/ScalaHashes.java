@@ -83,6 +83,8 @@ public final class ScalaHashes {
             mapEntry(new ScalaHash("2.13.14", "scala-library-url"), "f8b4afe89abe48ca670f620c7da89b71f93e6546"),
             mapEntry(new ScalaHash("2.13.15", "scala-reflect-url"), "355927b10366563a8f1b56c1f34ff376f2f7c8c5"),
             mapEntry(new ScalaHash("2.13.15", "scala-library-url"), "ed6f1d58968b16c5f9067d5cac032d952552de58"),
+            mapEntry(new ScalaHash("2.13.16", "scala-reflect-url"), "4958d4e43faf2d6d66f18ce2aa9a3e5ba141f87b"),
+            mapEntry(new ScalaHash("2.13.16", "scala-library-url"), "9e064d9304904fd7b6bd2b55a9e601b8c1c9006e"),
             mapEntry(new ScalaHash("3.0.0", "scala-library-url"), "ed6f1d58968b16c5f9067d5cac032d952552de58"),
             mapEntry(new ScalaHash("3.0.0", "scala-reflect-url"), "355927b10366563a8f1b56c1f34ff376f2f7c8c5"),
             mapEntry(new ScalaHash("3.0.0", "scala3-library-url"), "9b07afcc82e941ce34049cb8b5dcccd444e780eb"),
@@ -178,7 +180,15 @@ public final class ScalaHashes {
             mapEntry(new ScalaHash("3.6.2", "scala-library-url"), "ed6f1d58968b16c5f9067d5cac032d952552de58"),
             mapEntry(new ScalaHash("3.6.2", "scala-reflect-url"), "355927b10366563a8f1b56c1f34ff376f2f7c8c5"),
             mapEntry(new ScalaHash("3.6.2", "scala3-library-url"), "0c3f9f3da15f8c0cdea22ced65f6cf3745454e9f"),
-            mapEntry(new ScalaHash("3.6.2", "tasty-core-url"), "e9fd80f9a4b8c6e102bf173fda46e09e53abd1f2")
+            mapEntry(new ScalaHash("3.6.2", "tasty-core-url"), "e9fd80f9a4b8c6e102bf173fda46e09e53abd1f2"),
+            mapEntry(new ScalaHash("3.7.0", "scala-library-url"), "ed6f1d58968b16c5f9067d5cac032d952552de58"),
+            mapEntry(new ScalaHash("3.7.0", "scala-reflect-url"), "355927b10366563a8f1b56c1f34ff376f2f7c8c5"),
+            mapEntry(new ScalaHash("3.7.0", "scala3-library-url"), "5b556f8a3ad4dc8a37601f48bb1824a55bf0c1fb"),
+            mapEntry(new ScalaHash("3.7.0", "tasty-core-url"), "8fa3941419c315935254b7ce7f4e4517bb023412"),
+            mapEntry(new ScalaHash("3.7.1", "scala-library-url"), "ed6f1d58968b16c5f9067d5cac032d952552de58"),
+            mapEntry(new ScalaHash("3.7.1", "scala-reflect-url"), "355927b10366563a8f1b56c1f34ff376f2f7c8c5"),
+            mapEntry(new ScalaHash("3.7.1", "scala3-library-url"), "23619b41acc6334667a9243da0dc3561af4869a2"),
+            mapEntry(new ScalaHash("3.7.1", "tasty-core-url"), "dd8549921fd149845db55c9e39d5e72828cbf633")
     );
 
     private ScalaHashes() {
