@@ -233,7 +233,7 @@ public abstract class ScalaPlugin implements IScalaPlugin {
             return yamlDefinedApi.toString();
         }
 
-        return ApiVersion.latest().getVersionString();
+        return ApiVersion.latestVersionString();
     }
 
     /**

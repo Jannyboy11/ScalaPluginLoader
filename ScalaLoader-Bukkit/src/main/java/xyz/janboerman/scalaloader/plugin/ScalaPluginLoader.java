@@ -305,6 +305,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
         assert mainClassCandidate.getScalaVersion().isPresent() : "Plugin main class is present without a PluginScalaVersion o.0";
 
         //assume latest if unspecified
+        // TODO can use String here? then we can use ApiVersion::latestVersionString as fallback
         ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElseGet(ApiVersion::latest);
 
         PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();

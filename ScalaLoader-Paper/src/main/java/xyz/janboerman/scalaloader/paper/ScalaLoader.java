@@ -85,6 +85,7 @@ import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -99,6 +100,7 @@ import java.util.stream.Collectors;
  * @author Jannyboy11
  */
 // TODO should ScalaLoader have a custom bootstrapper? probably yes, since we can use it to delegate plugin lifecyle events to scala plugins. Is that the only way to do it?
+// TODO probably, we want to instantiate ScalaPlugin bootstrappers in our own boostrap phase.
 public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Listener {
 
     static {
@@ -223,11 +225,17 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         for (File file : files) {
             getLogger().info("Reading ScalaPlugin file: " + file.getName());
             try {
-                PluginJarScanResult scanResult = read(Compat.jarFile(file));
+                PluginJarScanResult scanResult = ScalaPluginLoading.read(Compat.jarFile(file));
 
                 // TODO if a bootstrapper is defined, then we shouldn't need to use the DescriptionClassLoader.
                 // TODO the bootstrapper will determine how to instantiate the plugin.
                 // TODO what to do about the ScalaPluginLoader? should we let Paper instantiate it? (and should it be a property of the ScalaPluginDescription?)
+
+                if (scanResult.pluginYaml.get("bootstrapper") instanceof String bootstrapper) {
+                    // TODO do we want anything here?
+                }
+
+                // TODO
 
                 //save scala version
                 final ScalaDependency scalaDependency = scanResult.getScalaVersion();
@@ -455,68 +463,13 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         return dependsOn(dependencies, dependency, plugin2, workingSet, explored);
     }
 
-    private static PluginJarScanResult read(JarFile pluginJarFile) throws IOException {
-        final PluginJarScanResult result = new PluginJarScanResult();
-
-        MainClassScanner bestCandidate = null;
-        TransformerRegistry transformerRegistry = new TransformerRegistry();
-        Map<String, Object> pluginYamlData = Compat.emptyMap();
-
-        //enumerate the class files!
-        Enumeration<JarEntry> entryEnumeration = pluginJarFile.entries();
-        while (entryEnumeration.hasMoreElements()) {
-            JarEntry jarEntry = entryEnumeration.nextElement();
-            if (jarEntry.getName().endsWith(".class")) {
-                InputStream bytecodeStream = pluginJarFile.getInputStream(jarEntry);
-                byte[] classBytes = Compat.readAllBytes(bytecodeStream);
-
-                MainClassScanner scanner = new MainClassScanner(classBytes);
-                bestCandidate = BinaryOperator.minBy(candidateComparator).apply(bestCandidate, scanner);
-
-                //targeted bytecode transformers
-                final GlobalScanResult configSerResult = new GlobalScanner().scan(new ClassReader(classBytes));
-                PluginTransformer.addTo(transformerRegistry, configSerResult);
-                AddVariantTransformer.addTo(transformerRegistry, configSerResult);
-            }
-        }
-
-        result.mainClassScanner = bestCandidate;
-        result.transformerRegistry = transformerRegistry;
-
-        JarEntry pluginYamlEntry = pluginJarFile.getJarEntry("paper-plugin.yml");
-        if (pluginYamlEntry == null) pluginYamlEntry = pluginJarFile.getJarEntry("plugin.yml");
-        if (pluginYamlEntry != null) {
-            Yaml yaml = new Yaml();
-            InputStream pluginYamlStream = pluginJarFile.getInputStream(pluginYamlEntry);
-            pluginYamlData = (Map<String, Object>) yaml.loadAs(pluginYamlStream, Map.class);
-        }
-
-        result.pluginYaml = pluginYamlData;
-
-        return result;
-    }
-
-    //smaller = better candidate!
-    private static final Comparator<MainClassScanner> candidateComparator;
-    static {
-        Comparator<Optional<?>> optionalComparator = Comparator.comparing(Optional::isEmpty);
-        Comparator<String> packageComparator = Comparator.comparing(className -> className.split("\\."), Comparator.comparing(array -> array.length));
-
-        candidateComparator = Comparator.nullsLast(
-            Comparator.comparing(MainClassScanner::getMainClass, optionalComparator)
-                    .thenComparing(scanner -> !scanner.hasScalaAnnotation())            //better candidate if it has a @Scala annotation
-                    .thenComparing(scanner -> !scanner.isSingletonObject())             //better candidate if it is an object
-                    .thenComparing(MainClassScanner::extendsObject)                     //worse candidate if it extends Object directly
-                    .thenComparing(MainClassScanner::extendsScalaPlugin)                //worse candidate if it extends ScalaPlugin directly
-                    .thenComparing(MainClassScanner::getClassName, packageComparator)   //worse candidate if the package consists of a long namespace
-                    .thenComparing(MainClassScanner::getClassName)                      //worse candiate if the class name is longer
-        );
-    }
 
     public ScalaCompatMap<ScalaDependency> getScalaVersions() {
         return scalaCompatMap;
     }
 
+    /** @deprecated Use {@linkplain ScalaPluginLoading#getOrCreateScalaLibrary(ScalaDependency)} instead. */
+    @Deprecated
     private ScalaLibraryClassLoader getOrCreateScalaLibrary(ScalaDependency scalaDependency) throws ScalaPluginLoaderException {
         PluginScalaVersion scalaVersion;
 
@@ -533,6 +486,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         return loadOrGetScalaVersion(scalaVersion);
     }
 
+    /** @deprecated Use {@linkplain ScalaPluginLoading#createLibraryClassLoader(ClassLoader, Map, Logger, File)}. */
+    @Deprecated
     private ClassLoader createLibraryClassLoader(ClassLoader parent, Map<String, Object> pluginYaml) throws ScalaPluginLoaderException {
         if (pluginYaml == null || !pluginYaml.containsKey("libraries")) return parent;
 
@@ -612,6 +567,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         }
     }
 
+    /** @deprecated Use {@linkplain ScalaPluginLoading#buildDescriptionPlugin(File, PluginJarScanResult, ApiVersion, String, ScalaDependency, Logger, File)} instead. */
+    @Deprecated
     private Optional<? extends DescriptionPlugin> buildDescriptionPlugin(File file, PluginJarScanResult scanResult, ApiVersion apiVersion, String mainClassName, ScalaDependency scalaDependency) {
         DescriptionClassLoader classLoader;
         try {

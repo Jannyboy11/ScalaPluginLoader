@@ -69,6 +69,14 @@ public class Platform {
         }
     }
 
+    private static String getPluginName(ClassLoader classLoader) {
+        if (classLoader instanceof IScalaPluginClassLoader) {
+            IScalaPlugin plugin = ((IScalaPluginClassLoader) classLoader).getPlugin();
+            if (plugin != null) return plugin.getName();
+        }
+        return FAKE_PLUGIN_NAME;
+    }
+
     // built-in implementations:
 
     public static class CraftBukkitPlatform extends Platform {
@@ -104,7 +112,7 @@ public class Platform {
         }
 
         // MC 1.20.5+ method signature of Commodore#convert:
-        public byte[] transformNative(Server craftServer, byte[] classBytes, ClassLoader pluginClassLoader, String pluginName, String apiVersionString) throws Throwable {
+        public byte[] transformNative(Server craftServer, byte[] classBytes, String pluginName, String apiVersionString) throws Throwable {
             if (commodoreConvert == null && !attemptedToFindCommodoreConvert) {
                 attemptedToFindCommodoreConvert = true;
                 try {
@@ -184,18 +192,10 @@ public class Platform {
         public <ScalaPluginClassLoader extends ClassLoader & IScalaPluginClassLoader> byte[] transform(String jarEntryPath, byte[] classBytes, ScalaPluginClassLoader pluginClassLoader) throws Throwable {
             ApiVersion apiVersion = pluginClassLoader.getApiVersion();
             if (getApiVersionClass() != null) {
-                return transformNative(pluginClassLoader.getServer(), classBytes, pluginClassLoader, getPluginName(pluginClassLoader), apiVersion.getVersionString());
+                return transformNative(pluginClassLoader.getServer(), classBytes, getPluginName(pluginClassLoader), apiVersion.getVersionString());
             } else {
                 return transformNative(pluginClassLoader.getServer(), classBytes, apiVersion != ApiVersion.LEGACY);
             }
-        }
-
-        private static String getPluginName(ClassLoader classLoader) {
-            if (classLoader instanceof IScalaPluginClassLoader) {
-                IScalaPlugin plugin = ((IScalaPluginClassLoader) classLoader).getPlugin();
-                if (plugin != null) return plugin.getName();
-            }
-            return FAKE_PLUGIN_NAME;
         }
     }
 

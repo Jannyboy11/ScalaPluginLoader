@@ -125,7 +125,7 @@ public abstract class ScalaPlugin extends JavaPlugin implements IScalaPlugin {
             return yamlDefinedApi.toString();
         }
 
-        return ApiVersion.latest().getVersionString();
+        return ApiVersion.latestVersionString();
     }
 
 
