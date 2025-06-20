@@ -13,7 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <minecraft.version>1.21.4</minecraft.version>
+        <minecraft.version>1.21.5</minecraft.version>
         <paper.version>${minecraft.version}-R0.1-SNAPSHOT</paper.version>
     </properties>
 

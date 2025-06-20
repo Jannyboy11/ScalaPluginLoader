@@ -12,8 +12,8 @@
     <artifactId>ScalaLoader-Common</artifactId>
 
     <properties>
-        <bukkitVersion>1.20.4-R0.1-SNAPSHOT</bukkitVersion>
-        <asmVersion>9.7.1</asmVersion>
+        <bukkitVersion>1.21.5-R0.1-SNAPSHOT</bukkitVersion>
+        <asmVersion>9.8</asmVersion>
         <bstatsVersion>3.0.0</bstatsVersion>
         <junitVersion>5.7.1</junitVersion>
         <mavenResolverVersion>1.6.2</mavenResolverVersion>
