@@ -1,5 +1,6 @@
 name: ScalaLoader
 version: ${project.version}
+bootstrapper: xyz.janboerman.scalaloader.paper.ScalaLoaderBootstrap
 main: xyz.janboerman.scalaloader.paper.ScalaLoader
 api-version: 1.19
 folia-supported: true

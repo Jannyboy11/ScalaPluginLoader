@@ -26,14 +26,17 @@ import java.util.stream.Collectors;
 
 @CustomScala(@Version(value = "2.13.0",
         scalaLibraryUrl = "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-library/2.13.0/scala-library-2.13.0.jar",
-        scalaReflectUrl = "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-reflect/2.13.0/scala-reflect-2.13.0.jar"))
+        scalaLibrarySha1 = "e988ea597113786768900f1c260c694a2ae32a42",
+        scalaReflectUrl = "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala-reflect/2.13.0/scala-reflect-2.13.0.jar",
+        scalaReflectSha1 = "2dbe07b0369dbf00a098b7925b2afca016f124b0"
+))
 @Api(ApiVersion.v1_19)
 public class ExamplePlugin extends ScalaPlugin {
 
     private final Random random = new Random();
 
     public ExamplePlugin() {
-        super(new ScalaPluginDescription("JavaExample", "0.18.15-SNAPSHOT").addHardDepend("Scala2Example"));
+        super(new ScalaPluginDescription("JavaExample", "0.18.16-SNAPSHOT").addHardDepend("Scala2Example"));
     }
 
     public static ExamplePlugin getInstance() {

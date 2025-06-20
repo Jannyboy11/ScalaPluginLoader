@@ -305,6 +305,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
         assert mainClassCandidate.getScalaVersion().isPresent() : "Plugin main class is present without a PluginScalaVersion o.0";
 
         //assume latest if unspecified
+        // TODO can use String here? then we can use ApiVersion::latestVersionString as fallback
         ApiVersion apiVersion = mainClassCandidate.getBukkitApiVersion().orElseGet(ApiVersion::latest);
 
         PluginScalaVersion scalaVersion = mainClassCandidate.getScalaVersion().get();
@@ -655,7 +656,7 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
             CopyOnWriteArrayList<ScalaPluginClassLoader> classLoaders = sharedScalaPluginClassLoaders.get(scalaCompatRelease);
             if (classLoaders != null) {
                 classLoaders.remove(scalaPluginClassLoader);
-                //noinspection SuspiciousMethodCalls - Thank IntelliJ but this is how you do an atomic removeIfEmpty.
+                //noinspection SuspiciousMethodCalls - Thanks IntelliJ but this is how you do an atomic removeIfEmpty.
                 sharedScalaPluginClassLoaders.remove(scalaCompatRelease, Compat.emptyList());
             }
 

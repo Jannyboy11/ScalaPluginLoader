@@ -37,12 +37,13 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>4.7.2</version>
+                <version>4.9.2</version>
                 <configuration>
                     <args>
 <!--                        <arg>-rewrite</arg><arg>-indent</arg>-->
                         <arg>-rewrite</arg><arg>-new-syntax</arg>
                     </args>
+                    <scalaVersion>${scala.version}</scalaVersion>
                 </configuration>
                 <executions>
                     <execution>
@@ -72,8 +73,8 @@
 
     <repositories>
         <repository>
-            <id>spigotmc-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+            <id>papermc-repo</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
     </repositories>
 
@@ -107,9 +108,19 @@
         </dependency>
 
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.21.4-R0.1-SNAPSHOT</version>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${paper.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- TODO make it so that we don't need the paper server dependency. -->
+        <!-- TODO this is caused by the fact ScalaPlugin exposes some getters for types which inherit from some classes in the Paper-Server dependency. -->
+        <!-- TODO once we fix our APIs, we also need to add some bytecode migration for compatibility. -->
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-server</artifactId>
+            <version>${paper.version}</version>
+            <classifier>mojang-mapped</classifier>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -3,7 +3,6 @@ package xyz.janboerman.scalaloader.paper.plugin.description;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 //import io.papermc.paper.plugin.provider.classloader.PaperClassLoaderStorage;
 //import io.papermc.paper.plugin.entrypoint.classloader.group.PaperPluginClassLoaderStorage;
-import io.papermc.paper.plugin.entrypoint.classloader.group.SingletonPluginClassLoaderGroup;
 import io.papermc.paper.plugin.provider.classloader.ConfiguredPluginClassLoader;
 import io.papermc.paper.plugin.provider.classloader.PluginClassLoaderGroup;
 import org.bukkit.Bukkit;
@@ -72,7 +71,7 @@ public class DescriptionClassLoader extends URLClassLoader implements Configured
                 //1. Bukkit's own migrations
                 try {
                     String pluginName = plugin != null ? plugin.getName() : "Owning plugin of class " + className;
-                    byteCode = Platform.CRAFTBUKKIT.transformNative(Bukkit.getServer(), byteCode, this, pluginName, apiVersion.getVersionString()); //we can assume Platform.CRAFTBUKKIT because we are running on Paper (which is a fork of CraftBukkit).
+                    byteCode = Platform.CRAFTBUKKIT.transformNative(Bukkit.getServer(), byteCode, pluginName, apiVersion.getVersionString()); //we can assume Platform.CRAFTBUKKIT because we are running on Paper (which is a fork of CraftBukkit).
                 } catch (Throwable e) {
                     Bukkit.getLogger().log(Level.SEVERE, "Server could not transform bytecode for class: " + className + ". This is a bug in " + Bukkit.getUnsafe().getClass().getName() + "#processClass", e);
                 }

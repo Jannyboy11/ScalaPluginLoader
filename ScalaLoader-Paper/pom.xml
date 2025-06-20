@@ -13,7 +13,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.version>1.21.4-R0.1-SNAPSHOT</paper.version>
 
         <!-- paper server dependencies -->
         <mavenResolverVersion>1.7.3</mavenResolverVersion>

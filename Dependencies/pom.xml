@@ -12,11 +12,6 @@
 
     <artifactId>Dependencies</artifactId>
 
-    <properties>
-        <minecraft.version>1.21.4</minecraft.version>
-        <paper.version>${minecraft.version}-R0.1-SNAPSHOT</paper.version>
-    </properties>
-
     <repositories>
         <repository>
             <id>papermc</id>
@@ -45,6 +40,7 @@
                 </executions>
             </plugin>
 
+            <!-- Paper dependency copied from: https://github.com/stonar96/RayTraceAntiXray/blob/main/Libs/pom.xml -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>

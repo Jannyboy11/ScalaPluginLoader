@@ -1,7 +1,11 @@
 package xyz.janboerman.scalaloader.plugin.description;
 
 import org.bukkit.Bukkit;
+import xyz.janboerman.scalaloader.compat.Compat;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -105,6 +109,26 @@ public enum ApiVersion {
      */
     public static ApiVersion latest() {
         return LATEST_VERSION;
+    }
+
+    /**
+     * Get the latest supported api version of the server.
+     * @return the latest supported Bukkit API version
+     */
+    public static String latestVersionString() {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        try {
+            Class<?> craftbukkitApiVersionClass = Class.forName(Compat.getPackageName(Bukkit.getServer().getClass()) + ".util.ApiVersion");
+
+            MethodHandle current = lookup.findStaticGetter(craftbukkitApiVersionClass, "CURRENT", craftbukkitApiVersionClass);
+            Object currentApiVersion = current.invoke();
+
+            MethodHandle getVersionString = lookup.findGetter(craftbukkitApiVersionClass, "getVersionString", String.class);
+            return (String) getVersionString.invoke(currentApiVersion);
+        } catch (Throwable ex) {
+            //fallback
+            return latest().getVersionString();
+        }
     }
 
     /**

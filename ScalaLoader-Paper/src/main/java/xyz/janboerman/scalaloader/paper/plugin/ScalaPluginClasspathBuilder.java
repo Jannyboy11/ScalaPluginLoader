@@ -20,7 +20,7 @@ public class ScalaPluginClasspathBuilder implements PluginClasspathBuilder {
     private final ScalaPluginProviderContext context;
 
     public ScalaPluginClasspathBuilder(ScalaPluginProviderContext context) {
-        this.context = context;
+        this.context = context; //note: can be a ScalaPluginBootstrapContext
     }
 
     @Override

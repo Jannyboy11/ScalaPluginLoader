@@ -11,6 +11,9 @@ import java.nio.file.Path;
 
 public class ScalaPluginProviderContext implements PluginProviderContext {
 
+    // TODO should include ScalaLoader's own data directory.
+    // TODO then ScalaPluginLoader can use this directory for downloading jar files.
+
     private final ScalaPluginMeta configuration;
     private final Path pluginSource;
     private ScalaPluginClassLoader pluginClassLoader;

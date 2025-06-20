@@ -85,6 +85,7 @@ import java.util.function.BinaryOperator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -99,13 +100,14 @@ import java.util.stream.Collectors;
  * @author Jannyboy11
  */
 // TODO should ScalaLoader have a custom bootstrapper? probably yes, since we can use it to delegate plugin lifecyle events to scala plugins. Is that the only way to do it?
+// TODO probably, we want to instantiate ScalaPlugin bootstrappers in our own boostrap phase.
 public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Listener {
 
     static {
         Migration.addMigrator(PaperPluginTransformer::new);
         //TODO Paper's ClassloaderBytecodeModifier api gives us the ability to transform bytecode of JavaPlugins.
         //TODO should I make use of this? Are there any ScalaLoader apis that I broke that can be called by JavaPlugins?
-        //TODO the only thing that comes to mind right now is ScalaPluginLoader.openUpToJavaPlugin(ScalaPlugin, JavaPlugin).
+        //TODO the only things that comes to mind right now are ScalaPluginLoader.openUpToJavaPlugin(ScalaPlugin, JavaPlugin) and ScalaPluginEnableEvent/ScalaPluginDisableEvent.getPlugin()
         //TODO the replacement would be to make the ScalaPlugin's classloader accessible to the JavaPlugin's classloader (perhaps through ClassLoader groups).
     }
 
@@ -116,6 +118,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
     //ScalaLoader has a tendency of becoming a God Object. May want to factor out plugin-loading stuff to a separate class ScalaPluginManager or something.
     private final LinkedHashSet<ScalaPlugin> scalaPlugins = new LinkedHashSet<>();
 
+    //TODO should probably be instantiated in ScalaLoader's own bootstrapper (or boostrap context?).
+    //TODO we want to provide this value to ScalaPluginBootstrap without needing the ScalaLoader instance yet.
     private final ScalaCompatMap<ScalaDependency> scalaCompatMap = new ScalaCompatMap();
     private final Map<String, ScalaLibraryClassLoader> scalaLibraryClassLoaders = new HashMap<>();
 
@@ -219,8 +223,19 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         dependencyGraph.addNode("ScalaLoader");
 
         for (File file : files) {
+            getLogger().info("Reading ScalaPlugin file: " + file.getName());
             try {
-                PluginJarScanResult scanResult = read(Compat.jarFile(file));
+                PluginJarScanResult scanResult = ScalaPluginLoading.read(Compat.jarFile(file));
+
+                // TODO if a bootstrapper is defined, then we shouldn't need to use the DescriptionClassLoader.
+                // TODO the bootstrapper will determine how to instantiate the plugin.
+                // TODO what to do about the ScalaPluginLoader? should we let Paper instantiate it? (and should it be a property of the ScalaPluginDescription?)
+
+                if (scanResult.pluginYaml.get("bootstrapper") instanceof String bootstrapper) {
+                    // TODO do we want anything here?
+                }
+
+                // TODO
 
                 //save scala version
                 final ScalaDependency scalaDependency = scanResult.getScalaVersion();
@@ -304,13 +319,16 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         pluginLoadOrder.sort(dependencyOrder(dependencyGraph));
 
         for (String pluginName : pluginLoadOrder) {
+            getLogger().info("Instantiating plugin: " + pluginName);
+
             //the process will look as follows:
             //  - instantiate the bootstrapper:
             //  - instantiate the pluginloader
             //  - call bootstrapper.bootstrap(pluginprovidercontext)
             //  - call pluginloader.classloader(pluginclasspathbuilder)
             //  - call boostrapper.createPlugin(pluginprovidercontext)
-            //  - finally, register them to Paper's PluginManager, and call .onLoad()
+            //  - call .onLoad()
+            //  - register the plugin to Paper's PluginManager in ScalaLoader's onEnable phase.
 
             File file = byName.get(pluginName);
             PluginJarScanResult scanResult = scanResults.get(file);
@@ -325,6 +343,7 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
             ScalaPluginClasspathBuilder pluginClasspathBuilder = new ScalaPluginClasspathBuilder(context);
 
             bootstrap(bootstrapper, context);   //used to be just boostrapper.bootstrap(context), but PluginBootstrap#bootstrap(PluginProviderContext) got changed to PluginBootstrap#bootstrap(BootstrapContext).
+            disallowBoostrapLifecycleEventRegistration(context);    //lifecycle events
             loader.classloader(pluginClasspathBuilder);
 
             var optionalPlugin = buildPlugin(pluginName, file, context, scanResult, loader, bootstrapper, pluginClasspathBuilder);
@@ -348,25 +367,25 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
     }
 
     private static void bootstrap(PluginBootstrap bootstrapper, ScalaPluginProviderContext context) {
-        Method bootstrap = null;
+        Method bootstrapMethod = null;
         RuntimeException ex = new RuntimeException("could not bootstrap plugin using bootstrapper: " + bootstrapper + " and context " + context);
 
         try {
             Class<?> bootstrapContextClazz = Class.forName("io.papermc.paper.plugin.bootstrap.BootstrapContext");
-            bootstrap = PluginBootstrap.class.getMethod("bootstrap", bootstrapContextClazz);
+            bootstrapMethod = PluginBootstrap.class.getMethod("bootstrap", bootstrapContextClazz);
         } catch (ReflectiveOperationException e1) {
             ex.addSuppressed(e1);
 
             try {
-                bootstrap = PluginBootstrap.class.getMethod("bootstrap", PluginProviderContext.class);
+                bootstrapMethod = PluginBootstrap.class.getMethod("bootstrap", PluginProviderContext.class);
             } catch (ReflectiveOperationException e2) {
                 ex.addSuppressed(e2);
             }
         }
 
-        if (bootstrap != null) {
+        if (bootstrapMethod != null) {
             try {
-                bootstrap.invoke(bootstrapper, context);
+                bootstrapMethod.invoke(bootstrapper, context);
                 return;
             } catch (IllegalAccessException | InvocationTargetException e) {
                 ex.addSuppressed(e);
@@ -374,6 +393,15 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         }
 
         throw ex;
+    }
+
+    private static void disallowBoostrapLifecycleEventRegistration(ScalaPluginProviderContext context) {
+        try {
+            Class.forName("io.papermc.paper.plugin.bootstrap.BootstrapContext");
+            ScalaPluginBootstrapContext bootstrapContext = (ScalaPluginBootstrapContext) context; //can only load this class safely when we are running on Paper which has BootstrapContext abstraction.
+            bootstrapContext.disallowLifecycleEventRegistration();
+        } catch (ClassNotFoundException ignored) {
+        }
     }
 
     private void enableScalaPlugins(PluginLoadOrder loadOrder) {
@@ -435,68 +463,13 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         return dependsOn(dependencies, dependency, plugin2, workingSet, explored);
     }
 
-    private static PluginJarScanResult read(JarFile pluginJarFile) throws IOException {
-        final PluginJarScanResult result = new PluginJarScanResult();
-
-        MainClassScanner bestCandidate = null;
-        TransformerRegistry transformerRegistry = new TransformerRegistry();
-        Map<String, Object> pluginYamlData = Compat.emptyMap();
-
-        //enumerate the class files!
-        Enumeration<JarEntry> entryEnumeration = pluginJarFile.entries();
-        while (entryEnumeration.hasMoreElements()) {
-            JarEntry jarEntry = entryEnumeration.nextElement();
-            if (jarEntry.getName().endsWith(".class")) {
-                InputStream bytecodeStream = pluginJarFile.getInputStream(jarEntry);
-                byte[] classBytes = Compat.readAllBytes(bytecodeStream);
-
-                MainClassScanner scanner = new MainClassScanner(classBytes);
-                bestCandidate = BinaryOperator.minBy(candidateComparator).apply(bestCandidate, scanner);
-
-                //targeted bytecode transformers
-                final GlobalScanResult configSerResult = new GlobalScanner().scan(new ClassReader(classBytes));
-                PluginTransformer.addTo(transformerRegistry, configSerResult);
-                AddVariantTransformer.addTo(transformerRegistry, configSerResult);
-            }
-        }
-
-        result.mainClassScanner = bestCandidate;
-        result.transformerRegistry = transformerRegistry;
-
-        JarEntry pluginYamlEntry = pluginJarFile.getJarEntry("paper-plugin.yml");
-        if (pluginYamlEntry == null) pluginYamlEntry = pluginJarFile.getJarEntry("plugin.yml");
-        if (pluginYamlEntry != null) {
-            Yaml yaml = new Yaml();
-            InputStream pluginYamlStream = pluginJarFile.getInputStream(pluginYamlEntry);
-            pluginYamlData = (Map<String, Object>) yaml.loadAs(pluginYamlStream, Map.class);
-        }
-
-        result.pluginYaml = pluginYamlData;
-
-        return result;
-    }
-
-    //smaller = better candidate!
-    private static final Comparator<MainClassScanner> candidateComparator;
-    static {
-        Comparator<Optional<?>> optionalComparator = Comparator.comparing(Optional::isEmpty);
-        Comparator<String> packageComparator = Comparator.comparing(className -> className.split("\\."), Comparator.comparing(array -> array.length));
-
-        candidateComparator = Comparator.nullsLast(
-            Comparator.comparing(MainClassScanner::getMainClass, optionalComparator)
-                    .thenComparing(scanner -> !scanner.hasScalaAnnotation())            //better candidate if it has a @Scala annotation
-                    .thenComparing(scanner -> !scanner.isSingletonObject())             //better candidate if it is an object
-                    .thenComparing(MainClassScanner::extendsObject)                     //worse candidate if it extends Object directly
-                    .thenComparing(MainClassScanner::extendsScalaPlugin)                //worse candidate if it extends ScalaPlugin directly
-                    .thenComparing(MainClassScanner::getClassName, packageComparator)   //worse candidate if the package consists of a long namespace
-                    .thenComparing(MainClassScanner::getClassName)                      //worse candiate if the class name is longer
-        );
-    }
 
     public ScalaCompatMap<ScalaDependency> getScalaVersions() {
         return scalaCompatMap;
     }
 
+    /** @deprecated Use {@linkplain ScalaPluginLoading#getOrCreateScalaLibrary(ScalaDependency)} instead. */
+    @Deprecated
     private ScalaLibraryClassLoader getOrCreateScalaLibrary(ScalaDependency scalaDependency) throws ScalaPluginLoaderException {
         PluginScalaVersion scalaVersion;
 
@@ -513,6 +486,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         return loadOrGetScalaVersion(scalaVersion);
     }
 
+    /** @deprecated Use {@linkplain ScalaPluginLoading#createLibraryClassLoader(ClassLoader, Map, Logger, File)}. */
+    @Deprecated
     private ClassLoader createLibraryClassLoader(ClassLoader parent, Map<String, Object> pluginYaml) throws ScalaPluginLoaderException {
         if (pluginYaml == null || !pluginYaml.containsKey("libraries")) return parent;
 
@@ -592,6 +567,8 @@ public final class ScalaLoader extends JavaPlugin implements IScalaLoader, Liste
         }
     }
 
+    /** @deprecated Use {@linkplain ScalaPluginLoading#buildDescriptionPlugin(File, PluginJarScanResult, ApiVersion, String, ScalaDependency, Logger, File)} instead. */
+    @Deprecated
     private Optional<? extends DescriptionPlugin> buildDescriptionPlugin(File file, PluginJarScanResult scanResult, ApiVersion apiVersion, String mainClassName, ScalaDependency scalaDependency) {
         DescriptionClassLoader classLoader;
         try {

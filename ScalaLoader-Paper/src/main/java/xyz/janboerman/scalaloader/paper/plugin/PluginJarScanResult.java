@@ -35,6 +35,8 @@ public class PluginJarScanResult {
         }
     }
 
+    /** Use {@linkplain #getApiVersionString()} instead. */
+    @Deprecated
     public ApiVersion getApiVersion() {
         if (mainClassScanner.hasApiVersion()) {
             return mainClassScanner.getApiVersion();
@@ -42,6 +44,16 @@ public class PluginJarScanResult {
             return ApiVersion.byVersion(pluginYaml.get("api-version").toString());
         } else {
             return ApiVersion.latest();
+        }
+    }
+
+    public String getApiVersionString() {
+        if (mainClassScanner.hasApiVersion()) {
+            return mainClassScanner.getApiVersion().getVersionString();
+        } else if (pluginYaml.containsKey("api-version")) {
+            return pluginYaml.get("api-version").toString();
+        } else {
+            return ApiVersion.latestVersionString();
         }
     }
 

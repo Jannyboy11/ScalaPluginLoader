@@ -87,7 +87,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         //super call already sets ClassLoaderGroup
 
         this.pluginJarFile = pluginJarFile;
-        this.jarFile = Compat.jarFile(pluginJarFile);
+        this.jarFile = Compat.jarFile(pluginJarFile);   // TODO is there any particular reason why we have this field? Why can't we simply use super.jar? Did the jar field in the super class always exist?
         this.mainClassName = configuration.getMainClass();
         this.pluginLoader = pluginLoader;
         this.pluginYaml = pluginYaml;
@@ -140,7 +140,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
             field.setAccessible(true);
             return (PluginMeta) field.get(this);
         } catch (Throwable e) {
-                throw new RuntimeException("Could not get scala plugin configuration?", e);
+            throw new RuntimeException("Could not get scala plugin configuration?", e);
         }
     }
 
@@ -190,7 +190,7 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         String path = name.replace('.', '/').concat(".class");
         JarEntry entry = this.jar.getJarEntry(path);
         if (entry == null) {
-            throw new ClassNotFoundException();
+            throw new ClassNotFoundException(name);
         }
 
         byte[] classBytes;
@@ -397,4 +397,9 @@ public class ScalaPluginClassLoader extends PaperPluginClassLoader implements IS
         return result;
     }
 
+    @Override
+    public void close() throws IOException {
+        super.close();
+        jarFile.close();
+    }
 }
