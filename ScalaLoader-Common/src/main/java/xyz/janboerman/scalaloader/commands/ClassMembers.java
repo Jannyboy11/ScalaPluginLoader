@@ -25,6 +25,7 @@ public class ClassMembers implements CommandExecutor {
             for (Field f : clazz.getFields()) {
                 sender.sendMessage(ChatColor.YELLOW + formatField(f));
             }
+            sender.sendMessage(ChatColor.YELLOW + "Constructors:");
             for (Constructor<?> c : clazz.getConstructors()) {
                 sender.sendMessage(ChatColor.YELLOW + formatConstructor(c));
             }

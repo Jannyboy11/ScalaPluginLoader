@@ -172,9 +172,6 @@ public final class ScalaPluginLoading {
             scalaVersion = PluginScalaVersion.fromScalaVersion(ScalaVersion.fromVersionString(scalaDependency.getVersionString()));
         }
 
-        // TODO implement this function, adapt from ScalaLoaderUtils.
-//        return loadOrGetScalaVersion(scalaVersion);
-        // TODO do we want to delegate to ScalaLoader instance here? perhaps not.
         return ScalaLoader.getInstance().loadOrGetScalaVersion(scalaVersion);
     }
 }

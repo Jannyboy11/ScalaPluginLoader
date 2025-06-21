@@ -84,7 +84,7 @@ public final class ScalaLoaderUtils {
     }
 
     /**
-     * Tries to obtain an instance of the given class either by using an `object`'s singleton instance, or by calling the public no-args consturctor.
+     * Tries to obtain an instance of the given class either by using an `object`'s singleton instance, or by calling the public no-args constructor.
      * @param clazz the class for which to create an instance
      * @return the instance
      */
