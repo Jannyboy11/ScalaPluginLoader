@@ -12,6 +12,7 @@ public sealed interface ScalaDependency extends IScalaVersion permits Builtin, C
 
     public String getVersionString();
 
+    /** Scala version defined using annotation @Scala(version = ScalaVersion.X_Y_Z)*/
     public static record Builtin(ScalaVersion scalaVersion) implements ScalaDependency {
         @Override
         public String getVersionString() {
@@ -19,6 +20,7 @@ public sealed interface ScalaDependency extends IScalaVersion permits Builtin, C
         }
     }
 
+    /** Scala version defined using annotation @CustomScala */
     public static record Custom(String scalaVersion, Map<String, String> urls, Map<String, String> sha1hashes) implements ScalaDependency {
         /** @deprecated Use canonical constructor instead. */
         @Deprecated
@@ -32,6 +34,7 @@ public sealed interface ScalaDependency extends IScalaVersion permits Builtin, C
         }
     }
 
+    /** Scala version defined in the plugin.yml under the "scala-version" key. */
     public static record YamlDefined(String scalaVersion) implements ScalaDependency {
         @Override
         public String getVersionString() {

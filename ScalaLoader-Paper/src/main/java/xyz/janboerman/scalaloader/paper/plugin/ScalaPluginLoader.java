@@ -89,19 +89,28 @@ public class ScalaPluginLoader implements PluginLoader, IScalaPluginLoader {
                     "org.scala-lang:scala-reflect:" + scalaVersion);
 
         boolean isScala3 = scalaVersion.startsWith("3.");
-        if (isScala3)
-            if ("3.0.0".equals(scalaVersion))
+        if (isScala3) {
+            if ("3.0.0".equals(scalaVersion)) {
                 return listOf(
                         "org.scala-lang:scala-library:" + ScalaVersion.getLatest_2_13().getVersion(),
                         "org.scala-lang:scala-reflect:" + ScalaVersion.getLatest_2_13().getVersion(),
                         "org.scala-lang:scala3-library_3.0.0-nonbootstrapped:3.0.0",
                         "org.scala-lang:tasty-core_3.0.0-nonbootstrapped:3.0.0");
-            else
-                return listOf(
-                        "org.scala-lang:scala-library:" + ScalaVersion.getLatest_2_13().getVersion(),
-                        "org.scala-lang:scala-reflect:" + ScalaVersion.getLatest_2_13().getVersion(),
-                        "org.scala-lang:scala3-library_3:" + scalaVersion,
-                        "org.scala-lang:tasty-core_3:" + scalaVersion);
+            } else {
+                int minor = Integer.parseInt(scalaVersion.split("\\.")[1]);
+                if (minor < 8) {
+                    return listOf(
+                            "org.scala-lang:scala-library:" + ScalaVersion.getLatest_2_13().getVersion(),
+                            "org.scala-lang:scala-reflect:" + ScalaVersion.getLatest_2_13().getVersion(),
+                            "org.scala-lang:scala3-library_3:" + scalaVersion,
+                            "org.scala-lang:tasty-core_3:" + scalaVersion);
+                } else {
+                    return listOf(
+                            "org.scala-lang:scala-library:" + scalaVersion,
+                            "org.scala-lang:tasty-core_3:" + scalaVersion);
+                }
+            }
+        }
 
         throw new RuntimeException("Unrecognised Scala version: " + scalaVersion);
     }

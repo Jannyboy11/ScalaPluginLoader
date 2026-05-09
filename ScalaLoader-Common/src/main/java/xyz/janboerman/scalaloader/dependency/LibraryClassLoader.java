@@ -62,7 +62,7 @@ public class LibraryClassLoader extends URLClassLoader {
      * loadClass(String name) is not overridden and that is very much intentional.
      * why? because the load-class method defines the search order.
      * and the default behaviour is ideal for us: we want to search in the parent classloader first!
-     * why do we want to find classes first in the parent cloassloader?
+     * why do we want to find classes first in the parent classloader?
      * because we want to use the use same class definitions for scala standard library types and bukkit types as the scalaplugins themselves.
      * so we shouldn't load those classes from a downloaded jar file.
      */
