@@ -4,7 +4,8 @@ api-version: "1.21.4"
 folia-supported: true
 load: STARTUP
 
-bootstrapper: xyz.janboerman.scalaloader.example.scala3.ExampleBootstrap
+# TODO this does not work well yet; the bootstrap class cannot yet be found by the (description) class loader.
+# bootstrapper: xyz.janboerman.scalaloader.example.scala3.ExampleBootstrap
 
 dependencies:
   bootstrap:
