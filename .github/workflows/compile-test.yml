@@ -8,12 +8,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 21
+      - name: Set up JDK 26
         uses: actions/setup-java@v3
         with:
           # Use Eclipse Temurin's OpenJDK because Microsoft doesn't seem to want to build non-LTS releases.
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '26'
           cache: 'maven'
       - name: Compile ScalaLoader
         run: mvn --batch-mode --update-snapshots verify -DfinalName=ScalaLoader
@@ -32,7 +32,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           javadoc-branch: javadoc
           java-distribution: temurin
-          java-version: 21
+          java-version: 26
           custom-command: 'mvn package javadoc:aggregate -pl :ScalaPluginLoader,:ScalaLoader-Common,:ScalaLoader-Bukkit,:ScalaLoader-Paper'
           target-folder: javadoc
           project: maven
