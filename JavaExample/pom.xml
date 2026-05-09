@@ -22,7 +22,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <release>21</release>
+                    <release>26</release>
                     <compilerArgs>--enable-preview</compilerArgs>
                     <!-- work around a bug in the maven-compiler-plugin:
                     Got the following error:
