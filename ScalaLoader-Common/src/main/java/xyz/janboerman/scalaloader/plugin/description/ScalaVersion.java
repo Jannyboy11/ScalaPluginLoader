@@ -34,6 +34,7 @@ public enum ScalaVersion {
     v2_12_18("2.12.18"),
     v2_12_19("2.12.19"),
     v2_12_20("2.12.20"),
+    v2_12_21("2.12.21"),
 
     //2.13.x
     v2_13_0("2.13.0"),
@@ -53,6 +54,8 @@ public enum ScalaVersion {
     v2_13_14("2.13.14"),
     v2_13_15("2.13.15"),
     v2_13_16("2.13.16"),
+    v2_13_17("2.13.17"),
+    v2_13_18("2.13.18"),
 
     //3.0.x
     v3_0_0("3.0.0"),
@@ -75,6 +78,10 @@ public enum ScalaVersion {
     v3_3_1("3.3.1"),
     v3_3_2("3.3.2", false),
     v3_3_3("3.3.3"),
+    v3_3_4("3.3.4"),
+    v3_3_5("3.3.5"),
+    v3_3_6("3.3.6"),
+    v3_3_7("3.3.7"),
 
     //3.4.x
     v3_4_0("3.4.0"),
@@ -96,7 +103,16 @@ public enum ScalaVersion {
 
     //3.7.x
     v3_7_0("3.7.0"),
-    v3_7_1("3.7.1");
+    v3_7_1("3.7.1"),
+    v3_7_2("3.7.2"),
+    v3_7_3("3.7.3"),
+    v3_7_4("3.7.4"),
+
+    //3.8.x
+    v3_8_0("3.8.0", false), //https://www.scala-lang.org/blog/post-mortem-3.8.0.html
+    v3_8_1("3.8.1"),
+    v3_8_2("3.8.2"),
+    v3_8_3("3.8.3");
 
     // When adding new entries here, don't forget to update ScalaHashes.
 
@@ -135,14 +151,27 @@ public enum ScalaVersion {
                     mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(scalaVersion))
             );
         } else if (scalaVersion.startsWith("3.")) {
-            return mapOf(
-                    mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(latest_2_13.getVersion())),
-                    mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(latest_2_13.getVersion())),
-                    mapEntry(PluginScalaVersion.SCALA3_LIBRARY_URL, mavenCentralScala3LibraryAdditions(scalaVersion)),
-                    mapEntry(PluginScalaVersion.TASTY_CORE_URL, mavenCentralScala3TastyCoreAdditions(scalaVersion))
-            );
-            //TODO if Scala 3 ever stops depending on Scala 2.13, then we need to update this code!
-            //TODO as of Scala 3.4, the standard library might get new additions. we need to check whether this logic still works then.
+            String[] majorMinorPatch = scalaVersion.split("\\.");
+            int major = Integer.parseInt(majorMinorPatch[0]);
+            int minor = Integer.parseInt(majorMinorPatch[1]);
+            int patch = Integer.parseInt(majorMinorPatch[2]);
+            assert major == 3;
+            if (minor < 8) {
+                // Logic for Scala 3.0 to 3.7:
+                return mapOf(
+                        mapEntry(PluginScalaVersion.SCALA2_LIBRARY_URL, mavenCentralSearchScalaLibrary(latest_2_13.getVersion())),
+                        mapEntry(PluginScalaVersion.SCALA2_REFLECT_URL, mavenCentralSearchScalaReflect(latest_2_13.getVersion())),
+                        mapEntry(PluginScalaVersion.SCALA3_LIBRARY_URL, mavenCentralScala3LibraryAdditions(scalaVersion)),
+                        mapEntry(PluginScalaVersion.TASTY_CORE_URL, mavenCentralScala3TastyCoreAdditions(scalaVersion))
+                );
+            } else {
+                // Logic for Scala 3.8 onwards:
+                return mapOf(
+                        mapEntry(PluginScalaVersion.SCALA3_LIBRARY_URL, mavenCentralScala3Library(scalaVersion)),
+                        mapEntry(PluginScalaVersion.TASTY_CORE_URL, mavenCentralScala3TastyCoreAdditions(scalaVersion))
+                );
+            }
+            // TODO could there be a change of artifacts *again* in the future?
         } else {
             assert false : "Scala 4 not yet supported";
             return null;
@@ -239,6 +268,7 @@ public enum ScalaVersion {
         if ("3.0.0".equals(scalaVersion)) {
             return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-library_" + scalaVersion + "-nonbootstrapped/" + scalaVersion + "/scala3-library_" + scalaVersion + "-nonbootstrapped-" + scalaVersion + ".jar";
         } else {
+            // Scala 3.1.x - 3.7.x:
             return "https://search.maven.org/remotecontent?filepath=org/scala-lang/scala3-library_3/" + scalaVersion + "/scala3-library_3-" + scalaVersion + ".jar";
         }
     }
@@ -249,6 +279,11 @@ public enum ScalaVersion {
         } else {
             return "https://search.maven.org/remotecontent?filepath=org/scala-lang/tasty-core_3/" + scalaVersion + "/tasty-core_3-" + scalaVersion + ".jar";
         }
+    }
+
+    private static String mavenCentralScala3Library(String scalaVersion) {
+        // For Scala 3.8 onwards:
+        return "https://repo1.maven.org/maven2/org/scala-lang/scala-library/" + scalaVersion + "/scala-library-" + scalaVersion + ".jar";
     }
 
     //other possible artifacts:
