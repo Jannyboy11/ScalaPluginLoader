@@ -39,28 +39,20 @@ public enum ApiVersion {
     v1_20("1.20"),
     /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.21 */
     v1_21("1.21"),
-    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.22 */
-    v1_22("1.22"),
-    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.23 */
-    v1_23("1.23"),
-    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.24 */
-    v1_24("1.24"),
-    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 1.25 */
-    v1_25("1.25");
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 26.1 */
+    v26_1("26.1"),
+    /** Signals that the ScalaPlugin was created to be compatible with Bukkit 26.2 */
+    v26_2("26.2");
 
     private static final Map<String, ApiVersion> BY_VERSION = new HashMap<>();
     private static final ApiVersion LATEST_VERSION;
     static {
         ApiVersion runningOn;
         String bukkitVersion = Bukkit.getBukkitVersion();
-        if (bukkitVersion.startsWith("1.25")) {
-            runningOn = v1_25;
-        } else if (bukkitVersion.startsWith("1.24")) {
-            runningOn = v1_24;
-        } else if (bukkitVersion.startsWith("1.23")) {
-            runningOn = v1_23;
-        } else if (bukkitVersion.startsWith("1.22")) {
-            runningOn = v1_22;
+        if (bukkitVersion.startsWith("26.2")) {
+            runningOn = v26_2;
+        } else if (bukkitVersion.startsWith("26.1")) {
+            runningOn = v26_1;
         } else if (bukkitVersion.startsWith("1.21")) {
             runningOn = v1_21;
         } else if (bukkitVersion.startsWith("1.20")) {
