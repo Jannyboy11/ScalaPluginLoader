@@ -163,6 +163,10 @@ public final class ScalaHashes {
             mapEntry(new ScalaHash("3.3.7", "scala-reflect-url"), "674f3bd39f5c528d575da69c42a5dff772b9b75c"),
             mapEntry(new ScalaHash("3.3.7", "scala3-library-url"), "8a71235e7312077588af781a4d38cfc346f747eb"),
             mapEntry(new ScalaHash("3.3.7", "tasty-core-url"), "78cdd8c256d8b5055302b85826675dbc7a6c58b9"),
+            mapEntry(new ScalaHash("3.3.8", "scala-library-url"), "eb2086988c25b08705472cc750654570900362e5"),
+            mapEntry(new ScalaHash("3.3.8", "scala-reflect-url"), "674f3bd39f5c528d575da69c42a5dff772b9b75c"),
+            mapEntry(new ScalaHash("3.3.8", "scala3-library-url"), "1f390d7eb71670cac0411a39955918aadb9c0bdb"),
+            mapEntry(new ScalaHash("3.3.8", "tasty-core-url"), "5ceba14042a510cfb42c26c52c6e15c32ef29577"),
             mapEntry(new ScalaHash("3.4.0", "scala-library-url"), "eb2086988c25b08705472cc750654570900362e5"),
             mapEntry(new ScalaHash("3.4.0", "scala-reflect-url"), "674f3bd39f5c528d575da69c42a5dff772b9b75c"),
             mapEntry(new ScalaHash("3.4.0", "scala3-library-url"), "b25d08c72dda53e45f74c139f43672e8cf9edb86"),
@@ -238,7 +242,9 @@ public final class ScalaHashes {
             mapEntry(new ScalaHash("3.8.2", "scala3-library-url"), "1108247192ba56b185bbb2a07f143ac189144422"),
             mapEntry(new ScalaHash("3.8.2", "tasty-core-url"), "0e81089a1ccac3c8113ed0f5ec2810d7229b549b"),
             mapEntry(new ScalaHash("3.8.3", "scala3-library-url"), "4f2de872acc6e76ccd3c24d5c453873bf063e555"),
-            mapEntry(new ScalaHash("3.8.3", "tasty-core-url"), "c846ae67c72a80b7b82c9031f3c590663fac4885")
+            mapEntry(new ScalaHash("3.8.3", "tasty-core-url"), "c846ae67c72a80b7b82c9031f3c590663fac4885"),
+            mapEntry(new ScalaHash("3.9.0", "scala3-library-url"), "08f3ebf03aa11fa0f422e3430b3401c4f81e688a"),
+            mapEntry(new ScalaHash("3.9.0", "tasty-core-url"), "b6145a91551de12bc2d742680f572847008d9222")
     );
 
     private ScalaHashes() {

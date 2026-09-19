@@ -82,6 +82,7 @@ public enum ScalaVersion {
     v3_3_5("3.3.5"),
     v3_3_6("3.3.6"),
     v3_3_7("3.3.7"),
+    v3_3_8("3.3.8"),
 
     //3.4.x
     v3_4_0("3.4.0"),
@@ -112,7 +113,10 @@ public enum ScalaVersion {
     v3_8_0("3.8.0", false), //https://www.scala-lang.org/blog/post-mortem-3.8.0.html
     v3_8_1("3.8.1"),
     v3_8_2("3.8.2"),
-    v3_8_3("3.8.3");
+    v3_8_3("3.8.3"),
+
+    //3.9.x (LTS)
+    v3_9_0("3.9.0");
 
     // When adding new entries here, don't forget to update ScalaHashes.
 
