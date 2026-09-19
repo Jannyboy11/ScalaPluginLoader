@@ -8,12 +8,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 27
-        uses: actions/setup-java@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v6
         with:
           # Use Eclipse Temurin's OpenJDK because Microsoft doesn't seem to want to build non-LTS releases.
           distribution: 'temurin'
-          java-version: '27'
+          java-version: 'latest'
           cache: 'maven'
       - name: Compile ScalaLoader
         run: mvn --batch-mode --update-snapshots verify -DfinalName=ScalaLoader
@@ -26,13 +26,13 @@ jobs:
           files: |
             ScalaLoader/target/ScalaLoader.jar
       - name: Deploy Javadoc
-        uses: MathieuSoysal/Javadoc-publisher.yml@v2.4.0
+        uses: MathieuSoysal/Javadoc-publisher.yml@v3.0.2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           javadoc-branch: javadoc
           java-distribution: temurin
-          java-version: 27
+          java-version: 25 # cannot use 'latest' yet, as Javadoc-publisher still uses setup-java@v4. 'latest' was introduced in v6.
           custom-command: 'mvn package javadoc:aggregate -pl :ScalaPluginLoader,:ScalaLoader-Common,:ScalaLoader-Bukkit,:ScalaLoader-Paper'
           target-folder: javadoc
           project: maven
