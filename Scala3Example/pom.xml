@@ -14,7 +14,7 @@
     <properties>
         <!-- Scala 2.13 bootstrap library no longer necessary after Scala 3.8 -->
 <!--        <scala.boostrapVersion>2.13.18</scala.boostrapVersion>-->
-        <scala.version>3.8.3</scala.version>
+        <scala.version>3.9.0</scala.version>
     </properties>
 
     <build>
@@ -38,7 +38,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>4.9.2</version>
+                <version>4.9.9</version>
                 <configuration>
                     <args>
 <!--                        <arg>-rewrite</arg><arg>-indent</arg>-->

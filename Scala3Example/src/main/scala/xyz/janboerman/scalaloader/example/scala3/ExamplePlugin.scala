@@ -3,7 +3,7 @@ package xyz.janboerman.scalaloader.example.scala3
 import xyz.janboerman.scalaloader.plugin.description.{Scala, ScalaVersion}
 import xyz.janboerman.scalaloader.paper.plugin.ScalaPlugin
 
-@Scala(version = ScalaVersion.v3_8_3)
+@Scala(version = ScalaVersion.v3_9_0)
 object ExamplePlugin extends ScalaPlugin {
 
     override def onEnable(): Unit =
