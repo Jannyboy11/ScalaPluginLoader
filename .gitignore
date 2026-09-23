@@ -1,6 +1,7 @@
 #IntelliJ
 .idea/*
 **.iml
+**/effective-pom.xml
 
 #Maven
 target/*
