@@ -172,7 +172,7 @@ libraryDependencies += "com.janboerman.scalaloader" % "ScalaLoader" % "0.18.18-S
 <repository>
     <id>jannyboy11-minecraft</id>
     <name>Jannyboy11 Minecraft Repo</name>
-    <url>https://repo.repsy.io/mvn/jannyboy11/minecraft</url>
+    <url>https://repo.repsy.io/jannyboy11/minecraft</url>
 </repository>
 
 <dependency>
